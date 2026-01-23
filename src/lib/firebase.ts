@@ -1,7 +1,7 @@
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { initializeFirestore, getFirestore, type Firestore } from 'firebase/firestore';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getStorage, type FirebaseStorage } from 'firebase/storage';
 // To use Analytics: import { getAnalytics, isSupported, type Analytics } from "firebase/analytics";
 
@@ -25,11 +25,8 @@ if (!getApps().length) {
     app = getApp();
 }
 
-// Initialize Firestore with long polling to avoid gRPC issues in some bundler environments.
-const db: Firestore = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  ignoreUndefinedProperties: true, // This can help with some data sanitization issues
-});
+// Initialize Firestore
+const db: Firestore = getFirestore(app);
 
 const auth: Auth = getAuth(app);
 const storage: FirebaseStorage = getStorage(app);
