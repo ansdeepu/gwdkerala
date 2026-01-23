@@ -1,4 +1,3 @@
-
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -199,8 +198,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         }
 
         const getQueryForCollection = (collectionName: string) => {
-            if (collectionName === 'fileEntries' && user?.role === 'supervisor' && user.uid) {
-                return query(collection(db, 'fileEntries'), where('assignedSupervisorUids', 'array-contains', user.uid));
+            if (user?.role === 'supervisor' && user.uid) {
+                if (collectionName === 'fileEntries') {
+                    return query(collection(db, 'fileEntries'), where('assignedSupervisorUids', 'array-contains', user.uid));
+                }
+                if (collectionName === 'arsEntries') {
+                    return query(collection(db, 'arsEntries'), where('supervisorUid', '==', user.uid));
+                }
             }
             return query(collection(db, collectionName));
         };
@@ -225,9 +229,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             if (collectionName === 'bidders') {
                 q = query(collection(db, collectionName), orderBy("order"));
             } else if (collectionName === 'eTenders') {
-                q = query(collection(db, collectionName), orderBy("tenderDate", "desc"));
+                 q = query(collection(db, collectionName), orderBy("tenderDate", "desc"));
             } else {
-                q = getQueryForCollection(collectionName);
+                 q = getQueryForCollection(collectionName);
             }
             
             return onSnapshot(
@@ -273,9 +277,17 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
                     setLoadingStates(prev => ({ ...prev, [loaderKey]: false }));
                 },
-                (error) => {
-                    console.error(`Error fetching ${collectionName}:`, error);
-                    toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
+                async (error) => {
+                    if (error.code === 'permission-denied') {
+                        const permissionError = new FirestorePermissionError({
+                            path: `/${collectionName}`,
+                            operation: 'list',
+                        });
+                        errorEmitter.emit('permission-error', permissionError);
+                    } else {
+                        console.error(`Error fetching ${collectionName}:`, error);
+                        toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
+                    }
                     setLoadingStates(prev => ({ ...prev, [loaderKey]: false }));
                 }
             );

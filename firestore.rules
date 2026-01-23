@@ -59,7 +59,9 @@ service cloud.firestore {
     match /arsEntries/{docId} {
       // Supervisors can get an ARS entry if their UID matches.
       allow get: if canReadCollection() || (isSupervisor() && resource.data.supervisorUid == request.auth.uid);
-      allow list: if canReadCollection() || isSupervisor();
+      // Editors/Viewers can list all. Supervisors can only list entries assigned to them.
+      allow list: if canReadCollection() || 
+                   (isSupervisor() && request.query.where.supervisorUid == request.auth.uid);
       allow create, update, delete: if canWriteCollection();
     }
     
