@@ -4,7 +4,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { LoginSchema, type LoginFormData } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
@@ -32,7 +31,6 @@ const LogIn = (props: React.SVGProps<SVGSVGElement>) => (
 export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
 
   const form = useForm<LoginFormData>({
@@ -52,7 +50,7 @@ export default function LoginForm() {
         title: "Login Successful",
         description: "Redirecting to your dashboard...",
       });
-      router.push("/dashboard");
+      // The parent page (`/login`) will handle the redirection.
     } else {
       const errorMessage =
         error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found'
