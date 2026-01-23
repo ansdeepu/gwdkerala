@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const ADMIN_EMAIL = 'gwdklm@gmail.com';
+const ADMIN_EMAIL = 'keralagwd@gmail.com';
 
 export interface UserProfile {
   uid: string;
