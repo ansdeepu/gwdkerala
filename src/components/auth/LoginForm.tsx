@@ -33,7 +33,6 @@ export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
-  const router = useRouter();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
@@ -48,11 +47,12 @@ export default function LoginForm() {
     const { success, error } = await login(data.email, data.password);
 
     if (success) {
+      // The redirect is handled by the page component watching the auth state.
+      // We can optionally show a toast here, but the main goal is to let the auth state drive navigation.
       toast({
         title: "Login Successful",
-        description: "Redirecting to your dashboard...",
+        description: "Please wait while we redirect you...",
       });
-      router.push('/dashboard');
     } else {
       const errorMessage =
         error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found'
