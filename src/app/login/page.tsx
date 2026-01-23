@@ -17,18 +17,17 @@ const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    // If a user object exists (even during loading), it means authentication has started.
-    // Redirect to the dashboard. The dashboard layout will handle showing a loader until the user profile is fully loaded.
-    if (user) {
+    // If the user is authenticated, redirect them to the dashboard.
+    if (isAuthenticated) {
       router.replace('/dashboard');
     }
-  }, [user, router]);
+  }, [isAuthenticated, router]);
 
-  // While loading the initial auth state, or if a user object exists (and we're about to redirect), show a loader.
-  if (isLoading || user) {
+  // While loading the initial auth state, or if the user is authenticated and we're about to redirect, show a loader.
+  if (isLoading || isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-secondary p-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
