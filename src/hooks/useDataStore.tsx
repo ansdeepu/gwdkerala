@@ -13,6 +13,7 @@ import { toast } from './use-toast';
 import { designationOptions } from '@/lib/schemas';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import type { E_tender } from './useE_tenders';
 
 
 const db = getFirestore(app);
@@ -81,6 +82,7 @@ interface DataStoreContextType {
     allLsgConstituencyMaps: LsgConstituencyMap[];
     allRateDescriptions: Record<RateDescriptionId, string>;
     allBidders: MasterBidder[];
+    allE_tenders: E_tender[];
     allDepartmentVehicles: DepartmentVehicle[];
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
@@ -94,6 +96,7 @@ interface DataStoreContextType {
     refetchLsgConstituencyMaps: () => void;
     refetchRateDescriptions: () => void;
     refetchBidders: () => void;
+    refetchE_tenders: () => void;
     addDepartmentVehicle: (data: DepartmentVehicle) => Promise<void>;
     updateDepartmentVehicle: (data: DepartmentVehicle) => Promise<void>;
     deleteDepartmentVehicle: (id: string, name: string) => Promise<void>;
@@ -116,6 +119,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allLsgConstituencyMaps, setAllLsgConstituencyMaps] = useState<LsgConstituencyMap[]>([]);
     const [allRateDescriptions, setAllRateDescriptions] = useState<Record<RateDescriptionId, string>>(defaultRateDescriptions);
     const [allBidders, setAllBidders] = useState<MasterBidder[]>([]);
+    const [allE_tenders, setAllE_tenders] = useState<E_tender[]>([]);
     const [allDepartmentVehicles, setAllDepartmentVehicles] = useState<DepartmentVehicle[]>([]);
     const [allHiredVehicles, setAllHiredVehicles] = useState<HiredVehicle[]>([]);
     const [allRigCompressors, setAllRigCompressors] = useState<RigCompressor[]>([]);
@@ -129,6 +133,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         lsg: true,
         rates: true,
         bidders: true,
+        eTenders: true,
         departmentVehicles: true,
         hiredVehicles: true,
         rigCompressors: true,
@@ -143,6 +148,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         lsg: 0,
         rates: 0,
         bidders: 0,
+        eTenders: 0,
         departmentVehicles: 0,
         hiredVehicles: 0,
         rigCompressors: 0,
@@ -156,6 +162,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const refetchLsgConstituencyMaps = useCallback(() => setRefetchCounters(c => ({ ...c, lsg: c.lsg + 1 })), []);
     const refetchRateDescriptions = useCallback(() => setRefetchCounters(c => ({ ...c, rates: c.rates + 1 })), []);
     const refetchBidders = useCallback(() => setRefetchCounters(c => ({ ...c, bidders: c.bidders + 1 })), []);
+    const refetchE_tenders = useCallback(() => setRefetchCounters(c => ({ ...c, eTenders: c.eTenders + 1 })), []);
     const refetchDepartmentVehicles = useCallback(() => setRefetchCounters(c => ({...c, departmentVehicles: c.departmentVehicles + 1})), []);
     const refetchHiredVehicles = useCallback(() => setRefetchCounters(c => ({...c, hiredVehicles: c.hiredVehicles + 1})), []);
     const refetchRigCompressors = useCallback(() => setRefetchCounters(c => ({...c, rigCompressors: c.rigCompressors + 1})), []);
@@ -181,11 +188,12 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setAllLsgConstituencyMaps([]);
             setAllRateDescriptions(defaultRateDescriptions);
             setAllBidders([]);
+            setAllE_tenders([]);
             setAllDepartmentVehicles([]);
             setAllHiredVehicles([]);
             setAllRigCompressors([]);
             setOfficeAddress(null);
-            setLoadingStates({ files: false, ars: false, staff: false, agencies: false, lsg: false, rates: false, bidders: false, officeAddress: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false });
+            setLoadingStates({ files: false, ars: false, staff: false, agencies: false, lsg: false, rates: false, bidders: false, eTenders: false, officeAddress: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false });
             return;
         }
 
@@ -204,6 +212,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', collectionName: 'localSelfGovernments' },
             rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', collectionName: 'rateDescriptions' },
             bidders: { setter: setAllBidders, loaderKey: 'bidders', collectionName: 'bidders' },
+            eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', collectionName: 'eTenders' },
             departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles', collectionName: 'departmentVehicles' },
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles', collectionName: 'hiredVehicles' },
             rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors', collectionName: 'rigCompressors' },
@@ -212,8 +221,10 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
         const unsubscribes = Object.entries(collections).map(([key, { setter, loaderKey, collectionName }]) => {
             let q;
-            if(collectionName === 'bidders'){
-                 q = query(collection(db, collectionName), orderBy("order"));
+            if (collectionName === 'bidders') {
+                q = query(collection(db, collectionName), orderBy("order"));
+            } else if (collectionName === 'eTenders') {
+                 q = query(collection(db, collectionName), orderBy("tenderDate", "desc"));
             } else {
                  q = getQueryForCollection(collectionName);
             }
@@ -231,19 +242,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                             });
                             setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
                         }
-                    } else if (collectionName === 'officeAddresses') { // Corrected collection name
+                    } else if (collectionName === 'officeAddresses') {
                         if (snapshot.empty) {
                             setter(null);
                         } else {
                             const doc = snapshot.docs[0];
                             setter({ id: doc.id, ...doc.data() } as OfficeAddress);
                         }
-                    } else if (collectionName === 'bidders') {
-                        const data = snapshot.docs.map(doc => ({
-                            ...doc.data(),
-                            id: doc.id,
-                        })) as MasterBidder[];
-                        setter(data);
                     } else {
                         const data = snapshot.docs.map(doc => {
                             const docData = doc.data();
@@ -382,6 +387,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             allLsgConstituencyMaps,
             allRateDescriptions,
             allBidders,
+            allE_tenders,
             allDepartmentVehicles,
             allHiredVehicles,
             allRigCompressors,
@@ -395,6 +401,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             refetchLsgConstituencyMaps,
             refetchRateDescriptions,
             refetchBidders,
+            refetchE_tenders,
             addDepartmentVehicle,
             updateDepartmentVehicle,
             deleteDepartmentVehicle,
