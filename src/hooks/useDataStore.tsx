@@ -272,9 +272,17 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
                     setLoadingStates(prev => ({ ...prev, [loaderKey]: false }));
                 },
-                (error) => {
-                    console.error(`Error fetching ${collectionName}:`, error);
-                    toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
+                async (error) => {
+                    if (error.code === 'permission-denied') {
+                        const permissionError = new FirestorePermissionError({
+                            path: `/${collectionName}`,
+                            operation: 'list',
+                        });
+                        errorEmitter.emit('permission-error', permissionError);
+                    } else {
+                        console.error(`Error fetching ${collectionName}:`, error);
+                        toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
+                    }
                     setLoadingStates(prev => ({ ...prev, [loaderKey]: false }));
                 }
             );
