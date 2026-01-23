@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useRouter } from 'next/navigation';
 
 // Inline SVG components
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
@@ -32,6 +33,7 @@ export default function LoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
@@ -50,7 +52,7 @@ export default function LoginForm() {
         title: "Login Successful",
         description: "Redirecting to your dashboard...",
       });
-      // The parent page (`/login`) will handle the redirection.
+      router.push('/dashboard');
     } else {
       const errorMessage =
         error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found'
