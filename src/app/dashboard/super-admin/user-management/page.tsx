@@ -18,6 +18,8 @@ import { z } from 'zod';
 import { Loader2, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { userRoleOptions, type UserRole } from '@/lib/schemas';
 
 const Loader = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
@@ -93,6 +95,128 @@ function NewDirectorateUserForm({ onSubmit, onCancel, isSubmitting }: { onSubmit
   );
 }
 
+function EditUserDialog({
+  user,
+  isOpen,
+  onClose,
+  onSave,
+  isSaving,
+}: {
+  user: UserProfile | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: {
+    officeLocation?: string;
+    role?: UserRole;
+    isApproved?: boolean;
+  }) => void;
+  isSaving: boolean;
+}) {
+  const [officeLocation, setOfficeLocation] = useState(user?.officeLocation || "");
+  const [role, setRole] = useState<UserRole>(user?.role || "viewer");
+  const [isApproved, setIsApproved] = useState(user?.isApproved || false);
+
+  useEffect(() => {
+    if (user) {
+      setOfficeLocation(user.officeLocation || "");
+      setRole(user.role || "viewer");
+      setIsApproved(user.isApproved || false);
+    }
+  }, [user]);
+
+  if (!user) return null;
+
+  const handleSave = () => {
+    const dataToSave: {
+      officeLocation?: string;
+      role?: UserRole;
+      isApproved?: boolean;
+    } = {};
+
+    if (user.officeLocation && user.officeLocation !== officeLocation) {
+      dataToSave.officeLocation = officeLocation;
+    }
+    if (user.role !== role) {
+      dataToSave.role = role;
+    }
+    if (user.isApproved !== isApproved) {
+      dataToSave.isApproved = isApproved;
+    }
+    onSave(dataToSave);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit User: {user.name}</DialogTitle>
+          <DialogDescription>
+            Update details for {user.email}.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div className="space-y-2">
+            <Label>Name (Read-only)</Label>
+            <Input value={user.name || ""} readOnly disabled />
+          </div>
+          {user.officeLocation && (
+            <div className="space-y-2">
+              <Label htmlFor="officeLocation">Office Location</Label>
+              <Select
+                value={officeLocation}
+                onValueChange={setOfficeLocation}
+              >
+                <SelectTrigger id="officeLocation">
+                  <SelectValue placeholder="Select an office location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {districts.map((district) => (
+                    <SelectItem key={district} value={district}>
+                      {district}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="role">Role</Label>
+            <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+              <SelectTrigger id="role">
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                {userRoleOptions.map((roleOption) => (
+                  <SelectItem key={roleOption} value={roleOption}>
+                    {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center space-x-2 pt-2">
+            <Switch
+              id="isApproved"
+              checked={isApproved}
+              onCheckedChange={setIsApproved}
+            />
+            <Label htmlFor="isApproved">User is Approved</Label>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 export default function SuperAdminUserManagementPage() {
   const { fetchAllUsers, createOfficeAdmin, createDirectorateUser, deleteUserDocument, updateUserProfileByAdmin } = useAuth();
@@ -106,7 +230,6 @@ export default function SuperAdminUserManagementPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedValue, setEditedValue] = useState("");
 
   const officeUserForm = useForm<NewOfficeUserFormData>({
     resolver: zodResolver(NewOfficeUserSchema),
@@ -174,24 +297,13 @@ export default function SuperAdminUserManagementPage() {
   
   const handleEditUserClick = (user: UserProfile) => {
     setUserToEdit(user);
-    if (user.officeLocation) {
-        setEditedValue(user.officeLocation);
-    } else {
-        setEditedValue(user.name || "");
-    }
   };
 
-  const handleEditSubmit = async () => {
+  const handleEditSave = async (data: { officeLocation?: string; role?: UserRole; isApproved?: boolean; }) => {
     if (!userToEdit) return;
     setIsEditing(true);
-    const dataToUpdate: { name?: string; officeLocation?: string } = {};
-    if (userToEdit.officeLocation) {
-        dataToUpdate.officeLocation = editedValue;
-    } else {
-        dataToUpdate.name = editedValue;
-    }
 
-    const { success, error } = await updateUserProfileByAdmin(userToEdit.uid, dataToUpdate);
+    const { success, error } = await updateUserProfileByAdmin(userToEdit.uid, data);
     if (success) {
         toast({ title: "User Updated", description: "The user profile has been updated." });
         loadUsers();
@@ -383,27 +495,13 @@ export default function SuperAdminUserManagementPage() {
         />
       </Dialog>
       
-      <Dialog open={!!userToEdit} onOpenChange={() => setUserToEdit(null)}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Edit User</DialogTitle>
-                <DialogDescription>
-                    Update details for {userToEdit?.email}.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-2">
-                <Label htmlFor="edit-value">{userToEdit?.officeLocation ? "Office Location" : "Name"}</Label>
-                <Input id="edit-value" value={editedValue} onChange={(e) => setEditedValue(e.target.value)} />
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setUserToEdit(null)} disabled={isEditing}>Cancel</Button>
-                <Button onClick={handleEditSubmit} disabled={isEditing}>
-                    {isEditing && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                    Save Changes
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditUserDialog
+        user={userToEdit}
+        isOpen={!!userToEdit}
+        onClose={() => setUserToEdit(null)}
+        onSave={handleEditSave}
+        isSaving={isEditing}
+      />
 
       <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
         <AlertDialogContent>

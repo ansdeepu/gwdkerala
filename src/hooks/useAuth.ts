@@ -557,7 +557,7 @@ export function useAuth() {
     }
   }, []);
   
-  const updateUserProfileByAdmin = useCallback(async (targetUserUid: string, data: { name?: string; officeLocation?: string }): Promise<{ success: boolean; error?: any }> => {
+  const updateUserProfileByAdmin = useCallback(async (targetUserUid: string, data: { name?: string; officeLocation?: string; role?: UserRole; isApproved?: boolean }): Promise<{ success: boolean; error?: any }> => {
     if (authState.user?.email !== SUPER_ADMIN_EMAIL) {
         return { success: false, error: { message: "Permission denied." } };
     }
