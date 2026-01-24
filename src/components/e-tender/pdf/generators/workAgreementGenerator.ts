@@ -5,10 +5,11 @@ import { format, isValid } from 'date-fns';
 import { formatTenderNoForFilename } from '../../utils';
 import type { StaffMember } from '@/lib/schemas';
 import { numberToWords, getAttachedFilesString } from './utils';
+import type { OfficeAddress } from '@/hooks/use-data-store';
 
 const cm = (cmValue: number) => cmValue * 28.3465;
 
-export async function generateWorkAgreement(tender: E_tender, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
+export async function generateWorkAgreement(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage(PageSizes.A4);
     const { width, height } = page.getSize();
@@ -50,6 +51,7 @@ export async function generateWorkAgreement(tender: E_tender, allStaffMembers?: 
     const headingFontSize = 12;
     const regularFontSize = 12;
     const paragraphLineHeight = 14;
+    const officeLocation = officeAddress?.officeLocation || 'Kollam';
 
     // 1. Draw the heading at exactly 17cm from the top
     let currentY = height - cm(17);
@@ -76,7 +78,7 @@ export async function generateWorkAgreement(tender: E_tender, allStaffMembers?: 
     // 2. Draw the main agreement paragraph below the heading
     currentY -= (2 * paragraphLineHeight); // Two lines of space after heading
     const paragraphIndent = "     ";
-    const paragraphText = `Agreement executed on ${agreementDateFormatted} between the District Officer, Groundwater Department, Kollam, for and on behalf of the Governor of Kerala, on the first part, and ${bidderDetails}, on the other part, for the ${workName}. The second party agrees to execute the work at the sanctioned rate as per the approved tender schedule and to complete the same within ${completionPeriod} days from the date of receipt of the work order, in accordance with the contract conditions approved by the District Officer, Groundwater Department, Kollam.`;
+    const paragraphText = `Agreement executed on ${agreementDateFormatted} between the District Officer, Groundwater Department, ${officeLocation}, for and on behalf of the Governor of Kerala, on the first part, and ${bidderDetails}, on the other part, for the ${workName}. The second party agrees to execute the work at the sanctioned rate as per the approved tender schedule and to complete the same within ${completionPeriod} days from the date of receipt of the work order, in accordance with the contract conditions approved by the District Officer, Groundwater Department, ${officeLocation}.`;
 
     const words = paragraphText.split(' ');
     const lines = [];

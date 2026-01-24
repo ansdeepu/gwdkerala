@@ -1,4 +1,5 @@
 
+
 // src/app/dashboard/agency-registration/page.tsx
 "use client";
 
@@ -548,7 +549,7 @@ const RigAccordionItem = ({
 export default function AgencyRegistrationPage() {
   const { setHeader } = usePageHeader();
   const { addApplication, updateApplication, deleteApplication } = useAgencyApplications();
-  const { allAgencyApplications, isLoading: applicationsLoading } = useDataStore();
+  const { allAgencyApplications, isLoading: applicationsLoading, officeAddress } = useDataStore();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const { setIsNavigating } = usePageNavigation();
@@ -858,12 +859,14 @@ export default function AgencyRegistrationPage() {
             } else if (dateB) {
                 return 1;
             }
+            
+            const officeCode = officeAddress?.officeCode || 'KLM';
+            const regex = new RegExp(`(?:/|${officeCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\/|GWD\/)(\\d+)(?:\\(N\\)\/|\/)`);
 
             // Secondary Sort: registration number
             const getRegNumber = (regNo: string | null | undefined): number | null => {
                 if (!regNo) return null;
-                // Regex to find numbers after a slash or in parentheses
-                const match = regNo.match(/(?:\/|KLM\/|GWD\/)(\d+)(?:\(N\)\/|\/)/);
+                const match = regNo.match(regex);
                 return match && match[1] ? parseInt(match[1], 10) : null;
             };
 
@@ -888,7 +891,7 @@ export default function AgencyRegistrationPage() {
         }, null as Date | null);
 
         return { filteredApplications: filtered, lastCreatedDate: lastCreated };
-    }, [allAgencyApplications, searchTerm]);
+    }, [allAgencyApplications, searchTerm, officeAddress]);
 
   const completedApplications = useMemo(() => {
     return filteredApplications.filter((app: AgencyApplication) => app.status === 'Active');

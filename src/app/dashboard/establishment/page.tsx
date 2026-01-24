@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { format, isValid } from "date-fns";
 import ExcelJS from "exceljs";
 import { usePageHeader } from "@/hooks/usePageHeader";
+import { useDataStore } from "@/hooks/use-data-store";
 
 export const dynamic = 'force-dynamic';
 
@@ -64,9 +65,11 @@ const formatDateForSearch = (dateInput: Date | string | null | undefined): strin
 
 export default function EstablishmentPage() {
   const { setHeader } = usePageHeader();
+  const { officeAddress } = useDataStore();
+
   useEffect(() => {
-    setHeader('Establishment', 'Manage all staff members of the Ground Water Department, Kollam.');
-  }, [setHeader]);
+    setHeader('Establishment', `Manage all staff members of the Ground Water Department, ${officeAddress?.officeLocation || 'Kollam'}.`);
+  }, [setHeader, officeAddress]);
 
   const { user, isLoading: authLoading } = useAuth();
   const { 
@@ -161,7 +164,7 @@ export default function EstablishmentPage() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("StaffList");
 
-    worksheet.addRow(["Ground Water Department, Kollam"]).commit();
+    worksheet.addRow([`Ground Water Department, ${officeAddress?.officeLocation || 'Kollam'}`]).commit();
     worksheet.addRow([reportTitle]).commit();
     worksheet.addRow([]).commit();
     worksheet.addRow([`Report generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`]).commit();

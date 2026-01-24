@@ -1,4 +1,5 @@
 
+
 // src/app/dashboard/file-room/page.tsx
 "use client";
 
@@ -75,9 +76,9 @@ export default function FileManagerPage() {
   const { depositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => {
         if (!entry.applicationType) return true; // Include if type is not set
-        if (PRIVATE_APPLICATION_TYPES.includes(entry.applicationType)) return false; // Exclude private
-        if (COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType)) return false; // Exclude collector
-        if (PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType)) return false; // Exclude plan fund
+        if (PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)) return false; // Exclude private
+        if (COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)) return false; // Exclude collector
+        if (PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)) return false; // Exclude plan fund
         return true; // Include all others (government, LSGD, etc.)
     });
     

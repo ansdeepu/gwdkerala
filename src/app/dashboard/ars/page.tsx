@@ -1,4 +1,5 @@
 
+
 // src/app/dashboard/ars/page.tsx
 "use client";
 
@@ -148,6 +149,7 @@ export default function ArsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setIsNavigating } = usePageNavigation();
+  const { officeAddress } = useDataStore();
   
   const [currentPage, setCurrentPage] = useState(1);
   useEffect(() => {
@@ -357,7 +359,7 @@ export default function ArsPage() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("ARSReport");
 
-    worksheet.addRow(["Ground Water Department, Kollam"]).commit();
+    worksheet.addRow([`Ground Water Department, ${officeAddress?.officeLocation || 'Kollam'}`]).commit();
     worksheet.addRow([reportTitle]).commit();
     worksheet.addRow([`Report generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`]).commit();
     worksheet.addRow([]).commit(); // Spacer
@@ -412,7 +414,7 @@ export default function ArsPage() {
     URL.revokeObjectURL(url);
     
     toast({ title: "Excel Exported", description: `Report downloaded.` });
-  }, [filteredSites, toast]);
+  }, [filteredSites, toast, officeAddress]);
 
   const handleDownloadTemplate = async () => {
     const templateData = [ { "File No": "Example/123", "Name of Site": "Sample ARS Site", "Constituency": "Kollam", "Type of Scheme": "Check Dam", "Local Self Govt.": "Sample Panchayath", "Block": "Sample Block", "Latitude": 8.8932, "Longitude": 76.6141, "Number of Structures": 1, "Storage Capacity (m3)": 500, "No. of Fillings": 2, "Estimate Amount": 500000, "AS/TS Accorded Details": "GO(Rt) No.123/2023/WRD", "AS/TS Amount": 450000, "Sanctioned Date": "15/01/2023", "Tendered Amount": 445000, "Awarded Amount": 440000, "Present Status": "Work in Progress", "Completion Date": "", "Expenditure (₹)": 200000, "No. of Beneficiaries": "50 families", "Remarks": "Work ongoing", } ];

@@ -5,10 +5,12 @@ import type { E_tender } from "@/hooks/useE_tenders";
 import type { Corrigendum, StaffMember } from "@/lib/schemas";
 import { formatDateSafe } from "../../utils";
 import { getAttachedFilesString } from "./utils";
+import type { OfficeAddress } from "@/hooks/use-data-store";
 
 export async function generateDateExtensionCorrigendum(
     tender: E_tender,
     corrigendum: Corrigendum,
+    officeAddress: OfficeAddress | null,
     staff?: StaffMember[]
 ): Promise<Uint8Array> {
     

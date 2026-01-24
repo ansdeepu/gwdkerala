@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import { useStaffMembers } from '@/hooks/useStaffMembers';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useDataStore } from '@/hooks/use-data-store';
 
 // Inline SVG components
 const LogOut = (props: React.SVGProps<SVGSVGElement>) => (
@@ -78,6 +79,7 @@ const getInitials = (name?: string) => {
 export default function AppSidebar() {
   const { user, logout } = useAuth();
   const { staffMembers } = useStaffMembers();
+  const { officeAddress } = useDataStore();
   const router = useRouter();
 
   const staffInfo = staffMembers.find(s => s.id === user?.staffId);
@@ -98,7 +100,7 @@ export default function AppSidebar() {
             data-ai-hint="logo abstract"
           />
           <span className="font-semibold text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-            GWD Kollam
+            GWD {officeAddress?.officeLocation || ''}
           </span>
         </Link>
       </SidebarHeader>

@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'GWD Kollam Dashboard', // Updated App Name
-  description: 'Dashboard for Ground Water Department, Kollam', // Updated Description
+  title: 'GWD Dashboard',
+  description: 'Dashboard for Ground Water Department',
   icons: {
     icon: 'https://placehold.co/64x64/2563EB/FFFFFF.png?text=G',
   },
