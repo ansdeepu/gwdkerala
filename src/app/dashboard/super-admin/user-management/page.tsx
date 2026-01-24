@@ -58,7 +58,7 @@ function NewDirectorateUserForm({ onSubmit, onCancel, isSubmitting }: { onSubmit
           This will create a new user account with 'viewer' permissions.
         </DialogDescription>
       </DialogHeader>
-      <div className="py-4">
+      <div className="px-6 py-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField name="name" control={form.control} render={({ field }) => (
