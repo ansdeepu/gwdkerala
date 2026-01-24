@@ -43,8 +43,9 @@ service cloud.firestore {
       // Editors and viewers can read all profiles.
       allow read: if canReadCollection() || request.auth.uid == userId;
 
+      // An editor can create any user profile.
       // Any signed in user can create their own user profile document.
-      allow create: if request.auth.uid == userId;
+      allow create: if request.auth.uid == userId || isEditor();
 
       // An editor can update any profile.
       // A user can only update their own lastActiveAt timestamp.
