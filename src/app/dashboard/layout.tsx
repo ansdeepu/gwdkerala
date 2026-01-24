@@ -162,17 +162,18 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
 function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, logout, firebaseUser } = useAuth();
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityFirestoreUpdateRef = useRef<number>(0); 
   const { toast } = useToast();
   const { isNavigating, setIsNavigating } = usePageNavigation();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    // If not loading, and there's no custom user profile AND no underlying firebase user, then redirect.
+    if (!isLoading && !user && !firebaseUser) {
       router.push('/login');
     }
-  }, [isLoading, user, router]);
+  }, [isLoading, user, firebaseUser, router]);
 
   const performIdleLogout = useCallback(() => {
     toast({
