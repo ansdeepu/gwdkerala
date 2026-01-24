@@ -17,10 +17,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Loader = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
+
+const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod"];
 
 const NewOfficeUserSchema = z.object({
   officeLocation: z.string().min(2, "Office Location is required."),
@@ -54,7 +57,7 @@ function NewDirectorateUserForm({ onSubmit, onCancel, isSubmitting }: { onSubmit
 
   return (
     <DialogContent>
-      <DialogHeader>
+      <DialogHeader className="p-6 pb-4">
         <DialogTitle>Create New Directorate User</DialogTitle>
         <DialogDescription>
           This will create a new user account with 'viewer' permissions.
@@ -312,7 +315,7 @@ export default function SuperAdminUserManagementPage() {
 
       <Dialog open={isOfficeUserDialogOpen} onOpenChange={setIsOfficeUserDialogOpen}>
         <DialogContent>
-          <DialogHeader>
+          <DialogHeader className="p-6 pb-4">
             <DialogTitle>Create New Office User</DialogTitle>
             <DialogDescription>
               This will create a new administrator account for a specific office location.
@@ -321,9 +324,28 @@ export default function SuperAdminUserManagementPage() {
           <div className="px-6 py-4">
             <Form {...officeUserForm}>
               <form onSubmit={officeUserForm.handleSubmit(handleCreateOfficeUser)} className="space-y-4">
-                <FormField name="officeLocation" control={officeUserForm.control} render={({ field }) => (
-                  <FormItem><FormLabel>Office Location</FormLabel><FormControl><Input placeholder="e.g., Kollam" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
+                <FormField
+                  name="officeLocation"
+                  control={officeUserForm.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Office Location</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an office location" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {districts.map(district => (
+                            <SelectItem key={district} value={district}>{district}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                  <FormField name="email" control={officeUserForm.control} render={({ field }) => (
                   <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
