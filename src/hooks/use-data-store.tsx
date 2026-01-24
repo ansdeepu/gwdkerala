@@ -54,7 +54,9 @@ export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
 
 export interface OfficeAddress {
   id: string;
-  officeName?: string;
+  officeName: string;
+  officeLocation: string;
+  officeCode: string;
   officeNameMalayalam?: string;
   address?: string;
   addressMalayalam?: string;
@@ -107,6 +109,7 @@ interface DataStoreContextType {
     updateRigCompressor: (data: RigCompressor) => Promise<void>;
     deleteRigCompressor: (id: string, name: string) => Promise<void>;
     refetchOfficeAddress: () => void;
+    deleteOfficeAddress: (id: string) => Promise<void>;
 }
 
 const DataStoreContext = createContext<DataStoreContextType | undefined>(undefined);
@@ -198,13 +201,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         }
 
         const getQueryForCollection = (collectionName: string) => {
-            if (user?.role === 'supervisor' && user.uid) {
-                if (collectionName === 'fileEntries') {
-                    return query(collection(db, 'fileEntries'), where('assignedSupervisorUids', 'array-contains', user.uid));
-                }
-                if (collectionName === 'arsEntries') {
-                    return query(collection(db, 'arsEntries'), where('supervisorUid', '==', user.uid));
-                }
+            if (collectionName === 'fileEntries' && user?.role === 'supervisor' && user.uid) {
+                return query(collection(db, 'fileEntries'), where('assignedSupervisorUids', 'array-contains', user.uid));
             }
             return query(collection(db, collectionName));
         };
@@ -300,6 +298,23 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     }, [user, refetchCounters]);
 
     const isLoading = Object.values(loadingStates).some(Boolean);
+
+    const deleteOfficeAddress = useCallback(async (id: string) => {
+        if (!user || user.role !== 'editor') {
+            toast({ title: "Permission Denied", variant: "destructive" });
+            return;
+        }
+        if (!id) {
+            toast({ title: "Deletion Failed", description: "Invalid ID provided.", variant: "destructive" });
+            return;
+        }
+        try {
+            await deleteDoc(doc(db, 'officeAddresses', id));
+            toast({ title: 'Office Address Deleted', description: 'The office details have been removed.' });
+        } catch (error: any) {
+            toast({ title: 'Error Deleting', description: error.message, variant: 'destructive' });
+        }
+    }, [user]);
 
     // --- Vehicle Management Logic ---
 
@@ -425,6 +440,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             updateRigCompressor,
             deleteRigCompressor,
             refetchOfficeAddress,
+            deleteOfficeAddress,
         }}>
             {children}
         </DataStoreContext.Provider>

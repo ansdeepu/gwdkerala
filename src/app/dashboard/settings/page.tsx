@@ -212,7 +212,7 @@ export default function SettingsPage() {
   const { setHeader } = usePageHeader();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const { allLsgConstituencyMaps, allStaffMembers, refetchLsgConstituencyMaps, officeAddress, refetchOfficeAddress } = useDataStore();
+  const { allLsgConstituencyMaps, allStaffMembers, refetchLsgConstituencyMaps, officeAddress, deleteOfficeAddress } = useDataStore();
   const canManage = user?.role === 'editor';
 
   const [isLoadingOffices, setIsLoadingOffices] = useState(true);
@@ -220,6 +220,8 @@ export default function SettingsPage() {
   const [isOfficeDialogOpen, setIsOfficeDialogOpen] = useState(false);
   const [isClearingData, setIsClearingData] = useState(false);
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -245,7 +247,6 @@ export default function SettingsPage() {
         await addDoc(collection(db, 'officeAddresses'), { ...data });
         toast({ title: 'Office Address Added' });
       }
-      refetchOfficeAddress();
       setIsOfficeDialogOpen(false);
     } catch (error: any) {
       toast({ title: 'Error Saving Office', description: error.message, variant: 'destructive' });
@@ -405,6 +406,21 @@ export default function SettingsPage() {
     setIsListDialogOpen(true);
   };
   
+  const handleDeleteOffice = async () => {
+    if (!officeAddress || !canManage) return;
+
+    setIsDeleting(true);
+    try {
+        await deleteOfficeAddress(officeAddress.id);
+        // toast is handled in the hook.
+    } catch (error: any) {
+        toast({ title: "Error", description: `Could not delete office address: ${error.message}`, variant: "destructive" });
+    } finally {
+        setIsDeleting(false);
+        setIsDeleteConfirmOpen(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
@@ -443,9 +459,17 @@ export default function SettingsPage() {
                 <div className="flex justify-between items-start">
                     <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" />Office Address</CardTitle>
                     {canManage && (
-                        <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }}>
-                           <Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }}>
+                               <Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}
+                            </Button>
+                            {officeAddress && (
+                                <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isDeleting}>
+                                    {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                                    Delete
+                                </Button>
+                            )}
+                        </div>
                     )}
                 </div>
                 <CardDescription>Manage the contact and official details for the department office.</CardDescription>
@@ -540,6 +564,23 @@ export default function SettingsPage() {
                 <AlertDialogCancel disabled={isClearingData}>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleClearAllData} disabled={isClearingData} className="bg-destructive hover:bg-destructive/90">
                     {isClearingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Delete All"}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will permanently delete the office address details. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteOffice} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Delete"}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
