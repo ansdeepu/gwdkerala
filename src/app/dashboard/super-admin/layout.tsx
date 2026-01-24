@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { LayoutDashboard, Users, LogOut, User, Menu, KeyRound, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -230,7 +230,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                             <CardHeader className="items-center text-center">
                             <Avatar className="h-24 w-24 mb-4">
                                 <AvatarImage src={undefined} alt={user.name || 'User'} />
-                                <AvatarFallback className="text-3xl font-semibold bg-amber-200 text-amber-800">{getInitials(user.name, user.email)}</AvatarFallback>
+                                <AvatarFallback className="text-3xl font-semibold bg-amber-200 text-amber-800">{getInitials(user.name)}</AvatarFallback>
                             </Avatar>
                             <CardTitle className="text-2xl">{user.name || 'Super Admin'}</CardTitle>
                             <CardDescription>{user.email}</CardDescription>
