@@ -169,7 +169,8 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const { isNavigating, setIsNavigating } = usePageNavigation();
 
   useEffect(() => {
-    // If auth state is resolved and there's no user, redirect.
+    // This effect handles redirecting unauthenticated users.
+    // It only runs AFTER the initial auth check is complete.
     if (!isLoading && !user) {
       router.push('/login');
     }
@@ -220,21 +221,14 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
       setIsNavigating(false);
   }, [pathname, setIsNavigating]);
 
-  if (isLoading) {
+  // Show a full-screen loader while the auth state is loading OR if there's no user yet.
+  // This prevents rendering children and then quickly redirecting.
+  if (isLoading || !user) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (!user) {
-       return (
-        <div className="flex h-screen w-screen items-center justify-center bg-background">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="ml-4 text-muted-foreground">Redirecting to login...</p>
-        </div>
-      );
   }
 
   return (

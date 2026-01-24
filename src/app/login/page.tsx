@@ -20,15 +20,13 @@ export default function LoginPage() {
   const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    // This effect handles the redirection once authentication state is fully settled.
-    // It will only redirect when loading is complete and the user is authenticated.
-    if (!isLoading && isAuthenticated) {
+    // If the user is authenticated, redirect them away from the login page.
+    if (isAuthenticated) {
       router.replace('/dashboard');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, router]);
 
-  // Show a loading spinner while the auth state is being determined,
-  // or if the user is authenticated and we are in the process of redirecting.
+  // Show a loading screen while auth state is being determined or if we are redirecting.
   if (isLoading || isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-secondary p-4">
@@ -37,7 +35,7 @@ export default function LoginPage() {
     );
   }
 
-  // Only render the login form if auth state is settled and user is not authenticated.
+  // Only render the login form if not loading and not authenticated.
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/20 p-4">
       <div className="flex w-full max-w-4xl flex-col items-center space-y-8 rounded-xl bg-card p-8 shadow-2xl md:flex-row md:space-y-0 md:space-x-10 md:p-12">
