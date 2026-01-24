@@ -152,14 +152,24 @@ export function useAuth() {
       } catch (error: any) {
         console.error('[Auth] Error in onAuthStateChanged callback:', error);
         if (isMounted) {
+            let title = "Authentication Error";
+            let description = "An unexpected error occurred while verifying your account.";
+
             if (error.code === 'resource-exhausted') {
-                toast({
-                    title: "Database Quota Exceeded",
-                    description: "The application has exceeded its database usage limits for the day. Please try again later.",
-                    variant: "destructive",
-                    duration: 9000
-                });
+                title = "Database Quota Exceeded";
+                description = "The application has exceeded its database usage limits for the day. Please try again later.";
+            } else if (error.code === 'permission-denied' || error.message.toLowerCase().includes('firestore')) {
+                title = "Could Not Load User Profile";
+                description = "Your login was successful, but we could not load your profile from the database. Please ensure the Firestore service is enabled in your Firebase project and that you have a user document.";
             }
+
+            toast({
+                title: title,
+                description: description,
+                variant: "destructive",
+                duration: 9000
+            });
+
             if (auth.currentUser) {
                 try { await signOut(auth); } catch (signOutError) { console.error('[Auth] Error signing out after onAuthStateChanged error:', signOutError); }
             }

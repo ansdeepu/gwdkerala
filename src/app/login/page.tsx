@@ -26,8 +26,8 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  // Show a loading screen while auth state is being determined OR if we are about to redirect.
-  if (isLoading || isAuthenticated) {
+  // Show a loading screen only while the initial check is happening.
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-secondary p-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -35,7 +35,8 @@ export default function LoginPage() {
     );
   }
 
-  // Only render the login form if not loading and not authenticated.
+  // Render the login form if not loading and not yet authenticated.
+  // The useEffect above will handle redirecting authenticated users.
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/20 p-4">
       <div className="flex w-full max-w-4xl flex-col items-center space-y-8 rounded-xl bg-card p-8 shadow-2xl md:flex-row md:space-y-0 md:space-x-10 md:p-12">
