@@ -22,7 +22,7 @@ import { Switch } from '@/components/ui/switch';
 import { userRoleOptions, type UserRole } from '@/lib/schemas';
 
 const Loader = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 
 const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod"];
@@ -147,14 +147,14 @@ function EditUserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader className="p-6 pb-4">
+      <DialogContent className="p-6">
+        <DialogHeader>
           <DialogTitle>Edit User: {user.name}</DialogTitle>
           <DialogDescription>
             Update details for {user.email}.
           </DialogDescription>
         </DialogHeader>
-        <div className="px-6 py-4 space-y-4">
+        <div className="py-4 space-y-4">
           <div className="space-y-2">
             <Label>Name (Read-only)</Label>
             <Input value={user.name || ""} readOnly disabled />
@@ -188,7 +188,7 @@ function EditUserDialog({
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {userRoleOptions.filter(r => r !== 'editor').map((roleOption) => (
+                  {userRoleOptions.map((roleOption) => (
                     <SelectItem key={roleOption} value={roleOption}>
                       {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
                     </SelectItem>
@@ -206,7 +206,7 @@ function EditUserDialog({
             <Label htmlFor="isApproved">User is Approved</Label>
           </div>
         </div>
-        <DialogFooter className="p-6 pt-4">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
