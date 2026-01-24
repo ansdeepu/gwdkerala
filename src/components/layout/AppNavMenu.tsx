@@ -87,11 +87,13 @@ export interface NavItem {
 
 export const allNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/plan-fund-works?code=4702-02-102-94', label: 'GWBDWS (4702-02-102-94)', icon: Landmark, roles: ['editor', 'viewer'] },
+  { href: '/dashboard/plan-fund-works?code=2702-02-103-99', label: 'GWBDWS (2702-02-103-99)', icon: Landmark, roles: ['editor', 'viewer'] },
+  { href: '/dashboard/ars', label: 'ARS - Plan', icon: Waves },
+  { href: '/dashboard/establishment', label: 'Establishment', icon: Briefcase, roles: ['editor', 'viewer'] },
   { href: '/dashboard/file-room', label: 'Deposit Works', icon: FolderOpen },
   { href: '/dashboard/collectors-deposit-works', label: "Collector's Deposit Works", icon: Landmark },
   { href: '/dashboard/private-deposit-works', label: 'Private Deposit Works', icon: Building },
-  { href: '/dashboard/plan-fund-works', label: 'Plan Fund Works', icon: Landmark, roles: ['editor', 'viewer'] },
-  { href: '/dashboard/ars', label: 'ARS', icon: Waves },
   { href: '/dashboard/agency-registration', label: 'Rig Registration', icon: ClipboardList },
   { href: '/dashboard/e-tender', label: 'e-Tender', icon: Hammer, roles: ['editor', 'viewer', 'supervisor'] },
   { href: '/dashboard/vehicles', label: 'Vehicle & Rig', icon: Truck },
@@ -100,7 +102,6 @@ export const allNavItems: NavItem[] = [
   { href: '/dashboard/progress-report', label: 'Progress Reports', icon: BarChart3, roles: ['editor', 'viewer'] },
   { href: '/dashboard/report-format-suggestion', label: 'Report Builders', icon: ClipboardList, roles: ['editor', 'viewer'] },
   { href: '/dashboard/gwd-rates', label: 'GWD Rates', icon: DollarSign },
-  { href: '/dashboard/establishment', label: 'Establishment', icon: Briefcase, roles: ['editor', 'viewer'] },
   { href: '/dashboard/user-management', label: 'User Management', icon: Users, roles: ['editor', 'viewer'] },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, roles: ['editor', 'viewer'] },
   { href: '/dashboard/help', label: 'Help & About', icon: HelpCircle },
