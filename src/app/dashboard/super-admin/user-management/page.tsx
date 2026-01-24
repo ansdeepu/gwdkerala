@@ -179,21 +179,24 @@ function EditUserDialog({
               </Select>
             </div>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-              <SelectTrigger id="role">
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                {userRoleOptions.map((roleOption) => (
-                  <SelectItem key={roleOption} value={roleOption}>
-                    {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Only show role editor for Directorate users (who don't have an office location) */}
+          {!user.officeLocation && (
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+                <SelectTrigger id="role">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {userRoleOptions.filter(r => r !== 'editor').map((roleOption) => (
+                    <SelectItem key={roleOption} value={roleOption}>
+                      {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="flex items-center space-x-2 pt-2">
             <Switch
               id="isApproved"
