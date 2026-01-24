@@ -20,11 +20,15 @@ const Loader = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const NewOfficeUserSchema = z.object({
-  name: z.string().min(2, "Name is required."),
   officeLocation: z.string().min(2, "Office Location is required."),
   email: z.string().email("Invalid email address."),
   password: z.string().min(6, "Password must be at least 6 characters."),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match.",
+  path: ["confirmPassword"],
 });
+
 type NewOfficeUserFormData = z.infer<typeof NewOfficeUserSchema>;
 
 export default function SuperAdminUserManagementPage() {
@@ -38,10 +42,10 @@ export default function SuperAdminUserManagementPage() {
   const form = useForm<NewOfficeUserFormData>({
     resolver: zodResolver(NewOfficeUserSchema),
     defaultValues: {
-      name: "",
       officeLocation: "",
       email: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
@@ -65,9 +69,10 @@ export default function SuperAdminUserManagementPage() {
   const handleCreateUser = async (data: NewOfficeUserFormData) => {
     setIsSubmitting(true);
     try {
-      const result = await createOfficeAdmin(data.email, data.password, data.name, data.officeLocation);
+      const nameFromEmail = data.email.split('@')[0];
+      const result = await createOfficeAdmin(data.email, data.password, nameFromEmail, data.officeLocation);
       if (result.success) {
-        toast({ title: "User Created", description: `Account for ${data.name} has been created.` });
+        toast({ title: "User Created", description: `Account for ${nameFromEmail} has been created.` });
         setIsDialogOpen(false);
         form.reset();
         loadUsers();
@@ -133,29 +138,31 @@ export default function SuperAdminUserManagementPage() {
               This will create a new administrator account for a specific office location.
             </DialogDescription>
           </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleCreateUser)} className="space-y-4 py-4">
-              <FormField name="name" control={form.control} render={({ field }) => (
-                <FormItem><FormLabel>User Name</FormLabel><FormControl><Input placeholder="e.g., John Doe" {...field} /></FormControl><FormMessage /></FormItem>
-              )}/>
-              <FormField name="officeLocation" control={form.control} render={({ field }) => (
-                <FormItem><FormLabel>Office Location</FormLabel><FormControl><Input placeholder="e.g., Trivandrum" {...field} /></FormControl><FormMessage /></FormItem>
-              )}/>
-               <FormField name="email" control={form.control} render={({ field }) => (
-                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>
-              )}/>
-               <FormField name="password" control={form.control} render={({ field }) => (
-                <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
-              )}/>
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin"/>}
-                  Create User
-                </Button>
-              </div>
-            </form>
-          </Form>
+          <div className="py-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleCreateUser)} className="space-y-4">
+                <FormField name="officeLocation" control={form.control} render={({ field }) => (
+                  <FormItem><FormLabel>Office Location</FormLabel><FormControl><Input placeholder="e.g., Trivandrum" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                 <FormField name="email" control={form.control} render={({ field }) => (
+                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                 <FormField name="password" control={form.control} render={({ field }) => (
+                  <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <FormField name="confirmPassword" control={form.control} render={({ field }) => (
+                  <FormItem><FormLabel>Confirm Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin"/>}
+                    Create User
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
