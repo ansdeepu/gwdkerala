@@ -12,9 +12,10 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, Users, LogOut, User, Menu, KeyRound, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 
 const getInitials = (name?: string) => {
@@ -49,12 +50,12 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   const router = useRouter();
 
   React.useEffect(() => {
-    if (!isLoading && (!user || user.email !== 'keralagwd@gmail.com')) {
+    if (!isLoading && (!user || user.email !== SUPER_ADMIN_EMAIL)) {
       router.replace('/login');
     }
   }, [user, isLoading, router]);
 
-  if (isLoading || !user || user.email !== 'keralagwd@gmail.com') {
+  if (isLoading || !user || user.email !== SUPER_ADMIN_EMAIL) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -62,58 +63,73 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     );
   }
 
-  return (
-    <SidebarProvider>
-        <div className="flex h-screen w-full bg-secondary/30">
-        <Sidebar side="left" className="flex flex-col">
-            <SidebarHeader className="p-4 border-b">
-            <Link href="/dashboard/super-admin" className="flex items-center gap-2">
-                <Image src="https://placehold.co/40x40/FFC107/000000.png?text=SA" alt="Super Admin Logo" width={32} height={32} className="rounded-sm" />
-                <div>
-                    <span className="font-semibold text-lg">GWD Directorate</span>
-                    <p className="text-xs text-muted-foreground">Super Admin</p>
-                </div>
-            </Link>
-            </SidebarHeader>
-            <SidebarContent className="flex-1 p-2">
-                <SuperAdminNavMenu />
-            </SidebarContent>
-            <SidebarFooter className="p-2 border-t">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start h-auto p-2">
-                        <div className="flex w-full items-center gap-2">
-                            <Avatar className="h-8 w-8">
-                                <AvatarImage src={undefined} alt={user.name || 'User'} />
-                                <AvatarFallback className="font-semibold bg-amber-200 text-amber-800">{getInitials(user.name)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col items-start text-left w-full overflow-hidden">
-                                <span className="font-medium text-sm truncate">{user.name || "Super Admin"}</span>
-                                <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-                            </div>
+  // Redirect super admin if they land on a non-super-admin page
+  if (user.email === SUPER_ADMIN_EMAIL && !pathname.startsWith('/dashboard/super-admin')) {
+      router.replace('/dashboard/super-admin');
+      return (
+          <div className="flex h-screen w-screen items-center justify-center bg-background">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+      );
+  }
+
+  // Render the Super Admin layout for the super admin
+  if (user.email === SUPER_ADMIN_EMAIL) {
+      return (
+            <SidebarProvider>
+                <div className="flex h-screen w-full bg-secondary/30">
+                <Sidebar side="left" className="flex flex-col">
+                    <SidebarHeader className="p-4 border-b">
+                    <Link href="/dashboard/super-admin" className="flex items-center gap-2">
+                        <Image src="https://placehold.co/40x40/FFC107/000000.png?text=GWD" alt="Super Admin Logo" width={32} height={32} className="rounded-sm" />
+                        <div>
+                            <span className="font-semibold text-lg">GWD Directorate</span>
+                            <p className="text-xs text-muted-foreground">Super Admin</p>
                         </div>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="right" align="start" className="w-56 mb-2">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push('/dashboard/super-admin/profile')}>
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={logout}>
-                        <LogOut className="mr-2 h-4 w-4 text-destructive" />
-                        <span className="text-destructive">Log out</span>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-            </SidebarFooter>
-        </Sidebar>
-        <main className="flex-1 overflow-y-auto p-6">
-            {children}
-        </main>
-        </div>
-    </SidebarProvider>
-  );
+                    </Link>
+                    </SidebarHeader>
+                    <SidebarContent className="flex-1 p-2">
+                        <SuperAdminNavMenu />
+                    </SidebarContent>
+                    <SidebarFooter className="p-2 border-t">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="w-full justify-start h-auto p-2">
+                                <div className="flex w-full items-center gap-2">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={undefined} alt={user.name || 'User'} />
+                                        <AvatarFallback className="font-semibold bg-amber-200 text-amber-800">{getInitials(user.name)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex flex-col items-start text-left w-full overflow-hidden">
+                                        <span className="font-medium text-sm truncate">{user.name || "Super Admin"}</span>
+                                        <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                                    </div>
+                                </div>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="right" align="start" className="w-56 mb-2">
+                            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push('/dashboard/super-admin/profile')}>
+                                <User className="mr-2 h-4 w-4" />
+                                <span>Profile</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={logout}>
+                                <LogOut className="mr-2 h-4 w-4 text-destructive" />
+                                <span className="text-destructive">Log out</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    </SidebarFooter>
+                </Sidebar>
+                <main className="flex-1 overflow-y-auto p-6">
+                    {children}
+                </main>
+                </div>
+            </SidebarProvider>
+      );
+  }
+  
+  return <>{children}</>;
 }

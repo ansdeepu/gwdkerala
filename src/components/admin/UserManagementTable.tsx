@@ -39,8 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-const ADMIN_EMAIL_FOR_TABLE = 'keralagwd@gmail.com';
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 const hashCode = (str: string): number => {
     let hash = 0;
@@ -108,7 +107,7 @@ export default function UserManagementTable({
 
   const sortedUsers = useMemo(() => {
     const roleOrder: Record<UserRole, number> = { 'editor': 1, 'viewer': 2, 'supervisor': 3 };
-    return [...users].filter(u => u.email !== ADMIN_EMAIL_FOR_TABLE).sort((a, b) => {
+    return [...users].filter(u => u.email !== SUPER_ADMIN_EMAIL).sort((a, b) => {
       const roleA = roleOrder[a.role] || 4;
       const roleB = roleOrder[b.role] || 4;
       if (roleA !== roleB) return roleA - roleB;

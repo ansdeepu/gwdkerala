@@ -20,11 +20,10 @@ import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, dele
 import { app } from '@/lib/firebase';
 import { type UserRole, type Designation } from '@/lib/schemas';
 import { useToast } from "@/hooks/use-toast"; 
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-const ADMIN_EMAIL = 'keralagwd@gmail.com';
 
 export interface UserProfile {
   uid: string;
@@ -83,7 +82,7 @@ export function useAuth() {
         const userDocSnap = await getDoc(userDocRef);
 
         let userProfile: UserProfile | null = null;
-        const isAdminByEmail = firebaseUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+        const isAdminByEmail = firebaseUser.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 
         if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
@@ -199,7 +198,7 @@ export function useAuth() {
 
   const register = useCallback(async (email: string, password: string, name?: string): Promise<{ success: boolean; error?: any }> => {
     let firebaseUser: FirebaseUser | null = null;
-    const isAdmin = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const isAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -273,7 +272,7 @@ export function useAuth() {
   }, [authState.user]);
   
   const createOfficeAdmin = useCallback(async (email: string, password: string, name: string, officeLocation: string): Promise<{ success: boolean; error?: any }> => {
-    if (!authState.user || authState.user.email !== 'keralagwd@gmail.com') {
+    if (!authState.user || authState.user.email !== SUPER_ADMIN_EMAIL) {
       return { success: false, error: { message: "You do not have permission to create office admins." } };
     }
 
@@ -312,7 +311,7 @@ export function useAuth() {
   }, [authState.user]);
 
   const createDirectorateUser = useCallback(async (email: string, password: string, name: string): Promise<{ success: boolean; error?: any }> => {
-    if (!authState.user || authState.user.email !== 'keralagwd@gmail.com') {
+    if (!authState.user || authState.user.email !== SUPER_ADMIN_EMAIL) {
       return { success: false, error: { message: "You do not have permission to create directorate users." } };
     }
 
@@ -487,8 +486,8 @@ export function useAuth() {
 
     const targetUserDocRef = doc(db, "users", targetUserUid);
     const targetUserDocSnap = await getDoc(targetUserDocRef);
-    if (targetUserDocSnap.exists() && targetUserDocSnap.data().email === ADMIN_EMAIL) {
-        throw new Error(`The main admin user ('${ADMIN_EMAIL}') cannot be deleted.`);
+    if (targetUserDocSnap.exists() && targetUserDocSnap.data().email === SUPER_ADMIN_EMAIL) {
+        throw new Error(`The main admin user ('${SUPER_ADMIN_EMAIL}') cannot be deleted.`);
     }
 
     try {
@@ -518,9 +517,9 @@ export function useAuth() {
       const targetUserDocRef = doc(db, "users", targetUserUid);
       const targetUserDocSnap = await getDoc(targetUserDocRef);
 
-      if (targetUserDocSnap.exists() && targetUserDocSnap.data().email === ADMIN_EMAIL) {
+      if (targetUserDocSnap.exists() && targetUserDocSnap.data().email === SUPER_ADMIN_EMAIL) {
         failureCount++;
-        errorsEncountered.push(`Main admin profile ('${ADMIN_EMAIL}') cannot be deleted.`);
+        errorsEncountered.push(`Main admin profile ('${SUPER_ADMIN_EMAIL}') cannot be deleted.`);
         continue;
       }
 
@@ -563,7 +562,7 @@ export function useAuth() {
     if (!firebaseUser || !authState.user) {
       return { success: false, error: { message: "No authenticated user found." } };
     }
-    if (authState.user.email !== ADMIN_EMAIL) {
+    if (authState.user.email !== SUPER_ADMIN_EMAIL) {
       return { success: false, error: { message: "Permission denied." } };
     }
 
