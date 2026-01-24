@@ -1,7 +1,7 @@
 // src/app/dashboard/super-admin/user-management/page.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth, type UserProfile } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,9 +14,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Loader = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 
 const NewOfficeUserSchema = z.object({
@@ -53,8 +54,7 @@ export default function SuperAdminUserManagementPage() {
     setIsLoading(true);
     try {
       const allUsers = await fetchAllUsers();
-      const officeAdmins = allUsers.filter(u => u.role === 'editor' && u.email !== 'keralagwd@gmail.com');
-      setUsers(officeAdmins);
+      setUsers(allUsers);
     } catch (error: any) {
       toast({ title: "Error", description: `Could not load users: ${error.message}`, variant: "destructive" });
     } finally {
@@ -65,6 +65,13 @@ export default function SuperAdminUserManagementPage() {
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
+
+  const { officeAdmins, directorateUsers } = useMemo(() => {
+    const admins = users.filter(u => u.role === 'editor' && u.email !== 'keralagwd@gmail.com');
+    const others = users.filter(u => (u.role === 'viewer' || u.role === 'supervisor') && u.email !== 'keralagwd@gmail.com');
+    return { officeAdmins: admins, directorateUsers: others };
+  }, [users]);
+
 
   const handleCreateUser = async (data: NewOfficeUserFormData) => {
     setIsSubmitting(true);
@@ -92,41 +99,81 @@ export default function SuperAdminUserManagementPage() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Office User Management</CardTitle>
-              <CardDescription>Create and manage administrator accounts for sub-offices.</CardDescription>
+              <CardTitle>User Management</CardTitle>
+              <CardDescription>Create and manage administrator accounts for sub-offices and directorate users.</CardDescription>
             </div>
-            <Button onClick={() => setIsDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Create New User</Button>
+            <Button onClick={() => setIsDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Create New Office User</Button>
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Office Location</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={4} className="text-center h-24"><Loader className="mx-auto h-6 w-6 animate-spin"/></TableCell></TableRow>
-              ) : users.length > 0 ? (
-                users.map(user => (
-                  <TableRow key={user.uid}>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.officeLocation || 'N/A'}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell className="text-right">
-                       <Button variant="ghost" size="icon" disabled><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                    </TableCell>
+          <Tabs defaultValue="officeAdmins">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="officeAdmins">District/Sub-Office Admins</TabsTrigger>
+              <TabsTrigger value="directorateUsers">Directorate Users</TabsTrigger>
+            </TabsList>
+            <TabsContent value="officeAdmins" className="mt-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Office Location</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow><TableCell colSpan={4} className="text-center h-24">No office users found.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow><TableCell colSpan={4} className="text-center h-24"><Loader className="mx-auto h-6 w-6 animate-spin"/></TableCell></TableRow>
+                  ) : officeAdmins.length > 0 ? (
+                    officeAdmins.map(user => (
+                      <TableRow key={user.uid}>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.officeLocation}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell className="text-right">
+                           <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow><TableCell colSpan={4} className="text-center h-24">No office users found.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TabsContent>
+            <TabsContent value="directorateUsers" className="mt-4">
+               <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Office Location</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow><TableCell colSpan={5} className="text-center h-24"><Loader className="mx-auto h-6 w-6 animate-spin"/></TableCell></TableRow>
+                  ) : directorateUsers.length > 0 ? (
+                    directorateUsers.map(user => (
+                      <TableRow key={user.uid}>
+                        <TableCell>{user.name}</TableCell>
+                        <TableCell>{user.officeLocation || 'Directorate'}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell><span className="capitalize">{user.role}</span></TableCell>
+                        <TableCell className="text-right">
+                           <Button variant="ghost" size="icon" disabled><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow><TableCell colSpan={5} className="text-center h-24">No directorate users found.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
@@ -142,7 +189,7 @@ export default function SuperAdminUserManagementPage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleCreateUser)} className="space-y-4">
                 <FormField name="officeLocation" control={form.control} render={({ field }) => (
-                  <FormItem><FormLabel>Office Location</FormLabel><FormControl><Input placeholder="e.g., Trivandrum" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Office Location</FormLabel><FormControl><Input placeholder="e.g., Kollam" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                  <FormField name="email" control={form.control} render={({ field }) => (
                   <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>
