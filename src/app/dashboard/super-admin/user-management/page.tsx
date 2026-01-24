@@ -20,12 +20,13 @@ import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const Loader = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 
 const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod"];
 
 const NewOfficeUserSchema = z.object({
+  name: z.string().min(2, "Name is required."),
   officeLocation: z.string().min(2, "Office Location is required."),
   email: z.string().email("Invalid email address."),
   password: z.string().min(6, "Password must be at least 6 characters."),
@@ -109,7 +110,7 @@ export default function SuperAdminUserManagementPage() {
 
   const officeUserForm = useForm<NewOfficeUserFormData>({
     resolver: zodResolver(NewOfficeUserSchema),
-    defaultValues: { officeLocation: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: { name: "", officeLocation: "", email: "", password: "", confirmPassword: "" },
   });
 
   const loadUsers = useCallback(async () => {
@@ -137,10 +138,9 @@ export default function SuperAdminUserManagementPage() {
   const handleCreateOfficeUser = async (data: NewOfficeUserFormData) => {
     setIsSubmitting(true);
     try {
-      const nameFromEmail = data.email.split('@')[0];
-      const result = await createOfficeAdmin(data.email, data.password, nameFromEmail, data.officeLocation);
+      const result = await createOfficeAdmin(data.email, data.password, data.name, data.officeLocation);
       if (result.success) {
-        toast({ title: "User Created", description: `Account for ${nameFromEmail} has been created.` });
+        toast({ title: "User Created", description: `Account for ${data.name} has been created.` });
         setIsOfficeUserDialogOpen(false);
         officeUserForm.reset();
         loadUsers();
@@ -324,6 +324,13 @@ export default function SuperAdminUserManagementPage() {
           <div className="px-6 py-4">
             <Form {...officeUserForm}>
               <form onSubmit={officeUserForm.handleSubmit(handleCreateOfficeUser)} className="space-y-4">
+                <FormField name="name" control={officeUserForm.control} render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl><Input placeholder="Enter user's full name" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )} />
                 <FormField
                   name="officeLocation"
                   control={officeUserForm.control}
