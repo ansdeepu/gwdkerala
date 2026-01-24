@@ -13,6 +13,7 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   updatePassword as firebaseUpdatePassword,
+  updateProfile as firebaseUpdateProfile,
 } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc, deleteDoc, Timestamp, query, where, writeBatch, serverTimestamp } from 'firebase/firestore';
@@ -556,7 +557,37 @@ export function useAuth() {
       return { success: false, error: { message: errorMessage, code: error.code } };
     }
   }, []);
+  
+  const updateSuperAdminProfile = useCallback(async (newName: string): Promise<{ success: boolean; error?: any }> => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser || !authState.user) {
+      return { success: false, error: { message: "No authenticated user found." } };
+    }
+    if (authState.user.email !== ADMIN_EMAIL) {
+      return { success: false, error: { message: "Permission denied." } };
+    }
+
+    try {
+      // Update Firebase Auth display name
+      await firebaseUpdateProfile(firebaseUser, { displayName: newName });
+
+      // Update Firestore document
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      await updateDoc(userDocRef, { name: newName });
+
+      // Update local state
+      setAuthState(prevState => ({
+        ...prevState,
+        user: prevState.user ? { ...prevState.user, name: newName } : null,
+      }));
+
+      return { success: true };
+    } catch (error: any) {
+      console.error("[Auth] Update profile error:", error);
+      return { success: false, error };
+    }
+  }, [authState.user]);
 
 
-  return { ...authState, login, logout, register, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, batchDeleteUserDocuments, updateUserLastActive, createUserByAdmin, createOfficeAdmin, createDirectorateUser, updatePassword };
+  return { ...authState, login, logout, register, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, batchDeleteUserDocuments, updateUserLastActive, createUserByAdmin, createOfficeAdmin, createDirectorateUser, updatePassword, updateSuperAdminProfile };
 }

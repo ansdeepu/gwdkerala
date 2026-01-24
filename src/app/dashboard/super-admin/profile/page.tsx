@@ -1,12 +1,12 @@
 // src/app/dashboard/super-admin/profile/page.tsx
 "use client";
 
-import React, { useState } from 'react';
-import { useAuth, type UserProfile } from "@/hooks/useAuth";
+import React, { useState, useEffect } from 'react';
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { KeyRound, Loader2, ShieldCheck, UserCircle } from "lucide-react";
+import { KeyRound, Loader2, ShieldCheck, UserCircle, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from '@/components/ui/button';
+import { z } from 'zod';
 
 const getInitials = (name?: string) => {
   if (!name) return 'SA';
@@ -117,6 +118,76 @@ function SuperAdminUpdatePasswordForm() {
   );
 }
 
+function SuperAdminUpdateProfileForm() {
+  const { user, updateSuperAdminProfile } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const UpdateProfileSchema = z.object({
+    name: z.string().min(2, "Name must be at least 2 characters."),
+  });
+
+  type UpdateProfileFormData = z.infer<typeof UpdateProfileSchema>;
+
+  const form = useForm<UpdateProfileFormData>({
+    resolver: zodResolver(UpdateProfileSchema),
+    defaultValues: {
+      name: user?.name || "",
+    },
+  });
+
+  useEffect(() => {
+    form.reset({ name: user?.name || "" });
+  }, [user, form]);
+
+  const onSubmit = async (data: UpdateProfileFormData) => {
+    setIsSubmitting(true);
+    const { success, error } = await updateSuperAdminProfile(data.name);
+
+    if (success) {
+      toast({
+        title: "Profile Updated",
+        description: "Your name has been successfully updated.",
+      });
+    } else {
+      toast({
+        title: "Update Failed",
+        description: error?.message || "An unknown error occurred.",
+        variant: "destructive",
+      });
+    }
+    setIsSubmitting(false);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Full Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your full name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <User className="mr-2 h-4 w-4" />
+          )}
+          {isSubmitting ? "Saving..." : "Save Name"}
+        </Button>
+      </form>
+    </Form>
+  );
+}
+
 
 export default function SuperAdminProfilePage() {
     const { user, isLoading: authLoading } = useAuth();
@@ -168,7 +239,21 @@ export default function SuperAdminProfilePage() {
                           </Card>
                         </div>
 
-                        <div className="md:col-span-2">
+                        <div className="md:col-span-2 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center space-x-3">
+                                         <UserCircle className="h-6 w-6 text-primary" />
+                                        <CardTitle>Profile Information</CardTitle>
+                                    </div>
+                                    <CardDescription>
+                                        Update your display name.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <SuperAdminUpdateProfileForm />
+                                </CardContent>
+                            </Card>
                             <Card>
                                 <CardHeader>
                                     <div className="flex items-center space-x-3">
