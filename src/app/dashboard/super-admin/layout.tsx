@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/layout.tsx
 "use client";
 
@@ -14,7 +15,7 @@ import { LayoutDashboard, Users, LogOut, User, Menu, KeyRound, ShieldCheck } fro
 import { Button } from '@/components/ui/button';
 
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 
 const getInitials = (name?: string) => {
@@ -70,7 +71,10 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             <SidebarHeader className="p-4 border-b">
             <Link href="/dashboard/super-admin" className="flex items-center gap-2">
                 <Image src="https://placehold.co/40x40/FFC107/000000.png?text=SA" alt="Super Admin Logo" width={32} height={32} className="rounded-sm" />
-                <span className="font-semibold text-lg">GWD Directorate</span>
+                <div>
+                    <span className="font-semibold text-lg">GWD Directorate</span>
+                    <p className="text-xs text-muted-foreground">Super Admin</p>
+                </div>
             </Link>
             </SidebarHeader>
             <SidebarContent className="flex-1 p-2">
