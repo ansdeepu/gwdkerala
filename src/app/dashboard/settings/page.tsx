@@ -143,7 +143,7 @@ const OfficeAddressDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-3xl flex flex-col p-0">
+      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-3xl flex flex-col p-0 h-[90vh]">
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
                 <DialogHeader className="p-6 pb-4">
