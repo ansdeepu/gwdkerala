@@ -20,13 +20,13 @@ export default function LoginPage() {
   const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
-    // If the user is authenticated, redirect them away from the login page.
-    if (isAuthenticated) {
+    // If the authentication state is resolved and the user is authenticated, redirect.
+    if (!isLoading && isAuthenticated) {
       router.replace('/dashboard');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
 
-  // Show a loading screen while auth state is being determined or if we are redirecting.
+  // Show a loading screen while auth state is being determined OR if we are about to redirect.
   if (isLoading || isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-secondary p-4">

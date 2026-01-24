@@ -44,27 +44,35 @@ export default function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true);
-    const { success, error } = await login(data.email, data.password);
+    try {
+      const { success, error } = await login(data.email, data.password);
 
-    if (success) {
-      toast({
-        title: "Login Successful",
-        description: "Redirecting to your dashboard...",
-      });
-      // The redirect is now handled by the login page's useEffect hook,
-      // which waits for the authentication state to be fully resolved.
-    } else {
-      const errorMessage =
-        error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found'
-          ? "Invalid email or password. Please try again."
-          : error?.message || "An unknown error occurred.";
-      
-      toast({
-        title: "Login Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
+      if (success) {
+        toast({
+          title: "Login Successful",
+          description: "Redirecting to your dashboard...",
+        });
+        // The redirect is now handled by the login page's useEffect hook.
+      } else {
+        const errorMessage =
+          error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found'
+            ? "Invalid email or password. Please try again."
+            : error?.message || "An unknown error occurred.";
+        
+        toast({
+          title: "Login Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+        toast({
+            title: "An unexpected error occurred.",
+            description: error.message || "Please check your connection and try again.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
