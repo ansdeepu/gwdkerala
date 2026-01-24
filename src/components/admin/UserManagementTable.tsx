@@ -1,4 +1,3 @@
-
 // src/components/admin/UserManagementTable.tsx
 "use client";
 
@@ -41,7 +40,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const ADMIN_EMAIL_FOR_TABLE = 'gwdklm@gmail.com';
+const ADMIN_EMAIL_FOR_TABLE = 'keralagwd@gmail.com';
 
 const hashCode = (str: string): number => {
     let hash = 0;
@@ -109,17 +108,11 @@ export default function UserManagementTable({
 
   const sortedUsers = useMemo(() => {
     const roleOrder: Record<UserRole, number> = { 'editor': 1, 'viewer': 2, 'supervisor': 3 };
-    return [...users].sort((a, b) => {
-      // Main admin always on top
-      if (a.email === ADMIN_EMAIL_FOR_TABLE) return -1;
-      if (b.email === ADMIN_EMAIL_FOR_TABLE) return 1;
-
-      // Then sort by role
+    return [...users].filter(u => u.email !== ADMIN_EMAIL_FOR_TABLE).sort((a, b) => {
       const roleA = roleOrder[a.role] || 4;
       const roleB = roleOrder[b.role] || 4;
       if (roleA !== roleB) return roleA - roleB;
       
-      // Finally, sort by creation date
       const timeA = a.createdAt?.getTime() ?? 0;
       const timeB = b.createdAt?.getTime() ?? 0;
       return timeB - timeA;
@@ -128,8 +121,8 @@ export default function UserManagementTable({
 
 
   const handleApprovalChange = async (uid: string, currentIsApproved: boolean) => {
-    if (currentUser?.uid === uid || users.find(u => u.uid === uid)?.email === ADMIN_EMAIL_FOR_TABLE) {
-      toast({ title: "Action Restricted", description: "Admin or self approval status cannot be changed here.", variant: "default" });
+    if (currentUser?.uid === uid) {
+      toast({ title: "Action Restricted", description: "You cannot change your own approval status.", variant: "default" });
       return;
     }
     setUpdatingUsers(prev => ({ ...prev, [uid]: { ...prev[uid], approval: true } }));
@@ -145,8 +138,8 @@ export default function UserManagementTable({
   };
 
   const handleRoleChange = async (uid: string, newRole: UserRole) => {
-    if (currentUser?.uid === uid || users.find(u => u.uid === uid)?.email === ADMIN_EMAIL_FOR_TABLE) {
-      toast({ title: "Action Restricted", description: "Admin or self role cannot be changed here.", variant: "default" });
+    if (currentUser?.uid === uid) {
+      toast({ title: "Action Restricted", description: "You cannot change your own role.", variant: "default" });
       return;
     }
 
@@ -183,7 +176,7 @@ export default function UserManagementTable({
   };
 
   const handleDeleteUserClick = (user: UserProfile) => {
-    if (user.email === ADMIN_EMAIL_FOR_TABLE || currentUser?.uid === user.uid) return;
+    if (currentUser?.uid === user.uid) return;
     setUserToDelete(user);
   };
 
@@ -240,15 +233,14 @@ export default function UserManagementTable({
           <TableBody>
             {sortedUsers.map((userRow, index) => {
               const isCurrentUserTheUserInRow = currentUser?.uid === userRow.uid;
-              const isUserInRowAdmin = userRow.email === ADMIN_EMAIL_FOR_TABLE;
-              const disableActions = updatingUsers[userRow.uid]?.approval || updatingUsers[userRow.uid]?.role || isCurrentUserTheUserInRow || isUserInRowAdmin;
+              const disableActions = updatingUsers[userRow.uid]?.approval || updatingUsers[userRow.uid]?.role || isCurrentUserTheUserInRow;
               const staffInfo = staffMembers.find(s => s.id === userRow.staffId);
               const photoUrl = staffInfo?.photoUrl;
               const avatarColorClass = getColorClass(userRow.name || userRow.email || 'user');
 
 
               return (
-              <TableRow key={userRow.uid} className={cn("hover:bg-primary/5", isUserInRowAdmin && "bg-primary/10 hover:bg-primary/20")}>
+              <TableRow key={userRow.uid} className="hover:bg-primary/5">
                 <TableCell className="px-3 py-2 font-medium text-center">{index + 1}</TableCell>
                 <TableCell className="px-3 py-2">
                   <Avatar className="h-9 w-9 mx-auto">
@@ -267,9 +259,6 @@ export default function UserManagementTable({
                   ) : "Unknown"}
                 </TableCell>
                 <TableCell className="px-3 py-2 text-center">
-                  {isUserInRowAdmin ? (
-                    <Badge variant="default" className="bg-primary/90 text-primary-foreground pointer-events-none">Editor (Admin)</Badge>
-                  ) : (
                     <Select
                       value={userRow.role}
                       onValueChange={(newRole) => handleRoleChange(userRow.uid, newRole as UserRole)}
@@ -286,7 +275,6 @@ export default function UserManagementTable({
                         ))}
                       </SelectContent>
                     </Select>
-                  )}
                 </TableCell>
                 <TableCell className="px-3 py-2 text-center">
                   <div className="flex items-center justify-center space-x-2">
@@ -299,19 +287,14 @@ export default function UserManagementTable({
                     />
                      {updatingUsers[userRow.uid]?.approval && !isDeletingUser && <Loader2 className="h-4 w-4 animate-spin" />}
                     <Badge variant={userRow.isApproved ? "secondary" : "outline"} className={cn("text-xs", userRow.isApproved ? "border-green-600/50 text-green-700 bg-green-500/10" : "border-destructive/50 text-destructive bg-destructive/10")}>
-                      {isUserInRowAdmin ? "Approved" : userRow.isApproved ? "Approved" : "Pending"}
+                      {userRow.isApproved ? "Approved" : "Pending"}
                     </Badge>
                   </div>
                 </TableCell>
                 {!isViewer && 
                     <TableCell className="px-3 py-2 text-center">
                     <div className="flex items-center justify-center space-x-0.5">
-                        {isUserInRowAdmin ? (
-                            <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 cursor-not-allowed opacity-70"><UserCog className="h-4 w-4 text-primary" /></Button></TooltipTrigger>
-                                <TooltipContent><p>Main Admin User (Cannot be modified here)</p></TooltipContent>
-                            </Tooltip>
-                        ) : isCurrentUserTheUserInRow ? (
+                        {isCurrentUserTheUserInRow ? (
                             <Tooltip>
                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 cursor-not-allowed opacity-70"><Edit className="h-4 w-4 text-blue-600" /></Button></TooltipTrigger>
                                 <TooltipContent><p>This is you (Cannot be modified here)</p></TooltipContent>

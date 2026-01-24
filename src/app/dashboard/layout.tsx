@@ -15,16 +15,16 @@ import { PageHeaderProvider, usePageHeader } from '@/hooks/usePageHeader';
 import { DataStoreProvider } from '@/hooks/use-data-store';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useAuth, updateUserLastActive, type UserProfile } from '@/hooks/useAuth';
+import { useAuth, type UserProfile } from '@/hooks/useAuth';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import FirebaseErrorListener from '@/components/FirebaseErrorListener';
 
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 const Clock = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 
 
@@ -169,10 +169,8 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const { isNavigating, setIsNavigating } = usePageNavigation();
 
   useEffect(() => {
-    // This effect handles redirecting unauthenticated users.
-    // It only runs AFTER the initial auth check is complete.
     if (!isLoading && !user) {
-      router.push('/login');
+      router.replace('/login');
     }
   }, [isLoading, user, router]);
 
@@ -222,7 +220,6 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   }, [pathname, setIsNavigating]);
 
   // Show a full-screen loader while the auth state is loading OR if there's no user yet.
-  // This prevents rendering children and then quickly redirecting.
   if (isLoading || !user) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -230,6 +227,22 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+
+  // Redirect super admin if they land on a non-super-admin page
+  if (user.email === 'keralagwd@gmail.com' && !pathname.startsWith('/dashboard/super-admin')) {
+      router.replace('/dashboard/super-admin');
+      return (
+          <div className="flex h-screen w-screen items-center justify-center bg-background">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+      );
+  }
+
+  // Render the Super Admin layout for the super admin
+  if (user.email === 'keralagwd@gmail.com') {
+      return <>{children}</>;
+  }
+
 
   return (
     <DataStoreProvider user={user}>

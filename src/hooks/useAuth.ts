@@ -33,6 +33,7 @@ export interface UserProfile {
   isApproved: boolean;
   staffId?: string;
   designation?: Designation; // Added designation
+  officeLocation?: string; // New field for office admins
   createdAt?: Date;
   lastActiveAt?: Date;
 }
@@ -108,6 +109,7 @@ export function useAuth() {
                 isApproved: isApproved,
                 staffId: userData.staffId || undefined,
                 designation: staffInfo.designation,
+                officeLocation: userData.officeLocation,
                 createdAt: userData.createdAt instanceof Timestamp ? userData.createdAt.toDate() : new Date(),
                 lastActiveAt: userData.lastActiveAt instanceof Timestamp ? userData.lastActiveAt.toDate() : undefined,
             };
@@ -143,9 +145,9 @@ export function useAuth() {
             } else if (!userProfile) {
                 toast({
                     title: "User Profile Not Found",
-                    description: "Your account credentials are valid, but your user profile could not be found. Please contact an administrator.",
+                    description: "Your account credentials are valid, but your user profile could not be found. This may happen if the Firestore database is not enabled in your project. Please contact an administrator.",
                     variant: "destructive",
-                    duration: 8000
+                    duration: 9000
                 });
             }
         }
@@ -269,6 +271,45 @@ export function useAuth() {
     }
   }, [authState.user]);
   
+  const createOfficeAdmin = useCallback(async (email: string, password: string, name: string, officeLocation: string): Promise<{ success: boolean; error?: any }> => {
+    if (!authState.user || authState.user.email !== 'keralagwd@gmail.com') {
+      return { success: false, error: { message: "You do not have permission to create office admins." } };
+    }
+
+    const tempAppName = `temp-app-create-office-admin-${Date.now()}`;
+    const tempApp = initializeApp(app.options, tempAppName);
+    const tempAuth = getAuth(tempApp);
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+      const newFirebaseUser = userCredential.user;
+
+      const userProfileData = {
+        email: newFirebaseUser.email,
+        name: name,
+        officeLocation: officeLocation,
+        role: 'editor' as UserRole, // Office admins are editors
+        isApproved: true, // Super admin creates them as approved
+        createdAt: Timestamp.now(),
+        lastActiveAt: Timestamp.now(),
+      };
+      await setDoc(doc(db, "users", newFirebaseUser.uid), userProfileData);
+
+      await signOut(tempAuth);
+      await deleteApp(tempApp);
+
+      return { success: true };
+    } catch (error: any) {
+      console.error(`[Auth] [CreateOfficeAdmin] Failed for ${email}:`, error);
+      let errorMessage = error.message || "An unexpected error occurred.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = `The email address ${email} is already in use.`;
+      }
+      await deleteApp(tempApp).catch(e => console.error("Failed to delete temp app on error", e));
+      return { success: false, error: { message: errorMessage, code: error.code } };
+    }
+  }, [authState.user]);
+  
   const logout = useCallback(async () => {
     try {
       await signOut(auth);
@@ -298,6 +339,7 @@ export function useAuth() {
           staffId: data.staffId || undefined,
           createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : undefined,
           lastActiveAt: data.lastActiveAt instanceof Timestamp ? data.lastActiveAt.toDate() : undefined,
+          officeLocation: data.officeLocation || undefined,
         });
       });
       return usersList;
@@ -478,5 +520,5 @@ export function useAuth() {
   }, []);
 
 
-  return { ...authState, login, logout, register, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, batchDeleteUserDocuments, updateUserLastActive, createUserByAdmin, updatePassword };
+  return { ...authState, login, logout, register, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, batchDeleteUserDocuments, updateUserLastActive, createUserByAdmin, createOfficeAdmin, updatePassword };
 }
