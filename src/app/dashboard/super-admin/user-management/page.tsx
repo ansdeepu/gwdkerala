@@ -148,13 +148,13 @@ function EditUserDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
-        <DialogHeader>
+        <DialogHeader className="p-6 pb-4">
           <DialogTitle>Edit User: {user.name}</DialogTitle>
           <DialogDescription>
             Update details for {user.email}.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4 space-y-4">
+        <div className="px-6 py-4 space-y-4">
           <div className="space-y-2">
             <Label>Name (Read-only)</Label>
             <Input value={user.name || ""} readOnly disabled />
@@ -206,7 +206,7 @@ function EditUserDialog({
             <Label htmlFor="isApproved">User is Approved</Label>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 pt-4">
           <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
