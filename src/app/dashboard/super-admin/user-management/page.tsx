@@ -256,7 +256,7 @@ export default function SuperAdminUserManagementPage() {
               This will create a new administrator account for a specific office location.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="px-6 py-4">
             <Form {...officeUserForm}>
               <form onSubmit={officeUserForm.handleSubmit(handleCreateOfficeUser)} className="space-y-4">
                 <FormField name="officeLocation" control={officeUserForm.control} render={({ field }) => (
