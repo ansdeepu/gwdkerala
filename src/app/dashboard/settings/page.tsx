@@ -74,6 +74,8 @@ const db = getFirestore(app);
 // Schemas
 const OfficeAddressSchema = z.object({
   officeName: z.string().min(1, "Office Name is required."),
+  officeLocation: z.string().min(1, "Office Location is required."),
+  officeCode: z.string().min(1, "Office Code is required."),
   officeNameMalayalam: z.string().optional(),
   address: z.string().optional(),
   addressMalayalam: z.string().optional(),
@@ -81,7 +83,7 @@ const OfficeAddressSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }).optional().or(z.literal('')),
   districtOfficerStaffId: z.string().optional(),
   districtOfficer: z.string().optional(),
-  districtOfficerPhotoUrl: z.string().url().optional().or(z.literal('')), // Add photo URL
+  districtOfficerPhotoUrl: z.string().url().optional().or(z.literal('')),
   gstNo: z.string().optional(),
   panNo: z.string().optional(),
   otherDetails: z.string().optional(),
@@ -122,14 +124,14 @@ const OfficeAddressDialog = ({
     const form = useForm<OfficeAddressFormData>({
         resolver: zodResolver(OfficeAddressSchema),
         defaultValues: initialData || {
-            officeName: '', officeNameMalayalam: '', address: '', addressMalayalam: '', 
+            officeName: '', officeLocation: '', officeCode: '', officeNameMalayalam: '', address: '', addressMalayalam: '', 
             phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '',
             gstNo: '', panNo: '', otherDetails: '',
         },
     });
 
     useEffect(() => {
-        form.reset(initialData || { officeName: '', officeNameMalayalam: '', address: '', addressMalayalam: '', phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '', gstNo: '', panNo: '', otherDetails: '' });
+        form.reset(initialData || { officeName: '', officeLocation: '', officeCode: '', officeNameMalayalam: '', address: '', addressMalayalam: '', phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '', gstNo: '', panNo: '', otherDetails: '' });
     }, [initialData, form]);
 
     const handleOfficerChange = (staffId: string) => {
@@ -152,6 +154,8 @@ const OfficeAddressDialog = ({
                     <ScrollArea className="h-full px-6 py-4">
                         <div className="space-y-4">
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <FormField name="officeLocation" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Location</FormLabel><FormControl><Input {...field} placeholder="e.g., Kollam" /></FormControl><FormMessage /></FormItem> )}/>
+                              <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" /></FormControl><FormMessage /></FormItem> )}/>
                               <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                               <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                               <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
@@ -453,7 +457,7 @@ export default function SettingsPage() {
                     <div className="space-y-3 p-4 border rounded-lg bg-secondary/30">
                         <div className="flex flex-col md:flex-row md:items-start gap-4">
                             <div className="flex-1">
-                                <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName}</h3>
+                                <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName} ({officeAddress.officeLocation})</h3>
                                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.address}</p>
                                 {officeAddress.officeNameMalayalam && <p className="text-md text-muted-foreground mt-2 whitespace-pre-wrap">{officeAddress.officeNameMalayalam}</p>}
                                 {officeAddress.addressMalayalam && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.addressMalayalam}</p>}
@@ -469,6 +473,7 @@ export default function SettingsPage() {
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 pt-3 border-t">
+                            <DetailRow label="Office Code" value={officeAddress.officeCode} />
                             <DetailRow label="Phone No." value={officeAddress.phoneNo} />
                             <DetailRow label="Email" value={officeAddress.email} />
                             <DetailRow label="GST No." value={officeAddress.gstNo} />
