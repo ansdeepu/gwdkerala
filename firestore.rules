@@ -38,11 +38,20 @@ service cloud.firestore {
     }
 
     // === User Profiles ===
-    // Editors/Viewers can see all profiles.
-    // An authenticated user can read their own profile.
     match /users/{userId} {
+      // Any signed in user can read their own profile.
+      // Editors and viewers can read all profiles.
       allow read: if canReadCollection() || request.auth.uid == userId;
-      allow write: if isEditor();
+
+      // Any signed in user can create their own user profile document.
+      allow create: if request.auth.uid == userId;
+
+      // An editor can update any profile.
+      // A user can only update their own lastActiveAt timestamp.
+      allow update: if isEditor() || (request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActiveAt']));
+
+      // Only an editor can delete a user profile.
+      allow delete: if isEditor();
     }
 
     // === Main File Entries (Deposit Works) ===
