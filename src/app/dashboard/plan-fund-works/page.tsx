@@ -1,4 +1,3 @@
-
 // src/app/dashboard/plan-fund-works/page.tsx
 "use client";
 
@@ -57,11 +56,17 @@ export default function PlanFundWorksPage() {
   const { setHeader } = usePageHeader();
   const { user } = useAuth();
   const { fileEntries, isLoading } = useFileEntries();
+  const searchParams = useSearchParams();
+  const codeFilter = searchParams.get('code');
   
   useEffect(() => {
     const description = 'List of all deposit works funded by the Plan Fund (GWBDWS).';
-    setHeader("Plan Fund Works", description);
-  }, [setHeader, user]);
+    let title = 'Plan Fund Works';
+    if (codeFilter) {
+      title = `GWBDWS (${codeFilter})`;
+    }
+    setHeader(title, description);
+  }, [setHeader, user, codeFilter]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
@@ -73,6 +78,10 @@ export default function PlanFundWorksPage() {
     let entries = fileEntries.filter(entry => 
         !!entry.applicationType && PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType)
     );
+
+    if (codeFilter) {
+      entries = entries.filter(entry => entry.fileNo && entry.fileNo.includes(codeFilter));
+    }
     
     // Sort all entries by the first remittance date, newest first.
     entries.sort((a, b) => {
@@ -119,7 +128,7 @@ export default function PlanFundWorksPage() {
     }, null as Date | null);
     
     return { planFundWorkEntries: entries, totalSites: totalSiteCount, lastCreatedDate: lastCreated };
-  }, [fileEntries, user]);
+  }, [fileEntries, user, codeFilter]);
   
   const filteredEntries = useMemo(() => {
     if (!searchTerm) {
