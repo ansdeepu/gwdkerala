@@ -15,7 +15,7 @@ import { PageHeaderProvider, usePageHeader } from '@/hooks/usePageHeader';
 import { DataStoreProvider } from '@/hooks/use-data-store';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useAuth, type UserProfile } from '@/hooks/useAuth';
+import { useAuth, type UserProfile, updateUserLastActive } from '@/hooks/useAuth';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import FirebaseErrorListener from '@/components/FirebaseErrorListener';
