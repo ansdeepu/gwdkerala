@@ -97,7 +97,7 @@ export function useAuth() {
                         staffInfo = staffDocSnap.data() as { designation?: Designation };
                     }
                 } catch (staffError) {
-                    console.error(`Error fetching staff info for user ${firebaseUser.uid}:`, staffError);
+                    console.error(`Error fetching staff info for user '${firebaseUser.uid}':`, staffError);
                 }
             }
 
@@ -188,7 +188,7 @@ export function useAuth() {
       await signInWithEmailAndPassword(auth, email, password);
       return { success: true };
     } catch (error: any) {
-      console.error(`[Auth] Login failed for ${email}:`, error);
+      console.error(`[Auth] Login failed for '${email}':`, error);
       if (error.code === 'resource-exhausted') {
         return { success: false, error: { message: "The database is temporarily unavailable due to high traffic (quota exceeded). Please try again later.", code: error.code } };
       }
@@ -226,7 +226,7 @@ export function useAuth() {
     } catch (error: any) {
       let errorMessage = error.message || "An unexpected error occurred during registration.";
       if (error.code === 'auth/email-already-in-use') {
-        errorMessage = `The email address ${email} is already in use by another account.`;
+        errorMessage = `The email address '${email}' is already in use by another account.`;
       }
       return { success: false, error: { message: errorMessage, code: error.code } };
     }
@@ -261,10 +261,10 @@ export function useAuth() {
   
       return { success: true };
     } catch (error: any) {
-      console.error(`[Auth] [CreateUserByAdmin] Failed for ${email}:`, error);
+      console.error(`[Auth] [CreateUserByAdmin] Failed for '${email}':`, error);
       let errorMessage = error.message || "An unexpected error occurred during user creation.";
       if (error.code === 'auth/email-already-in-use') {
-        errorMessage = `The email address ${email} is already in use.`;
+        errorMessage = `The email address '${email}' is already in use.`;
       }
       await deleteApp(tempApp).catch(e => console.error("Failed to delete temp app on error", e));
       return { success: false, error: { message: errorMessage, code: error.code } };
@@ -300,10 +300,48 @@ export function useAuth() {
 
       return { success: true };
     } catch (error: any) {
-      console.error(`[Auth] [CreateOfficeAdmin] Failed for ${email}:`, error);
+      console.error(`[Auth] [CreateOfficeAdmin] Failed for '${email}':`, error);
       let errorMessage = error.message || "An unexpected error occurred.";
       if (error.code === 'auth/email-already-in-use') {
-        errorMessage = `The email address ${email} is already in use.`;
+        errorMessage = `The email address '${email}' is already in use.`;
+      }
+      await deleteApp(tempApp).catch(e => console.error("Failed to delete temp app on error", e));
+      return { success: false, error: { message: errorMessage, code: error.code } };
+    }
+  }, [authState.user]);
+
+  const createDirectorateUser = useCallback(async (email: string, password: string, name: string): Promise<{ success: boolean; error?: any }> => {
+    if (!authState.user || authState.user.email !== 'keralagwd@gmail.com') {
+      return { success: false, error: { message: "You do not have permission to create directorate users." } };
+    }
+
+    const tempAppName = `temp-app-create-dir-user-${Date.now()}`;
+    const tempApp = initializeApp(app.options, tempAppName);
+    const tempAuth = getAuth(tempApp);
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+      const newFirebaseUser = userCredential.user;
+
+      const userProfileData = {
+        email: newFirebaseUser.email,
+        name: name,
+        role: 'viewer' as UserRole,
+        isApproved: true,
+        createdAt: Timestamp.now(),
+        lastActiveAt: Timestamp.now(),
+      };
+      await setDoc(doc(db, "users", newFirebaseUser.uid), userProfileData);
+
+      await signOut(tempAuth);
+      await deleteApp(tempApp);
+
+      return { success: true };
+    } catch (error: any) {
+      console.error(`[Auth] [CreateDirectorateUser] Failed for '${email}':`, error);
+      let errorMessage = error.message || "An unexpected error occurred.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = `The email address '${email}' is already in use.`;
       }
       await deleteApp(tempApp).catch(e => console.error("Failed to delete temp app on error", e));
       return { success: false, error: { message: errorMessage, code: error.code } };
@@ -357,7 +395,7 @@ export function useAuth() {
       const userDocRef = doc(db, "users", targetUserUid);
       await updateDoc(userDocRef, { isApproved });
     } catch (error: any) {
-      console.error(`[Auth] Error updating approval for target UID ${targetUserUid}. Firestore error:`, error);
+      console.error(`[Auth] Error updating approval for target UID '${targetUserUid}'. Firestore error:`, error);
       throw error;
     }
   }, [authState.user]);
@@ -393,9 +431,9 @@ export function useAuth() {
                         fileNo: fileData.fileNo,
                         updatedSiteDetails: [{ nameOfSite: site.nameOfSite, purpose: site.purpose }],
                         submittedByUid: authState.user!.uid,
-                        submittedByName: `${authState.user!.name} (System)`,
+                        submittedByName: `'${authState.user!.name}' (System)`,
                         status: 'supervisor-unassigned',
-                        notes: `Supervisor ${userName} removed from site while role was changed.`,
+                        notes: `Supervisor '${userName}' removed from site while role was changed.`,
                         submittedAt: serverTimestamp(),
                     };
                     const newPendingUpdateRef = doc(collection(db, "pendingUpdates"));
@@ -418,7 +456,7 @@ export function useAuth() {
         if (!fileSnapshot.empty) {
             toast({
                 title: "Supervisor Un-assigned",
-                description: `${userName} was removed from their ongoing projects. Check 'Pending Updates' to re-assign.`,
+                description: `'${userName}' was removed from their ongoing projects. Check 'Pending Updates' to re-assign.`,
                 duration: 7000
             });
         }
@@ -433,7 +471,7 @@ export function useAuth() {
         }
         await updateDoc(userDocRef, dataToUpdate);
     } catch (error: any) {
-        console.error(`[Auth] Error updating role for target UID ${targetUserUid}. Firestore error:`, error);
+        console.error(`[Auth] Error updating role for target UID '${targetUserUid}'. Firestore error:`, error);
         throw error;
     }
   }, [authState.user, toast]);
@@ -449,13 +487,13 @@ export function useAuth() {
     const targetUserDocRef = doc(db, "users", targetUserUid);
     const targetUserDocSnap = await getDoc(targetUserDocRef);
     if (targetUserDocSnap.exists() && targetUserDocSnap.data().email === ADMIN_EMAIL) {
-        throw new Error(`The main admin user (${ADMIN_EMAIL}) cannot be deleted.`);
+        throw new Error(`The main admin user ('${ADMIN_EMAIL}') cannot be deleted.`);
     }
 
     try {
       await deleteDoc(targetUserDocRef);
     } catch (error: any) {
-      console.error(`[Auth] Error deleting document for target UID ${targetUserUid}. Firestore error:`, error);
+      console.error(`[Auth] Error deleting document for target UID '${targetUserUid}'. Firestore error:`, error);
       throw error;
     }
   }, [authState.user]);
@@ -472,7 +510,7 @@ export function useAuth() {
     for (const targetUserUid of targetUserUids) {
       if (authState.user.uid === targetUserUid) {
         failureCount++;
-        errorsEncountered.push(`Cannot delete own profile (UID: ${targetUserUid}).`);
+        errorsEncountered.push(`Cannot delete own profile (UID: '${targetUserUid}').`);
         continue;
       }
 
@@ -481,7 +519,7 @@ export function useAuth() {
 
       if (targetUserDocSnap.exists() && targetUserDocSnap.data().email === ADMIN_EMAIL) {
         failureCount++;
-        errorsEncountered.push(`Main admin profile (${ADMIN_EMAIL}) cannot be deleted.`);
+        errorsEncountered.push(`Main admin profile ('${ADMIN_EMAIL}') cannot be deleted.`);
         continue;
       }
 
@@ -490,7 +528,7 @@ export function useAuth() {
         successCount++;
       } catch (error: any) {
         failureCount++;
-        errorsEncountered.push(`Failed to delete ${targetUserDocSnap.data()?.email || targetUserUid}: ${error.message}`);
+        errorsEncountered.push(`Failed to delete '${targetUserDocSnap.data()?.email || targetUserUid}': ${error.message}`);
       }
     }
     return { successCount, failureCount, errors: errorsEncountered };
@@ -520,5 +558,5 @@ export function useAuth() {
   }, []);
 
 
-  return { ...authState, login, logout, register, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, batchDeleteUserDocuments, updateUserLastActive, createUserByAdmin, createOfficeAdmin, updatePassword };
+  return { ...authState, login, logout, register, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, batchDeleteUserDocuments, updateUserLastActive, createUserByAdmin, createOfficeAdmin, createDirectorateUser, updatePassword };
 }
