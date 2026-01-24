@@ -49,10 +49,10 @@ export default function LoginForm() {
     if (success) {
       toast({
         title: "Login Successful",
-        description: "Please wait while we redirect you...",
+        description: "Redirecting to your dashboard...",
       });
-      // Force a full page reload to ensure auth state is correctly read on the dashboard
-      window.location.href = '/dashboard';
+      // The redirect is now handled by the login page's useEffect hook,
+      // which waits for the authentication state to be fully resolved.
     } else {
       const errorMessage =
         error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found'
