@@ -7,17 +7,19 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 const Loader = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 
 const NewOfficeUserSchema = z.object({
@@ -89,13 +91,18 @@ function NewDirectorateUserForm({ onSubmit, onCancel, isSubmitting }: { onSubmit
 
 
 export default function SuperAdminUserManagementPage() {
-  const { fetchAllUsers, createOfficeAdmin, createDirectorateUser, deleteUserDocument } = useAuth();
+  const { fetchAllUsers, createOfficeAdmin, createDirectorateUser, deleteUserDocument, updateUserProfileByAdmin } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOfficeUserDialogOpen, setIsOfficeUserDialogOpen] = useState(false);
   const [isDirectorateUserDialogOpen, setIsDirectorateUserDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedValue, setEditedValue] = useState("");
 
   const officeUserForm = useForm<NewOfficeUserFormData>({
     resolver: zodResolver(NewOfficeUserSchema),
@@ -161,6 +168,55 @@ export default function SuperAdminUserManagementPage() {
       setIsSubmitting(false);
     }
   };
+  
+  const handleEditUserClick = (user: UserProfile) => {
+    setUserToEdit(user);
+    if (user.officeLocation) {
+        setEditedValue(user.officeLocation);
+    } else {
+        setEditedValue(user.name || "");
+    }
+  };
+
+  const handleEditSubmit = async () => {
+    if (!userToEdit) return;
+    setIsEditing(true);
+    const dataToUpdate: { name?: string; officeLocation?: string } = {};
+    if (userToEdit.officeLocation) {
+        dataToUpdate.officeLocation = editedValue;
+    } else {
+        dataToUpdate.name = editedValue;
+    }
+
+    const { success, error } = await updateUserProfileByAdmin(userToEdit.uid, dataToUpdate);
+    if (success) {
+        toast({ title: "User Updated", description: "The user profile has been updated." });
+        loadUsers();
+        setUserToEdit(null);
+    } else {
+        toast({ title: "Update Failed", description: error?.message || "Could not update user.", variant: "destructive" });
+    }
+    setIsEditing(false);
+  };
+
+  const handleDeleteUserClick = (user: UserProfile) => {
+    setUserToDelete(user);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
+    setIsDeleting(true);
+    try {
+        await deleteUserDocument(userToDelete.uid);
+        toast({ title: "User Deleted", description: `Account for ${userToDelete.email} has been deleted.` });
+        loadUsers();
+    } catch (error: any) {
+        toast({ title: "Error", description: `Could not delete user: ${error.message}`, variant: "destructive" });
+    } finally {
+        setIsDeleting(false);
+        setUserToDelete(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -194,7 +250,10 @@ export default function SuperAdminUserManagementPage() {
                     <TableCell>{user.officeLocation}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell className="text-right">
-                       <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                       <Button variant="ghost" size="icon" onClick={() => handleEditUserClick(user)}><Edit className="h-4 w-4 text-blue-600"/></Button>
+                       <Button variant="ghost" size="icon" onClick={() => handleDeleteUserClick(user)} disabled={isDeleting && userToDelete?.uid === user.uid}>
+                         {isDeleting && userToDelete?.uid === user.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive"/>}
+                       </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -236,7 +295,10 @@ export default function SuperAdminUserManagementPage() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell><span className="capitalize">{user.role}</span></TableCell>
                     <TableCell className="text-right">
-                       <Button variant="ghost" size="icon" disabled><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                       <Button variant="ghost" size="icon" onClick={() => handleEditUserClick(user)}><Edit className="h-4 w-4 text-blue-600"/></Button>
+                       <Button variant="ghost" size="icon" onClick={() => handleDeleteUserClick(user)} disabled={isDeleting && userToDelete?.uid === user.uid}>
+                         {isDeleting && userToDelete?.uid === user.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 text-destructive"/>}
+                       </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -291,6 +353,45 @@ export default function SuperAdminUserManagementPage() {
           isSubmitting={isSubmitting} 
         />
       </Dialog>
+      
+      <Dialog open={!!userToEdit} onOpenChange={() => setUserToEdit(null)}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Edit User</DialogTitle>
+                <DialogDescription>
+                    Update details for {userToEdit?.email}.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-2">
+                <Label htmlFor="edit-value">{userToEdit?.officeLocation ? "Office Location" : "Name"}</Label>
+                <Input id="edit-value" value={editedValue} onChange={(e) => setEditedValue(e.target.value)} />
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setUserToEdit(null)} disabled={isEditing}>Cancel</Button>
+                <Button onClick={handleEditSubmit} disabled={isEditing}>
+                    {isEditing && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                    Save Changes
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action will permanently delete the account for <strong>{userToDelete?.email}</strong>. This cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeleteUser} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Delete"}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

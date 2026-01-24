@@ -477,7 +477,7 @@ export function useAuth() {
   }, [authState.user, toast]);
 
   const deleteUserDocument = useCallback(async (targetUserUid: string): Promise<void> => {
-    if (!authState.user || authState.user.role !== 'editor') {
+    if (!authState.user || (authState.user.role !== 'editor' && authState.user.email !== SUPER_ADMIN_EMAIL)) {
       throw new Error("User does not have permission to delete user documents.");
     }
     if (authState.user.uid === targetUserUid) {
@@ -557,6 +557,20 @@ export function useAuth() {
     }
   }, []);
   
+  const updateUserProfileByAdmin = useCallback(async (targetUserUid: string, data: { name?: string; officeLocation?: string }): Promise<{ success: boolean; error?: any }> => {
+    if (authState.user?.email !== SUPER_ADMIN_EMAIL) {
+        return { success: false, error: { message: "Permission denied." } };
+    }
+    try {
+        const userDocRef = doc(db, "users", targetUserUid);
+        await updateDoc(userDocRef, data);
+        return { success: true };
+    } catch(error: any) {
+        console.error(`[Auth] Failed to update profile for ${targetUserUid}:`, error);
+        return { success: false, error };
+    }
+  }, [authState.user]);
+
   const updateSuperAdminProfile = useCallback(async (newName: string): Promise<{ success: boolean; error?: any }> => {
     const firebaseUser = auth.currentUser;
     if (!firebaseUser || !authState.user) {
@@ -588,5 +602,5 @@ export function useAuth() {
   }, [authState.user]);
 
 
-  return { ...authState, login, logout, register, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, batchDeleteUserDocuments, updateUserLastActive, createUserByAdmin, createOfficeAdmin, createDirectorateUser, updatePassword, updateSuperAdminProfile };
+  return { ...authState, login, logout, register, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, batchDeleteUserDocuments, updateUserLastActive, createUserByAdmin, createOfficeAdmin, createDirectorateUser, updatePassword, updateSuperAdminProfile, updateUserProfileByAdmin };
 }
