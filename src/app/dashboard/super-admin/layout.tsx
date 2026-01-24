@@ -27,6 +27,7 @@ function SuperAdminNavMenu() {
     const navItems = [
         { href: '/dashboard/super-admin', label: 'Dashboard', icon: LayoutDashboard },
         { href: '/dashboard/super-admin/user-management', label: 'User Management', icon: Users },
+        { href: '/dashboard/super-admin/profile', label: 'Profile', icon: User },
     ];
     return (
         <SidebarMenu>
@@ -94,6 +95,11 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 </DropdownMenuTrigger>
                 <DropdownMenuContent side="right" align="start" className="w-56 mb-2">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/dashboard/super-admin/profile')}>
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={logout}>
                         <LogOut className="mr-2 h-4 w-4 text-destructive" />
