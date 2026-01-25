@@ -19,6 +19,7 @@ import { useAuth, type UserProfile, updateUserLastActive } from '@/hooks/useAuth
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import FirebaseErrorListener from '@/components/FirebaseErrorListener';
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
@@ -179,12 +180,16 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const lastActivityFirestoreUpdateRef = useRef<number>(0); 
   const { toast } = useToast();
   const { isNavigating, setIsNavigating } = usePageNavigation();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/login');
+    } else if (!isLoading && user && user.email === SUPER_ADMIN_EMAIL && !pathname.startsWith('/dashboard/super-admin')) {
+      setIsRedirecting(true);
+      router.replace('/dashboard/super-admin');
     }
-  }, [isLoading, user, router]);
+  }, [isLoading, user, pathname, router]);
 
   const performIdleLogout = useCallback(() => {
     toast({
@@ -232,27 +237,17 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   }, [pathname, setIsNavigating]);
 
   // Show a full-screen loader while the auth state is loading OR if there's no user yet.
-  if (isLoading || !user) {
+  if (isLoading || !user || isRedirecting) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
-
-  // Redirect super admin if they land on a non-super-admin page
-  if (user.email === 'keralagwd@gmail.com' && !pathname.startsWith('/dashboard/super-admin')) {
-      router.replace('/dashboard/super-admin');
-      return (
-          <div className="flex h-screen w-screen items-center justify-center bg-background">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          </div>
-      );
-  }
   
   return (
     <DataStoreProvider user={user}>
-      {user.email === 'keralagwd@gmail.com' ? (
+      {user.email === SUPER_ADMIN_EMAIL ? (
         <>{children}</>
       ) : (
         <SidebarProvider defaultOpen>
