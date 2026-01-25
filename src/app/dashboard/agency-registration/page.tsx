@@ -860,8 +860,9 @@ export default function AgencyRegistrationPage() {
                 return 1;
             }
             
-            const officeCode = officeAddress?.officeCode || 'KLM';
-            const regex = new RegExp(`(?:/|${officeCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\/|GWD\/)(\\d+)(?:\\(N\\)\/|\/)`);
+            const officeCode = officeAddress?.officeCode;
+            const regexPattern = officeCode ? `(?:/|${officeCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\/|GWD\/)` : `(?:/|GWD\/)`;
+            const regex = new RegExp(`${regexPattern}(\\d+)(?:\\(N\\)\/|\/)`);
 
             // Secondary Sort: registration number
             const getRegNumber = (regNo: string | null | undefined): number | null => {
@@ -2188,3 +2189,4 @@ function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialDat
 
 
     
+

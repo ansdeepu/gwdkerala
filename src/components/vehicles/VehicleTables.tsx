@@ -1,4 +1,3 @@
-
 // src/components/vehicles/VehicleTables.tsx
 "use client";
 
@@ -17,6 +16,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
 import Image from "next/image";
+import { useDataStore } from '@/hooks/use-data-store';
 
 interface CommonTableProps {
     canEdit: boolean;
@@ -100,6 +100,7 @@ const CertificateItem = ({ label, date }: { label: string, date?: any }) => {
 };
 
 export function VehicleViewDialog({ vehicle, onClose }: { vehicle: DepartmentVehicle | HiredVehicle | RigCompressor | null, onClose: () => void }) {
+    const { officeAddress } = useDataStore();
     if (!vehicle) return null;
 
     const isRigCompressor = !('registrationNumber' in vehicle);
@@ -121,7 +122,7 @@ export function VehicleViewDialog({ vehicle, onClose }: { vehicle: DepartmentVeh
                 {/* Header */}
                 <div className="text-center space-y-1 mb-4">
                     <h2 className="font-bold text-sm tracking-wider">VEHICLE REGISTRATION</h2>
-                    <p className="text-xs font-semibold">GROUND WATER DEPARTMENT, KOLLAM</p>
+                    <p className="text-xs font-semibold">GROUND WATER DEPARTMENT, {officeAddress?.officeLocation || ''}</p>
                     <p className="text-3xl font-bold tracking-widest pt-2">{v.registrationNumber}</p>
                     <p className="text-base font-semibold">
                         {isDepartment ? (v as DepartmentVehicle).typeOfVehicle || v.model || 'N/A' : v.model || 'N/A'}
@@ -133,7 +134,7 @@ export function VehicleViewDialog({ vehicle, onClose }: { vehicle: DepartmentVeh
                     <div className="grid grid-cols-4 gap-x-6 gap-y-3 py-2">
                         <DetailRow label="Regd. date" value={formatDateSafe(v.registrationDate)} />
                         <DetailRow label="Owner" value={isHired ? (v as HiredVehicle).ownerName || 'N/A' : 'Ground Water Department'} />
-                        <DetailRow label="Address" value={isHired ? (v as HiredVehicle).ownerAddress || 'N/A' : 'Kollam, Kerala'} />
+                        <DetailRow label="Address" value={isHired ? (v as HiredVehicle).ownerAddress || 'N/A' : `${officeAddress?.officeLocation || ''}, Kerala`} />
                         <DetailRow label="Class" value={v.vehicleClass} isUppercase={true} />
                         
                         <DetailRow label="Mfg" value={v.model || '-'} />

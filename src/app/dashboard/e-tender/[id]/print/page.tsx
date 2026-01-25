@@ -4,9 +4,11 @@
 import React, { useEffect } from 'react';
 import { useTenderData } from '@/components/e-tender/TenderDataContext';
 import { formatDateSafe, formatTenderNoForFilename } from '@/components/e-tender/utils';
+import { useDataStore } from '@/hooks/use-data-store';
 
 export default function TenderPrintPage() {
     const { tender } = useTenderData();
+    const { officeAddress } = useDataStore();
 
     useEffect(() => {
         if (tender) {
@@ -27,7 +29,7 @@ export default function TenderPrintPage() {
                 </div>
                 
                 <p className="text-sm leading-relaxed mb-4 text-justify">
-                    The Executive Engineer, Ground Water Department, Kollam, for and on behalf of the Governor of Kerala invites online tenders from registered bidders of the Ground Water Department for the work specified below.
+                    The Executive Engineer, Ground Water Department, {officeAddress?.officeLocation || ''}, for and on behalf of the Governor of Kerala invites online tenders from registered bidders of the Ground Water Department for the work specified below.
                 </p>
 
                 <table className="w-full border-collapse border border-black text-sm mb-6">

@@ -61,9 +61,9 @@ export default function SupplyOrderPrintPage() {
                     <div className="text-right">
                         <p>Office of the District Officer</p>
                         <p>Ground Water Department</p>
-                        <p>Kollam - 691009</p>
-                        <p>Phone: 0474 - 2790313</p>
-                        <p>Email: gwdklm@gmail.com</p>
+                        <p>{officeAddress?.address || ''}</p>
+                        <p>Phone: {officeAddress?.phoneNo || ''}</p>
+                        <p>Email: {officeAddress?.email || ''}</p>
                         <p>Date: {formatDateSafe(tender.dateWorkOrder) || '__________'}</p>
                     </div>
                 </div>
@@ -82,7 +82,7 @@ export default function SupplyOrderPrintPage() {
                 <p>Sir,</p>
                 <div className="flex space-x-4">
                     <span>Sub:</span>
-                    <p className="text-justify leading-relaxed">GWD, Kollam - {tender.nameOfWork} - Supply Order issued – reg.</p>
+                    <p className="text-justify leading-relaxed">GWD, {officeAddress?.officeLocation || ''} - {tender.nameOfWork} - Supply Order issued – reg.</p>
                 </div>
                 <div className="flex space-x-4">
                     <span>Ref:</span>
@@ -119,7 +119,7 @@ export default function SupplyOrderPrintPage() {
                  <div className="text-center">
                     <h2 className="font-bold underline">Notes</h2>
                     <ol className="list-decimal list-inside text-left mt-2 space-y-2 text-justify">
-                        <li>INVOICES IN TRIPLICATE SHOULD BE DRAWN ON AND FORWARDED FOR PAYMENT TO The District Officer, District Office, Groundwater Department, High School Junction, Kollam – 691009.</li>
+                        <li>INVOICES IN TRIPLICATE SHOULD BE DRAWN ON AND FORWARDED FOR PAYMENT TO The District Officer, District Office, Groundwater Department, {officeAddress?.address || ''}.</li>
                         <li>Acknowledgment and all other communications regarding this purchase may be sent to the District Officer.</li>
                         <li>In all future correspondence and bills relating to this order the number and date at the top should INVARIABLY be quoted.</li>
                         <li>The payment will be paid for only after getting the satisfactory report from supervisory staff of this office.</li>

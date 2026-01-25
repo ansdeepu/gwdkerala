@@ -359,7 +359,7 @@ export default function ArsPage() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("ARSReport");
 
-    worksheet.addRow([`Ground Water Department, ${officeAddress?.officeLocation || 'Kollam'}`]).commit();
+    worksheet.addRow([`Ground Water Department, ${officeAddress?.officeLocation || ''}`]).commit();
     worksheet.addRow([reportTitle]).commit();
     worksheet.addRow([`Report generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`]).commit();
     worksheet.addRow([]).commit(); // Spacer
