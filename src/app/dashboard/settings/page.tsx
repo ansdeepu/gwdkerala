@@ -478,16 +478,20 @@ export default function SettingsPage() {
         </Button>
     </div>
     
-    {officeAddress && officeAddress.officeLocation && (
-        <Card className="mb-6">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-primary"><MapPin className="h-5 w-5"/>Current Office Location</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-3xl font-bold">{officeAddress.officeLocation}</p>
-            </CardContent>
-        </Card>
-    )}
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-primary"><MapPin className="h-5 w-5"/>Current Office Location</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoadingOffices ? (
+          <p className="text-3xl font-bold animate-pulse">Loading...</p>
+        ) : officeAddress?.officeLocation ? (
+          <p className="text-3xl font-bold">{officeAddress.officeLocation}</p>
+        ) : (
+          <p className="text-muted-foreground">Office location not set.</p>
+        )}
+      </CardContent>
+    </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="lg:col-span-2">

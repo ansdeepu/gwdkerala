@@ -204,6 +204,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             if (collectionName === 'fileEntries' && user?.role === 'supervisor' && user.uid) {
                 return query(collection(db, 'fileEntries'), where('assignedSupervisorUids', 'array-contains', user.uid));
             }
+            if (collectionName === 'officeAddresses' && user?.officeLocation) {
+                return query(collection(db, 'officeAddresses'), where('officeLocation', '==', user.officeLocation));
+            }
             return query(collection(db, collectionName));
         };
         
@@ -249,8 +252,12 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                         if (snapshot.empty) {
                             setter(null);
                         } else {
-                            const doc = snapshot.docs[0];
-                            setter({ id: doc.id, ...doc.data() } as OfficeAddress);
+                            const officeDoc = snapshot.docs[0];
+                            if (officeDoc) {
+                                setter({ id: officeDoc.id, ...officeDoc.data() } as OfficeAddress);
+                            } else {
+                                setter(null);
+                            }
                         }
                     } else {
                         const data = snapshot.docs.map(doc => {
