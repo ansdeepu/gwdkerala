@@ -1,4 +1,3 @@
-
 // src/components/vehicles/VehicleForms.tsx
 "use client";
 
@@ -279,5 +278,3 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
         </Form>
     );
 }
-
-    

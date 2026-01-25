@@ -1,4 +1,3 @@
-
 // src/components/e-tender/pdf/generators/cancelCorrigendumGenerator.ts
 import { PDFDocument, PDFTextField, StandardFonts, TextAlignment, rgb } from 'pdf-lib';
 import type { E_tender } from '@/hooks/useE_tenders';
@@ -7,7 +6,7 @@ import type { Corrigendum, StaffMember } from '@/lib/schemas';
 import { getAttachedFilesString } from './utils';
 import type { OfficeAddress } from '@/hooks/use-data-store';
 
-export async function generateCancelCorrigendum(tender: E_tender, corrigendum: Corrigendum, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
+export async function generateCancelCorrigendum(tender: E_tender, corrigendum: Corrigendum, officeAddress: OfficeAddress | null): Promise<Uint8Array> {
     const templatePath = '/Corrigendum-Cancel.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
         if (!res.ok) throw new Error(`Template file not found: ${templatePath.split('/').pop()}`);

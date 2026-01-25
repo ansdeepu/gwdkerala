@@ -1,4 +1,3 @@
-
 // src/components/e-tender/pdf/generators/dateExtensionCorrigendumGenerator.ts
 import { PDFDocument, StandardFonts, TextAlignment, rgb } from "pdf-lib";
 import type { E_tender } from "@/hooks/useE_tenders";

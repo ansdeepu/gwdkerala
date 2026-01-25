@@ -12,6 +12,7 @@ import { generateRetenderCorrigendum } from './generators/retenderCorrigendumGen
 import { generateDateExtensionCorrigendum } from './generators/dateExtensionCorrigendumGenerator';
 import { generateCancelCorrigendum } from './generators/cancelCorrigendumGenerator';
 import { formatTenderNoForFilename } from '../utils';
+import { useDataStore } from '@/hooks/use-data-store';
 
 interface CorrigendumReportsProps {
   corrigendum: Corrigendum;
@@ -21,6 +22,7 @@ interface CorrigendumReportsProps {
 export default function CorrigendumReports({ corrigendum, index }: CorrigendumReportsProps) {
   const { tender } = useTenderData();
   const [isLoading, setIsLoading] = useState(false);
+  const { officeAddress } = useDataStore();
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -30,15 +32,15 @@ export default function CorrigendumReports({ corrigendum, index }: CorrigendumRe
       
       switch (corrigendum.corrigendumType) {
         case 'Retender':
-          pdfBytes = await generateRetenderCorrigendum(tender, corrigendum);
+          pdfBytes = await generateRetenderCorrigendum(tender, corrigendum, officeAddress);
           fileNamePrefix = 'RetenderCorrigendum';
           break;
         case 'Date Extension':
-          pdfBytes = await generateDateExtensionCorrigendum(tender, corrigendum);
+          pdfBytes = await generateDateExtensionCorrigendum(tender, corrigendum, officeAddress);
           fileNamePrefix = 'DateCorrigendum';
           break;
         case 'Cancel':
-          pdfBytes = await generateCancelCorrigendum(tender, corrigendum);
+          pdfBytes = await generateCancelCorrigendum(tender, corrigendum, officeAddress);
           fileNamePrefix = 'CancelCorrigendum';
           break;
         default:
