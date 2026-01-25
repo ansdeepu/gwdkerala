@@ -71,6 +71,9 @@ const ShieldAlert = (props: React.SVGProps<SVGSVGElement>) => (
 const MapPin = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
 );
+const PlusCircle = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
+);
 
 
 const db = getFirestore(app);
@@ -451,7 +454,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || isLoadingOffices) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -475,6 +478,36 @@ export default function SettingsPage() {
     value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
   );
 
+  if (!officeAddress && canManage) {
+    return (
+        <>
+            <Card>
+                <CardHeader className="text-center items-center">
+                    <Building className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <CardTitle>Set Up Your Office</CardTitle>
+                    <CardDescription>
+                        There are no office details configured yet. Please add your main office to get started.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                    <Button onClick={() => setIsOfficeDialogOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Office Details
+                    </Button>
+                </CardContent>
+            </Card>
+
+            <OfficeAddressDialog
+                isOpen={isOfficeDialogOpen}
+                onClose={() => setIsOfficeDialogOpen(false)}
+                onSubmit={handleOfficeSubmit}
+                isSubmitting={isSubmitting}
+                initialData={officeAddress}
+                staffMembers={allStaffMembers}
+            />
+        </>
+    );
+  }
+
   return (
     <>
     <div className="flex justify-end mb-4">
@@ -489,9 +522,7 @@ export default function SettingsPage() {
         <CardTitle className="flex items-center gap-2 text-primary"><MapPin className="h-5 w-5"/>Current Office Location</CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoadingOffices ? (
-          <p className="text-3xl font-bold animate-pulse">Loading...</p>
-        ) : officeAddress?.officeLocation ? (
+        {officeAddress?.officeLocation ? (
           <p className="text-3xl font-bold">{officeAddress.officeLocation}</p>
         ) : canManage ? (
           <p className="text-muted-foreground">No office location is set. Add office details to see a location here.</p>
@@ -508,7 +539,7 @@ export default function SettingsPage() {
                     <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" />Office Details</CardTitle>
                     {canManage && (
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }}>
+                           <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }}>
                                <Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}
                             </Button>
                             {officeAddress && (
@@ -523,9 +554,7 @@ export default function SettingsPage() {
                 <CardDescription>Manage the contact and official details for the department office.</CardDescription>
             </CardHeader>
             <CardContent>
-                {isLoadingOffices ? (
-                     <div className="flex items-center justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-                ) : officeAddress ? (
+                {officeAddress ? (
                     <div className="space-y-3 p-4 border rounded-lg bg-secondary/30">
                         <div className="flex flex-col md:flex-row md:items-start gap-4">
                             <div className="flex-1">
