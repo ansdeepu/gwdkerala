@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { SUPER_ADMIN_EMAIL } from "@/lib/config";
 
 
 export const dynamic = 'force-dynamic';
@@ -17,14 +18,18 @@ const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function LoginPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
     // If the authentication state is resolved and the user is authenticated, redirect.
-    if (!isLoading && isAuthenticated) {
-      router.replace('/dashboard');
+    if (!isLoading && isAuthenticated && user) {
+      if (user.email === SUPER_ADMIN_EMAIL) {
+        router.replace('/dashboard/super-admin');
+      } else {
+        router.replace('/dashboard');
+      }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, user]);
 
   // Show a loading screen only while the initial check is happening.
   if (isLoading) {
