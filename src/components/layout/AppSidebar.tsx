@@ -1,4 +1,3 @@
-
 // src/components/layout/AppSidebar.tsx
 "use client";
 
@@ -79,7 +78,6 @@ const getInitials = (name?: string) => {
 export default function AppSidebar() {
   const { user, logout } = useAuth();
   const { staffMembers } = useStaffMembers();
-  const { officeAddress } = useDataStore();
   const router = useRouter();
 
   const staffInfo = staffMembers.find(s => s.id === user?.staffId);
@@ -100,7 +98,7 @@ export default function AppSidebar() {
             data-ai-hint="logo abstract"
           />
           <span className="font-semibold text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-            GWD {officeAddress?.officeLocation || ''}
+            GWD {user?.officeLocation || ''}
           </span>
         </Link>
       </SidebarHeader>

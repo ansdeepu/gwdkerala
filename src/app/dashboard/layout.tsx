@@ -12,7 +12,7 @@ import AppSidebar from '@/components/layout/AppSidebar';
 import { useToast } from "@/hooks/use-toast";
 import { PageNavigationProvider, usePageNavigation } from '@/hooks/usePageNavigation';
 import { PageHeaderProvider, usePageHeader } from '@/hooks/usePageHeader';
-import { DataStoreProvider, useDataStore } from '@/hooks/use-data-store';
+import { DataStoreProvider } from '@/hooks/use-data-store';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useAuth, type UserProfile, updateUserLastActive } from '@/hooks/useAuth';
@@ -22,13 +22,13 @@ import FirebaseErrorListener from '@/components/FirebaseErrorListener';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 const Clock = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 const Building = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
 );
 
 
@@ -57,7 +57,6 @@ const sectionColors = [
 
 function HeaderContent({ user }: { user: UserProfile | null }) {
   const { title, description } = usePageHeader();
-  const { officeAddress } = useDataStore();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const pathname = usePathname();
   const isDashboardPage = pathname === '/dashboard';
@@ -129,10 +128,10 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
           </div>
         </div>
         <div className={cn("flex items-center gap-4")}>
-           {officeAddress?.officeLocation && (
+           {user?.officeLocation && (
                 <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Building className="h-4 w-4 text-primary" />
-                    <span>{officeAddress.officeLocation} Office</span>
+                    <span>{user.officeLocation} Office</span>
                 </div>
             )}
           <div className={cn("flex items-center gap-2 text-sm font-medium text-primary")}>
@@ -183,16 +182,15 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return;
-    
+
     if (!user) {
-      router.replace('/login');
+        router.replace('/login');
     } else if (user.email === SUPER_ADMIN_EMAIL && !pathname.startsWith('/dashboard/super-admin')) {
-      router.replace('/dashboard/super-admin');
+        router.replace('/dashboard/super-admin');
     } else if (user.email !== SUPER_ADMIN_EMAIL && pathname.startsWith('/dashboard/super-admin')) {
-      // Prevent regular users from accessing super admin pages
-      router.replace('/dashboard');
+        router.replace('/dashboard');
     }
-  }, [isLoading, user, pathname, router]);
+  }, [user, isLoading, pathname, router]);
 
   const performIdleLogout = useCallback(() => {
     toast({
