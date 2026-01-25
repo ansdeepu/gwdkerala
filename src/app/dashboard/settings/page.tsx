@@ -445,7 +445,12 @@ export default function SettingsPage() {
         <Card className="lg:col-span-2">
             <CardHeader>
                 <div className="flex justify-between items-start">
-                    <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" />Office Details</CardTitle>
+                    <div>
+                        <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" />Office Details</CardTitle>
+                        <CardDescription>
+                            Manage the contact and official details for the <span className="font-semibold text-primary">{user?.officeLocation || 'department'}</span> office.
+                        </CardDescription>
+                    </div>
                     {canManage && (
                         <div className="flex items-center gap-2">
                            <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }}>
@@ -460,7 +465,6 @@ export default function SettingsPage() {
                         </div>
                     )}
                 </div>
-                <CardDescription>Manage the contact and official details for the department office.</CardDescription>
             </CardHeader>
             <CardContent>
                 {officeAddress ? (
