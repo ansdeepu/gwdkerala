@@ -248,7 +248,7 @@ export default function GwdRatesPage() {
   const [itemToDelete, setItemToDelete] = useState<GwdRateItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canManage = false; // District admins can only view this page
+  const canManage = user?.role === 'editor';
   
   const [editingRate, setEditingRate] = useState<{id: RateDescriptionId, title: string} | null>(null);
 

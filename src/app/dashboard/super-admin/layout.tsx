@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/layout.tsx
 "use client";
 
@@ -19,7 +18,7 @@ import { usePageNavigation } from '@/hooks/usePageNavigation';
 
 
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 
 const getInitials = (name?: string) => {
@@ -41,6 +40,7 @@ function SuperAdminNavMenu() {
       { href: '/dashboard/super-admin', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/dashboard/super-admin/user-management', label: 'User Management', icon: Users },
       { href: '/dashboard/super-admin/establishment', label: 'Establishment', icon: Briefcase },
+      { href: '/dashboard/super-admin/gwd-rates', label: 'GWD Rates', icon: DollarSign },
       { href: '/dashboard/super-admin/plan-fund-works?code=4702-02-102-94', label: 'GWBDWS (4702)', icon: Landmark },
       { href: '/dashboard/super-admin/plan-fund-works?code=2702-02-103-99', label: 'GWBDWS (2702)', icon: Landmark },
       { href: '/dashboard/super-admin/ars-plan', label: 'ARS - Plan', icon: Waves },
