@@ -423,7 +423,7 @@ export default function SettingsPage() {
     );
   }
 
-  const DetailRow = ({ label, value }: { label: string, value?: string }) => (
+  const DetailRow = ({ label, value }: { label: string, value?: string | null }) => (
     value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
   );
 
@@ -468,6 +468,7 @@ export default function SettingsPage() {
                         <div className="flex flex-col md:flex-row md:items-start gap-4">
                             <div className="flex-1">
                                 <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName}</h3>
+                                <p className="text-md font-semibold text-primary">{officeAddress.officeLocation}</p>
                                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.address}</p>
                                 {officeAddress.officeNameMalayalam && <p className="text-md text-muted-foreground mt-2 whitespace-pre-wrap">{officeAddress.officeNameMalayalam}</p>}
                                 {officeAddress.addressMalayalam && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.addressMalayalam}</p>}
