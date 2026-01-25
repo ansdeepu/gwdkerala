@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/layout.tsx
 "use client";
 
@@ -13,12 +14,12 @@ import { cn } from '@/lib/utils';
 import { LayoutDashboard, Users, LogOut, User, Menu, KeyRound, ShieldCheck, FileText, BarChart3, Briefcase, Truck, ClipboardList, Waves, Landmark, HelpCircle, Settings, FolderOpen, Building, DollarSign, Hammer, Hourglass, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { Tooltip, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePageNavigation } from '@/hooks/usePageNavigation';
 
 
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 
 const getInitials = (name?: string) => {
