@@ -243,8 +243,6 @@ export default function SettingsPage() {
   const canManage = user?.role === 'editor';
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
-
-  const [isLoadingOffices, setIsLoadingOffices] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOfficeDialogOpen, setIsOfficeDialogOpen] = useState(false);
   const [isClearingData, setIsClearingData] = useState(false);
@@ -260,10 +258,6 @@ export default function SettingsPage() {
   useEffect(() => {
     setHeader('General Settings', 'Manage dropdown options and other application-wide settings.');
   }, [setHeader]);
-  
-  useEffect(() => {
-    setIsLoadingOffices(false);
-  }, [officeAddress]);
 
   const handleOfficeSubmit = async (data: OfficeAddressFormData) => {
     if (!canManage) return;
@@ -454,7 +448,7 @@ export default function SettingsPage() {
     }
   };
 
-  if (authLoading || isLoadingOffices) {
+  if (authLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -478,42 +472,11 @@ export default function SettingsPage() {
     value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
   );
 
-  if (!officeAddress && canManage) {
-    return (
-        <>
-            <Card>
-                <CardHeader className="text-center items-center">
-                    <Building className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <CardTitle>Set Up Your Office</CardTitle>
-                    <CardDescription>
-                        There are no office details configured yet. Please add your main office to get started.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="flex justify-center">
-                    <Button onClick={() => setIsOfficeDialogOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Office Details
-                    </Button>
-                </CardContent>
-            </Card>
-
-            <OfficeAddressDialog
-                isOpen={isOfficeDialogOpen}
-                onClose={() => setIsOfficeDialogOpen(false)}
-                onSubmit={handleOfficeSubmit}
-                isSubmitting={isSubmitting}
-                initialData={officeAddress}
-                staffMembers={allStaffMembers}
-            />
-        </>
-    );
-  }
-
   return (
     <>
     <div className="flex justify-end mb-4">
         <Button variant="destructive" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
+            <ArrowLeft className="mr-2 h-4 w-4"/> Back
         </Button>
     </div>
     
@@ -522,12 +485,12 @@ export default function SettingsPage() {
         <CardTitle className="flex items-center gap-2 text-primary"><MapPin className="h-5 w-5"/>Current Office Location</CardTitle>
       </CardHeader>
       <CardContent>
-        {officeAddress?.officeLocation ? (
-          <p className="text-3xl font-bold">{officeAddress.officeLocation}</p>
-        ) : canManage ? (
-          <p className="text-muted-foreground">No office location is set. Add office details to see a location here.</p>
+        {user?.officeLocation ? (
+          <p className="text-3xl font-bold">{user.officeLocation}</p>
+        ) : isSuperAdmin ? (
+          <p className="text-muted-foreground">No office location assigned. (Super Admin)</p>
         ) : (
-          <p className="text-muted-foreground">Office location not set.</p>
+          <p className="text-muted-foreground">Office location not set in your user profile.</p>
         )}
       </CardContent>
     </Card>
@@ -584,8 +547,8 @@ export default function SettingsPage() {
                     </div>
                 ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                        <p>No office details have been added yet.</p>
-                        {canManage && <p className="text-sm mt-1">Click "Add Details" to get started.</p>}
+                        <p>No office details have been configured for {user?.officeLocation || 'your location'} yet.</p>
+                        {canManage && <p className="text-sm mt-1">Click "Add Details" to set them up.</p>}
                     </div>
                 )}
             </CardContent>
