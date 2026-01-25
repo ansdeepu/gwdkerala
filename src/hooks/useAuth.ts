@@ -181,7 +181,7 @@ export function useAuth() {
     });
 
     return () => { isMounted = false; unsubscribe(); };
-  }, [toast]);
+  }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: any }> => {
     try {
