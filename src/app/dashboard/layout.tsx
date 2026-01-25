@@ -22,13 +22,13 @@ import FirebaseErrorListener from '@/components/FirebaseErrorListener';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 const Clock = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 const Building = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
 );
 
 
@@ -183,10 +183,14 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return;
+    
     if (!user) {
       router.replace('/login');
     } else if (user.email === SUPER_ADMIN_EMAIL && !pathname.startsWith('/dashboard/super-admin')) {
       router.replace('/dashboard/super-admin');
+    } else if (user.email !== SUPER_ADMIN_EMAIL && pathname.startsWith('/dashboard/super-admin')) {
+      // Prevent regular users from accessing super admin pages
+      router.replace('/dashboard');
     }
   }, [isLoading, user, pathname, router]);
 
@@ -235,8 +239,8 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
       setIsNavigating(false);
   }, [pathname, setIsNavigating]);
 
-  // While loading auth OR if a super admin is on the wrong page, show a loader.
-  if (isLoading || !user || (user.email === SUPER_ADMIN_EMAIL && !pathname.startsWith('/dashboard/super-admin'))) {
+  // While loading auth OR if a user is being redirected, show a loader.
+  if (isLoading || !user || (user.email === SUPER_ADMIN_EMAIL && !pathname.startsWith('/dashboard/super-admin')) || (user.email !== SUPER_ADMIN_EMAIL && pathname.startsWith('/dashboard/super-admin'))) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -244,31 +248,34 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
     );
   }
   
+  // If it's a super admin, we expect the /dashboard/super-admin/layout.tsx to handle everything.
+  // We just render the children, which will be the SuperAdminLayout.
+  if (user.email === SUPER_ADMIN_EMAIL) {
+    return <>{children}</>;
+  }
+  
+  // Otherwise, render the standard sub-office user layout.
   return (
     <DataStoreProvider user={user}>
-      {user.email === SUPER_ADMIN_EMAIL ? (
-        <>{children}</>
-      ) : (
-        <SidebarProvider defaultOpen>
-          {isNavigating && (
-            <div className="page-transition-spinner">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          )}
-          <div className="flex h-screen w-full overflow-hidden">
-            <AppSidebar />
-            <SidebarInset className="flex flex-col flex-1 overflow-hidden">
-              <FirebaseErrorListener />
-              <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background/95 backdrop-blur-sm">
-                    <HeaderContent user={user} />
-                </header>
-              <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-6">
-                {children}
-              </main>
-            </SidebarInset>
+      <SidebarProvider defaultOpen>
+        {isNavigating && (
+          <div className="page-transition-spinner">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        </SidebarProvider>
-      )}
+        )}
+        <div className="flex h-screen w-full overflow-hidden">
+          <AppSidebar />
+          <SidebarInset className="flex flex-col flex-1 overflow-hidden">
+            <FirebaseErrorListener />
+            <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background/95 backdrop-blur-sm">
+                  <HeaderContent user={user} />
+              </header>
+            <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-6">
+              {children}
+            </main>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
     </DataStoreProvider>
   );
 }
