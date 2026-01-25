@@ -478,7 +478,7 @@ export default function SettingsPage() {
         </Button>
     </div>
     
-    {officeAddress && (
+    {officeAddress && officeAddress.officeLocation && (
         <Card className="mb-6">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-primary"><MapPin className="h-5 w-5"/>Current Office Location</CardTitle>
