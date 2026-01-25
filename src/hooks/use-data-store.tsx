@@ -14,6 +14,7 @@ import { designationOptions } from '@/lib/schemas';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 
 const db = getFirestore(app);
@@ -109,7 +110,6 @@ interface DataStoreContextType {
     updateRigCompressor: (data: RigCompressor) => Promise<void>;
     deleteRigCompressor: (id: string, name: string) => Promise<void>;
     refetchOfficeAddress: () => void;
-    deleteOfficeAddress: (id: string) => Promise<void>;
 }
 
 const DataStoreContext = createContext<DataStoreContextType | undefined>(undefined);
@@ -204,7 +204,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             if (collectionName === 'fileEntries' && user?.role === 'supervisor' && user.uid) {
                 return query(collection(db, 'fileEntries'), where('assignedSupervisorUids', 'array-contains', user.uid));
             }
-            if (collectionName === 'officeAddresses' && user?.officeLocation) {
+            if (collectionName === 'officeAddresses' && user?.officeLocation && user.email !== SUPER_ADMIN_EMAIL) {
                 return query(collection(db, 'officeAddresses'), where('officeLocation', '==', user.officeLocation));
             }
             return query(collection(db, collectionName));
@@ -252,12 +252,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                         if (snapshot.empty) {
                             setter(null);
                         } else {
-                            const officeDoc = snapshot.docs[0];
-                            if (officeDoc) {
-                                setter({ id: officeDoc.id, ...officeDoc.data() } as OfficeAddress);
-                            } else {
-                                setter(null);
-                            }
+                            const doc = snapshot.docs[0];
+                            setter({ id: doc.id, ...doc.data() } as OfficeAddress);
                         }
                     } else {
                         const data = snapshot.docs.map(doc => {
@@ -305,23 +301,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     }, [user, refetchCounters]);
 
     const isLoading = Object.values(loadingStates).some(Boolean);
-
-    const deleteOfficeAddress = useCallback(async (id: string) => {
-        if (!user || user.role !== 'editor') {
-            toast({ title: "Permission Denied", variant: "destructive" });
-            return;
-        }
-        if (!id) {
-            toast({ title: "Deletion Failed", description: "Invalid ID provided.", variant: "destructive" });
-            return;
-        }
-        try {
-            await deleteDoc(doc(db, 'officeAddresses', id));
-            toast({ title: 'Office Address Deleted', description: 'The office details have been removed.' });
-        } catch (error: any) {
-            toast({ title: 'Error Deleting', description: error.message, variant: 'destructive' });
-        }
-    }, [user]);
 
     // --- Vehicle Management Logic ---
 
@@ -447,7 +426,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             updateRigCompressor,
             deleteRigCompressor,
             refetchOfficeAddress,
-            deleteOfficeAddress,
         }}>
             {children}
         </DataStoreContext.Provider>

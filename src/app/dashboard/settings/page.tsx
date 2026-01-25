@@ -78,7 +78,7 @@ const db = getFirestore(app);
 // Schemas
 const OfficeAddressSchema = z.object({
   officeName: z.string().min(1, "Office Name is required."),
-  officeLocation: z.string().optional(),
+  officeLocation: z.string().min(1, "Office Location is required."),
   officeCode: z.string().min(1, "Office Code is required."),
   officeNameMalayalam: z.string().optional(),
   address: z.string().optional(),
@@ -113,7 +113,6 @@ const OfficeAddressDialog = ({
   isSubmitting,
   initialData,
   staffMembers,
-  isSuperAdmin,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -121,9 +120,9 @@ const OfficeAddressDialog = ({
   isSubmitting: boolean;
   initialData?: OfficeAddress | null;
   staffMembers: StaffMember[];
-  isSuperAdmin: boolean;
 }) => {
     const { user } = useAuth();
+    const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
     const officerList = staffMembers.filter(s => 
         officerDesignations.includes(s.designation as Designation) && s.status === 'Active'
     );
@@ -138,7 +137,7 @@ const OfficeAddressDialog = ({
     });
 
     useEffect(() => {
-        const defaultValues = initialData ? { ...initialData } : { officeName: '', officeLocation: '', officeCode: '', officeNameMalayalam: '', address: '', addressMalayalam: '', phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '', gstNo: '', panNo: '', otherDetails: '' };
+        const defaultValues: Partial<OfficeAddressFormData> = initialData ? { ...initialData } : { officeName: '', officeLocation: '', officeCode: '', officeNameMalayalam: '', address: '', addressMalayalam: '', phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '', gstNo: '', panNo: '', otherDetails: '' };
         if (!isSuperAdmin && user?.officeLocation) {
             defaultValues.officeLocation = user.officeLocation;
         }
@@ -151,12 +150,21 @@ const OfficeAddressDialog = ({
         form.setValue('districtOfficer', selectedStaff?.name || '');
         form.setValue('districtOfficerPhotoUrl', selectedStaff?.photoUrl || '');
     };
+    
+    const handleFormSubmit = (data: OfficeAddressFormData) => {
+        const finalData = { ...data };
+        if (!isSuperAdmin && user?.officeLocation) {
+            finalData.officeLocation = user.officeLocation;
+        }
+        onSubmit(finalData);
+    };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-3xl flex flex-col p-0 h-[90vh]">
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
                 <DialogHeader className="p-6 pb-4">
                   <DialogTitle>{initialData ? 'Edit Office Details' : 'Add New Office Details'}</DialogTitle>
                   <DialogDescription>Fill in the contact and official details for the office.</DialogDescription>
@@ -228,7 +236,7 @@ export default function SettingsPage() {
   const { setHeader } = usePageHeader();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const { allLsgConstituencyMaps, allStaffMembers, refetchLsgConstituencyMaps, officeAddress, deleteOfficeAddress } = useDataStore();
+  const { allLsgConstituencyMaps, allStaffMembers, refetchLsgConstituencyMaps, officeAddress, refetchOfficeAddress } = useDataStore();
   const canManage = user?.role === 'editor';
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
@@ -259,10 +267,6 @@ export default function SettingsPage() {
     setIsSubmitting(true);
     try {
         const payload: Partial<OfficeAddressFormData> = { ...data };
-        
-        if (!isSuperAdmin && user?.officeLocation) {
-            payload.officeLocation = user.officeLocation;
-        }
 
       if (officeAddress) {
         await updateDoc(doc(db, 'officeAddresses', officeAddress.id), payload);
@@ -271,6 +275,7 @@ export default function SettingsPage() {
         await addDoc(collection(db, 'officeAddresses'), payload);
         toast({ title: 'Office Address Added' });
       }
+      refetchOfficeAddress();
       setIsOfficeDialogOpen(false);
     } catch (error: any) {
       toast({ title: 'Error Saving Office', description: error.message, variant: 'destructive' });
@@ -437,6 +442,7 @@ export default function SettingsPage() {
     try {
         await deleteDoc(doc(db, "officeAddresses", officeAddress.id));
         toast({ title: 'Office Address Deleted', description: 'The office details have been removed.' });
+        refetchOfficeAddress();
     } catch (error: any) {
         toast({ title: "Error", description: `Could not delete office address: ${error.message}`, variant: "destructive" });
     } finally {
@@ -487,6 +493,8 @@ export default function SettingsPage() {
           <p className="text-3xl font-bold animate-pulse">Loading...</p>
         ) : officeAddress?.officeLocation ? (
           <p className="text-3xl font-bold">{officeAddress.officeLocation}</p>
+        ) : canManage ? (
+          <p className="text-muted-foreground">No office location is set. Add office details to see a location here.</p>
         ) : (
           <p className="text-muted-foreground">Office location not set.</p>
         )}
@@ -546,7 +554,10 @@ export default function SettingsPage() {
                         {officeAddress.otherDetails && <div className="pt-3 border-t"><p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.otherDetails}</p></div>}
                     </div>
                 ) : (
-                    <div className="text-center py-8 text-muted-foreground">No office details have been added yet.</div>
+                    <div className="text-center py-8 text-muted-foreground">
+                        <p>No office details have been added yet.</p>
+                        {canManage && <p className="text-sm mt-1">Click "Add Details" to get started.</p>}
+                    </div>
                 )}
             </CardContent>
         </Card>
@@ -592,7 +603,6 @@ export default function SettingsPage() {
         isSubmitting={isSubmitting}
         initialData={officeAddress}
         staffMembers={allStaffMembers}
-        isSuperAdmin={isSuperAdmin}
       />
       
       <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
