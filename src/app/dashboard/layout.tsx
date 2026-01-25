@@ -1,3 +1,4 @@
+
 // src/app/dashboard/layout.tsx
 "use client";
 
@@ -121,7 +122,7 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
            {user?.officeLocation && (
                 <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Building className="h-4 w-4 text-primary" />
-                    <span>{user.officeLocation} Office</span>
+                    <span>{user.officeLocation}</span>
                 </div>
             )}
           <div className={cn("flex items-center gap-2 text-sm font-medium text-primary")}>
