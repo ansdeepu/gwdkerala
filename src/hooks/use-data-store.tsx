@@ -1,3 +1,4 @@
+
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -214,25 +215,29 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             ];
 
             if (officeScopedCollections.includes(name)) {
-                if (isSuperAdminUser) {
-                    q = query(baseQuery); // Super admin gets all data
+                 if (isSuperAdminUser) {
+                    q = query(baseQuery); // Super admin gets all data.
                 } else if (user.officeLocation) {
+                    // All other users (editor, viewer, supervisor) are scoped to their office.
                     q = query(baseQuery, where('officeLocation', '==', user.officeLocation));
                 } else {
-                    // Safety fallback: if a non-super-admin user has no office, they see nothing.
+                    // Safety fallback: if a user has no office, they see nothing.
                     q = query(baseQuery, where('officeLocation', '==', '__invalid_location__'));
                 }
             } else {
-                // Global collections like bidders, lsg, rateDescriptions
+                // Global collections (bidders, lsg, rateDescriptions) are not filtered.
                 q = query(baseQuery);
             }
             
             // Apply specific ordering if needed
             if (name === 'bidders') {
                 q = query(q, orderBy("order"));
-            } else if (name === 'eTenders' && isSuperAdminUser) { // Only sort for super admin to avoid composite index
-                q = query(q, orderBy("tenderDate", "desc"));
+            } else if (name === 'eTenders' && !isSuperAdminUser) {
+                // Sub-office users sort on the client-side to avoid needing a composite index.
+            } else if (name === 'eTenders') {
+                 q = query(q, orderBy("tenderDate", "desc"));
             }
+
 
             return onSnapshot(q, (snapshot) => {
                 if (name === 'rateDescriptions') {
