@@ -90,7 +90,7 @@ service cloud.firestore {
     // === Staff Members (Establishment) ===
     match /staffMembers/{docId} {
       allow get: if isApproved();
-      allow list: if isApproved() && request.query.where.officeLocation == getUserData().officeLocation;
+      allow list: if (isApproved() && request.query.where.officeLocation == getUserData().officeLocation) || (isEditor() && !('officeLocation' in request.query.where));
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
     
