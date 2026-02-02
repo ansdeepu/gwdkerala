@@ -189,7 +189,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             officeAddresses: { setter: setOfficeAddresses, loaderKey: 'officeAddress', collectionName: 'officeAddresses' },
         };
 
-        const officeScopedCollections = ['fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'];
+        const officeScopedCollections = ['fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors', 'officeAddresses'];
         
         const unsubscribes = Object.entries(collectionsToSubscribe).map(([key, { setter, loaderKey, collectionName }]) => {
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
@@ -197,20 +197,18 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             const baseQuery = collection(db, collectionName);
             let q;
 
-            const officeToFilter = isSuperAdminUser ? selectedOffice : user.officeLocation;
-
             if (officeScopedCollections.includes(collectionName)) {
+                const officeToFilter = isSuperAdminUser ? selectedOffice : user.officeLocation;
                 if (officeToFilter) {
                     q = query(baseQuery, where('officeLocation', '==', officeToFilter));
-                } else if (isSuperAdminUser) { // Super Admin with "All Offices"
+                } else if (isSuperAdminUser) { // Super Admin with "All Offices" selected
                     q = query(baseQuery);
-                } else { // Non-admin with no office assigned
+                } else { // Non-super-admin with no office location assigned - should return nothing
                     q = query(baseQuery, where('officeLocation', '==', '__invalid_location__'));
                 }
-            } else if (collectionName === 'officeAddresses') {
-                q = query(baseQuery); // Always fetch all office addresses for the dropdown
             } else {
-                q = query(baseQuery); // Global collections
+                // Global collections
+                q = query(baseQuery);
             }
             
             // Apply specific ordering if needed
@@ -298,9 +296,21 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       return useCallback(async (id: string, name: string) => {
           if (!user) throw new Error("User must be logged in.");
           const docRef = doc(db, collectionName, id);
-          await deleteDoc(docRef);
-          toast({ title: 'Item Deleted', description: \`\${name} has been removed.\` });
-      }, [user]);
+          deleteDoc(docRef)
+              .then(() => {
+                  toast({ title: 'Item Deleted', description: `${name} has been removed.` });
+              })
+              .catch(error => {
+                  if (error.code === 'permission-denied') {
+                      errorEmitter.emit('permission-error', new FirestorePermissionError({
+                          path: docRef.path,
+                          operation: 'delete',
+                      }));
+                  } else {
+                      toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
+                  }
+              });
+      }, [user, collectionName]);
     };
 
     const addDepartmentVehicle = useAddVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
