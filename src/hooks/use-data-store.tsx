@@ -211,6 +211,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         } else if (collectionName === 'eTenders' && !shouldFilterByLocation) {
             // Only apply the expensive sort for Super Admins who see all data
             q = query(q, orderBy("tenderDate", "desc"));
+        } else if (collectionName === 'eTenders' && shouldFilterByLocation) {
+            // No server-side sort for sub-office admins to avoid composite index requirement
+            q = query(collection(db, 'eTenders'), where('officeLocation', '==', user.officeLocation));
         }
         
         const unsubscribe = onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
