@@ -1,4 +1,38 @@
+/*
+================================================================================
+  IMPORTANT NOTE ON SUPER ADMIN PERMISSIONS
+================================================================================
+  The 'isSuperAdmin()' function below relies on a Firebase Custom Claim.
+  If the Super Admin user is seeing "Permission Denied" errors on LIST
+  operations, it is because their authentication token is missing the
+  required { superAdmin: true } claim.
 
+  **THIS CANNOT BE FIXED WITH SECURITY RULES ALONE.**
+
+  To fix this, you MUST set a custom claim on the super admin user's account
+  using the Firebase Admin SDK (e.g., in a Node.js script or Cloud Function).
+
+  Example Admin SDK code:
+  -----------------------
+  const admin = require("firebase-admin");
+
+  // Initialize with your service account
+  // admin.initializeApp({ ... });
+
+  const SUPER_ADMIN_UID = "YOUR_SUPER_ADMIN_USER_UID";
+
+  admin.auth().setCustomUserClaims(SUPER_ADMIN_UID, {
+    superAdmin: true
+  }).then(() => {
+    console.log("Super admin claim set successfully!");
+  });
+
+  -----------------------
+
+  After setting the claim, the Super Admin user MUST sign out and sign back in
+  to refresh their authentication token.
+================================================================================
+*/
 rules_version = '2';
 
 service cloud.firestore {
