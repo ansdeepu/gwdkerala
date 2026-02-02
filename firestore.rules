@@ -57,9 +57,10 @@ service cloud.firestore {
 
     // === Main File Entries (Deposit Works) ===
     match /fileEntries/{docId} {
-      // Supervisors can read a file if their UID is in the assigned list.
-      // Editors and Viewers can read all files.
-      allow read: if canReadCollection() || (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
+      // Supervisors can get a file if their UID is in the assigned list.
+      allow get: if canReadCollection() || (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
+      // Supervisors can list files if they query by their UID. Editors/Viewers can list all.
+      allow list: if canReadCollection() || isSupervisor();
       allow create, delete: if canWriteCollection();
       // Updates are handled through the 'pendingUpdates' collection workflow.
       allow update: if isEditor();
