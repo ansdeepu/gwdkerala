@@ -181,52 +181,37 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         refetchArsEntries(); // This will trigger the listener to refetch
     }, [user, refetchArsEntries]);
 
-    const getQueryForCollection = useCallback((collectionName: string) => {
-        const shouldFilter = user && user.email !== SUPER_ADMIN_EMAIL && user.officeLocation;
-
-        // Define which collections should be filtered by office location.
-        const collectionsToFilter = [
-            'fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications',
-            'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'
-        ];
-
-        let q = query(collection(db, collectionName)); // Base query
-
-        // Apply location filter if applicable for most collections
-        if (shouldFilter && collectionsToFilter.includes(collectionName)) {
-            q = query(q, where('officeLocation', '==', user.officeLocation));
-        }
-        
-        // Special case for officeAddresses to find the specific office document
-        if (collectionName === 'officeAddresses' && shouldFilter) {
-            q = query(collection(db, collectionName), where('officeLocation', '==', user.officeLocation));
-        }
-        
-        // Apply specific ordering if needed
-        if (collectionName === 'bidders') {
-            q = query(q, orderBy("order"));
-        } else if (collectionName === 'eTenders') {
-            // If filtering by officeLocation, we can't also sort by tenderDate on a different field without a composite index.
-            // Client-side sorting is already in place on the e-tender list page, so this is safe to remove for sub-office admins.
-            if (!shouldFilter) {
-                q = query(q, orderBy("tenderDate", "desc"));
-            }
-        }
-        
-        return q;
-    }, [user]);
-
     const createSubscription = useCallback((collectionName: string, setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates) => {
         if (!user) {
             if (collectionName === 'officeAddresses') setter(null);
             else if (collectionName === 'rateDescriptions') setter(defaultRateDescriptions);
             else setter([]);
-            
             setLoadingStates(prev => ({...prev, [loaderKey]: false}));
             return () => {};
         }
 
-        const q = getQueryForCollection(collectionName);
+        const shouldFilterByLocation = user && user.email !== SUPER_ADMIN_EMAIL && user.officeLocation;
+        const collectionsToFilter = [
+            'fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications',
+            'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'
+        ];
+
+        let q = query(collection(db, collectionName));
+
+        if (shouldFilterByLocation && collectionsToFilter.includes(collectionName)) {
+            q = query(q, where('officeLocation', '==', user.officeLocation));
+        }
+
+        if (collectionName === 'officeAddresses' && shouldFilterByLocation) {
+             q = query(collection(db, collectionName), where('officeLocation', '==', user.officeLocation));
+        }
+        
+        if (collectionName === 'bidders') {
+            q = query(q, orderBy("order"));
+        } else if (collectionName === 'eTenders' && !shouldFilterByLocation) {
+            // Only apply the expensive sort for Super Admins who see all data
+            q = query(q, orderBy("tenderDate", "desc"));
+        }
         
         const unsubscribe = onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
             if (collectionName === 'rateDescriptions') {
@@ -281,7 +266,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         });
 
         return unsubscribe;
-    }, [user, getQueryForCollection]);
+    }, [user]);
 
     useEffect(() => createSubscription('fileEntries', setAllFileEntries, 'files'), [createSubscription, refetchCounters.files]);
     useEffect(() => createSubscription('arsEntries', setAllArsEntries, 'ars'), [createSubscription, refetchCounters.ars]);
