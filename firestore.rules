@@ -90,14 +90,14 @@ service cloud.firestore {
     // === Staff Members (Establishment) ===
     match /staffMembers/{docId} {
       allow get: if isApproved();
-      allow list: if (isApproved() && request.query.where.officeLocation == getUserData().officeLocation) || (isEditor() && !('officeLocation' in request.query.where));
+      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
     
     // === Agency Registrations ===
     match /agencyApplications/{docId} {
       allow get: if isApproved();
-      allow list: if isApproved() && request.query.where.officeLocation == getUserData().officeLocation;
+      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
     
@@ -110,8 +110,7 @@ service cloud.firestore {
     // === eTenders ===
     match /eTenders/{docId} {
       allow get: if isApproved();
-      allow list: if (isApproved() && request.query.where.officeLocation == getUserData().officeLocation) || 
-                   (isEditor() && !('officeLocation' in request.query.where)); // Super admin case
+      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
     
@@ -123,29 +122,27 @@ service cloud.firestore {
 
     // === Vehicle Management ===
     match /departmentVehicles/{docId} {
-      allow get: if isScopedReader() || isSupervisor();
-      allow list: if (isScopedReader() || isSupervisor()) && request.query.where.officeLocation == getUserData().officeLocation;
+      allow get: if isApproved();
+      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
 
     match /hiredVehicles/{docId} {
-      allow get: if isScopedReader() || isSupervisor();
-      allow list: if (isScopedReader() || isSupervisor()) && request.query.where.officeLocation == getUserData().officeLocation;
+      allow get: if isApproved();
+      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
 
     match /rigCompressors/{docId} {
-      allow get: if isScopedReader() || isSupervisor();
-      allow list: if (isScopedReader() || isSupervisor()) && request.query.where.officeLocation == getUserData().officeLocation;
+      allow get: if isApproved();
+      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
 
     // === App Settings (Global Dropdowns, etc.) ===
     match /officeAddresses/{docId} {
-      // Specific rule to allow any approved user to read their own office details
-      allow get: if isApproved() && resource.data.officeLocation == getUserData().officeLocation;
-      allow list: if (isApproved() && request.query.where.officeLocation == getUserData().officeLocation) || 
-                   (isEditor() && !('officeLocation' in request.query.where));
+      allow get: if isApproved();
+      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
       allow write: if isEditor(); // Maybe super admin only
     }
     
