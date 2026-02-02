@@ -181,129 +181,106 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         refetchArsEntries(); // This will trigger the listener to refetch
     }, [user, refetchArsEntries]);
 
+    const getQueryForCollection = useCallback((collectionName: string) => {
+        if (collectionName === 'fileEntries' && user?.role === 'supervisor' && user.uid) {
+            return query(collection(db, 'fileEntries'), where('assignedSupervisorUids', 'array-contains', user.uid));
+        }
+        if (collectionName === 'officeAddresses' && user?.officeLocation && user.email !== SUPER_ADMIN_EMAIL) {
+            return query(collection(db, 'officeAddresses'), where('officeLocation', '==', user.officeLocation));
+        }
+        if (collectionName === 'bidders') {
+            return query(collection(db, collectionName), orderBy("order"));
+        }
+        if (collectionName === 'eTenders') {
+             return query(collection(db, collectionName), orderBy("tenderDate", "desc"));
+        }
+        return query(collection(db, collectionName));
+    }, [user]);
 
-    useEffect(() => {
+    const createSubscription = useCallback((collectionName: string, setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates) => {
         if (!user) {
-            setAllFileEntries([]);
-            setAllArsEntries([]);
-            setAllStaffMembers([]);
-            setAllAgencyApplications([]);
-            setAllLsgConstituencyMaps([]);
-            setAllRateDescriptions(defaultRateDescriptions);
-            setAllBidders([]);
-            setAllE_tenders([]);
-            setAllDepartmentVehicles([]);
-            setAllHiredVehicles([]);
-            setAllRigCompressors([]);
-            setOfficeAddress(null);
-            setLoadingStates({ files: false, ars: false, staff: false, agencies: false, lsg: false, rates: false, bidders: false, eTenders: false, officeAddress: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false });
-            return;
+            if (collectionName === 'officeAddresses') setter(null);
+            else if (collectionName === 'rateDescriptions') setter(defaultRateDescriptions);
+            else setter([]);
+            
+            setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+            return () => {};
         }
 
-        const getQueryForCollection = (collectionName: string) => {
-            if (collectionName === 'fileEntries' && user?.role === 'supervisor' && user.uid) {
-                return query(collection(db, 'fileEntries'), where('assignedSupervisorUids', 'array-contains', user.uid));
-            }
-            if (collectionName === 'officeAddresses' && user?.officeLocation && user.email !== SUPER_ADMIN_EMAIL) {
-                return query(collection(db, 'officeAddresses'), where('officeLocation', '==', user.officeLocation));
-            }
-            return query(collection(db, collectionName));
-        };
+        const q = getQueryForCollection(collectionName);
         
-        const collections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, collectionName: string }> = {
-            fileEntries: { setter: setAllFileEntries, loaderKey: 'files', collectionName: 'fileEntries' },
-            arsEntries: { setter: setAllArsEntries, loaderKey: 'ars', collectionName: 'arsEntries' },
-            staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff', collectionName: 'staffMembers' },
-            agencyApplications: { setter: setAllAgencyApplications, loaderKey: 'agencies', collectionName: 'agencyApplications' },
-            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', collectionName: 'localSelfGovernments' },
-            rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', collectionName: 'rateDescriptions' },
-            bidders: { setter: setAllBidders, loaderKey: 'bidders', collectionName: 'bidders' },
-            eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', collectionName: 'eTenders' },
-            departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles', collectionName: 'departmentVehicles' },
-            hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles', collectionName: 'hiredVehicles' },
-            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors', collectionName: 'rigCompressors' },
-            officeAddress: { setter: setOfficeAddress, loaderKey: 'officeAddress', collectionName: 'officeAddresses' },
-        };
-
-        const unsubscribes = Object.entries(collections).map(([key, { setter, loaderKey, collectionName }]) => {
-            let q;
-            if (collectionName === 'bidders') {
-                q = query(collection(db, collectionName), orderBy("order"));
-            } else if (collectionName === 'eTenders') {
-                 q = query(collection(db, collectionName), orderBy("tenderDate", "desc"));
-            } else {
-                 q = getQueryForCollection(collectionName);
-            }
-            
-            return onSnapshot(
-                q,
-                (snapshot: QuerySnapshot<DocumentData>) => {
-                    if (collectionName === 'rateDescriptions') {
-                        if (snapshot.empty) {
-                            setter(defaultRateDescriptions);
-                        } else {
-                            const descriptions: Partial<Record<RateDescriptionId, string>> = {};
-                            snapshot.forEach(doc => {
-                                descriptions[doc.id as RateDescriptionId] = doc.data().description;
-                            });
-                            setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
-                        }
-                    } else if (collectionName === 'officeAddresses') {
-                        if (snapshot.empty) {
-                            setter(null);
-                        } else {
-                            const doc = snapshot.docs[0];
-                            setter({ id: doc.id, ...doc.data() } as OfficeAddress);
-                        }
-                    } else {
-                        const data = snapshot.docs.map(doc => {
-                            const docData = doc.data();
-                            const processed = processFirestoreDoc<any>({ id: doc.id, data: () => docData });
-                            processed.id = doc.id;
-                            return processed;
-                        });
-
-                        if (collectionName === 'staffMembers') {
-                            const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
-                            data.sort((a: StaffMember, b: StaffMember) => {
-                                const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
-                                const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
-                                if (orderA !== orderB) return orderA - orderB;
-                                return a.name.localeCompare(b.name);
-                            });
-                        }
-
-                        setter(data);
-                    }
-
-                    setLoadingStates(prev => ({ ...prev, [loaderKey]: false }));
-                },
-                async (error) => {
-                    if (error.code === 'permission-denied') {
-                        const permissionError = new FirestorePermissionError({
-                            path: `/${collectionName}`,
-                            operation: 'list',
-                        });
-                        errorEmitter.emit('permission-error', permissionError);
-                    } else {
-                        console.error(`Error fetching ${collectionName}:`, error);
-                        toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
-                    }
-                    setLoadingStates(prev => ({ ...prev, [loaderKey]: false }));
+        const unsubscribe = onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
+            if (collectionName === 'rateDescriptions') {
+                if (snapshot.empty) {
+                    setter(defaultRateDescriptions);
+                } else {
+                    const descriptions: Partial<Record<RateDescriptionId, string>> = {};
+                    snapshot.forEach(doc => {
+                        descriptions[doc.id as RateDescriptionId] = doc.data().description;
+                    });
+                    setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
                 }
-            );
+            } else if (collectionName === 'officeAddresses') {
+                if (snapshot.empty) {
+                    setter(null);
+                } else {
+                    const doc = snapshot.docs[0];
+                    setter({ id: doc.id, ...doc.data() } as OfficeAddress);
+                }
+            } else {
+                const data = snapshot.docs.map(doc => {
+                    const docData = doc.data();
+                    const processed = processFirestoreDoc<any>({ id: doc.id, data: () => docData });
+                    processed.id = doc.id;
+                    return processed;
+                });
+
+                if (collectionName === 'staffMembers') {
+                    const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
+                    data.sort((a: StaffMember, b: StaffMember) => {
+                        const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
+                        const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
+                        if (orderA !== orderB) return orderA - orderB;
+                        return a.name.localeCompare(b.name);
+                    });
+                }
+                setter(data);
+            }
+            setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+        }, async (error) => {
+            if (error.code === 'permission-denied') {
+                const permissionError = new FirestorePermissionError({
+                    path: `/${collectionName}`,
+                    operation: 'list',
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            } else {
+                console.error(`Error fetching ${collectionName}:`, error);
+                toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
+            }
+            setLoadingStates(prev => ({...prev, [loaderKey]: false}));
         });
 
-        return () => {
-            unsubscribes.forEach(unsub => unsub());
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, refetchCounters]);
+        return unsubscribe;
+    }, [user, getQueryForCollection]);
+
+    useEffect(() => createSubscription('fileEntries', setAllFileEntries, 'files'), [createSubscription, refetchCounters.files]);
+    useEffect(() => createSubscription('arsEntries', setAllArsEntries, 'ars'), [createSubscription, refetchCounters.ars]);
+    useEffect(() => createSubscription('staffMembers', setAllStaffMembers, 'staff'), [createSubscription, refetchCounters.staff]);
+    useEffect(() => createSubscription('agencyApplications', setAllAgencyApplications, 'agencies'), [createSubscription, refetchCounters.agencies]);
+    useEffect(() => createSubscription('localSelfGovernments', setAllLsgConstituencyMaps, 'lsg'), [createSubscription, refetchCounters.lsg]);
+    useEffect(() => createSubscription('rateDescriptions', setAllRateDescriptions, 'rates'), [createSubscription, refetchCounters.rates]);
+    useEffect(() => createSubscription('bidders', setAllBidders, 'bidders'), [createSubscription, refetchCounters.bidders]);
+    useEffect(() => createSubscription('eTenders', setAllE_tenders, 'eTenders'), [createSubscription, refetchCounters.eTenders]);
+    useEffect(() => createSubscription('departmentVehicles', setAllDepartmentVehicles, 'departmentVehicles'), [createSubscription, refetchCounters.departmentVehicles]);
+    useEffect(() => createSubscription('hiredVehicles', setAllHiredVehicles, 'hiredVehicles'), [createSubscription, refetchCounters.hiredVehicles]);
+    useEffect(() => createSubscription('rigCompressors', setAllRigCompressors, 'rigCompressors'), [createSubscription, refetchCounters.rigCompressors]);
+    useEffect(() => createSubscription('officeAddresses', setOfficeAddress, 'officeAddress'), [createSubscription, refetchCounters.officeAddress]);
+
 
     const isLoading = Object.values(loadingStates).some(Boolean);
 
     // --- Vehicle Management Logic ---
-
     const useAddVehicle = <T extends {}>(collectionName: string, refetch: () => void) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
