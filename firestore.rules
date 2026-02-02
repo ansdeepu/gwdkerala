@@ -42,7 +42,8 @@ service cloud.firestore {
       // Any signed in user can read their own profile.
       // Editors and viewers can read all profiles in their office.
       allow get: if request.auth.uid == userId || (isScopedReader() && resource.data.officeLocation == getUserData().officeLocation);
-      allow list: if isScopedReader() && request.query.where.officeLocation == getUserData().officeLocation;
+      // Editors, viewers, and supervisors can list users in their office.
+      allow list: if (isScopedReader() || isSupervisor()) && request.query.where.officeLocation == getUserData().officeLocation;
 
       // An editor can create any user profile in their office.
       // Any signed in user can create their own user profile document.
@@ -123,19 +124,19 @@ service cloud.firestore {
     // === Vehicle Management ===
     match /departmentVehicles/{docId} {
       allow get: if isScopedReader() || isSupervisor();
-      allow list: if isScopedReader() && request.query.where.officeLocation == getUserData().officeLocation;
+      allow list: if (isScopedReader() || isSupervisor()) && request.query.where.officeLocation == getUserData().officeLocation;
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
 
     match /hiredVehicles/{docId} {
       allow get: if isScopedReader() || isSupervisor();
-      allow list: if isScopedReader() && request.query.where.officeLocation == getUserData().officeLocation;
+      allow list: if (isScopedReader() || isSupervisor()) && request.query.where.officeLocation == getUserData().officeLocation;
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
 
     match /rigCompressors/{docId} {
       allow get: if isScopedReader() || isSupervisor();
-      allow list: if isScopedReader() && request.query.where.officeLocation == getUserData().officeLocation;
+      allow list: if (isScopedReader() || isSupervisor()) && request.query.where.officeLocation == getUserData().officeLocation;
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
 
