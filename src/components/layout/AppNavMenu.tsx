@@ -13,9 +13,10 @@ import type { UserRole } from '@/lib/schemas';
 import { usePendingUpdates } from '@/hooks/usePendingUpdates'; 
 import { Badge } from '@/components/ui/badge'; 
 import { usePageNavigation } from '@/hooks/usePageNavigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LayoutDashboard, Users, LogOut, User, Menu, KeyRound, ShieldCheck, FileText, BarChart3, Briefcase, Truck, ClipboardList, Waves, Landmark, HelpCircle, Settings, FolderOpen, Building, DollarSign, Hammer, Hourglass, ArrowUpRight } from 'lucide-react';
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 
 export interface NavItem {
@@ -26,7 +27,7 @@ export interface NavItem {
   subItems?: NavItem[];
 }
 
-export const allNavItems: NavItem[] = [
+export const regularNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/file-room', label: 'Deposit Works', icon: FolderOpen },
   { href: '/dashboard/collectors-deposit-works', label: "Collector's Deposit Works", icon: Landmark },
@@ -40,11 +41,27 @@ export const allNavItems: NavItem[] = [
   { href: '/dashboard/reports', label: 'Reports', icon: FileText, roles: ['editor', 'viewer'] },
   { href: '/dashboard/progress-report', label: 'Progress Reports', icon: BarChart3, roles: ['editor', 'viewer'] },
   { href: '/dashboard/report-format-suggestion', label: 'Report Builders', icon: ClipboardList, roles: ['editor', 'viewer'] },
-  { href: '/dashboard/gwd-rates', label: 'GWD Rates', icon: DollarSign },
+  { href: '/dashboard/gwd-rates', label: 'GWD Rates', icon: DollarSign, roles: ['editor', 'viewer'] },
   { href: '/dashboard/establishment', label: 'Establishment', icon: Briefcase, roles: ['editor', 'viewer'] },
   { href: '/dashboard/user-management', label: 'User Management', icon: Users, roles: ['editor'] },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings, roles: ['editor', 'viewer'] },
   { href: '/dashboard/help', label: 'Help & About', icon: HelpCircle },
+];
+
+export const superAdminNavItems: NavItem[] = [
+    { href: '/dashboard/super-admin', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/dashboard/super-admin/office-management', label: 'Office Management', icon: Building },
+    { href: '/dashboard/super-admin/user-management', label: 'Directorate Users', icon: Users },
+    { href: '/dashboard/super-admin/establishment', label: 'Establishment', icon: Briefcase },
+    { href: '/dashboard/super-admin/gwd-rates', label: 'GWD Rates', icon: DollarSign },
+    { href: '/dashboard/super-admin/plan-fund-works?code=4702-02-102-94', label: 'GWBDWS (4702)', icon: Landmark },
+    { href: '/dashboard/super-admin/plan-fund-works?code=2702-02-103-99', label: 'GWBDWS (2702)', icon: Landmark },
+    { href: '/dashboard/super-admin/ars-plan', label: 'ARS - Plan', icon: Waves },
+    { href: '/dashboard/super-admin/rig-registration', label: 'Rig Registration', icon: ClipboardList },
+    { href: '/dashboard/super-admin/vehicles', label: 'Vehicle & Rig', icon: Truck },
+    { href: '/dashboard/super-admin/progress-reports', label: 'Progress Reports', icon: BarChart3 },
+    { href: '/dashboard/super-admin/report-builder', label: 'Report Builder', icon: FileText },
+    { href: '/dashboard/super-admin/settings', label: 'Settings', icon: Settings },
 ];
 
 const navItemColors = [
@@ -62,8 +79,10 @@ export default function AppNavMenu() {
   const { setIsNavigating } = usePageNavigation();
   const [pendingCount, setPendingCount] = useState(0);
 
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
+
   useEffect(() => {
-    if (user?.role !== 'editor') {
+    if (user?.role !== 'editor' || isSuperAdmin) {
         setPendingCount(0);
         return;
     }
@@ -71,14 +90,16 @@ export default function AppNavMenu() {
         setPendingCount(updates.length);
     });
     return () => unsubscribe();
-  }, [user, subscribeToPendingUpdates]);
+  }, [user, isSuperAdmin, subscribeToPendingUpdates]);
 
-
-  const accessibleNavItems = allNavItems.filter(item => {
-    if (!user || !user.isApproved) return false;
-    if (!item.roles || item.roles.length === 0) return true;
-    return item.roles.includes(user.role);
-  });
+  const navItems = useMemo(() => {
+      const sourceItems = isSuperAdmin ? superAdminNavItems : regularNavItems;
+      return sourceItems.filter(item => {
+        if (!user || !user.isApproved) return false;
+        if (!item.roles || item.roles.length === 0) return true;
+        return item.roles.includes(user.role);
+      });
+  }, [user, isSuperAdmin]);
 
   const handleNavigation = (href: string) => {
     if (href !== pathname) {
@@ -88,7 +109,7 @@ export default function AppNavMenu() {
 
   return (
     <SidebarMenu>
-      {accessibleNavItems.map((item, index) => (
+      {navItems.map((item, index) => (
         <SidebarMenuItem key={item.href}>
             <div className="flex items-center w-full group">
               <Link href={item.href} passHref onClick={() => handleNavigation(item.href)} className="flex-grow">

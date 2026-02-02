@@ -50,13 +50,14 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const pathname = usePathname();
   const isDashboardPage = pathname === '/dashboard';
+  const isSuperAdminDashboardPage = pathname === '/dashboard/super-admin';
 
   const [activeSection, setActiveSection] = useState<string>(sections[0].id);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
     // Only run intersection observer on dashboard page
-    if (!isDashboardPage) return;
+    if (!isDashboardPage && !isSuperAdminDashboardPage) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -79,7 +80,7 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
     });
 
     return () => observer.disconnect();
-  }, [isDashboardPage]);
+  }, [isDashboardPage, isSuperAdminDashboardPage]);
   
   const handleNavClick = (id: string) => {
     const element = document.getElementById(id);
@@ -134,7 +135,7 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
           </div>
         </div>
       </div>
-      {isDashboardPage && (
+      {(isDashboardPage || isSuperAdminDashboardPage) && (
         <div className="border-t">
           <ScrollArea className="w-full whitespace-nowrap">
               <div className="flex items-center px-4">
@@ -241,16 +242,7 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // If it's a super admin, wrap with DataStoreProvider but render the SuperAdminLayout inside.
-  if (user.email === SUPER_ADMIN_EMAIL) {
-    return (
-        <DataStoreProvider user={user}>
-            {children}
-        </DataStoreProvider>
-    );
-  }
-  
-  // Otherwise, render the standard sub-office user layout.
+  // Render the unified layout for all authenticated users.
   return (
     <DataStoreProvider user={user}>
       <SidebarProvider defaultOpen>
