@@ -1,4 +1,3 @@
-
 // src/hooks/useAgencyApplications.ts
 "use client";
 
@@ -39,6 +38,7 @@ export function useAgencyApplications() {
 
     const payload = {
         ...applicationData,
+        officeLocation: user.officeLocation,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     };

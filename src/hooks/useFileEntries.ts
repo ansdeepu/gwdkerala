@@ -1,4 +1,3 @@
-
 // src/hooks/useFileEntries.ts
 "use client";
 
@@ -92,7 +91,7 @@ export function useFileEntries() {
     const addFileEntry = useCallback(async (entryData: DataEntryFormData): Promise<string> => {
         if (!user) throw new Error("User must be logged in to add an entry.");
 
-        const payload = { ...entryData };
+        const payload = { ...entryData, officeLocation: user.officeLocation };
         if (payload.id) delete payload.id;
 
         const docRef = await addDoc(collection(db, FILE_ENTRIES_COLLECTION), { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });

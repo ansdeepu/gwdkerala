@@ -182,19 +182,38 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     }, [user, refetchArsEntries]);
 
     const getQueryForCollection = useCallback((collectionName: string) => {
-        if (collectionName === 'fileEntries' && user?.role === 'supervisor' && user.uid) {
-            return query(collection(db, 'fileEntries'), where('assignedSupervisorUids', 'array-contains', user.uid));
+        const shouldFilter = user && user.email !== SUPER_ADMIN_EMAIL && user.officeLocation;
+
+        // Define which collections should be filtered by office location.
+        const collectionsToFilter = [
+            'fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications',
+            'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'
+        ];
+
+        let q = query(collection(db, collectionName)); // Base query
+
+        // Apply location filter if applicable for most collections
+        if (shouldFilter && collectionsToFilter.includes(collectionName)) {
+            q = query(q, where('officeLocation', '==', user.officeLocation));
         }
-        if (collectionName === 'officeAddresses' && user?.officeLocation && user.email !== SUPER_ADMIN_EMAIL) {
-            return query(collection(db, 'officeAddresses'), where('officeLocation', '==', user.officeLocation));
+        
+        // Special case for officeAddresses to find the specific office document
+        if (collectionName === 'officeAddresses' && shouldFilter) {
+            q = query(collection(db, collectionName), where('officeLocation', '==', user.officeLocation));
         }
+
+        // Apply specific ordering if needed
         if (collectionName === 'bidders') {
-            return query(collection(db, collectionName), orderBy("order"));
+            q = query(q, orderBy("order"));
+        } else if (collectionName === 'eTenders') {
+            // Keep existing order logic but combine with filter
+            q = query(q, orderBy("tenderDate", "desc"));
+        } else if (collectionName === 'fileEntries' && user?.role === 'supervisor' && user.uid) {
+             // For supervisors, this initial query is broader. The hook `useFileEntries` will do further client-side filtering.
+            q = query(collection(db, collectionName), where('assignedSupervisorUids', 'array-contains', user.uid));
         }
-        if (collectionName === 'eTenders') {
-             return query(collection(db, collectionName), orderBy("tenderDate", "desc"));
-        }
-        return query(collection(db, collectionName));
+        
+        return q;
     }, [user]);
 
     const createSubscription = useCallback((collectionName: string, setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates) => {
@@ -284,7 +303,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const useAddVehicle = <T extends {}>(collectionName: string, refetch: () => void) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
-          const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+          const payload = { ...data, officeLocation: user.officeLocation, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
   
           addDoc(collection(db, collectionName), payload)

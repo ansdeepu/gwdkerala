@@ -202,6 +202,7 @@ export const ArsEntrySchema = z.object({
   supervisorUid: z.string().optional().nullable(),
   supervisorName: z.string().optional().nullable(),
   isPending: z.boolean().optional(),
+  officeLocation: z.string().optional(),
 }).superRefine((data, ctx) => {
     if ((data.arsStatus === 'Work Completed' || data.arsStatus === 'Work Failed') && !data.dateOfCompletion) {
         ctx.addIssue({
@@ -390,7 +391,8 @@ export const StaffMemberFormDataSchema = z.object({
   phoneNo: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }).optional().or(z.literal("")),
   roles: z.string().optional(),
   status: z.enum(staffStatusOptions).default('Active'), 
-  remarks: z.string().optional().default(""), 
+  remarks: z.string().optional().default(""),
+  officeLocation: z.string().optional(),
 });
 export type StaffMemberFormData = z.infer<typeof StaffMemberFormDataSchema>;
 
@@ -546,6 +548,7 @@ export const AgencyApplicationSchema = z.object({
   status: z.enum(['Active', 'Pending Verification']),
   history: z.array(z.string()).optional(),
   remarks: z.string().optional(),
+  officeLocation: z.string().optional(),
 });
 export type AgencyApplication = z.infer<typeof AgencyApplicationSchema>;
 
@@ -589,6 +592,7 @@ export const DepartmentVehicleSchema = z.object({
     insuranceExpiry: optionalDateSchema,
     pollutionExpiry: optionalDateSchema,
     fuelTestExpiry: optionalDateSchema,
+    officeLocation: z.string().optional(),
 });
 export type DepartmentVehicle = z.infer<typeof DepartmentVehicleSchema>;
 
@@ -608,6 +612,7 @@ export const HiredVehicleSchema = z.object({
     insuranceExpiry: optionalDateSchema,
     pollutionExpiry: optionalDateSchema,
     permitExpiry: optionalDateSchema,
+    officeLocation: z.string().optional(),
 });
 export type HiredVehicle = z.infer<typeof HiredVehicleSchema>;
 
@@ -624,5 +629,6 @@ export const RigCompressorSchema = z.object({
     supportingVehicleRegNo: z.string().optional(),
     compressorDetails: z.string().optional(),
     remarks: z.string().optional(),
+    officeLocation: z.string().optional(),
 });
 export type RigCompressor = z.infer<typeof RigCompressorSchema>;

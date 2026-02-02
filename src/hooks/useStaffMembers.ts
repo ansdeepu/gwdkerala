@@ -1,4 +1,3 @@
-
 // src/hooks/useStaffMembers.ts
 "use client";
 
@@ -54,7 +53,7 @@ export function useStaffMembers(): StaffMembersState {
   
   const addStaffMember = useCallback(async (staffData: StaffMemberFormData): Promise<string | undefined> => {
     if (!user || user.role !== 'editor') throw new Error("User does not have permission.");
-    const payload = { ...sanitizeStaffMemberForFirestore(staffData), createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+    const payload = { ...sanitizeStaffMemberForFirestore(staffData), officeLocation: user.officeLocation, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
     const docRef = await addDoc(collection(db, STAFF_MEMBERS_COLLECTION), payload);
     refetchStaffMembers();
     return docRef.id;

@@ -72,7 +72,7 @@ export function useE_tenders() {
 
     const addTender = useCallback(async (tenderData: Omit<E_tender, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
         if (!user) throw new Error("User must be logged in to add a tender.");
-        const payload = { ...tenderData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        const payload = { ...tenderData, officeLocation: user.officeLocation, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
         const docRef = await addDoc(collection(db, TENDERS_COLLECTION), payload);
         refetchE_tenders();
         return docRef.id;

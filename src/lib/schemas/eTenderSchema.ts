@@ -195,6 +195,7 @@ export const E_tenderSchema = z.object({
     dateTimeOfOpening: z.any().optional().nullable(),
     tenderType: z.enum(['Work', 'Purchase']).optional().nullable(),
     detailedEstimateUrl: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')).nullable(),
+    officeLocation: z.string().optional(),
     
     corrigendums: z.array(CorrigendumSchema).optional(),
     retenders: z.array(RetenderDetailsSchema).optional(),

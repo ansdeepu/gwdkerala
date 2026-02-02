@@ -1,5 +1,3 @@
-
-
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
 
@@ -331,6 +329,7 @@ export const DataEntrySchema = z.object({
   constituency: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(constituencyOptions).optional()),
   estimateAmount: optionalNumber("Estimate Amount must be a valid number."),
   assignedSupervisorUids: z.array(z.string()).optional(),
+  officeLocation: z.string().optional(),
 
   remittanceDetails: z.array(RemittanceDetailSchema)
     .min(1, "At least one remittance detail is required.")

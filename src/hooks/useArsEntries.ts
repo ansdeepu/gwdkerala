@@ -1,4 +1,3 @@
-
 // src/hooks/useArsEntries.ts
 "use client";
 
@@ -87,6 +86,7 @@ export function useArsEntries() {
     
     const payload = {
         ...entryData,
+        officeLocation: user.officeLocation,
         supervisorUid: entryData.supervisorUid ?? null,
         supervisorName: entryData.supervisorName ?? null,
         createdAt: serverTimestamp(),
