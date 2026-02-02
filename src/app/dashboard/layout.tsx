@@ -241,10 +241,13 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // If it's a super admin, we expect the /dashboard/super-admin/layout.tsx to handle everything.
-  // We just render the children, which will be the SuperAdminLayout.
+  // If it's a super admin, wrap with DataStoreProvider but render the SuperAdminLayout inside.
   if (user.email === SUPER_ADMIN_EMAIL) {
-    return <>{children}</>;
+    return (
+        <DataStoreProvider user={user}>
+            {children}
+        </DataStoreProvider>
+    );
   }
   
   // Otherwise, render the standard sub-office user layout.
