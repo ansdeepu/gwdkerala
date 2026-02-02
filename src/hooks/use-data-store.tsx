@@ -201,13 +201,16 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         if (collectionName === 'officeAddresses' && shouldFilter) {
             q = query(collection(db, collectionName), where('officeLocation', '==', user.officeLocation));
         }
-
+        
         // Apply specific ordering if needed
         if (collectionName === 'bidders') {
             q = query(q, orderBy("order"));
         } else if (collectionName === 'eTenders') {
-            // Keep existing order logic but combine with filter
-            q = query(q, orderBy("tenderDate", "desc"));
+            // If filtering by officeLocation, we can't also sort by tenderDate on a different field without a composite index.
+            // Client-side sorting is already in place on the e-tender list page, so this is safe to remove for sub-office admins.
+            if (!shouldFilter) {
+                q = query(q, orderBy("tenderDate", "desc"));
+            }
         }
         
         return q;

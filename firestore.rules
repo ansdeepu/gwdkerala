@@ -60,7 +60,7 @@ service cloud.firestore {
       // Supervisors can get a file if their UID is in the assigned list.
       allow get: if canReadCollection() || (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
       // Supervisors can list files if they query by their UID. Editors/Viewers can list all.
-      allow list: if canReadCollection() || isSupervisor();
+      allow list: if canReadCollection() || (isSupervisor() && request.query.where.assignedSupervisorUids.array_contains == request.auth.uid);
       allow create, delete: if canWriteCollection();
       // Updates are handled through the 'pendingUpdates' collection workflow.
       allow update: if isEditor();
