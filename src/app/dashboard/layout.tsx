@@ -1,3 +1,4 @@
+
 // src/app/dashboard/layout.tsx
 "use client";
 
@@ -21,6 +22,9 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/comp
 import FirebaseErrorListener from '@/components/FirebaseErrorListener';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, Clock, Building } from 'lucide-react';
+import { OfficeSelectionProvider } from '@/hooks/useOfficeSelection';
+import OfficeSwitcher from '@/components/layout/OfficeSwitcher';
+
 
 const IDLE_TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 const LAST_ACTIVE_UPDATE_INTERVAL = 5 * 60 * 1000; // Update Firestore lastActiveAt at most once per 5 minutes
@@ -50,7 +54,7 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const pathname = usePathname();
   const isDashboardPage = pathname === '/dashboard';
-  const isSuperAdminDashboardPage = pathname === '/dashboard/super-admin';
+  const isSuperAdminDashboardPage = pathname.startsWith('/dashboard/super-admin');
 
   const [activeSection, setActiveSection] = useState<string>(sections[0].id);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -101,6 +105,8 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
     return () => clearInterval(timerId);
   }, []);
 
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
+
   return (
     <div className="flex flex-col w-full">
       <div className="flex items-center justify-between gap-4 px-6 pt-4 pb-2">
@@ -119,12 +125,14 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
           </div>
         </div>
         <div className={cn("flex items-center gap-4")}>
-           {user?.officeLocation && (
+           {isSuperAdmin ? (
+               <OfficeSwitcher />
+           ) : user?.officeLocation ? (
                 <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Building className="h-4 w-4 text-primary" />
                     <span>{user.officeLocation}</span>
                 </div>
-            )}
+            ) : null}
           <div className={cn("flex items-center gap-2 text-sm font-medium text-primary")}>
             <Clock className="h-4 w-4" />
             {currentTime ? (
@@ -271,12 +279,14 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <PageNavigationProvider>
-      <PageHeaderProvider>
-        <TooltipProvider>
-            <InnerDashboardLayout>{children}</InnerDashboardLayout>
-        </TooltipProvider>
-      </PageHeaderProvider>
-    </PageNavigationProvider>
+    <OfficeSelectionProvider>
+      <PageNavigationProvider>
+        <PageHeaderProvider>
+          <TooltipProvider>
+              <InnerDashboardLayout>{children}</InnerDashboardLayout>
+          </TooltipProvider>
+        </PageHeaderProvider>
+      </PageNavigationProvider>
+    </OfficeSelectionProvider>
   );
 }

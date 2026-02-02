@@ -16,7 +16,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-
+import { useOfficeSelection } from './useOfficeSelection';
 
 const db = getFirestore(app);
 
@@ -47,8 +47,8 @@ const processFirestoreDoc = <T,>(doc: DocumentData): T => {
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
 
 export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
-    tenderFee: "For Works:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 500\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\n- Over 50 Lakhs up to 1 Crore: Rs 5000\n- Above 1 Crore: Rs 10000\n\nFor Purchase:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 800\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\n- Above 25 Lakhs: Rs 3000",
-    emd: "For Works:\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\n- Above Rs. 10 Crore: Rs. 5 Lakh\n\nFor Purchase:\n- Up to 2 Crore: 1.00% of the project cost\n- Above 2 Crore: No EMD",
+    tenderFee: "For Works:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 500\\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\\n- Over 50 Lakhs up to 1 Crore: Rs 5000\\n- Above 1 Crore: Rs 10000\\n\\nFor Purchase:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 800\\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\\n- Above 25 Lakhs: Rs 3000",
+    emd: "For Works:\\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\\n- Above Rs. 10 Crore: Rs. 5 Lakh\\n\\nFor Purchase:\\n- Up to 2 Crore: 1.00% of the project cost\\n- Above 2 Crore: No EMD",
     performanceGuarantee: "Performance Guarantee , the amount collected at the time of executing contract agreement will be 5% of the contract value(agrecd PAC)and the deposit will be retained till the texpiry of Defect Liability Period. At least fifty percent(50%) of this deposit shall be collected in the form of Treasury Fixed Deposit and the rest in the form of Bank Guarantee or any other forms prescribed in the revised PWD Manual.",
     additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%. This deposit is calculated as 25% of the difference between the estimate cost and the tender amount, but it will not exceed 10% of the estimate cost. This deposit will be released after satisfactory completion of the work.",
     stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
@@ -90,6 +90,7 @@ interface DataStoreContextType {
     allDepartmentVehicles: DepartmentVehicle[];
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
+    officeAddresses: OfficeAddress[];
     officeAddress: OfficeAddress | null;
     isLoading: boolean;
     refetchFileEntries: () => void;
@@ -127,37 +128,33 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allDepartmentVehicles, setAllDepartmentVehicles] = useState<DepartmentVehicle[]>([]);
     const [allHiredVehicles, setAllHiredVehicles] = useState<HiredVehicle[]>([]);
     const [allRigCompressors, setAllRigCompressors] = useState<RigCompressor[]>([]);
+    const [officeAddresses, setOfficeAddresses] = useState<OfficeAddress[]>([]);
     const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null);
 
     const [loadingStates, setLoadingStates] = useState({
-        files: true,
-        ars: true,
-        staff: true,
-        agencies: true,
-        lsg: true,
-        rates: true,
-        bidders: true,
-        eTenders: true,
-        departmentVehicles: true,
-        hiredVehicles: true,
-        rigCompressors: true,
-        officeAddress: true,
+        files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
+        departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true,
     });
     
-    // The manual refetch functions are now no-ops because onSnapshot handles real-time updates.
-    // This prevents the cascading re-renders that were causing errors.
-    const refetchFileEntries = useCallback(() => {}, []);
-    const refetchArsEntries = useCallback(() => {}, []);
-    const refetchStaffMembers = useCallback(() => {}, []);
-    const refetchAgencyApplications = useCallback(() => {}, []);
-    const refetchLsgConstituencyMaps = useCallback(() => {}, []);
-    const refetchRateDescriptions = useCallback(() => {}, []);
-    const refetchBidders = useCallback(() => {}, []);
-    const refetchE_tenders = useCallback(() => {}, []);
-    const refetchDepartmentVehicles = useCallback(() => {}, []);
-    const refetchHiredVehicles = useCallback(() => {}, []);
-    const refetchRigCompressors = useCallback(() => {}, []);
-    const refetchOfficeAddress = useCallback(() => {}, []);
+    const [refetchCounters, setRefetchCounters] = useState({
+        files: 0, ars: 0, staff: 0, agencies: 0, lsg: 0, rates: 0, bidders: 0, eTenders: 0,
+        departmentVehicles: 0, hiredVehicles: 0, rigCompressors: 0, officeAddress: 0,
+    });
+
+    const { selectedOffice } = useOfficeSelection();
+    
+    const refetchFileEntries = useCallback(() => setRefetchCounters(c => ({...c, files: c.files + 1})), []);
+    const refetchArsEntries = useCallback(() => setRefetchCounters(c => ({...c, ars: c.ars + 1})), []);
+    const refetchStaffMembers = useCallback(() => setRefetchCounters(c => ({...c, staff: c.staff + 1})), []);
+    const refetchAgencyApplications = useCallback(() => setRefetchCounters(c => ({...c, agencies: c.agencies + 1})), []);
+    const refetchLsgConstituencyMaps = useCallback(() => setRefetchCounters(c => ({ ...c, lsg: c.lsg + 1 })), []);
+    const refetchRateDescriptions = useCallback(() => setRefetchCounters(c => ({ ...c, rates: c.rates + 1 })), []);
+    const refetchBidders = useCallback(() => setRefetchCounters(c => ({ ...c, bidders: c.bidders + 1 })), []);
+    const refetchE_tenders = useCallback(() => setRefetchCounters(c => ({ ...c, eTenders: c.eTenders + 1 })), []);
+    const refetchDepartmentVehicles = useCallback(() => setRefetchCounters(c => ({...c, departmentVehicles: c.departmentVehicles + 1})), []);
+    const refetchHiredVehicles = useCallback(() => setRefetchCounters(c => ({...c, hiredVehicles: c.hiredVehicles + 1})), []);
+    const refetchRigCompressors = useCallback(() => setRefetchCounters(c => ({...c, rigCompressors: c.rigCompressors + 1})), []);
+    const refetchOfficeAddress = useCallback(() => setRefetchCounters(c => ({...c, officeAddress: c.officeAddress + 1})), []);
 
 
      const deleteArsEntry = useCallback(async (id: string) => {
@@ -166,106 +163,67 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             return;
         }
         await deleteDoc(doc(db, 'arsEntries', id));
-        // No manual refetch needed, onSnapshot will handle it.
     }, [user]);
 
     useEffect(() => {
         if (!user) {
-            setAllFileEntries([]);
-            setAllArsEntries([]);
-            setAllStaffMembers([]);
-            setAllAgencyApplications([]);
-            setAllLsgConstituencyMaps([]);
-            setAllRateDescriptions(defaultRateDescriptions);
-            setAllBidders([]);
-            setAllE_tenders([]);
-            setAllDepartmentVehicles([]);
-            setAllHiredVehicles([]);
-            setAllRigCompressors([]);
-            setOfficeAddress(null);
-            setLoadingStates({ files: false, ars: false, staff: false, agencies: false, lsg: false, rates: false, bidders: false, eTenders: false, officeAddress: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false });
+            const resetState = { files: false, ars: false, staff: false, agencies: false, lsg: false, rates: false, bidders: false, eTenders: false, officeAddress: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false };
+            setLoadingStates(resetState);
             return;
         }
         
-        setLoadingStates({ files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true, departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true });
+        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
 
-        const collectionsToSubscribe = [
-            { name: 'fileEntries', setter: setAllFileEntries, loaderKey: 'files' },
-            { name: 'arsEntries', setter: setAllArsEntries, loaderKey: 'ars' },
-            { name: 'staffMembers', setter: setAllStaffMembers, loaderKey: 'staff' },
-            { name: 'agencyApplications', setter: setAllAgencyApplications, loaderKey: 'agencies' },
-            { name: 'localSelfGovernments', setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
-            { name: 'rateDescriptions', setter: setAllRateDescriptions, loaderKey: 'rates' },
-            { name: 'bidders', setter: setAllBidders, loaderKey: 'bidders' },
-            { name: 'eTenders', setter: setAllE_tenders, loaderKey: 'eTenders' },
-            { name: 'departmentVehicles', setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
-            { name: 'hiredVehicles', setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
-            { name: 'rigCompressors', setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
-            { name: 'officeAddresses', setter: setOfficeAddress, loaderKey: 'officeAddress' },
-        ];
+        const collectionsToSubscribe: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, collectionName: string }> = {
+            fileEntries: { setter: setAllFileEntries, loaderKey: 'files', collectionName: 'fileEntries' },
+            arsEntries: { setter: setAllArsEntries, loaderKey: 'ars', collectionName: 'arsEntries' },
+            staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff', collectionName: 'staffMembers' },
+            agencyApplications: { setter: setAllAgencyApplications, loaderKey: 'agencies', collectionName: 'agencyApplications' },
+            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', collectionName: 'localSelfGovernments' },
+            rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', collectionName: 'rateDescriptions' },
+            bidders: { setter: setAllBidders, loaderKey: 'bidders', collectionName: 'bidders' },
+            eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', collectionName: 'eTenders' },
+            departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles', collectionName: 'departmentVehicles' },
+            hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles', collectionName: 'hiredVehicles' },
+            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors', collectionName: 'rigCompressors' },
+            officeAddresses: { setter: setOfficeAddresses, loaderKey: 'officeAddress', collectionName: 'officeAddresses' },
+        };
 
-        const unsubscribes = collectionsToSubscribe.map(({ name, setter, loaderKey }) => {
-            const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
-            const baseQuery = collection(db, name);
+        const officeScopedCollections = ['fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'];
+        
+        const unsubscribes = Object.entries(collectionsToSubscribe).map(([key, { setter, loaderKey, collectionName }]) => {
+            setLoadingStates(prev => ({...prev, [loaderKey]: true}));
+            
+            const baseQuery = collection(db, collectionName);
             let q;
 
-            const officeScopedCollections = [
-                'fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications', 'eTenders',
-                'departmentVehicles', 'hiredVehicles', 'rigCompressors', 'officeAddresses'
-            ];
+            const officeToFilter = isSuperAdminUser ? selectedOffice : user.officeLocation;
 
-            if (officeScopedCollections.includes(name)) {
-                 if (isSuperAdminUser) {
-                    q = query(baseQuery); // Super admin gets all data.
-                } else if (user.officeLocation) {
-                    // All other users (editor, viewer, supervisor) are scoped to their office.
-                    q = query(baseQuery, where('officeLocation', '==', user.officeLocation));
-                } else {
-                    // Safety fallback: if a user has no office, they see nothing.
+            if (officeScopedCollections.includes(collectionName)) {
+                if (officeToFilter) {
+                    q = query(baseQuery, where('officeLocation', '==', officeToFilter));
+                } else if (isSuperAdminUser) { // Super Admin with "All Offices"
+                    q = query(baseQuery);
+                } else { // Non-admin with no office assigned
                     q = query(baseQuery, where('officeLocation', '==', '__invalid_location__'));
                 }
+            } else if (collectionName === 'officeAddresses') {
+                q = query(baseQuery); // Always fetch all office addresses for the dropdown
             } else {
-                // Global collections (bidders, lsg, rateDescriptions) are not filtered.
-                q = query(baseQuery);
+                q = query(baseQuery); // Global collections
             }
             
             // Apply specific ordering if needed
-            if (name === 'bidders') {
-                q = query(q, orderBy("order"));
-            } else if (name === 'eTenders' && !isSuperAdminUser) {
-                // Sub-office users sort on the client-side to avoid needing a composite index.
-            } else if (name === 'eTenders') {
-                 q = query(q, orderBy("tenderDate", "desc"));
-            }
-
-
-            return onSnapshot(q, (snapshot) => {
-                if (name === 'rateDescriptions') {
-                     if (snapshot.empty) {
-                        setter(defaultRateDescriptions);
-                    } else {
-                        const descriptions: Partial<Record<RateDescriptionId, string>> = {};
-                        snapshot.forEach(doc => {
-                            descriptions[doc.id as RateDescriptionId] = doc.data().description;
-                        });
-                        setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
-                    }
-                } else if (name === 'officeAddresses') {
-                    if (snapshot.empty) {
-                        setter(null);
-                    } else {
-                        const doc = snapshot.docs[0];
-                        setter({ id: doc.id, ...doc.data() } as OfficeAddress);
-                    }
+            if (collectionName === 'bidders') q = query(q, orderBy("order"));
+            else if (collectionName === 'eTenders') q = query(q, orderBy("tenderDate", "desc"));
+            
+            return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
+                if (collectionName === 'rateDescriptions') {
+                    const descriptions = snapshot.docs.reduce((acc, doc) => ({...acc, [doc.id]: doc.data().description}), {} as Record<RateDescriptionId, string>);
+                    setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
                 } else {
-                    const data = snapshot.docs.map(doc => {
-                        const docData = doc.data();
-                        const processed = processFirestoreDoc<any>({ id: doc.id, data: () => docData });
-                        processed.id = doc.id;
-                        return processed;
-                    });
-
-                    if (name === 'staffMembers') {
+                    const data = snapshot.docs.map(doc => processFirestoreDoc({ id: doc.id, data: () => doc.data() }));
+                    if (collectionName === 'staffMembers') {
                         const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
                         data.sort((a: StaffMember, b: StaffMember) => {
                             const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
@@ -278,15 +236,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 }
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
             }, (error) => {
-                if (error.code === 'permission-denied') {
-                    const permissionError = new FirestorePermissionError({
-                        path: `/${name}`,
-                        operation: 'list',
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
+                 if (error.code === 'permission-denied') {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/${collectionName}`, operation: 'list' }));
                 } else {
-                    console.error(`Error fetching ${name}:`, error);
-                    toast({ title: `Error Loading ${name}`, description: error.message, variant: "destructive" });
+                    console.error(`Error fetching ${collectionName}:`, error);
+                    toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
                 }
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
             });
@@ -295,7 +249,25 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         return () => {
             unsubscribes.forEach(unsub => unsub());
         };
-    }, [user]);
+    }, [user, selectedOffice, refetchCounters]);
+    
+    // Set single officeAddress from the fetched array
+    useEffect(() => {
+        if (!user) return;
+        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+        
+        if (isSuperAdminUser) {
+            if (selectedOffice) {
+                const currentOffice = officeAddresses.find(oa => oa.officeLocation === selectedOffice);
+                setOfficeAddress(currentOffice || null);
+            } else {
+                setOfficeAddress(null); // All offices selected
+            }
+        } else if (user.officeLocation) {
+            const currentOffice = officeAddresses.find(oa => oa.officeLocation === user.officeLocation);
+            setOfficeAddress(currentOffice || null);
+        }
+    }, [officeAddresses, user, selectedOffice]);
 
 
     const isLoading = Object.values(loadingStates).some(Boolean);
@@ -327,7 +299,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
           if (!user) throw new Error("User must be logged in.");
           const docRef = doc(db, collectionName, id);
           await deleteDoc(docRef);
-          toast({ title: 'Item Deleted', description: `${name} has been removed.` });
+          toast({ title: 'Item Deleted', description: \`\${name} has been removed.\` });
       }, [user]);
     };
 
@@ -346,38 +318,12 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
     return (
         <DataStoreContext.Provider value={{
-            allFileEntries,
-            allArsEntries,
-            allStaffMembers,
-            allAgencyApplications,
-            allLsgConstituencyMaps,
-            allRateDescriptions,
-            allBidders,
-            allE_tenders,
-            allDepartmentVehicles,
-            allHiredVehicles,
-            allRigCompressors,
-            officeAddress,
-            isLoading,
-            refetchFileEntries,
-            refetchArsEntries,
-            deleteArsEntry,
-            refetchStaffMembers,
-            refetchAgencyApplications,
-            refetchLsgConstituencyMaps,
-            refetchRateDescriptions,
-            refetchBidders,
-            refetchE_tenders,
-            addDepartmentVehicle,
-            updateDepartmentVehicle,
-            deleteDepartmentVehicle,
-            addHiredVehicle,
-            updateHiredVehicle,
-            deleteHiredVehicle,
-            addRigCompressor,
-            updateRigCompressor,
-            deleteRigCompressor,
-            refetchOfficeAddress,
+            allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
+            allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, officeAddresses, officeAddress, isLoading,
+            refetchFileEntries, refetchArsEntries, deleteArsEntry, refetchStaffMembers, refetchAgencyApplications,
+            refetchLsgConstituencyMaps, refetchRateDescriptions, refetchBidders, refetchE_tenders, addDepartmentVehicle,
+            updateDepartmentVehicle, deleteDepartmentVehicle, addHiredVehicle, updateHiredVehicle, deleteHiredVehicle,
+            addRigCompressor, updateRigCompressor, deleteRigCompressor, refetchOfficeAddress,
         }}>
             {children}
         </DataStoreContext.Provider>
