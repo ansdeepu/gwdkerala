@@ -19,43 +19,25 @@ import RegisterForm from "@/components/auth/RegisterForm";
 import type { NewUserByAdminFormData } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { usePageHeader } from "@/hooks/usePageHeader";
+import { Loader2, UserPlus, Users, ShieldAlert } from 'lucide-react';
+import { useDataStore } from "@/hooks/use-data-store";
 
 export const dynamic = 'force-dynamic';
 
-const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-);
-const UserPlus = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
-);
-const Users = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-);
-const ShieldAlert = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-);
-
 export default function UserManagementPage() {
   const { setHeader } = usePageHeader();
-  useEffect(() => {
-    setHeader('User Management', 'Oversee user accounts, manage roles, and perform administrative actions.');
-  }, [setHeader]);
-
-  const { user, isLoading, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, batchDeleteUserDocuments, createUserByAdmin } = useAuth();
-  const { staffMembers, isLoading: staffLoading } = useStaffMembers();
+  const { user, isLoading, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, createUserByAdmin } = useAuth();
+  const { staffMembers, isLoading: staffLoading } = useDataStore();
   const router = useRouter();
   const { toast } = useToast();
   
   const [isStaffFormOpen, setIsStaffFormOpen] = useState(false);
-  const [isGuestFormOpen, setIsGuestFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [shouldRefresh, setShouldRefresh] = useState(false);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
 
   const canManage = user?.role === 'editor';
   const isViewer = user?.role === 'viewer';
-
 
   const loadUsers = useCallback(async () => {
     if (!user || !user.isApproved || !['editor', 'viewer'].includes(user.role)) {
@@ -65,7 +47,9 @@ export default function UserManagementPage() {
     setUsersLoading(true);
     try {
       const fetchedUsers = await fetchAllUsers();
-      setAllUsers(fetchedUsers);
+      // Filter users to only show those in the same office location
+      const officeUsers = fetchedUsers.filter(u => u.officeLocation === user.officeLocation);
+      setAllUsers(officeUsers);
     } catch (error) {
       console.error("Failed to fetch users:", error);
       toast({ title: "Error Loading Users", description: "Could not load user data. Please try again.", variant: "destructive" });
@@ -76,7 +60,11 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     loadUsers();
-  }, [loadUsers, shouldRefresh]);
+  }, [loadUsers]);
+
+  useEffect(() => {
+    setHeader('User Management', `Manage user accounts for the ${user?.officeLocation} office.`);
+  }, [setHeader, user?.officeLocation]);
 
 
   useEffect(() => {
@@ -97,15 +85,20 @@ export default function UserManagementPage() {
         setIsSubmitting(false);
         return;
       }
+      if (!user?.officeLocation) {
+        toast({ title: "Error", description: "Your admin account is not associated with an office location.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
 
-      const result = await createUserByAdmin(data.email, data.password, selectedStaffMember.name, data.staffId);
+      const result = await createUserByAdmin(data.email, data.password, selectedStaffMember.name, data.staffId, user.officeLocation);
       if (result.success) {
         toast({
           title: "User Created",
           description: `Account for ${data.email} has been successfully created and is pending approval.`,
         });
         setIsStaffFormOpen(false);
-        setShouldRefresh(prev => !prev); // Trigger a refresh of the table data
+        loadUsers(); // Refresh the list
       } else {
         toast({
           title: "Creation Failed",
@@ -151,9 +144,6 @@ export default function UserManagementPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button onClick={() => setIsGuestFormOpen(true)} variant="outline">
-                  <UserPlus className="mr-2 h-5 w-5" /> Add Guest User
-              </Button>
               <Button onClick={() => setIsStaffFormOpen(true)}>
                   <UserPlus className="mr-2 h-5 w-5" /> Add New User (from Staff)
               </Button>
@@ -166,15 +156,15 @@ export default function UserManagementPage() {
         <CardHeader>
           <CardTitle className="text-xl">Registered Users ({allUsers.length})</CardTitle>
           <CardDescription>
-            A list of all user accounts in the system.
+            A list of all user accounts in the {user.officeLocation} office.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <UserManagementTable
-            key={shouldRefresh ? 'refresh' : 'initial'} // Add key here to force re-render on refresh
+            key={allUsers.length} // Force re-render when users change
             users={allUsers}
             isLoading={usersLoading}
-            onDataChange={() => setShouldRefresh(prev => !prev)}
+            onDataChange={loadUsers}
             currentUser={user}
             isViewer={isViewer}
             updateUserApproval={updateUserApproval}
@@ -196,21 +186,6 @@ export default function UserManagementPage() {
               />
         </DialogContent>
       </Dialog>
-      
-      <Dialog open={isGuestFormOpen} onOpenChange={setIsGuestFormOpen}>
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()}>
-            <DialogHeader>
-                <DialogTitle>Add Guest User</DialogTitle>
-                <DialogDescription>
-                    Create a new user account. Guests will have the 'viewer' role by default and require manual approval.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="p-6 pt-4">
-              <RegisterForm />
-            </div>
-        </DialogContent>
-      </Dialog>
-
     </div>
   );
 }

@@ -38,7 +38,8 @@ function SuperAdminNavMenu() {
     
     const navItems = [
       { href: '/dashboard/super-admin', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/dashboard/super-admin/user-management', label: 'User Management', icon: Users },
+      { href: '/dashboard/super-admin/office-management', label: 'Office Management', icon: Building },
+      { href: '/dashboard/super-admin/user-management', label: 'Directorate Users', icon: Users },
       { href: '/dashboard/super-admin/establishment', label: 'Establishment', icon: Briefcase },
       { href: '/dashboard/super-admin/gwd-rates', label: 'GWD Rates', icon: DollarSign },
       { href: '/dashboard/super-admin/plan-fund-works?code=4702-02-102-94', label: 'GWBDWS (4702)', icon: Landmark },

@@ -232,7 +232,7 @@ export function useAuth() {
     }
   }, []);
 
-  const createUserByAdmin = useCallback(async (email: string, password: string, name: string, staffId: string): Promise<{ success: boolean; error?: any }> => {
+  const createUserByAdmin = useCallback(async (email: string, password: string, name: string, staffId: string, officeLocation: string): Promise<{ success: boolean; error?: any }> => {
     if (!authState.user || authState.user.role !== 'editor') {
       return { success: false, error: { message: "You do not have permission to create users." } };
     }
@@ -249,6 +249,7 @@ export function useAuth() {
         email: newFirebaseUser.email,
         name: name,
         staffId: staffId,
+        officeLocation: officeLocation,
         role: 'viewer' as UserRole,
         isApproved: false,
         createdAt: Timestamp.now(),
@@ -358,7 +359,7 @@ export function useAuth() {
   }, [router]);
 
   const fetchAllUsers = useCallback(async (): Promise<UserProfile[]> => {
-    if (!authState.user || !['editor', 'viewer'].includes(authState.user.role)) {
+    if (!authState.user || (authState.user.role !== 'editor' && authState.user.role !== 'viewer')) {
       return [];
     }
     
