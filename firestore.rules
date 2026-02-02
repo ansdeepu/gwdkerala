@@ -21,6 +21,7 @@ service cloud.firestore {
     }
 
     function isRole(role) {
+      // Super Admin check is implicit in the editor role for simplicity
       return isApproved() && getUserData() != null && getUserData().role == role;
     }
 
@@ -43,7 +44,7 @@ service cloud.firestore {
     // === User Profiles ===
     match /users/{userId} {
       allow get: if request.auth.uid == userId || (isScopedReader() && resource.data.officeLocation == getUserData().officeLocation);
-      allow list: if (isScopedReader() || isSupervisor()) && request.query.where.officeLocation == getUserData().officeLocation;
+      allow list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
       allow create: if request.auth.uid == userId || (isEditor() && request.resource.data.officeLocation == getUserData().officeLocation);
       allow update: if (isEditor() && resource.data.officeLocation == getUserData().officeLocation) || 
                      (request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActiveAt']));
@@ -54,9 +55,8 @@ service cloud.firestore {
     match /fileEntries/{docId} {
       allow get: if (isScopedReader() && resource.data.officeLocation == getUserData().officeLocation) || 
                   (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
-      allow list: if (isEditor() && !('officeLocation' in request.query.where)) ||
-                   (isScopedReader() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation) ||
-                   (isSupervisor() && request.query.where.assignedSupervisorUids.array_contains == request.auth.uid);
+      allow list: if isEditor() || (isScopedReader() && resource.data.officeLocation == getUserData().officeLocation) ||
+                   (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
       allow create: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
       allow update: if (isEditor() && resource.data.officeLocation == getUserData().officeLocation) || isSupervisor(); // Supervisors can update via pending updates
       allow delete: if isEditor() && resource.data.officeLocation == getUserData().officeLocation;
@@ -66,9 +66,8 @@ service cloud.firestore {
     match /arsEntries/{docId} {
       allow get: if (isScopedReader() && resource.data.officeLocation == getUserData().officeLocation) || 
                   (isSupervisor() && resource.data.supervisorUid == request.auth.uid);
-      allow list: if (isEditor() && !('officeLocation' in request.query.where)) ||
-                   (isScopedReader() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation) || 
-                   (isSupervisor() && 'supervisorUid' in request.query.where && request.query.where.supervisorUid == request.auth.uid);
+      allow list: if isEditor() || (isScopedReader() && resource.data.officeLocation == getUserData().officeLocation) || 
+                   (isSupervisor() && resource.data.supervisorUid == request.auth.uid);
       allow create: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
       allow update: if (isEditor() && resource.data.officeLocation == getUserData().officeLocation) || isSupervisor();
       allow delete: if isEditor() && resource.data.officeLocation == getUserData().officeLocation;
@@ -84,14 +83,14 @@ service cloud.firestore {
     // === Staff Members (Establishment) ===
     match /staffMembers/{docId} {
       allow get: if isApproved();
-      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
+      allow list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
     
     // === Agency Registrations ===
     match /agencyApplications/{docId} {
       allow get: if isApproved();
-      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
+      allow list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
     
@@ -104,7 +103,7 @@ service cloud.firestore {
     // === eTenders ===
     match /eTenders/{docId} {
       allow get: if isApproved();
-      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
+      allow list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
     
@@ -117,26 +116,26 @@ service cloud.firestore {
     // === Vehicle Management ===
     match /departmentVehicles/{docId} {
       allow get: if isApproved();
-      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
+      allow list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
 
     match /hiredVehicles/{docId} {
       allow get: if isApproved();
-      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
+      allow list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
 
     match /rigCompressors/{docId} {
       allow get: if isApproved();
-      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
+      allow list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
       allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
     }
 
     // === App Settings (Global Dropdowns, etc.) ===
     match /officeAddresses/{docId} {
       allow get: if isApproved();
-      allow list: if (isEditor() && !('officeLocation' in request.query.where)) || (isApproved() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation);
+      allow list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
       allow write: if isEditor(); // Maybe super admin only
     }
     
