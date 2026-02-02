@@ -208,9 +208,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         } else if (collectionName === 'eTenders') {
             // Keep existing order logic but combine with filter
             q = query(q, orderBy("tenderDate", "desc"));
-        } else if (collectionName === 'fileEntries' && user?.role === 'supervisor' && user.uid) {
-             // For supervisors, this initial query is broader. The hook `useFileEntries` will do further client-side filtering.
-            q = query(collection(db, collectionName), where('assignedSupervisorUids', 'array-contains', user.uid));
         }
         
         return q;
