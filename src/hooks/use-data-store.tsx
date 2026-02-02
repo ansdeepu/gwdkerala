@@ -205,26 +205,32 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
         const unsubscribes = collectionsToSubscribe.map(({ name, setter, loaderKey }) => {
             const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+            const baseQuery = collection(db, name);
             let q;
 
-            const baseQuery = collection(db, name);
-            const collectionsToFilter = ['fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'];
+            const officeScopedCollections = [
+                'fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications', 'eTenders',
+                'departmentVehicles', 'hiredVehicles', 'rigCompressors', 'officeAddresses'
+            ];
 
-            if (!isSuperAdminUser && user.officeLocation) {
-                if (collectionsToFilter.includes(name)) {
-                    q = query(baseQuery, where('officeLocation', '==', user.officeLocation));
-                } else if (name === 'officeAddresses') {
+            if (officeScopedCollections.includes(name)) {
+                if (isSuperAdminUser) {
+                    q = query(baseQuery); // Super admin gets all data
+                } else if (user.officeLocation) {
                     q = query(baseQuery, where('officeLocation', '==', user.officeLocation));
                 } else {
-                    q = query(baseQuery);
+                    // Safety fallback: if a non-super-admin user has no office, they see nothing.
+                    q = query(baseQuery, where('officeLocation', '==', '__invalid_location__'));
                 }
             } else {
+                // Global collections like bidders, lsg, rateDescriptions
                 q = query(baseQuery);
             }
-
+            
+            // Apply specific ordering if needed
             if (name === 'bidders') {
                 q = query(q, orderBy("order"));
-            } else if (name === 'eTenders' && !(!isSuperAdminUser && user.officeLocation)) {
+            } else if (name === 'eTenders' && isSuperAdminUser) { // Only sort for super admin to avoid composite index
                 q = query(q, orderBy("tenderDate", "desc"));
             }
 
@@ -284,7 +290,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         return () => {
             unsubscribes.forEach(unsub => unsub());
         };
-    }, [user?.uid, user?.officeLocation]);
+    }, [user]);
 
 
     const isLoading = Object.values(loadingStates).some(Boolean);

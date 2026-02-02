@@ -5,7 +5,9 @@ service cloud.firestore {
 
     // Helper functions for roles and authentication status
     function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        : null;
     }
 
     function isSignedIn() {
@@ -13,12 +15,13 @@ service cloud.firestore {
     }
 
     function isApproved() {
-      // isApproved is a field in the user's document in the /users collection.
-      return isSignedIn() && getUserData().isApproved == true;
+      return isSignedIn()
+        && getUserData() != null
+        && getUserData().isApproved == true;
     }
 
     function isRole(role) {
-      return isApproved() && getUserData().role == role;
+      return isApproved() && getUserData() != null && getUserData().role == role;
     }
 
     function isEditor() {
@@ -39,22 +42,11 @@ service cloud.firestore {
     
     // === User Profiles ===
     match /users/{userId} {
-      // Any signed in user can read their own profile.
-      // Editors and viewers can read all profiles in their office.
       allow get: if request.auth.uid == userId || (isScopedReader() && resource.data.officeLocation == getUserData().officeLocation);
-      // Editors, viewers, and supervisors can list users in their office.
       allow list: if (isScopedReader() || isSupervisor()) && request.query.where.officeLocation == getUserData().officeLocation;
-
-      // An editor can create any user profile in their office.
-      // Any signed in user can create their own user profile document.
       allow create: if request.auth.uid == userId || (isEditor() && request.resource.data.officeLocation == getUserData().officeLocation);
-
-      // An editor can update any profile in their office.
-      // A user can only update their own lastActiveAt timestamp.
       allow update: if (isEditor() && resource.data.officeLocation == getUserData().officeLocation) || 
                      (request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActiveAt']));
-
-      // Only an editor can delete a user profile in their office.
       allow delete: if isEditor() && resource.data.officeLocation == getUserData().officeLocation;
     }
 
@@ -62,7 +54,8 @@ service cloud.firestore {
     match /fileEntries/{docId} {
       allow get: if (isScopedReader() && resource.data.officeLocation == getUserData().officeLocation) || 
                   (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
-      allow list: if (isScopedReader() && request.query.where.officeLocation == getUserData().officeLocation) ||
+      allow list: if (isEditor() && !('officeLocation' in request.query.where)) ||
+                   (isScopedReader() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation) ||
                    (isSupervisor() && request.query.where.assignedSupervisorUids.array_contains == request.auth.uid);
       allow create: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
       allow update: if (isEditor() && resource.data.officeLocation == getUserData().officeLocation) || isSupervisor(); // Supervisors can update via pending updates
@@ -73,8 +66,9 @@ service cloud.firestore {
     match /arsEntries/{docId} {
       allow get: if (isScopedReader() && resource.data.officeLocation == getUserData().officeLocation) || 
                   (isSupervisor() && resource.data.supervisorUid == request.auth.uid);
-      allow list: if (isScopedReader() && request.query.where.officeLocation == getUserData().officeLocation) || 
-                   (isSupervisor() && request.query.where.supervisorUid == request.auth.uid);
+      allow list: if (isEditor() && !('officeLocation' in request.query.where)) ||
+                   (isScopedReader() && 'officeLocation' in request.query.where && request.query.where.officeLocation == getUserData().officeLocation) || 
+                   (isSupervisor() && 'supervisorUid' in request.query.where && request.query.where.supervisorUid == request.auth.uid);
       allow create: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
       allow update: if (isEditor() && resource.data.officeLocation == getUserData().officeLocation) || isSupervisor();
       allow delete: if isEditor() && resource.data.officeLocation == getUserData().officeLocation;
