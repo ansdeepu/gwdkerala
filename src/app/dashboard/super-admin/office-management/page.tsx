@@ -1,7 +1,7 @@
 // src/app/dashboard/super-admin/office-management/page.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, type UserProfile } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, PlusCircle, Trash2, Edit } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Edit, Save, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import UserManagementTable from '@/components/admin/UserManagementTable';
@@ -33,19 +33,40 @@ const NewOfficeUserSchema = z.object({
 });
 type NewOfficeUserFormData = z.infer<typeof NewOfficeUserSchema>;
 
+const EditUserSchema = z.object({
+  name: z.string().min(2, "Name is required."),
+  officeLocation: z.string().optional(),
+});
+type EditUserFormData = z.infer<typeof EditUserSchema>;
+
 export default function OfficeManagementPage() {
-  const { user: currentUser, fetchAllUsers, createOfficeAdmin, deleteUserDocument, updateUserApproval, updateUserRole } = useAuth();
+  const { user: currentUser, fetchAllUsers, createOfficeAdmin, deleteUserDocument, updateUserApproval, updateUserRole, updateUserProfileByAdmin } = useAuth();
   const { allStaffMembers } = useDataStore();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOfficeUserDialogOpen, setIsOfficeUserDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
 
   const officeUserForm = useForm<NewOfficeUserFormData>({
     resolver: zodResolver(NewOfficeUserSchema),
     defaultValues: { name: "", officeLocation: "", email: "", password: "", confirmPassword: "" },
   });
+
+  const editUserForm = useForm<EditUserFormData>({
+    resolver: zodResolver(EditUserSchema),
+  });
+
+  useEffect(() => {
+    if (userToEdit) {
+      editUserForm.reset({
+        name: userToEdit.name || '',
+        officeLocation: userToEdit.officeLocation || '',
+      });
+    }
+  }, [userToEdit, editUserForm]);
+
 
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
@@ -96,6 +117,21 @@ export default function OfficeManagementPage() {
     }
   };
 
+  const handleUpdateUser = async (data: EditUserFormData) => {
+    if (!userToEdit) return;
+    setIsSubmitting(true);
+    try {
+        await updateUserProfileByAdmin(userToEdit.uid, { name: data.name, officeLocation: data.officeLocation });
+        toast({ title: "User Updated", description: `Profile for ${data.name} has been updated.` });
+        setUserToEdit(null);
+        loadUsers();
+    } catch (error: any) {
+        toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -128,6 +164,7 @@ export default function OfficeManagementPage() {
                                 updateUserRole={updateUserRole}
                                 deleteUserDocument={deleteUserDocument}
                                 staffMembers={allStaffMembers}
+                                onEditUser={(user) => setUserToEdit(user)}
                             />
                         </CardContent>
                     </Card>
@@ -199,6 +236,56 @@ export default function OfficeManagementPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {userToEdit && (
+        <Dialog open={!!userToEdit} onOpenChange={(open) => !open && setUserToEdit(null)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Edit User: {userToEdit.name}</DialogTitle>
+                </DialogHeader>
+                <Form {...editUserForm}>
+                    <form onSubmit={editUserForm.handleSubmit(handleUpdateUser)} className="space-y-4 pt-4">
+                        <FormField name="name" control={editUserForm.control} render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Name</FormLabel>
+                                <FormControl><Input placeholder="Enter user's full name" {...field} /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField
+                            name="officeLocation"
+                            control={editUserForm.control}
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Office Location</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Select an office location" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {districts.map(district => (
+                                    <SelectItem key={district} value={district}>{district}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <DialogFooter className="pt-4">
+                            <Button type="button" variant="outline" onClick={() => setUserToEdit(null)} disabled={isSubmitting}>Cancel</Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="h-4 w-4 mr-2" />}
+                                Save Changes
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

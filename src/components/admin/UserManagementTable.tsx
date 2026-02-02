@@ -87,6 +87,7 @@ interface UserManagementTableProps {
   updateUserRole: (uid: string, newRole: UserRole, staffId?: string) => Promise<void>;
   deleteUserDocument: (uid: string) => Promise<void>;
   staffMembers: StaffMember[];
+  onEditUser?: (user: UserProfile) => void;
 }
 
 export default function UserManagementTable({
@@ -99,6 +100,7 @@ export default function UserManagementTable({
   updateUserRole,
   deleteUserDocument,
   staffMembers,
+  onEditUser,
 }: UserManagementTableProps) {
   const { toast } = useToast();
   const [updatingUsers, setUpdatingUsers] = useState<Record<string, { approval?: boolean, role?: boolean }>>({});
@@ -292,30 +294,42 @@ export default function UserManagementTable({
                 </TableCell>
                 {!isViewer && 
                     <TableCell className="px-3 py-2 text-center">
-                    <div className="flex items-center justify-center space-x-0.5">
-                        {isCurrentUserTheUserInRow ? (
-                            <Tooltip>
-                                <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 cursor-not-allowed opacity-70"><Edit className="h-4 w-4 text-blue-600" /></Button></TooltipTrigger>
-                                <TooltipContent><p>This is you (Cannot be modified here)</p></TooltipContent>
-                            </Tooltip>
-                        ) : (
-                            <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 h-8 w-8"
-                                onClick={() => handleDeleteUserClick(userRow)}
-                                disabled={disableActions || isDeletingUser}
-                                aria-label={`Remove user profile ${userRow.name}`}
-                                >
-                                {isDeletingUser && userToDelete?.uid === userRow.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Remove User Profile</p></TooltipContent>
-                            </Tooltip>
-                        )}
-                    </div>
+                        <div className="flex items-center justify-center space-x-0.5">
+                            {isCurrentUserTheUserInRow ? (
+                                <Tooltip>
+                                    <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 cursor-not-allowed opacity-70"><Edit className="h-4 w-4 text-blue-600" /></Button></TooltipTrigger>
+                                    <TooltipContent><p>This is you (Cannot be modified here)</p></TooltipContent>
+                                </Tooltip>
+                            ) : (
+                                <>
+                                    {onEditUser && (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditUser(userRow)} disabled={disableActions || isDeletingUser}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Edit User Details</p></TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                    <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 h-8 w-8"
+                                        onClick={() => handleDeleteUserClick(userRow)}
+                                        disabled={disableActions || isDeletingUser}
+                                        aria-label={`Remove user profile ${userRow.name}`}
+                                        >
+                                        {isDeletingUser && userToDelete?.uid === userRow.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Remove User Profile</p></TooltipContent>
+                                    </Tooltip>
+                                </>
+                            )}
+                        </div>
                     </TableCell>
                 }
               </TableRow>
