@@ -47,10 +47,12 @@ service cloud.firestore {
     /* ================= USERS ================= */
 
     match /users/{userId} {
-      allow get, list: if
+      allow get: if
         isSuperAdmin() ||
         (isApproved() && sameOffice()) ||
         request.auth.uid == userId;
+
+      allow list: if isSuperAdmin() || (isEditor() || isViewer());
 
       allow create: if request.auth.uid == userId;
 

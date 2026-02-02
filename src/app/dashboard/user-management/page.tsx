@@ -10,23 +10,23 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import NewUserForm from "@/components/admin/NewUserForm";
-import RegisterForm from "@/components/auth/RegisterForm";
 import type { NewUserByAdminFormData } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { usePageHeader } from "@/hooks/usePageHeader";
-import { Loader2, UserPlus, Users, ShieldAlert } from 'lucide-react';
+import { Loader2, UserPlus, ShieldAlert } from 'lucide-react';
 import { useDataStore } from "@/hooks/use-data-store";
+import { getFirestore, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
+import { app } from "@/lib/firebase";
+
+const db = getFirestore(app);
 
 export const dynamic = 'force-dynamic';
 
 export default function UserManagementPage() {
   const { setHeader } = usePageHeader();
-  const { user, isLoading, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, createUserByAdmin } = useAuth();
+  const { user, isLoading, createUserByAdmin, updateUserApproval, updateUserRole, deleteUserDocument } = useAuth();
   const { staffMembers, isLoading: staffLoading } = useDataStore();
   const router = useRouter();
   const { toast } = useToast();
@@ -39,27 +39,44 @@ export default function UserManagementPage() {
   const canManage = user?.role === 'editor';
   const isViewer = user?.role === 'viewer';
 
-  const loadUsers = useCallback(async () => {
-    if (!user || !user.isApproved || !['editor', 'viewer'].includes(user.role)) {
+  const loadUsers = useCallback(() => {
+    if (!user || !user.isApproved || !['editor', 'viewer'].includes(user.role) || !user.officeLocation) {
       setUsersLoading(false);
-      return;
+      return () => {};
     }
     setUsersLoading(true);
-    try {
-      const fetchedUsers = await fetchAllUsers();
-      // Filter users to only show those in the same office location
-      const officeUsers = fetchedUsers.filter(u => u.officeLocation === user.officeLocation);
-      setAllUsers(officeUsers);
-    } catch (error) {
+    const q = query(collection(db, "users"), where("officeLocation", "==", user.officeLocation));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const usersList: UserProfile[] = [];
+       querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        usersList.push({
+          uid: docSnap.id,
+          email: data.email || null,
+          name: data.name || undefined,
+          role: data.role || 'viewer',
+          isApproved: data.isApproved === true,
+          staffId: data.staffId || undefined,
+          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : undefined,
+          lastActiveAt: data.lastActiveAt instanceof Timestamp ? data.lastActiveAt.toDate() : undefined,
+          officeLocation: data.officeLocation || undefined,
+        });
+      });
+      setAllUsers(usersList);
+      setUsersLoading(false);
+    }, (error) => {
       console.error("Failed to fetch users:", error);
       toast({ title: "Error Loading Users", description: "Could not load user data. Please try again.", variant: "destructive" });
-    } finally {
       setUsersLoading(false);
-    }
-  }, [fetchAllUsers, user, toast]);
+    });
+    return unsubscribe;
+  }, [user, toast]);
 
   useEffect(() => {
-    loadUsers();
+    const unsubscribe = loadUsers();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [loadUsers]);
 
   useEffect(() => {
@@ -98,7 +115,6 @@ export default function UserManagementPage() {
           description: `Account for ${data.email} has been successfully created and is pending approval.`,
         });
         setIsStaffFormOpen(false);
-        loadUsers(); // Refresh the list
       } else {
         toast({
           title: "Creation Failed",
@@ -117,7 +133,7 @@ export default function UserManagementPage() {
     }
   };
 
-  if (isLoading || staffLoading || usersLoading) {
+  if (isLoading || staffLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
