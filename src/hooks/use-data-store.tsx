@@ -178,7 +178,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             return;
         }
         await deleteDoc(doc(db, 'arsEntries', id));
-        refetchArsEntries(); // This will trigger the listener to refetch
+        refetchArsEntries();
     }, [user, refetchArsEntries]);
 
     const createSubscription = useCallback((collectionName: string, setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates) => {
@@ -190,30 +190,31 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             return () => {};
         }
 
-        const shouldFilterByLocation = user && user.email !== SUPER_ADMIN_EMAIL && user.officeLocation;
+        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+        let q = query(collection(db, collectionName));
+        
+        // Define which collections need to be filtered by officeLocation
         const collectionsToFilter = [
             'fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications',
             'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'
         ];
 
-        let q = query(collection(db, collectionName));
-
-        if (shouldFilterByLocation && collectionsToFilter.includes(collectionName)) {
-            q = query(q, where('officeLocation', '==', user.officeLocation));
-        }
-
-        if (collectionName === 'officeAddresses' && shouldFilterByLocation) {
-             q = query(collection(db, collectionName), where('officeLocation', '==', user.officeLocation));
+        if (!isSuperAdminUser && user.officeLocation) {
+            if (collectionsToFilter.includes(collectionName)) {
+                q = query(q, where('officeLocation', '==', user.officeLocation));
+            }
+            if (collectionName === 'officeAddresses') {
+                q = query(q, where('officeLocation', '==', user.officeLocation));
+            }
         }
         
-        if (collectionName === 'bidders') {
-            q = query(q, orderBy("order"));
-        } else if (collectionName === 'eTenders' && !shouldFilterByLocation) {
-            // Only apply the expensive sort for Super Admins who see all data
-            q = query(q, orderBy("tenderDate", "desc"));
-        } else if (collectionName === 'eTenders' && shouldFilterByLocation) {
-            // No server-side sort for sub-office admins to avoid composite index requirement
-            q = query(collection(db, 'eTenders'), where('officeLocation', '==', user.officeLocation));
+        // Add specific ordering for global or super-admin views
+        if (isSuperAdminUser || !user.officeLocation) {
+             if (collectionName === 'bidders') {
+                q = query(q, orderBy("order"));
+            } else if (collectionName === 'eTenders') {
+                q = query(q, orderBy("tenderDate", "desc"));
+            }
         }
         
         const unsubscribe = onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
@@ -271,18 +272,54 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         return unsubscribe;
     }, [user]);
 
-    useEffect(() => createSubscription('fileEntries', setAllFileEntries, 'files'), [createSubscription, refetchCounters.files]);
-    useEffect(() => createSubscription('arsEntries', setAllArsEntries, 'ars'), [createSubscription, refetchCounters.ars]);
-    useEffect(() => createSubscription('staffMembers', setAllStaffMembers, 'staff'), [createSubscription, refetchCounters.staff]);
-    useEffect(() => createSubscription('agencyApplications', setAllAgencyApplications, 'agencies'), [createSubscription, refetchCounters.agencies]);
-    useEffect(() => createSubscription('localSelfGovernments', setAllLsgConstituencyMaps, 'lsg'), [createSubscription, refetchCounters.lsg]);
-    useEffect(() => createSubscription('rateDescriptions', setAllRateDescriptions, 'rates'), [createSubscription, refetchCounters.rates]);
-    useEffect(() => createSubscription('bidders', setAllBidders, 'bidders'), [createSubscription, refetchCounters.bidders]);
-    useEffect(() => createSubscription('eTenders', setAllE_tenders, 'eTenders'), [createSubscription, refetchCounters.eTenders]);
-    useEffect(() => createSubscription('departmentVehicles', setAllDepartmentVehicles, 'departmentVehicles'), [createSubscription, refetchCounters.departmentVehicles]);
-    useEffect(() => createSubscription('hiredVehicles', setAllHiredVehicles, 'hiredVehicles'), [createSubscription, refetchCounters.hiredVehicles]);
-    useEffect(() => createSubscription('rigCompressors', setAllRigCompressors, 'rigCompressors'), [createSubscription, refetchCounters.rigCompressors]);
-    useEffect(() => createSubscription('officeAddresses', setOfficeAddress, 'officeAddress'), [createSubscription, refetchCounters.officeAddress]);
+    useEffect(() => {
+        const unsub = createSubscription('fileEntries', setAllFileEntries, 'files');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.files]);
+    useEffect(() => {
+        const unsub = createSubscription('arsEntries', setAllArsEntries, 'ars');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.ars]);
+    useEffect(() => {
+        const unsub = createSubscription('staffMembers', setAllStaffMembers, 'staff');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.staff]);
+    useEffect(() => {
+        const unsub = createSubscription('agencyApplications', setAllAgencyApplications, 'agencies');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.agencies]);
+    useEffect(() => {
+        const unsub = createSubscription('localSelfGovernments', setAllLsgConstituencyMaps, 'lsg');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.lsg]);
+    useEffect(() => {
+        const unsub = createSubscription('rateDescriptions', setAllRateDescriptions, 'rates');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.rates]);
+    useEffect(() => {
+        const unsub = createSubscription('bidders', setAllBidders, 'bidders');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.bidders]);
+    useEffect(() => {
+        const unsub = createSubscription('eTenders', setAllE_tenders, 'eTenders');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.eTenders]);
+    useEffect(() => {
+        const unsub = createSubscription('departmentVehicles', setAllDepartmentVehicles, 'departmentVehicles');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.departmentVehicles]);
+    useEffect(() => {
+        const unsub = createSubscription('hiredVehicles', setAllHiredVehicles, 'hiredVehicles');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.hiredVehicles]);
+    useEffect(() => {
+        const unsub = createSubscription('rigCompressors', setAllRigCompressors, 'rigCompressors');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.rigCompressors]);
+    useEffect(() => {
+        const unsub = createSubscription('officeAddresses', setOfficeAddress, 'officeAddress');
+        return () => unsub();
+    }, [createSubscription, refetchCounters.officeAddress]);
 
 
     const isLoading = Object.values(loadingStates).some(Boolean);
