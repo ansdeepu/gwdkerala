@@ -4,6 +4,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // === Helper Functions ===
+
     function getUserData() {
       // Use exists() to prevent errors if the user document doesn't exist yet.
       return exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -14,7 +16,7 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
-
+    
     function isApproved() {
       // Ensure getUserData() is not null before accessing properties.
       return isSignedIn()
@@ -23,8 +25,7 @@ service cloud.firestore {
     }
     
     function isEditor() {
-      // Super Admin check is implicit in the editor role for simplicity
-      return isApproved() && getUserData() != null && getUserData().role == 'editor';
+      return getUserData() != null && getUserData().role == 'editor';
     }
 
     function isSupervisor() {
@@ -35,108 +36,108 @@ service cloud.firestore {
       return isApproved() && getUserData() != null && getUserData().role == 'viewer';
     }
 
-    function isScopedReader() {
-      // A user who can read data scoped to their office.
-      return isEditor() || isViewer() || isSupervisor();
+    // A super admin is an editor without a specific office location.
+    function isSuperAdmin() {
+      return isEditor() && !('officeLocation' in getUserData());
     }
-    
-    // === User Profiles ===
+
+    // An office user is any approved user with an office location.
+    function isOfficeUser() {
+      return isApproved() && ('officeLocation' in getUserData());
+    }
+
+    // === Collection Rules ===
+
+    // User Profiles
     match /users/{userId} {
-      allow get: if isEditor() || request.auth.uid == userId;
-      allow list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
-      allow create: if request.auth.uid == userId;
-      allow update: if isEditor() || (request.auth.uid == userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActiveAt']));
-      allow delete: if isEditor();
+      allow get: if isSuperAdmin() || request.auth.uid == userId || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
+      allow list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
+      allow create: if request.auth.uid == userId; // Allow users to create their own profile
+      allow update: if isSuperAdmin() || request.auth.uid == userId;
+      allow delete: if isSuperAdmin();
     }
 
-    // === Main File Entries (Deposit Works) ===
+    // Main File Entries (Deposit Works)
     match /fileEntries/{docId} {
-      allow get: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
-      allow list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
-      allow create: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
-      allow update: if (isEditor() && resource.data.officeLocation == getUserData().officeLocation) || isSupervisor();
-      allow delete: if isEditor() && resource.data.officeLocation == getUserData().officeLocation;
+      allow get, list: if isSuperAdmin() || 
+                          (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation) ||
+                          (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
+      allow write: if isEditor();
     }
 
-    // === ARS Entries ===
+    // ARS Entries
     match /arsEntries/{docId} {
-      allow get, list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
-      allow create, update: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
-      allow delete: if isEditor() && resource.data.officeLocation == getUserData().officeLocation;
+      allow get, list: if isSuperAdmin() ||
+                          (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation) ||
+                          (isSupervisor() && resource.data.supervisorUid == request.auth.uid);
+      allow write: if isEditor();
     }
     
-    // === Pending Updates from Supervisors ===
+    // Pending Updates from Supervisors
     match /pendingUpdates/{docId} {
       allow create: if isSupervisor() || isEditor();
-      allow read, delete: if isEditor() || (isSupervisor() && request.auth.uid == resource.data.submittedByUid);
-      allow update: if isEditor();
+      allow read, list: if isEditor() || (isSupervisor() && resource.data.submittedByUid == request.auth.uid);
+      allow update, delete: if isEditor();
     }
 
-    // === Staff Members (Establishment) ===
+    // Staff Members (Establishment)
     match /staffMembers/{docId} {
-      allow get, list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
+      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
+      allow write: if isEditor();
     }
     
-    // === Agency Registrations ===
+    // Agency Registrations
     match /agencyApplications/{docId} {
-      allow get, list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
+      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
+      allow write: if isEditor();
     }
     
-    // === GWD Rates (Global) ===
+    // eTenders
+    match /eTenders/{docId} {
+      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
+      allow write: if isEditor();
+    }
+
+    // Vehicle Management
+    match /departmentVehicles/{docId} {
+      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
+      allow write: if isEditor();
+    }
+    match /hiredVehicles/{docId} {
+      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
+      allow write: if isEditor();
+    }
+    match /rigCompressors/{docId} {
+      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
+      allow write: if isEditor();
+    }
+
+    // Office Addresses
+    match /officeAddresses/{docId} {
+      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
+      allow write: if isSuperAdmin() || (isEditor() && resource.data.officeLocation == getUserData().officeLocation);
+    }
+    
+    // === Global Collections (Readable by any approved user) ===
+    
     match /gwdRates/{docId} {
       allow read: if isApproved();
-      allow write: if isEditor();
+      allow write: if isSuperAdmin();
     }
     
-    // === eTenders ===
-    match /eTenders/{docId} {
-      allow get, list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
-    }
-    
-    // === Bidders (Global) ===
     match /bidders/{docId} {
       allow read: if isApproved();
-      allow write: if isEditor();
-    }
-
-    // === Vehicle Management ===
-    match /departmentVehicles/{docId} {
-      allow get, list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
-    }
-
-    match /hiredVehicles/{docId} {
-      allow get, list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
-    }
-
-    match /rigCompressors/{docId} {
-      allow get, list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
-    }
-
-    // === App Settings (Global Dropdowns, etc.) ===
-    match /officeAddresses/{docId} {
-      allow get, list: if isEditor() || (isApproved() && resource.data.officeLocation == getUserData().officeLocation);
       allow write: if isEditor();
     }
     
     match /localSelfGovernments/{docId} {
       allow read: if isApproved();
-      allow write: if isEditor();
+      allow write: if isSuperAdmin() || isEditor();
     }
 
-    match /constituencies/{docId} {
-      allow read: if isApproved();
-      allow write: if isEditor();
-    }
-    
     match /rateDescriptions/{docId} {
       allow read: if isApproved();
-      allow write: if isEditor();
+      allow write: if isSuperAdmin();
     }
   }
 }
