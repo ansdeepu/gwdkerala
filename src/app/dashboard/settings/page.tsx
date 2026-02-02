@@ -194,7 +194,7 @@ export default function SettingsPage() {
   const { setHeader } = usePageHeader();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const { allLsgConstituencyMaps, allStaffMembers, refetchLsgConstituencyMaps, officeAddress, refetchOfficeAddress } = useDataStore();
+  const { allLsgConstituencyMaps, allStaffMembers, officeAddress } = useDataStore();
   const canManage = user?.role === 'editor';
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
@@ -227,7 +227,6 @@ export default function SettingsPage() {
         await addDoc(collection(db, 'officeAddresses'), payload);
         toast({ title: 'Office Address Added' });
       }
-      refetchOfficeAddress();
       setIsOfficeDialogOpen(false);
     } catch (error: any) {
       toast({ title: 'Error Saving Office', description: error.message, variant: 'destructive' });
@@ -295,7 +294,6 @@ export default function SettingsPage() {
             });
 
             await batch.commit();
-            refetchLsgConstituencyMaps(); // Trigger data refresh
             toast({ title: 'Import Successful', description: `Data for ${lsgDataMap.size} Local Self Governments has been imported/updated.` });
 
         } catch (error: any) {
@@ -354,7 +352,6 @@ export default function SettingsPage() {
         lsgSnapshot.forEach(doc => batch.delete(doc.ref));
         
         await batch.commit();
-        refetchLsgConstituencyMaps();
         toast({ title: 'Data Cleared', description: 'All Local Self Governments have been deleted.' });
     } catch (error: any) {
         toast({ title: 'Error Clearing Data', description: error.message, variant: 'destructive' });
@@ -394,7 +391,6 @@ export default function SettingsPage() {
     try {
         await deleteDoc(doc(db, "officeAddresses", officeAddress.id));
         toast({ title: 'Office Address Deleted', description: 'The office details have been removed.' });
-        refetchOfficeAddress();
     } catch (error: any) {
         toast({ title: "Error", description: `Could not delete office address: ${error.message}`, variant: "destructive" });
     } finally {

@@ -143,33 +143,20 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         officeAddress: true,
     });
     
-    const [refetchCounters, setRefetchCounters] = useState({
-        files: 0,
-        ars: 0,
-        staff: 0,
-        agencies: 0,
-        lsg: 0,
-        rates: 0,
-        bidders: 0,
-        eTenders: 0,
-        departmentVehicles: 0,
-        hiredVehicles: 0,
-        rigCompressors: 0,
-        officeAddress: 0,
-    });
-
-    const refetchFileEntries = useCallback(() => setRefetchCounters(c => ({...c, files: c.files + 1})), []);
-    const refetchArsEntries = useCallback(() => setRefetchCounters(c => ({...c, ars: c.ars + 1})), []);
-    const refetchStaffMembers = useCallback(() => setRefetchCounters(c => ({...c, staff: c.staff + 1})), []);
-    const refetchAgencyApplications = useCallback(() => setRefetchCounters(c => ({...c, agencies: c.agencies + 1})), []);
-    const refetchLsgConstituencyMaps = useCallback(() => setRefetchCounters(c => ({ ...c, lsg: c.lsg + 1 })), []);
-    const refetchRateDescriptions = useCallback(() => setRefetchCounters(c => ({ ...c, rates: c.rates + 1 })), []);
-    const refetchBidders = useCallback(() => setRefetchCounters(c => ({ ...c, bidders: c.bidders + 1 })), []);
-    const refetchE_tenders = useCallback(() => setRefetchCounters(c => ({ ...c, eTenders: c.eTenders + 1 })), []);
-    const refetchDepartmentVehicles = useCallback(() => setRefetchCounters(c => ({...c, departmentVehicles: c.departmentVehicles + 1})), []);
-    const refetchHiredVehicles = useCallback(() => setRefetchCounters(c => ({...c, hiredVehicles: c.hiredVehicles + 1})), []);
-    const refetchRigCompressors = useCallback(() => setRefetchCounters(c => ({...c, rigCompressors: c.rigCompressors + 1})), []);
-    const refetchOfficeAddress = useCallback(() => setRefetchCounters(c => ({...c, officeAddress: c.officeAddress + 1})), []);
+    // The manual refetch functions are now no-ops because onSnapshot handles real-time updates.
+    // This prevents the cascading re-renders that were causing errors.
+    const refetchFileEntries = useCallback(() => {}, []);
+    const refetchArsEntries = useCallback(() => {}, []);
+    const refetchStaffMembers = useCallback(() => {}, []);
+    const refetchAgencyApplications = useCallback(() => {}, []);
+    const refetchLsgConstituencyMaps = useCallback(() => {}, []);
+    const refetchRateDescriptions = useCallback(() => {}, []);
+    const refetchBidders = useCallback(() => {}, []);
+    const refetchE_tenders = useCallback(() => {}, []);
+    const refetchDepartmentVehicles = useCallback(() => {}, []);
+    const refetchHiredVehicles = useCallback(() => {}, []);
+    const refetchRigCompressors = useCallback(() => {}, []);
+    const refetchOfficeAddress = useCallback(() => {}, []);
 
 
      const deleteArsEntry = useCallback(async (id: string) => {
@@ -178,239 +165,172 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             return;
         }
         await deleteDoc(doc(db, 'arsEntries', id));
-        refetchArsEntries();
-    }, [user, refetchArsEntries]);
-
-    const createSubscription = useCallback((collectionName: string, setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates) => {
-        if (!user) {
-            if (collectionName === 'officeAddresses') setter(null);
-            else if (collectionName === 'rateDescriptions') setter(defaultRateDescriptions);
-            else setter([]);
-            setLoadingStates(prev => ({...prev, [loaderKey]: false}));
-            return () => {};
-        }
-
-        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
-        let q = query(collection(db, collectionName));
-        
-        // Define which collections need to be filtered by officeLocation
-        const collectionsToFilter = [
-            'fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications',
-            'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'
-        ];
-
-        if (!isSuperAdminUser && user.officeLocation) {
-            if (collectionsToFilter.includes(collectionName)) {
-                q = query(q, where('officeLocation', '==', user.officeLocation));
-            }
-            if (collectionName === 'officeAddresses') {
-                q = query(q, where('officeLocation', '==', user.officeLocation));
-            }
-        }
-        
-        // Add specific ordering for global or super-admin views
-        if (isSuperAdminUser || !user.officeLocation) {
-             if (collectionName === 'bidders') {
-                q = query(q, orderBy("order"));
-            } else if (collectionName === 'eTenders') {
-                q = query(q, orderBy("tenderDate", "desc"));
-            }
-        }
-        
-        const unsubscribe = onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-            if (collectionName === 'rateDescriptions') {
-                if (snapshot.empty) {
-                    setter(defaultRateDescriptions);
-                } else {
-                    const descriptions: Partial<Record<RateDescriptionId, string>> = {};
-                    snapshot.forEach(doc => {
-                        descriptions[doc.id as RateDescriptionId] = doc.data().description;
-                    });
-                    setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
-                }
-            } else if (collectionName === 'officeAddresses') {
-                if (snapshot.empty) {
-                    setter(null);
-                } else {
-                    const doc = snapshot.docs[0];
-                    setter({ id: doc.id, ...doc.data() } as OfficeAddress);
-                }
-            } else {
-                const data = snapshot.docs.map(doc => {
-                    const docData = doc.data();
-                    const processed = processFirestoreDoc<any>({ id: doc.id, data: () => docData });
-                    processed.id = doc.id;
-                    return processed;
-                });
-
-                if (collectionName === 'staffMembers') {
-                    const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
-                    data.sort((a: StaffMember, b: StaffMember) => {
-                        const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
-                        const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
-                        if (orderA !== orderB) return orderA - orderB;
-                        return a.name.localeCompare(b.name);
-                    });
-                }
-                setter(data);
-            }
-            setLoadingStates(prev => ({...prev, [loaderKey]: false}));
-        }, async (error) => {
-            if (error.code === 'permission-denied') {
-                const permissionError = new FirestorePermissionError({
-                    path: `/${collectionName}`,
-                    operation: 'list',
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            } else {
-                console.error(`Error fetching ${collectionName}:`, error);
-                toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
-            }
-            setLoadingStates(prev => ({...prev, [loaderKey]: false}));
-        });
-
-        return unsubscribe;
+        // No manual refetch needed, onSnapshot will handle it.
     }, [user]);
 
     useEffect(() => {
-        const unsub = createSubscription('fileEntries', setAllFileEntries, 'files');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.files]);
-    useEffect(() => {
-        const unsub = createSubscription('arsEntries', setAllArsEntries, 'ars');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.ars]);
-    useEffect(() => {
-        const unsub = createSubscription('staffMembers', setAllStaffMembers, 'staff');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.staff]);
-    useEffect(() => {
-        const unsub = createSubscription('agencyApplications', setAllAgencyApplications, 'agencies');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.agencies]);
-    useEffect(() => {
-        const unsub = createSubscription('localSelfGovernments', setAllLsgConstituencyMaps, 'lsg');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.lsg]);
-    useEffect(() => {
-        const unsub = createSubscription('rateDescriptions', setAllRateDescriptions, 'rates');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.rates]);
-    useEffect(() => {
-        const unsub = createSubscription('bidders', setAllBidders, 'bidders');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.bidders]);
-    useEffect(() => {
-        const unsub = createSubscription('eTenders', setAllE_tenders, 'eTenders');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.eTenders]);
-    useEffect(() => {
-        const unsub = createSubscription('departmentVehicles', setAllDepartmentVehicles, 'departmentVehicles');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.departmentVehicles]);
-    useEffect(() => {
-        const unsub = createSubscription('hiredVehicles', setAllHiredVehicles, 'hiredVehicles');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.hiredVehicles]);
-    useEffect(() => {
-        const unsub = createSubscription('rigCompressors', setAllRigCompressors, 'rigCompressors');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.rigCompressors]);
-    useEffect(() => {
-        const unsub = createSubscription('officeAddresses', setOfficeAddress, 'officeAddress');
-        return () => unsub();
-    }, [createSubscription, refetchCounters.officeAddress]);
+        if (!user) {
+            setAllFileEntries([]);
+            setAllArsEntries([]);
+            setAllStaffMembers([]);
+            setAllAgencyApplications([]);
+            setAllLsgConstituencyMaps([]);
+            setAllRateDescriptions(defaultRateDescriptions);
+            setAllBidders([]);
+            setAllE_tenders([]);
+            setAllDepartmentVehicles([]);
+            setAllHiredVehicles([]);
+            setAllRigCompressors([]);
+            setOfficeAddress(null);
+            setLoadingStates({ files: false, ars: false, staff: false, agencies: false, lsg: false, rates: false, bidders: false, eTenders: false, officeAddress: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false });
+            return;
+        }
+        
+        setLoadingStates({ files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true, departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true });
+
+        const collectionsToSubscribe = [
+            { name: 'fileEntries', setter: setAllFileEntries, loaderKey: 'files' },
+            { name: 'arsEntries', setter: setAllArsEntries, loaderKey: 'ars' },
+            { name: 'staffMembers', setter: setAllStaffMembers, loaderKey: 'staff' },
+            { name: 'agencyApplications', setter: setAllAgencyApplications, loaderKey: 'agencies' },
+            { name: 'localSelfGovernments', setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
+            { name: 'rateDescriptions', setter: setAllRateDescriptions, loaderKey: 'rates' },
+            { name: 'bidders', setter: setAllBidders, loaderKey: 'bidders' },
+            { name: 'eTenders', setter: setAllE_tenders, loaderKey: 'eTenders' },
+            { name: 'departmentVehicles', setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
+            { name: 'hiredVehicles', setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
+            { name: 'rigCompressors', setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
+            { name: 'officeAddresses', setter: setOfficeAddress, loaderKey: 'officeAddress' },
+        ];
+
+        const unsubscribes = collectionsToSubscribe.map(({ name, setter, loaderKey }) => {
+            const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+            let q;
+
+            const baseQuery = collection(db, name);
+            const collectionsToFilter = ['fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'];
+
+            if (!isSuperAdminUser && user.officeLocation) {
+                if (collectionsToFilter.includes(name)) {
+                    q = query(baseQuery, where('officeLocation', '==', user.officeLocation));
+                } else if (name === 'officeAddresses') {
+                    q = query(baseQuery, where('officeLocation', '==', user.officeLocation));
+                } else {
+                    q = query(baseQuery);
+                }
+            } else {
+                q = query(baseQuery);
+            }
+
+            if (name === 'bidders') {
+                q = query(q, orderBy("order"));
+            } else if (name === 'eTenders' && !(!isSuperAdminUser && user.officeLocation)) {
+                q = query(q, orderBy("tenderDate", "desc"));
+            }
+
+            return onSnapshot(q, (snapshot) => {
+                if (name === 'rateDescriptions') {
+                     if (snapshot.empty) {
+                        setter(defaultRateDescriptions);
+                    } else {
+                        const descriptions: Partial<Record<RateDescriptionId, string>> = {};
+                        snapshot.forEach(doc => {
+                            descriptions[doc.id as RateDescriptionId] = doc.data().description;
+                        });
+                        setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
+                    }
+                } else if (name === 'officeAddresses') {
+                    if (snapshot.empty) {
+                        setter(null);
+                    } else {
+                        const doc = snapshot.docs[0];
+                        setter({ id: doc.id, ...doc.data() } as OfficeAddress);
+                    }
+                } else {
+                    const data = snapshot.docs.map(doc => {
+                        const docData = doc.data();
+                        const processed = processFirestoreDoc<any>({ id: doc.id, data: () => docData });
+                        processed.id = doc.id;
+                        return processed;
+                    });
+
+                    if (name === 'staffMembers') {
+                        const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
+                        data.sort((a: StaffMember, b: StaffMember) => {
+                            const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
+                            const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
+                            if (orderA !== orderB) return orderA - orderB;
+                            return a.name.localeCompare(b.name);
+                        });
+                    }
+                    setter(data);
+                }
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+            }, (error) => {
+                if (error.code === 'permission-denied') {
+                    const permissionError = new FirestorePermissionError({
+                        path: `/${name}`,
+                        operation: 'list',
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                } else {
+                    console.error(`Error fetching ${name}:`, error);
+                    toast({ title: `Error Loading ${name}`, description: error.message, variant: "destructive" });
+                }
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+            });
+        });
+
+        return () => {
+            unsubscribes.forEach(unsub => unsub());
+        };
+    }, [user?.uid, user?.officeLocation]);
 
 
     const isLoading = Object.values(loadingStates).some(Boolean);
 
-    // --- Vehicle Management Logic ---
-    const useAddVehicle = <T extends {}>(collectionName: string, refetch: () => void) => {
+    const useAddVehicle = <T extends {}>(collectionName: string) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
           const payload = { ...data, officeLocation: user.officeLocation, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
-  
-          addDoc(collection(db, collectionName), payload)
-              .then(() => {
-                  toast({ title: 'Item Added', description: 'The new item has been saved.' });
-                  refetch();
-              })
-              .catch(error => {
-                  if (error.code === 'permission-denied') {
-                      errorEmitter.emit('permission-error', new FirestorePermissionError({
-                          path: `/${collectionName}`,
-                          operation: 'create',
-                          requestResourceData: payload,
-                      }));
-                  } else {
-                      toast({ title: "Error Adding Item", description: error.message, variant: "destructive" });
-                  }
-              });
-      }, [user, collectionName, refetch]);
+          await addDoc(collection(db, collectionName), payload);
+          toast({ title: 'Item Added', description: 'The new item has been saved.' });
+      }, [user]);
     };
   
-    const useUpdateVehicle = <T extends { id?: string }>(collectionName: string, refetch: () => void) => {
+    const useUpdateVehicle = <T extends { id?: string }>(collectionName: string) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
           if (!data.id) throw new Error("Document ID is missing for update.");
           const docRef = doc(db, collectionName, data.id);
           const payload = { ...data, updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
-          
-          updateDoc(docRef, payload)
-              .then(() => {
-                  toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
-                  refetch();
-              })
-              .catch(error => {
-                  if (error.code === 'permission-denied') {
-                      errorEmitter.emit('permission-error', new FirestorePermissionError({
-                          path: docRef.path,
-                          operation: 'update',
-                          requestResourceData: payload,
-                      }));
-                  } else {
-                      toast({ title: "Error Updating Item", description: error.message, variant: "destructive" });
-                  }
-              });
-      }, [user, collectionName, refetch]);
+          await updateDoc(docRef, payload);
+          toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
+      }, [user]);
     };
   
-    const useDeleteVehicle = (collectionName: string, refetch: () => void) => {
+    const useDeleteVehicle = (collectionName: string) => {
       return useCallback(async (id: string, name: string) => {
           if (!user) throw new Error("User must be logged in.");
           const docRef = doc(db, collectionName, id);
-          
-          deleteDoc(docRef)
-              .then(() => {
-                  toast({ title: 'Item Deleted', description: `${name} has been removed.` });
-                  refetch();
-              })
-              .catch(error => {
-                  if (error.code === 'permission-denied') {
-                      errorEmitter.emit('permission-error', new FirestorePermissionError({
-                          path: docRef.path,
-                          operation: 'delete',
-                      }));
-                  } else {
-                      toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
-                  }
-              });
-      }, [user, collectionName, refetch]);
+          await deleteDoc(docRef);
+          toast({ title: 'Item Deleted', description: `${name} has been removed.` });
+      }, [user]);
     };
 
-    const addDepartmentVehicle = useAddVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT, refetchDepartmentVehicles);
-    const updateDepartmentVehicle = useUpdateVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT, refetchDepartmentVehicles);
-    const deleteDepartmentVehicle = useDeleteVehicle(COLLECTIONS.DEPARTMENT, refetchDepartmentVehicles);
+    const addDepartmentVehicle = useAddVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
+    const updateDepartmentVehicle = useUpdateVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
+    const deleteDepartmentVehicle = useDeleteVehicle(COLLECTIONS.DEPARTMENT);
 
-    const addHiredVehicle = useAddVehicle<HiredVehicle>(COLLECTIONS.HIRED, refetchHiredVehicles);
-    const updateHiredVehicle = useUpdateVehicle<HiredVehicle>(COLLECTIONS.HIRED, refetchHiredVehicles);
-    const deleteHiredVehicle = useDeleteVehicle(COLLECTIONS.HIRED, refetchHiredVehicles);
+    const addHiredVehicle = useAddVehicle<HiredVehicle>(COLLECTIONS.HIRED);
+    const updateHiredVehicle = useUpdateVehicle<HiredVehicle>(COLLECTIONS.HIRED);
+    const deleteHiredVehicle = useDeleteVehicle(COLLECTIONS.HIRED);
 
-    const addRigCompressor = useAddVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR, refetchRigCompressors);
-    const updateRigCompressor = useUpdateVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR, refetchRigCompressors);
-    const deleteRigCompressor = useDeleteVehicle(COLLECTIONS.RIG_COMPRESSOR, refetchRigCompressors);
+    const addRigCompressor = useAddVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR);
+    const updateRigCompressor = useUpdateVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR);
+    const deleteRigCompressor = useDeleteVehicle(COLLECTIONS.RIG_COMPRESSOR);
 
 
     return (

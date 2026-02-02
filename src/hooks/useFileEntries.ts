@@ -33,7 +33,7 @@ const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Wor
 
 export function useFileEntries() {
   const { user } = useAuth();
-  const { allFileEntries, isLoading: dataStoreLoading, refetchFileEntries } = useDataStore(); // Use the central store
+  const { allFileEntries, isLoading: dataStoreLoading } = useDataStore(); // Use the central store
   const [fileEntries, setFileEntries] = useState<DataEntryFormData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -95,9 +95,8 @@ export function useFileEntries() {
         if (payload.id) delete payload.id;
 
         const docRef = await addDoc(collection(db, FILE_ENTRIES_COLLECTION), { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-        refetchFileEntries();
         return docRef.id;
-    }, [user, refetchFileEntries]);
+    }, [user]);
 
     const updateFileEntry = useCallback(async (fileId: string, entryData: DataEntryFormData, approveUpdateId?: string): Promise<void> => {
         if (!user) throw new Error("User must be logged in to update an entry.");
@@ -118,8 +117,7 @@ export function useFileEntries() {
             await updateDoc(docRef, finalPayload);
         }
         
-        refetchFileEntries();
-    }, [user, refetchFileEntries]);
+    }, [user]);
 
 
   const deleteFileEntry = useCallback(async (docId: string): Promise<void> => {
@@ -133,13 +131,12 @@ export function useFileEntries() {
     }
     try {
         await deleteDoc(doc(db, FILE_ENTRIES_COLLECTION, docId));
-        refetchFileEntries();
         toast({ title: "Entry Deleted", description: "The file entry has been removed." });
     } catch (error: any) {
         console.error(`Error deleting file with ID ${docId}:`, error);
         toast({ title: "Error", description: error.message, variant: "destructive" });
     }
-  }, [user?.role, toast, refetchFileEntries]);
+  }, [user?.role, toast]);
 
   const batchDeleteFileEntries = useCallback(async (fileNos: string[]): Promise<{ successCount: number; failureCount: number }> => {
     if (user?.role !== 'editor') {
@@ -160,9 +157,8 @@ export function useFileEntries() {
     }
     
     await batch.commit();
-    refetchFileEntries(); // Trigger a refetch
     return { successCount, failureCount: fileNos.length - successCount };
-  }, [user, toast, refetchFileEntries]);
+  }, [user, toast]);
 
   const getFileEntry = useCallback((fileNo: string): DataEntryFormData | undefined => {
     return allFileEntries.find(entry => entry.fileNo === fileNo);
