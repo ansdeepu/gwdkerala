@@ -4,73 +4,86 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // === Helper Functions ===
-
-    function getUserData() {
-      // Use exists() to prevent errors if the user document doesn't exist yet.
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
-        : null;
-    }
+    /* ================= HELPERS ================= */
 
     function isSignedIn() {
       return request.auth != null;
     }
-    
-    function isApproved() {
-      // Ensure getUserData() is not null before accessing properties.
-      return isSignedIn()
-        && getUserData() != null
-        && getUserData().isApproved == true;
+
+    function getUserData() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+        : null;
     }
-    
+
+    function isApproved() {
+      return getUserData() != null && getUserData().isApproved == true;
+    }
+
     function isEditor() {
-      return getUserData() != null && getUserData().role == 'editor';
+      return isApproved() && getUserData().role == 'editor';
     }
 
     function isSupervisor() {
-      return isApproved() && getUserData() != null && getUserData().role == 'supervisor';
+      return isApproved() && getUserData().role == 'supervisor';
     }
-    
+
     function isViewer() {
-      return isApproved() && getUserData() != null && getUserData().role == 'viewer';
+      return isApproved() && getUserData().role == 'viewer';
     }
 
-    // A super admin is an editor without a specific office location.
     function isSuperAdmin() {
-      return isEditor() && !('officeLocation' in getUserData());
+      return request.auth.token.superAdmin == true;
     }
 
-    // An office user is any approved user with an office location.
-    function isOfficeUser() {
-      return isApproved() && ('officeLocation' in getUserData());
+    function sameOffice() {
+      return resource.data.officeLocation == getUserData().officeLocation;
     }
 
-    // === Collection Rules ===
+    function sameOfficeWrite() {
+      return request.resource.data.officeLocation == getUserData().officeLocation;
+    }
 
-    // User Profiles
+    /* ================= USERS ================= */
+
     match /users/{userId} {
-      allow get: if isSuperAdmin() || request.auth.uid == userId || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
-      allow list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
-      allow create: if request.auth.uid == userId; // Allow users to create their own profile
-      allow update: if isSuperAdmin() || request.auth.uid == userId;
+      allow get, list: if
+        isSuperAdmin() ||
+        (isApproved() && sameOffice()) ||
+        request.auth.uid == userId;
+
+      allow create: if request.auth.uid == userId;
+
+      allow update: if
+        isSuperAdmin() ||
+        request.auth.uid == userId;
+
       allow delete: if isSuperAdmin();
     }
 
-    // Main File Entries (Deposit Works)
+    /* ================= FILE ENTRIES ================= */
+
     match /fileEntries/{docId} {
-      allow get, list: if isSuperAdmin() || 
-                          (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation) ||
-                          (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
-      allow write: if isEditor();
+      allow get, list: if
+        isSuperAdmin() ||
+        (isApproved() && sameOffice()) ||
+        (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
+
+      allow write: if
+        isEditor() && sameOfficeWrite();
     }
 
-    // ARS Entries
+    /* ================= ARS ENTRIES ================= */
+
     match /arsEntries/{docId} {
-      allow get, list: if isSuperAdmin() ||
-                          (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation) ||
-                          (isSupervisor() && resource.data.supervisorUid == request.auth.uid);
-      allow write: if isEditor();
+      allow get, list: if
+        isSuperAdmin() ||
+        (isApproved() && sameOffice()) ||
+        (isSupervisor() && resource.data.supervisorUid == request.auth.uid);
+
+      allow write: if
+        isEditor() && sameOfficeWrite();
     }
     
     // Pending Updates from Supervisors
@@ -80,56 +93,63 @@ service cloud.firestore {
       allow update, delete: if isEditor();
     }
 
-    // Staff Members (Establishment)
+    /* ================= OFFICE-SCOPED DATA ================= */
+
+    function officeRead() {
+      return isSuperAdmin() || (isApproved() && sameOffice());
+    }
+
+    function officeWrite() {
+      return isEditor() && sameOfficeWrite();
+    }
+
     match /staffMembers/{docId} {
-      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor();
+      allow get, list: if officeRead();
+      allow write: if officeWrite();
     }
-    
-    // Agency Registrations
+
     match /agencyApplications/{docId} {
-      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor();
+      allow get, list: if officeRead();
+      allow write: if officeWrite();
     }
-    
-    // eTenders
+
     match /eTenders/{docId} {
-      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor();
+      allow get, list: if officeRead();
+      allow write: if officeWrite();
     }
 
-    // Vehicle Management
     match /departmentVehicles/{docId} {
-      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor();
-    }
-    match /hiredVehicles/{docId} {
-      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor();
-    }
-    match /rigCompressors/{docId} {
-      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isEditor();
+      allow get, list: if officeRead();
+      allow write: if officeWrite();
     }
 
-    // Office Addresses
-    match /officeAddresses/{docId} {
-      allow get, list: if isSuperAdmin() || (isOfficeUser() && resource.data.officeLocation == getUserData().officeLocation);
-      allow write: if isSuperAdmin() || (isEditor() && resource.data.officeLocation == getUserData().officeLocation);
+    match /hiredVehicles/{docId} {
+      allow get, list: if officeRead();
+      allow write: if officeWrite();
     }
-    
-    // === Global Collections (Readable by any approved user) ===
-    
+
+    match /rigCompressors/{docId} {
+      allow get, list: if officeRead();
+      allow write: if officeWrite();
+    }
+
+    match /officeAddresses/{docId} {
+      allow get, list: if officeRead();
+      allow write: if isSuperAdmin() || officeWrite();
+    }
+
+    /* ================= GLOBAL DATA ================= */
+
     match /gwdRates/{docId} {
       allow read: if isApproved();
       allow write: if isSuperAdmin();
     }
-    
+
     match /bidders/{docId} {
       allow read: if isApproved();
       allow write: if isEditor();
     }
-    
+
     match /localSelfGovernments/{docId} {
       allow read: if isApproved();
       allow write: if isSuperAdmin() || isEditor();
