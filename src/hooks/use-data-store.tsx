@@ -144,6 +144,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         }
         
         const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+        const officeToQuery = !isSuperAdminUser ? user.officeLocation : selectedOffice;
+        const isSuperAdminAllOffices = isSuperAdminUser && !officeToQuery;
 
         const collectionsToSubscribe: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, collectionName: string }> = {
             fileEntries: { setter: setAllFileEntries, loaderKey: 'files', collectionName: 'fileEntries' },
@@ -167,7 +169,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             let q;
             const isOfficeScoped = officeScopedCollectionNames.includes(collectionName);
-            const officeToQuery = !isSuperAdminUser ? user.officeLocation : selectedOffice;
 
             if (isOfficeScoped) {
                 if (officeToQuery) {
@@ -176,7 +177,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 } else if (isSuperAdminUser) { // Super Admin with "All Offices" selected
                     q = query(collectionGroup(db, collectionName));
                 } else {
-                    // For a non-admin user with no office, we set empty data and stop.
                     setter([]);
                     setLoadingStates(prev => ({...prev, [loaderKey]: false}));
                     return () => {};
@@ -187,14 +187,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 q = query(collection(db, collectionName));
             }
             
-            if (!q) { // Defensive check
-                setter([]);
-                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
-                return () => {};
+            if (collectionName === 'bidders') {
+                q = query(q, orderBy("order"));
+            } else if (collectionName === 'eTenders' && !isSuperAdminAllOffices) { // Do not order collection group queries to avoid needing a composite index
+                q = query(q, orderBy("tenderDate", "desc"));
             }
-
-            if (collectionName === 'bidders') q = query(q, orderBy("order"));
-            else if (collectionName === 'eTenders') q = query(q, orderBy("tenderDate", "desc"));
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 if (collectionName === 'rateDescriptions') {
