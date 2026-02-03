@@ -53,7 +53,7 @@ service cloud.firestore {
       
       allow list: if isSuperAdmin() || isEditor();
 
-      allow create: if isSuperAdmin() || request.auth.uid == userId;
+      allow create: if isSuperAdmin() || isEditor();
 
       allow update: if isSuperAdmin() || request.auth.uid == userId;
 
