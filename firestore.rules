@@ -55,9 +55,9 @@ service cloud.firestore {
 
       allow create: if isSuperAdmin() || isEditor();
 
-      allow update: if isSuperAdmin() || request.auth.uid == userId;
+      allow update: if isSuperAdmin() || isEditor();
 
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin() || isEditor();
     }
     
     match /gwdRates/{docId} {
