@@ -61,23 +61,28 @@ service cloud.firestore {
     }
     
     match /gwdRates/{docId} {
-      allow read: if isApproved();
+      allow read: if isSignedIn();
       allow write: if isSuperAdmin();
     }
 
     match /bidders/{docId} {
-      allow read: if isApproved();
+      allow read: if isSignedIn();
       allow write: if isEditor();
     }
 
     match /localSelfGovernments/{docId} {
-      allow read: if isApproved();
+      allow read: if isSignedIn();
       allow write: if isSuperAdmin() || isEditor();
     }
 
     match /rateDescriptions/{docId} {
-      allow read: if isApproved();
+      allow read: if isSignedIn();
       allow write: if isSuperAdmin();
+    }
+
+    match /officeAddresses/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin() || isEditor();
     }
     
     /* ================= OFFICE SUBCOLLECTIONS ================= */
@@ -117,11 +122,6 @@ service cloud.firestore {
       }
 
       match /agencyApplications/{docId} {
-        allow read: if officeRead();
-        allow write: if officeWrite();
-      }
-      
-      match /officeAddresses/{docId} {
         allow read: if officeRead();
         allow write: if officeWrite();
       }
