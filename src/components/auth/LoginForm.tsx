@@ -47,10 +47,6 @@ export default function LoginForm() {
     const { success, error } = await login(data.email, data.password);
 
     if (success) {
-      toast({
-        title: "Login Successful",
-        description: "Redirecting to your dashboard...",
-      });
       // On success, we don't set isSubmitting back to false.
       // The redirect from the parent page will unmount this component,
       // preventing a second click.
