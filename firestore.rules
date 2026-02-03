@@ -36,110 +36,34 @@ service cloud.firestore {
       return request.auth.token.email == "keralagwd@gmail.com";
     }
 
-    function sameOffice() {
-      return resource.data.officeLocation == getUserData().officeLocation;
+    function isOfficeUser() {
+      return isApproved() && 'officeLocation' in getUserData();
     }
 
-    function sameOfficeWrite() {
-      return request.resource.data.officeLocation == getUserData().officeLocation;
+    function sameOffice(officeId) {
+      return isOfficeUser() && officeId == getUserData().officeLocation.lower();
     }
 
-    /* ================= USERS ================= */
+    /* ================= GLOBAL COLLECTIONS ================= */
 
     match /users/{userId} {
       allow get: if
         isSuperAdmin() ||
-        (isApproved() && sameOffice()) ||
-        request.auth.uid == userId;
-
-      allow list: if isSuperAdmin() || (isEditor() || isViewer());
+        (isApproved() && request.auth.uid == userId);
+      
+      allow list: if isSuperAdmin() || isEditor();
 
       allow create: if isSuperAdmin() || request.auth.uid == userId;
 
-      allow update: if
-        isSuperAdmin() ||
-        request.auth.uid == userId;
+      allow update: if isSuperAdmin() || request.auth.uid == userId;
 
       allow delete: if isSuperAdmin();
     }
-
-    /* ================= FILE ENTRIES ================= */
-
-    match /fileEntries/{docId} {
-      allow get, list: if
-        isSuperAdmin() ||
-        (isApproved() && sameOffice()) ||
-        (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
-
-      allow write: if
-        isEditor() && sameOfficeWrite();
-    }
-
-    /* ================= ARS ENTRIES ================= */
-
-    match /arsEntries/{docId} {
-      allow get, list: if
-        isSuperAdmin() ||
-        (isApproved() && sameOffice()) ||
-        (isSupervisor() && resource.data.supervisorUid == request.auth.uid);
-
-      allow write: if
-        isEditor() && sameOfficeWrite();
-    }
     
-    // Pending Updates from Supervisors
-    match /pendingUpdates/{docId} {
-      allow create: if isSupervisor() || isEditor();
-      allow read, list: if isEditor() || (isSupervisor() && resource.data.submittedByUid == request.auth.uid);
-      allow update, delete: if isEditor();
-    }
-
-    /* ================= OFFICE-SCOPED DATA ================= */
-
-    function officeRead() {
-      return isSuperAdmin() || (isApproved() && sameOffice());
-    }
-
-    function officeWrite() {
-      return isEditor() && sameOfficeWrite();
-    }
-
-    match /staffMembers/{docId} {
-      allow get, list: if officeRead();
-      allow write: if officeWrite();
-    }
-
-    match /agencyApplications/{docId} {
-      allow get, list: if officeRead();
-      allow write: if officeWrite();
-    }
-
-    match /eTenders/{docId} {
-      allow get, list: if officeRead();
-      allow write: if officeWrite();
-    }
-
-    match /departmentVehicles/{docId} {
-      allow get, list: if officeRead();
-      allow write: if officeWrite();
-    }
-
-    match /hiredVehicles/{docId} {
-      allow get, list: if officeRead();
-      allow write: if officeWrite();
-    }
-
-    match /rigCompressors/{docId} {
-      allow get, list: if officeRead();
-      allow write: if officeWrite();
-    }
-
     match /officeAddresses/{docId} {
-      allow get, list: if officeRead();
-      allow write: if isSuperAdmin() || officeWrite();
+      allow read: if isApproved();
+      allow write: if isSuperAdmin() || isEditor();
     }
-
-    /* ================= GLOBAL DATA ================= */
 
     match /gwdRates/{docId} {
       allow read: if isApproved();
@@ -159,6 +83,69 @@ service cloud.firestore {
     match /rateDescriptions/{docId} {
       allow read: if isApproved();
       allow write: if isSuperAdmin();
+    }
+    
+    /* ================= OFFICE SUBCOLLECTIONS ================= */
+
+    match /offices/{officeId} {
+      // Allow super admin to create/manage office documents
+      allow read, write: if isSuperAdmin();
+      
+      function officeRead() {
+        return isSuperAdmin() || sameOffice(officeId);
+      }
+      
+      function officeWrite() {
+        return isSuperAdmin() || (isEditor() && sameOffice(officeId));
+      }
+      
+      match /fileEntries/{docId} {
+        allow get: if officeRead() || (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
+        allow list: if officeRead();
+        allow write: if officeWrite();
+      }
+
+      match /arsEntries/{docId} {
+        allow get: if officeRead() || (isSupervisor() && resource.data.supervisorUid == request.auth.uid);
+        allow list: if officeRead();
+        allow write: if officeWrite();
+      }
+      
+      match /pendingUpdates/{docId} {
+        allow create: if isSupervisor() || isEditor();
+        allow read, list: if isEditor() || (isSupervisor() && resource.data.submittedByUid == request.auth.uid);
+        allow update, delete: if isEditor();
+      }
+      
+      match /staffMembers/{docId} {
+        allow read: if officeRead();
+        allow write: if officeWrite();
+      }
+
+      match /agencyApplications/{docId} {
+        allow read: if officeRead();
+        allow write: if officeWrite();
+      }
+
+      match /eTenders/{docId} {
+        allow read: if officeRead();
+        allow write: if officeWrite();
+      }
+
+      match /departmentVehicles/{docId} {
+        allow read: if officeRead();
+        allow write: if officeWrite();
+      }
+
+      match /hiredVehicles/{docId} {
+        allow read: if officeRead();
+        allow write: if officeWrite();
+      }
+
+      match /rigCompressors/{docId} {
+        allow read: if officeRead();
+        allow write: if officeWrite();
+      }
     }
   }
 }

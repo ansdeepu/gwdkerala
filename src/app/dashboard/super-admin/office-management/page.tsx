@@ -17,7 +17,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import UserManagementTable from '@/components/admin/UserManagementTable';
 import { useDataStore } from '@/hooks/use-data-store';
+import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 
+const db = getFirestore(app);
 
 const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate"];
 
@@ -103,7 +106,14 @@ export default function OfficeManagementPage() {
     try {
       const result = await createOfficeAdmin(data.email, data.password, data.name, data.officeLocation);
       if (result.success) {
-        toast({ title: "User Created", description: `Account for ${data.name} has been created.` });
+        // Create the office document in the 'offices' collection
+        const officeDocRef = doc(db, "offices", data.officeLocation.toLowerCase());
+        await setDoc(officeDocRef, {
+            name: "Ground Water Department",
+            createdAt: serverTimestamp(),
+        });
+        
+        toast({ title: "User and Office Created", description: `Account for ${data.name} and office for ${data.officeLocation} created.` });
         setIsOfficeUserDialogOpen(false);
         officeUserForm.reset();
         loadUsers();
@@ -111,7 +121,7 @@ export default function OfficeManagementPage() {
         throw new Error(result.error?.message || "Failed to create user.");
       }
     } catch (error: any) {
-      toast({ title: "Error", description: `Could not create user: ${error.message}`, variant: "destructive" });
+      toast({ title: "Error", description: `Could not create user or office: ${error.message}`, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
