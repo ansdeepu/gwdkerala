@@ -1,9 +1,8 @@
-
 // src/hooks/use-data-store.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { getFirestore, collection, onSnapshot, query, Timestamp, DocumentData, orderBy, getDocs, type QuerySnapshot, where, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, query, Timestamp, DocumentData, orderBy, getDocs, type QuerySnapshot, where, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, writeBatch, collectionGroup } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { useAuth, type UserProfile } from './useAuth';
 import type { DataEntryFormData } from '@/lib/schemas/DataEntrySchema';
@@ -189,29 +188,34 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             officeAddresses: { setter: setOfficeAddresses, loaderKey: 'officeAddress', collectionName: 'officeAddresses' },
         };
 
-        const officeScopedCollections = ['fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors', 'officeAddresses'];
+        const officeScopedCollectionNames = ['fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'];
         
         const unsubscribes = Object.entries(collectionsToSubscribe).map(([key, { setter, loaderKey, collectionName }]) => {
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
             
-            const baseQuery = collection(db, collectionName);
             let q;
+            const isOfficeScoped = officeScopedCollectionNames.includes(collectionName);
+            const officeToQuery = !isSuperAdminUser ? user.officeLocation : selectedOffice;
 
-            if (officeScopedCollections.includes(collectionName)) {
-                const officeToFilter = isSuperAdminUser ? selectedOffice : user.officeLocation;
-                if (officeToFilter) {
-                    q = query(baseQuery, where('officeLocation', '==', officeToFilter));
+            if (isOfficeScoped) {
+                if (officeToQuery) {
+                    const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
+                    q = query(collection(db, path));
                 } else if (isSuperAdminUser) { // Super Admin with "All Offices" selected
-                    q = query(baseQuery);
-                } else { // Non-super-admin with no office location assigned - should return nothing
-                    q = query(baseQuery, where('officeLocation', '==', '__invalid_location__'));
+                    q = query(collectionGroup(db, collectionName));
+                } else { // Sub-office user with no office location assigned (should not happen)
+                    setter([]);
+                    setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+                    return () => {};
                 }
-            } else {
-                // Global collections
-                q = query(baseQuery);
+            } else if (collectionName === 'officeAddresses' && officeToQuery) {
+                 q = query(collection(db, collectionName), where('officeLocation', '==', officeToQuery));
+            }
+            else {
+                q = query(collection(db, collectionName));
             }
             
-            // Apply specific ordering if needed
+            // Apply specific ordering if needed AFTER path/group is determined
             if (collectionName === 'bidders') q = query(q, orderBy("order"));
             else if (collectionName === 'eTenders') q = query(q, orderBy("tenderDate", "desc"));
             
@@ -273,9 +277,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const useAddVehicle = <T extends {}>(collectionName: string) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
-          const payload = { ...data, officeLocation: user.officeLocation, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+          if (!user.officeLocation) throw new Error("User must have an office location.");
+          const collectionPath = `offices/${user.officeLocation.toLowerCase()}/${collectionName}`;
+          const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
-          await addDoc(collection(db, collectionName), payload);
+          await addDoc(collection(db, collectionPath), payload);
           toast({ title: 'Item Added', description: 'The new item has been saved.' });
       }, [user]);
     };
@@ -283,8 +289,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const useUpdateVehicle = <T extends { id?: string }>(collectionName: string) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
+          if (!user.officeLocation) throw new Error("User must have an office location.");
           if (!data.id) throw new Error("Document ID is missing for update.");
-          const docRef = doc(db, collectionName, data.id);
+          const docRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/${collectionName}`, data.id);
           const payload = { ...data, updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
           await updateDoc(docRef, payload);
@@ -295,7 +302,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const useDeleteVehicle = (collectionName: string) => {
       return useCallback(async (id: string, name: string) => {
           if (!user) throw new Error("User must be logged in.");
-          const docRef = doc(db, collectionName, id);
+           if (!user.officeLocation) throw new Error("User must have an office location.");
+          const docRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/${collectionName}`, id);
           deleteDoc(docRef)
               .then(() => {
                   toast({ title: 'Item Deleted', description: `${name} has been removed.` });

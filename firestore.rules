@@ -60,11 +60,6 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
     
-    match /officeAddresses/{docId} {
-      allow read: if isApproved();
-      allow write: if isSuperAdmin() || isEditor();
-    }
-
     match /gwdRates/{docId} {
       allow read: if isApproved();
       allow write: if isSuperAdmin();
@@ -88,7 +83,6 @@ service cloud.firestore {
     /* ================= OFFICE SUBCOLLECTIONS ================= */
 
     match /offices/{officeId} {
-      // Allow super admin to create/manage office documents
       allow read, write: if isSuperAdmin();
       
       function officeRead() {
@@ -126,6 +120,11 @@ service cloud.firestore {
         allow read: if officeRead();
         allow write: if officeWrite();
       }
+      
+      match /officeAddresses/{docId} {
+        allow read: if officeRead();
+        allow write: if officeWrite();
+      }
 
       match /eTenders/{docId} {
         allow read: if officeRead();
@@ -146,6 +145,33 @@ service cloud.firestore {
         allow read: if officeRead();
         allow write: if officeWrite();
       }
+    }
+    
+    /* ================= COLLECTION GROUP RULES FOR SUPER ADMIN LISTS ================= */
+
+    match /{path=**}/fileEntries/{docId} {
+      allow list: if isSuperAdmin();
+    }
+    match /{path=**}/arsEntries/{docId} {
+      allow list: if isSuperAdmin();
+    }
+    match /{path=**}/staffMembers/{docId} {
+      allow list: if isSuperAdmin();
+    }
+    match /{path=**}/agencyApplications/{docId} {
+      allow list: if isSuperAdmin();
+    }
+    match /{path=**}/eTenders/{docId} {
+      allow list: if isSuperAdmin();
+    }
+    match /{path=**}/departmentVehicles/{docId} {
+      allow list: if isSuperAdmin();
+    }
+    match /{path=**}/hiredVehicles/{docId} {
+      allow list: if isSuperAdmin();
+    }
+    match /{path=**}/rigCompressors/{docId} {
+      allow list: if isSuperAdmin();
     }
   }
 }
