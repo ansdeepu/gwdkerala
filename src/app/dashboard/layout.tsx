@@ -174,7 +174,7 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, logout } = useAuth();
-  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastActivityFirestoreUpdateRef = useRef<number>(0); 
   const { toast } = useToast();
   const { isNavigating, setIsNavigating } = usePageNavigation();
