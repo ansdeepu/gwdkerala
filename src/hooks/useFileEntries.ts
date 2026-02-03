@@ -90,18 +90,22 @@ export function useFileEntries() {
 
     const addFileEntry = useCallback(async (entryData: DataEntryFormData): Promise<string> => {
         if (!user) throw new Error("User must be logged in to add an entry.");
-
+        if (!user.officeLocation) throw new Error("User must have an office location.");
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/fileEntries`;
+        
         const payload = { ...entryData, officeLocation: user.officeLocation };
         if (payload.id) delete payload.id;
 
-        const docRef = await addDoc(collection(db, FILE_ENTRIES_COLLECTION), { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        const docRef = await addDoc(collection(db, collectionPath), { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
         return docRef.id;
     }, [user]);
 
     const updateFileEntry = useCallback(async (fileId: string, entryData: DataEntryFormData, approveUpdateId?: string): Promise<void> => {
         if (!user) throw new Error("User must be logged in to update an entry.");
+        if (!user.officeLocation) throw new Error("User has no office location.");
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/fileEntries`;
         
-        const docRef = doc(db, FILE_ENTRIES_COLLECTION, fileId);
+        const docRef = doc(db, collectionPath, fileId);
         const payload = { ...entryData };
         if (payload.id) delete payload.id;
 
@@ -110,7 +114,7 @@ export function useFileEntries() {
         if (approveUpdateId && user.role === 'editor') {
             const batch = writeBatch(db);
             batch.update(docRef, finalPayload);
-            const updateRef = doc(db, PENDING_UPDATES_COLLECTION, approveUpdateId);
+            const updateRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`, approveUpdateId);
             batch.update(updateRef, { status: 'approved', reviewedByUid: user.uid, reviewedAt: serverTimestamp() });
             await batch.commit();
         } else {
@@ -125,18 +129,23 @@ export function useFileEntries() {
         toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
         return;
     }
+    if (!user?.officeLocation) {
+        toast({ title: "Deletion Failed", description: "User has no office location.", variant: "destructive" });
+        return;
+    }
     if (!docId) {
         toast({ title: "Deletion Failed", description: "Invalid item ID provided.", variant: "destructive" });
         return;
     }
     try {
-        await deleteDoc(doc(db, FILE_ENTRIES_COLLECTION, docId));
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/${FILE_ENTRIES_COLLECTION}`;
+        await deleteDoc(doc(db, collectionPath, docId));
         toast({ title: "Entry Deleted", description: "The file entry has been removed." });
     } catch (error: any) {
         console.error(`Error deleting file with ID ${docId}:`, error);
         toast({ title: "Error", description: error.message, variant: "destructive" });
     }
-  }, [user?.role, toast]);
+  }, [user, toast]);
 
   const batchDeleteFileEntries = useCallback(async (fileNos: string[]): Promise<{ successCount: number; failureCount: number }> => {
     if (user?.role !== 'editor') {
@@ -167,12 +176,17 @@ export function useFileEntries() {
   const fetchEntryForEditing = useCallback(async (
     docId: string
   ): Promise<DataEntryFormData | null> => {
+    if (!user || !user.officeLocation) {
+        console.error("fetchEntryForEditing: User or user office not available.");
+        return null;
+    }
     try {
-      const docRef = doc(db, FILE_ENTRIES_COLLECTION, docId);
+      const collectionPath = `offices/${user.officeLocation.toLowerCase()}/fileEntries`;
+      const docRef = doc(db, collectionPath, docId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
-        console.warn(`[fetchEntryForEditing] No file found with ID: ${docId}`);
+        console.warn(`[fetchEntryForEditing] No file found with ID: ${docId} in office ${user.officeLocation}`);
         return null;
       }
       
@@ -182,7 +196,7 @@ export function useFileEntries() {
       console.error(`[fetchEntryForEditing] Error fetching docId ${docId}:`, error);
       return null;
     }
-  }, []);
+  }, [user]);
 
   return { 
       fileEntries, 
