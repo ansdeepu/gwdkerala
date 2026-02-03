@@ -22,10 +22,10 @@ import { useRouter } from 'next/navigation';
 
 // Inline SVG components
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 const LogIn = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
 );
 
 
@@ -44,36 +44,32 @@ export default function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true);
-    try {
-      const { success, error } = await login(data.email, data.password);
+    const { success, error } = await login(data.email, data.password);
 
-      if (success) {
-        toast({
-          title: "Login Successful",
-          description: "Redirecting to your dashboard...",
-        });
-        // The redirect is now handled by the login page's useEffect hook.
-      } else {
-        const errorMessage =
-          error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found'
-            ? "Invalid email or password. Please try again."
-            : error?.message || "An unknown error occurred.";
-        
-        toast({
-          title: "Login Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-        toast({
-            title: "An unexpected error occurred.",
-            description: error.message || "Please check your connection and try again.",
-            variant: "destructive"
-        });
-    } finally {
-        setIsSubmitting(false);
+    if (success) {
+      toast({
+        title: "Login Successful",
+        description: "Redirecting to your dashboard...",
+      });
+      // On success, we don't set isSubmitting back to false.
+      // The redirect from the parent page will unmount this component,
+      // preventing a second click.
+      return;
     }
+    
+    // If we are here, it means login failed.
+    const errorMessage =
+      error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found'
+        ? "Invalid email or password. Please try again."
+        : error?.message || "An unknown error occurred.";
+    
+    toast({
+      title: "Login Failed",
+      description: errorMessage,
+      variant: "destructive",
+    });
+
+    setIsSubmitting(false); // Re-enable the button only on failure.
   };
 
   return (
