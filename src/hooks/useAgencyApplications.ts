@@ -18,7 +18,6 @@ import { toast } from './use-toast';
 import { useDataStore } from './use-data-store'; // Import the central store hook
 
 const db = getFirestore(app);
-const APPLICATIONS_COLLECTION = 'agencyApplications';
 
 // Type definitions that include the ID and handle Date objects
 export type RigRegistration = RigRegistrationFormData & { id: string };
@@ -31,10 +30,11 @@ export type AgencyApplication = Omit<AgencyApplicationFormData, 'rigs'> & {
 
 export function useAgencyApplications() {
   const { user } = useAuth();
-  const { allAgencyApplications, isLoading: dataStoreLoading, refetchAgencyApplications } = useDataStore(); // Use the central store
+  const { allAgencyApplications, isLoading: dataStoreLoading } = useDataStore(); // Use the central store
 
   const addApplication = useCallback(async (applicationData: Omit<AgencyApplication, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (!user) throw new Error("User must be logged in to add an application.");
+    if (!user.officeLocation) throw new Error("User must have an office location.");
 
     const payload = {
         ...applicationData,
@@ -42,36 +42,37 @@ export function useAgencyApplications() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     };
-    await addDoc(collection(db, APPLICATIONS_COLLECTION), payload);
-    refetchAgencyApplications(); // Trigger refetch
-  }, [user, refetchAgencyApplications]);
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/agencyApplications`;
+    await addDoc(collection(db, collectionPath), payload);
+  }, [user]);
 
   const updateApplication = useCallback(async (id: string, applicationData: Partial<AgencyApplication>) => {
     if (!user) throw new Error("User must be logged in to update an application.");
+    if (!user.officeLocation) throw new Error("User must have an office location.");
     
-    const docRef = doc(db, APPLICATIONS_COLLECTION, id);
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/agencyApplications`;
+    const docRef = doc(db, collectionPath, id);
     const payload = {
         ...applicationData,
         updatedAt: serverTimestamp(),
     };
-    // The ID should not be part of the data being updated in Firestore
     if ('id' in payload) {
       delete (payload as any).id;
     }
     
     await updateDoc(docRef, payload);
-    refetchAgencyApplications(); // Trigger refetch
-  }, [user, refetchAgencyApplications]);
+  }, [user]);
   
   const deleteApplication = useCallback(async (id: string) => {
     if (!user || user.role !== 'editor') {
         toast({ title: "Permission Denied", description: "You don't have permission to delete applications.", variant: "destructive" });
         return;
     }
-    const docRef = doc(db, APPLICATIONS_COLLECTION, id);
+    if (!user.officeLocation) throw new Error("User must have an office location.");
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/agencyApplications`;
+    const docRef = doc(db, collectionPath, id);
     await deleteDoc(docRef);
-    refetchAgencyApplications(); // Trigger refetch
-  }, [user, refetchAgencyApplications]);
+  }, [user, toast]);
   
   return { 
     applications: allAgencyApplications, 

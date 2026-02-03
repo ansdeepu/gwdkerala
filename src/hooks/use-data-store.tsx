@@ -92,15 +92,7 @@ interface DataStoreContextType {
     officeAddresses: OfficeAddress[];
     officeAddress: OfficeAddress | null;
     isLoading: boolean;
-    refetchFileEntries: () => void;
-    refetchArsEntries: () => void;
     deleteArsEntry: (id: string) => Promise<void>;
-    refetchStaffMembers: () => void;
-    refetchAgencyApplications: () => void;
-    refetchLsgConstituencyMaps: () => void;
-    refetchRateDescriptions: () => void;
-    refetchBidders: () => void;
-    refetchE_tenders: () => void;
     addDepartmentVehicle: (data: DepartmentVehicle) => Promise<void>;
     updateDepartmentVehicle: (data: DepartmentVehicle) => Promise<void>;
     deleteDepartmentVehicle: (id: string, name: string) => Promise<void>;
@@ -110,7 +102,6 @@ interface DataStoreContextType {
     addRigCompressor: (data: RigCompressor) => Promise<void>;
     updateRigCompressor: (data: RigCompressor) => Promise<void>;
     deleteRigCompressor: (id: string, name: string) => Promise<void>;
-    refetchOfficeAddress: () => void;
 }
 
 const DataStoreContext = createContext<DataStoreContextType | undefined>(undefined);
@@ -135,27 +126,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true,
     });
     
-    const [refetchCounters, setRefetchCounters] = useState({
-        files: 0, ars: 0, staff: 0, agencies: 0, lsg: 0, rates: 0, bidders: 0, eTenders: 0,
-        departmentVehicles: 0, hiredVehicles: 0, rigCompressors: 0, officeAddress: 0,
-    });
-
     const { selectedOffice } = useOfficeSelection();
     
-    const refetchFileEntries = useCallback(() => setRefetchCounters(c => ({...c, files: c.files + 1})), []);
-    const refetchArsEntries = useCallback(() => setRefetchCounters(c => ({...c, ars: c.ars + 1})), []);
-    const refetchStaffMembers = useCallback(() => setRefetchCounters(c => ({...c, staff: c.staff + 1})), []);
-    const refetchAgencyApplications = useCallback(() => setRefetchCounters(c => ({...c, agencies: c.agencies + 1})), []);
-    const refetchLsgConstituencyMaps = useCallback(() => setRefetchCounters(c => ({ ...c, lsg: c.lsg + 1 })), []);
-    const refetchRateDescriptions = useCallback(() => setRefetchCounters(c => ({ ...c, rates: c.rates + 1 })), []);
-    const refetchBidders = useCallback(() => setRefetchCounters(c => ({ ...c, bidders: c.bidders + 1 })), []);
-    const refetchE_tenders = useCallback(() => setRefetchCounters(c => ({ ...c, eTenders: c.eTenders + 1 })), []);
-    const refetchDepartmentVehicles = useCallback(() => setRefetchCounters(c => ({...c, departmentVehicles: c.departmentVehicles + 1})), []);
-    const refetchHiredVehicles = useCallback(() => setRefetchCounters(c => ({...c, hiredVehicles: c.hiredVehicles + 1})), []);
-    const refetchRigCompressors = useCallback(() => setRefetchCounters(c => ({...c, rigCompressors: c.rigCompressors + 1})), []);
-    const refetchOfficeAddress = useCallback(() => setRefetchCounters(c => ({...c, officeAddress: c.officeAddress + 1})), []);
-
-
      const deleteArsEntry = useCallback(async (id: string) => {
         if (!user || user.role !== 'editor') {
             toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
@@ -203,19 +175,24 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     q = query(collection(db, path));
                 } else if (isSuperAdminUser) { // Super Admin with "All Offices" selected
                     q = query(collectionGroup(db, collectionName));
-                } else { // Sub-office user with no office location assigned (should not happen)
+                } else {
+                    // For a non-admin user with no office, we set empty data and stop.
                     setter([]);
                     setLoadingStates(prev => ({...prev, [loaderKey]: false}));
                     return () => {};
                 }
             } else if (collectionName === 'officeAddresses' && officeToQuery) {
                  q = query(collection(db, collectionName), where('officeLocation', '==', officeToQuery));
-            }
-            else {
+            } else {
                 q = query(collection(db, collectionName));
             }
             
-            // Apply specific ordering if needed AFTER path/group is determined
+            if (!q) { // Defensive check
+                setter([]);
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+                return () => {};
+            }
+
             if (collectionName === 'bidders') q = query(q, orderBy("order"));
             else if (collectionName === 'eTenders') q = query(q, orderBy("tenderDate", "desc"));
             
@@ -251,7 +228,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         return () => {
             unsubscribes.forEach(unsub => unsub());
         };
-    }, [user, selectedOffice, refetchCounters]);
+    }, [user, selectedOffice]);
     
     // Set single officeAddress from the fetched array
     useEffect(() => {
@@ -338,10 +315,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         <DataStoreContext.Provider value={{
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, officeAddresses, officeAddress, isLoading,
-            refetchFileEntries, refetchArsEntries, deleteArsEntry, refetchStaffMembers, refetchAgencyApplications,
-            refetchLsgConstituencyMaps, refetchRateDescriptions, refetchBidders, refetchE_tenders, addDepartmentVehicle,
+            deleteArsEntry, addDepartmentVehicle,
             updateDepartmentVehicle, deleteDepartmentVehicle, addHiredVehicle, updateHiredVehicle, deleteHiredVehicle,
-            addRigCompressor, updateRigCompressor, deleteRigCompressor, refetchOfficeAddress,
+            addRigCompressor, updateRigCompressor, deleteRigCompressor,
         }}>
             {children}
         </DataStoreContext.Provider>

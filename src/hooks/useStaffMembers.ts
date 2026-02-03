@@ -21,7 +21,6 @@ import { useDataStore } from './use-data-store'; // Import the central store hoo
 
 const db = getFirestore(app);
 const storage = getStorage(app);
-const STAFF_MEMBERS_COLLECTION = 'staffMembers';
 
 const sanitizeStaffMemberForFirestore = (data: any): any => {
   const sanitized: any = {};
@@ -49,54 +48,58 @@ interface StaffMembersState {
 
 export function useStaffMembers(): StaffMembersState {
   const { user } = useAuth();
-  const { allStaffMembers, isLoading: dataStoreLoading, refetchStaffMembers } = useDataStore();
+  const { allStaffMembers, isLoading: dataStoreLoading } = useDataStore();
   
   const addStaffMember = useCallback(async (staffData: StaffMemberFormData): Promise<string | undefined> => {
     if (!user || user.role !== 'editor') throw new Error("User does not have permission.");
+    if (!user.officeLocation) throw new Error("User has no office location.");
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/staffMembers`;
     const payload = { ...sanitizeStaffMemberForFirestore(staffData), officeLocation: user.officeLocation, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-    const docRef = await addDoc(collection(db, STAFF_MEMBERS_COLLECTION), payload);
-    refetchStaffMembers();
+    const docRef = await addDoc(collection(db, collectionPath), payload);
     return docRef.id;
-  }, [user, refetchStaffMembers]);
+  }, [user]);
 
   const updateStaffMember = useCallback(async (id: string, staffData: Partial<StaffMemberFormData>) => {
     if (!user || user.role !== 'editor') throw new Error("User does not have permission.");
-    const staffDocRef = doc(db, STAFF_MEMBERS_COLLECTION, id);
+    if (!user.officeLocation) throw new Error("User has no office location.");
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/staffMembers`;
+    const staffDocRef = doc(db, collectionPath, id);
     const existingMember = allStaffMembers.find(s => s.id === id);
 
-    // If the photo URL is being cleared and the old one was a Firebase Storage URL, delete the old photo.
     if (staffData.photoUrl === "" && existingMember?.photoUrl && existingMember.photoUrl.includes("firebasestorage.googleapis.com")) { 
       try { await deleteObject(storageRef(storage, existingMember.photoUrl)); } catch (e) { console.warn("Failed to delete old photo:", e); }
     }
     const payload = { ...sanitizeStaffMemberForFirestore(staffData), updatedAt: serverTimestamp() };
-    delete payload.createdAt; // Prevent createdAt from being overwritten on update
+    delete payload.createdAt;
     await updateDoc(staffDocRef, payload);
-    refetchStaffMembers();
-  }, [user, allStaffMembers, refetchStaffMembers]);
+  }, [user, allStaffMembers]);
 
   const deleteStaffMember = useCallback(async (id: string) => {
     if (!user || user.role !== 'editor') throw new Error("User does not have permission.");
-    const staffDocRef = doc(db, STAFF_MEMBERS_COLLECTION, id);
+    if (!user.officeLocation) throw new Error("User has no office location.");
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/staffMembers`;
+    const staffDocRef = doc(db, collectionPath, id);
     const staffMemberToDelete = allStaffMembers.find(s => s.id === id);
     if (staffMemberToDelete?.photoUrl && staffMemberToDelete.photoUrl.includes("firebasestorage.googleapis.com")) { 
       try { await deleteObject(storageRef(storage, staffMemberToDelete.photoUrl)); } catch (e) { console.warn("Failed to delete photo:", e); }
     }
     await deleteDoc(staffDocRef);
-    refetchStaffMembers();
-  }, [user, allStaffMembers, refetchStaffMembers]);
+  }, [user, allStaffMembers]);
 
   const getStaffMemberById = useCallback(async (id: string): Promise<StaffMember | undefined> => {
-     if (!user || !user.isApproved) throw new Error("User not approved to fetch details.");
-    const docSnap = await getDoc(doc(db, STAFF_MEMBERS_COLLECTION, id));
+     if (!user || !user.isApproved || !user.officeLocation) throw new Error("User not approved to fetch details.");
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/staffMembers`;
+    const docSnap = await getDoc(doc(db, collectionPath, id));
     return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as StaffMember : undefined;
   }, [user]);
 
   const updateStaffStatus = useCallback(async (id: string, newStatus: StaffStatusType) => {
     if (!user || user.role !== 'editor') throw new Error("User does not have permission.");
-    const staffDocRef = doc(db, STAFF_MEMBERS_COLLECTION, id);
+    if (!user.officeLocation) throw new Error("User has no office location.");
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/staffMembers`;
+    const staffDocRef = doc(db, collectionPath, id);
     await updateDoc(staffDocRef, { status: newStatus, updatedAt: serverTimestamp() });
-    refetchStaffMembers();
-  }, [user, refetchStaffMembers]);
+  }, [user]);
 
   return { 
     staffMembers: allStaffMembers, 

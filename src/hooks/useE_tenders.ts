@@ -10,7 +10,6 @@ import { toast } from './use-toast';
 import { useDataStore } from './use-data-store';
 
 const db = getFirestore(app);
-const TENDERS_COLLECTION = 'eTenders';
 
 export type E_tender = E_tenderFormData & {
   id: string;
@@ -42,37 +41,42 @@ const processDoc = (docSnap: DocumentData) => {
 
 export function useE_tenders() {
     const { user } = useAuth();
-    const { allE_tenders, isLoading: dataStoreLoading, refetchE_tenders } = useDataStore();
+    const { allE_tenders, isLoading: dataStoreLoading } = useDataStore();
     
     const addTender = useCallback(async (tenderData: Omit<E_tender, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
         if (!user) throw new Error("User must be logged in to add a tender.");
+        if (!user.officeLocation) throw new Error("User has no office location.");
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/eTenders`;
         const payload = { ...tenderData, officeLocation: user.officeLocation, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-        const docRef = await addDoc(collection(db, TENDERS_COLLECTION), payload);
-        refetchE_tenders();
+        const docRef = await addDoc(collection(db, collectionPath), payload);
         return docRef.id;
-    }, [user, refetchE_tenders]);
+    }, [user]);
 
     const updateTender = useCallback(async (id: string, tenderData: Partial<E_tender>) => {
         if (!user) throw new Error("User must be logged in to update a tender.");
-        const docRef = doc(db, TENDERS_COLLECTION, id);
+        if (!user.officeLocation) throw new Error("User has no office location.");
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/eTenders`;
+        const docRef = doc(db, collectionPath, id);
         const payload = { ...tenderData, updatedAt: serverTimestamp() };
         if ('id' in payload) delete (payload as any).id;
         await updateDoc(docRef, payload);
-        refetchE_tenders();
-    }, [user, refetchE_tenders]);
+    }, [user]);
 
     const deleteTender = useCallback(async (id: string) => {
         if (!user || user.role !== 'editor') {
             toast({ title: "Permission Denied", description: "You don't have permission to delete tenders.", variant: "destructive" });
             return;
         }
-        await deleteDoc(doc(db, TENDERS_COLLECTION, id));
-        refetchE_tenders();
-    }, [user, toast, refetchE_tenders]);
+        if (!user.officeLocation) throw new Error("User has no office location.");
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/eTenders`;
+        await deleteDoc(doc(db, collectionPath, id));
+    }, [user, toast]);
     
     const getTender = useCallback(async (id: string): Promise<E_tender | null> => {
+        if (!user || !user.officeLocation) return null;
         try {
-            const docRef = doc(db, TENDERS_COLLECTION, id);
+            const collectionPath = `offices/${user.officeLocation.toLowerCase()}/eTenders`;
+            const docRef = doc(db, collectionPath, id);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 return processDoc(docSnap);
@@ -82,7 +86,7 @@ export function useE_tenders() {
             console.error("Error fetching tender by ID:", error);
             return null;
         }
-    }, []);
+    }, [user]);
 
     return { 
         tenders: allE_tenders, 
@@ -91,6 +95,5 @@ export function useE_tenders() {
         updateTender, 
         deleteTender, 
         getTender, 
-        refetchE_tenders 
     };
 }

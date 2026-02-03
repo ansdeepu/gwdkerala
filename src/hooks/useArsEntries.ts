@@ -12,8 +12,6 @@ import { usePendingUpdates } from './usePendingUpdates';
 import { useDataStore } from './use-data-store'; // Import the new central store hook
 
 const db = getFirestore(app);
-const ARS_COLLECTION = 'arsEntries';
-const PENDING_UPDATES_COLLECTION = 'pendingUpdates';
 
 // This is the shape of the data as it's stored and used in the app
 export type ArsEntry = ArsEntryFormData & {
@@ -42,7 +40,7 @@ const processArsDoc = (docSnap: DocumentData): ArsEntry => {
 
 export function useArsEntries() {
   const { user } = useAuth();
-  const { allArsEntries, isLoading: dataStoreLoading, refetchArsEntries } = useDataStore(); // Use the central store
+  const { allArsEntries, isLoading: dataStoreLoading } = useDataStore(); // Use the central store
   const [arsEntries, setArsEntries] = useState<ArsEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getPendingUpdates } = usePendingUpdates();
@@ -83,6 +81,7 @@ export function useArsEntries() {
 
   const addArsEntry = useCallback(async (entryData: ArsEntryFormData): Promise<string> => {
     if (!user || user.role !== 'editor') throw new Error("Permission denied.");
+    if (!user.officeLocation) throw new Error("User has no office location.");
     
     const payload = {
         ...entryData,
@@ -92,14 +91,16 @@ export function useArsEntries() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
     };
-    const docRef = await addDoc(collection(db, ARS_COLLECTION), payload);
-    refetchArsEntries(); // Trigger refetch
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
+    const docRef = await addDoc(collection(db, collectionPath), payload);
     return docRef.id;
-  }, [user, refetchArsEntries]);
+  }, [user]);
 
   const updateArsEntry = useCallback(async (id: string, entryData: Partial<ArsEntryFormData>, approveUpdateId?: string, approvingUser?: UserProfile) => {
     if (!user) throw new Error("Permission denied.");
-    const docRef = doc(db, ARS_COLLECTION, id);
+    if (!user.officeLocation) throw new Error("User has no office location.");
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
+    const docRef = doc(db, collectionPath, id);
 
     const payload = {
         ...entryData,
@@ -112,11 +113,9 @@ export function useArsEntries() {
 
     if (approveUpdateId && approvingUser && user.role === 'editor') {
         const batch = writeBatch(db);
-        // Apply the actual changes to the ARS entry
         batch.update(docRef, payload);
         
-        // Mark the pending update as approved
-        const updateRef = doc(db, PENDING_UPDATES_COLLECTION, approveUpdateId);
+        const updateRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`, approveUpdateId);
         batch.update(updateRef, { 
             status: 'approved', 
             reviewedByUid: approvingUser.uid, 
@@ -129,21 +128,23 @@ export function useArsEntries() {
     } else {
         throw new Error("Permission denied for direct update.");
     }
-    refetchArsEntries(); // Trigger refetch
-  }, [user, refetchArsEntries]);
+  }, [user]);
   
   const deleteArsEntry = useCallback(async (id: string) => {
     if (!user || user.role !== 'editor') {
         toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
         return;
     }
-    await deleteDoc(doc(db, ARS_COLLECTION, id));
-    refetchArsEntries(); // Trigger refetch
-  }, [user, refetchArsEntries, toast]);
+    if (!user.officeLocation) throw new Error("User has no office location.");
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
+    await deleteDoc(doc(db, collectionPath, id));
+  }, [user, toast]);
   
   const getArsEntryById = useCallback(async (id: string): Promise<ArsEntry | null> => {
+    if (!user || !user.officeLocation) return null;
     try {
-        const docRef = doc(db, ARS_COLLECTION, id);
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
+        const docRef = doc(db, collectionPath, id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
             return processArsDoc(docSnap);
@@ -153,20 +154,20 @@ export function useArsEntries() {
         console.error("Error fetching ARS entry by ID:", error);
         return null;
     }
-  }, []);
+  }, [user]);
 
   const clearAllArsData = useCallback(async () => {
-    if (!user || user.role !== 'editor') {
+    if (!user || user.role !== 'editor' || !user.officeLocation) {
         toast({ title: "Permission Denied", variant: "destructive" });
         return;
     }
-    const q = query(collection(db, ARS_COLLECTION));
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
+    const q = query(collection(db, collectionPath));
     const snapshot = await getDocs(q);
     const batch = writeBatch(db);
     snapshot.docs.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
-    refetchArsEntries(); // Trigger refetch
-  }, [user, toast, refetchArsEntries]);
+  }, [user, toast]);
   
   return { 
     arsEntries, 
@@ -176,6 +177,5 @@ export function useArsEntries() {
     deleteArsEntry, 
     getArsEntryById,
     clearAllArsData,
-    refreshArsEntries: refetchArsEntries 
   };
 }

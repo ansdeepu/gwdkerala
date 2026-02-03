@@ -47,7 +47,7 @@ const OfficeAddressSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }).optional().or(z.literal('')),
   districtOfficerStaffId: z.string().optional(),
   districtOfficer: z.string().optional(),
-  districtOfficerPhotoUrl: z.string().url().optional().or(z.literal('')),
+  districtOfficerPhotoUrl: z.string().url().optional().or(z.literal('')).nullable(),
   gstNo: z.string().optional(),
   panNo: z.string().optional(),
   otherDetails: z.string().optional(),
