@@ -2,7 +2,7 @@
 // src/app/dashboard/layout.tsx
 "use client";
 
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   SidebarProvider,
@@ -17,7 +17,6 @@ import { DataStoreProvider } from '@/hooks/use-data-store';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useAuth, type UserProfile, updateUserLastActive } from '@/hooks/useAuth';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import FirebaseErrorListener from '@/components/FirebaseErrorListener';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
@@ -29,76 +28,10 @@ import OfficeSwitcher from '@/components/layout/OfficeSwitcher';
 const IDLE_TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 const LAST_ACTIVE_UPDATE_INTERVAL = 5 * 60 * 1000; // Update Firestore lastActiveAt at most once per 5 minutes
 
-const sections = [
-  { id: 'updates', title: 'Updates' },
-  { id: 'file-status', title: 'File Status' },
-  { id: 'work-status', title: 'Work Status' },
-  { id: 'constituency', title: 'Constituency' },
-  { id: 'finance', title: 'Finance' },
-  { id: 'ars', title: 'ARS' },
-  { id: 'rig-registration', title: 'Rig Registration' },
-  { id: 'rig-financials', title: 'Rig Financials' },
-  { id: 'work-progress', title: 'Work Progress' },
-  { id: 'supervisor-work', title: "Supervisor" },
-];
-
-const sectionColors = [
-    "text-sky-600", "text-blue-600", "text-indigo-600", "text-violet-600",
-    "text-purple-600", "text-fuchsia-600", "text-pink-600", "text-rose-600",
-    "text-red-600", "text-orange-600", "text-amber-600", "text-yellow-600",
-    "text-lime-600", "text-green-600", "text-emerald-600", "text-teal-600", "text-cyan-600"
-];
-
 function HeaderContent({ user }: { user: UserProfile | null }) {
   const { title, description } = usePageHeader();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
-  const pathname = usePathname();
-  const isDashboardPage = pathname === '/dashboard';
-  const isSuperAdminDashboardPage = pathname.startsWith('/dashboard/super-admin');
-
-  const [activeSection, setActiveSection] = useState<string>(sections[0].id);
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-
-  useEffect(() => {
-    // Only run intersection observer on dashboard page
-    if (!isDashboardPage && !isSuperAdminDashboardPage) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
-        });
-      },
-      { rootMargin: '-20% 0px -80% 0px', threshold: 0 }
-    );
-    
-    // Find section elements and observe them
-    sections.forEach(section => {
-        const el = document.getElementById(section.id);
-        if(el) {
-            sectionRefs.current[section.id] = el;
-            observer.observe(el);
-        }
-    });
-
-    return () => observer.disconnect();
-  }, [isDashboardPage, isSuperAdminDashboardPage]);
   
-  const handleNavClick = (id: string) => {
-    const element = document.getElementById(id);
-    element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setActiveSection(id);
-  };
-  
-  const navSections = sections.filter(section => {
-    if (user?.role === 'supervisor') {
-      return !['finance', 'ars', 'rig-registration', 'rig-financials'].includes(section.id);
-    }
-    return true;
-  });
-
   useEffect(() => {
     setCurrentTime(new Date());
     const timerId = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -143,29 +76,6 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
           </div>
         </div>
       </div>
-      {(isDashboardPage || isSuperAdminDashboardPage) && (
-        <div className="border-t">
-          <ScrollArea className="w-full whitespace-nowrap">
-              <div className="flex items-center px-4">
-              {navSections.map((section, index) => (
-                  <button
-                      key={section.id}
-                      onClick={() => handleNavClick(section.id)}
-                      className={cn(
-                          "flex-shrink-0 px-2 py-2.5 text-sm font-semibold transition-all duration-200 ease-in-out border-b-2",
-                           sectionColors[index % sectionColors.length],
-                           activeSection === section.id
-                           ? "border-primary opacity-100"
-                           : "border-transparent opacity-70 hover:opacity-100"
-                      )}
-                  >
-                  {section.title}
-                  </button>
-              ))}
-              </div>
-          </ScrollArea>
-        </div>
-      )}
     </div>
   );
 }
@@ -174,8 +84,8 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, logout } = useAuth();
-  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastActivityFirestoreUpdateRef = useRef<number>(0); 
+  const idleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastActivityFirestoreUpdateRef = React.useRef<number>(0); 
   const { toast } = useToast();
   const { isNavigating, setIsNavigating } = usePageNavigation();
 
