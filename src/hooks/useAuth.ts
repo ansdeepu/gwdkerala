@@ -41,6 +41,7 @@ export interface UserProfile {
 interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAuthenticating: boolean;
   user: UserProfile | null;
   firebaseUser: FirebaseUser | null;
 }
@@ -61,6 +62,7 @@ export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     isLoading: true,
+    isAuthenticating: false,
     user: null,
     firebaseUser: null,
   });
@@ -73,7 +75,7 @@ export function useAuth() {
       if (!isMounted) return;
 
       if (!firebaseUser) {
-        setAuthState({ isAuthenticated: false, isLoading: false, user: null, firebaseUser: null });
+        setAuthState({ isAuthenticated: false, isLoading: false, isAuthenticating: false, user: null, firebaseUser: null });
         return;
       }
 
@@ -128,12 +130,12 @@ export function useAuth() {
         if (!isMounted) return;
 
         if (userProfile && userProfile.isApproved) {
-            setAuthState({ isAuthenticated: true, isLoading: false, user: userProfile, firebaseUser });
+            setAuthState({ isAuthenticated: true, isLoading: false, isAuthenticating: false, user: userProfile, firebaseUser });
         } else {
              if (auth.currentUser) {
                 try { await signOut(auth); } catch (signOutError) { console.error('[Auth] Error signing out during auth state check:', signOutError); }
             }
-            setAuthState({ isAuthenticated: false, isLoading: false, user: userProfile, firebaseUser: null });
+            setAuthState({ isAuthenticated: false, isLoading: false, isAuthenticating: false, user: userProfile, firebaseUser: null });
             
             if (userProfile && !userProfile.isApproved) {
                 toast({
@@ -175,7 +177,7 @@ export function useAuth() {
             if (auth.currentUser) {
                 try { await signOut(auth); } catch (signOutError) { console.error('[Auth] Error signing out after onAuthStateChanged error:', signOutError); }
             }
-            setAuthState({ isAuthenticated: false, isLoading: false, user: null, firebaseUser: null });
+            setAuthState({ isAuthenticated: false, isLoading: false, isAuthenticating: false, user: null, firebaseUser: null });
         }
       }
     });
@@ -184,11 +186,13 @@ export function useAuth() {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: any }> => {
+    setAuthState(prevState => ({ ...prevState, isAuthenticating: true }));
     try {
       await signInWithEmailAndPassword(auth, email, password);
       return { success: true };
     } catch (error: any) {
       console.error(`[Auth] Login failed for '${email}':`, error);
+      setAuthState(prevState => ({ ...prevState, isAuthenticating: false }));
       if (error.code === 'resource-exhausted') {
         return { success: false, error: { message: "The database is temporarily unavailable due to high traffic (quota exceeded). Please try again later.", code: error.code } };
       }
