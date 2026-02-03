@@ -1,4 +1,3 @@
-
 // src/app/dashboard/user-management/page.tsx
 "use client";
 
@@ -40,10 +39,10 @@ export default function UserManagementPage() {
   const canManage = user?.role === 'editor';
   const isViewer = user?.role === 'viewer';
 
-  const loadUsers = useCallback(() => {
+  useEffect(() => {
     if (!user || !user.isApproved || !['editor', 'viewer'].includes(user.role) || !user.officeLocation) {
       setUsersLoading(false);
-      return () => {};
+      return;
     }
     setUsersLoading(true);
     const q = query(collection(db, "users"), where("officeLocation", "==", user.officeLocation));
@@ -70,15 +69,10 @@ export default function UserManagementPage() {
       toast({ title: "Error Loading Users", description: "Could not load user data. Please try again.", variant: "destructive" });
       setUsersLoading(false);
     });
-    return unsubscribe;
+
+    return () => unsubscribe();
   }, [user, toast]);
 
-  useEffect(() => {
-    const unsubscribe = loadUsers();
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [loadUsers]);
 
   useEffect(() => {
     setHeader('User Management', `Manage user accounts for the ${user?.officeLocation} office.`);
@@ -181,7 +175,7 @@ export default function UserManagementPage() {
             key={allUsers.length} // Force re-render when users change
             users={allUsers}
             isLoading={usersLoading}
-            onDataChange={loadUsers}
+            onDataChange={() => {}}
             currentUser={user}
             isViewer={isViewer}
             updateUserApproval={updateUserApproval}
