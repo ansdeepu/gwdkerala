@@ -218,7 +218,14 @@ export default function SettingsPage() {
     if (!canManage) return;
     setIsSubmitting(true);
     try {
-        const payload: Partial<OfficeAddressFormData> = { ...data };
+        const payload: { [key: string]: any } = { ...data };
+        
+        // Sanitize payload to remove 'undefined' values which Firestore doesn't support
+        Object.keys(payload).forEach(key => {
+            if (payload[key] === undefined) {
+                delete payload[key];
+            }
+        });
 
       if (officeAddress) {
         await updateDoc(doc(db, 'officeAddresses', officeAddress.id), payload);
