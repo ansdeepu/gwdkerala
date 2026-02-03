@@ -1,3 +1,4 @@
+
 // src/app/dashboard/user-management/page.tsx
 "use client";
 
@@ -27,7 +28,7 @@ export const dynamic = 'force-dynamic';
 export default function UserManagementPage() {
   const { setHeader } = usePageHeader();
   const { user, isLoading, createUserByAdmin, updateUserApproval, updateUserRole, deleteUserDocument } = useAuth();
-  const { staffMembers, isLoading: staffLoading } = useDataStore();
+  const { allStaffMembers, isLoading: staffLoading } = useDataStore();
   const router = useRouter();
   const { toast } = useToast();
   
@@ -96,7 +97,7 @@ export default function UserManagementPage() {
   const handleStaffFormSubmit = async (data: NewUserByAdminFormData) => {
     setIsSubmitting(true);
     try {
-      const selectedStaffMember = staffMembers.find(s => s.id === data.staffId);
+      const selectedStaffMember = allStaffMembers.find(s => s.id === data.staffId);
       if (!selectedStaffMember) {
         toast({ title: "Error", description: "Selected staff member not found.", variant: "destructive" });
         setIsSubmitting(false);
@@ -186,7 +187,7 @@ export default function UserManagementPage() {
             updateUserApproval={updateUserApproval}
             updateUserRole={updateUserRole}
             deleteUserDocument={deleteUserDocument}
-            staffMembers={staffMembers}
+            staffMembers={allStaffMembers}
           />
         </CardContent>
       </Card>
@@ -194,7 +195,7 @@ export default function UserManagementPage() {
       <Dialog open={isStaffFormOpen} onOpenChange={setIsStaffFormOpen}>
         <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl flex flex-col p-0 h-auto">
               <NewUserForm
-                  staffMembers={staffMembers}
+                  staffMembers={allStaffMembers}
                   staffLoading={staffLoading}
                   onSubmit={handleStaffFormSubmit}
                   isSubmitting={isSubmitting}

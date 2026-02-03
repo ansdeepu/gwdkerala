@@ -1,3 +1,4 @@
+
 // src/components/admin/UserManagementTable.tsx
 "use client";
 
@@ -148,7 +149,7 @@ export default function UserManagementTable({
     const userToUpdate = users.find(u => u.uid === uid);
 
     if (userToUpdate && !userToUpdate.staffId && (newRole === 'supervisor' || newRole === 'editor')) {
-        const matchingStaffMember = staffMembers.find(staff => staff.name === userToUpdate.name);
+        const matchingStaffMember = (staffMembers || []).find(staff => staff.name === userToUpdate.name);
         if (matchingStaffMember) {
             staffIdToLink = matchingStaffMember.id;
         } else {
@@ -235,7 +236,7 @@ export default function UserManagementTable({
             {sortedUsers.map((userRow, index) => {
               const isCurrentUserTheUserInRow = currentUser?.uid === userRow.uid;
               const disableActions = updatingUsers[userRow.uid]?.approval || updatingUsers[userRow.uid]?.role || isCurrentUserTheUserInRow;
-              const staffInfo = staffMembers.find(s => s.id === userRow.staffId);
+              const staffInfo = (staffMembers || []).find(s => s.id === userRow.staffId);
               const photoUrl = staffInfo?.photoUrl;
               const avatarColorClass = getColorClass(userRow.name || userRow.email || 'user');
 
