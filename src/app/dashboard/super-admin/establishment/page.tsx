@@ -68,8 +68,8 @@ export default function EstablishmentPage() {
   const { officeAddress } = useDataStore();
 
   useEffect(() => {
-    setHeader('Establishment', `Manage all staff members of the Ground Water Department, ${officeAddress?.officeLocation || 'Kollam'}.`);
-  }, [setHeader, officeAddress]);
+    setHeader('All Establishment', 'Manage all staff members across all offices.');
+  }, [setHeader]);
 
   const { user, isLoading: authLoading } = useAuth();
   const { 
@@ -164,7 +164,7 @@ export default function EstablishmentPage() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("StaffList");
 
-    worksheet.addRow([`Ground Water Department, ${officeAddress?.officeLocation || 'Kollam'}`]).commit();
+    worksheet.addRow([`Ground Water Department, ${officeAddress?.officeLocation || ''}`]).commit();
     worksheet.addRow([reportTitle]).commit();
     worksheet.addRow([]).commit();
     worksheet.addRow([`Report generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`]).commit();

@@ -19,6 +19,7 @@ import UserManagementTable from '@/components/admin/UserManagementTable';
 import { useDataStore } from '@/hooks/use-data-store';
 import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
+import { usePageHeader } from '@/hooks/usePageHeader';
 
 const db = getFirestore(app);
 
@@ -43,6 +44,7 @@ const EditUserSchema = z.object({
 type EditUserFormData = z.infer<typeof EditUserSchema>;
 
 export default function OfficeManagementPage() {
+  const { setHeader } = usePageHeader();
   const { user: currentUser, fetchAllUsers, createOfficeAdmin, deleteUserDocument, updateUserApproval, updateUserRole, updateUserProfileByAdmin } = useAuth();
   const { allStaffMembers } = useDataStore();
   const { toast } = useToast();
@@ -51,6 +53,10 @@ export default function OfficeManagementPage() {
   const [isOfficeUserDialogOpen, setIsOfficeUserDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    setHeader("Office Management", "Create and manage administrator accounts for each office location.");
+  }, [setHeader]);
 
   const officeUserForm = useForm<NewOfficeUserFormData>({
     resolver: zodResolver(NewOfficeUserSchema),

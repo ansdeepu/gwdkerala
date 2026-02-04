@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from '@/components/ui/button';
 import { z } from 'zod';
+import { usePageHeader } from '@/hooks/usePageHeader';
 
 const getInitials = (name?: string) => {
   if (!name) return 'SA';
@@ -191,6 +192,11 @@ function SuperAdminUpdateProfileForm() {
 
 export default function SuperAdminProfilePage() {
     const { user, isLoading: authLoading } = useAuth();
+    const { setHeader } = usePageHeader();
+
+    useEffect(() => {
+        setHeader('My Profile', 'View your account details and manage your password.');
+    }, [setHeader]);
 
     if (authLoading) {
         return (

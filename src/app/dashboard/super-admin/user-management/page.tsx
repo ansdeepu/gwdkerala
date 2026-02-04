@@ -7,8 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +20,7 @@ import { Switch } from '@/components/ui/switch';
 import { userRoleOptions, type UserRole } from '@/lib/schemas';
 import UserManagementTable from '@/components/admin/UserManagementTable';
 import { useDataStore } from '@/hooks/use-data-store';
+import { usePageHeader } from '@/hooks/usePageHeader';
 
 const NewDirectorateUserSchema = z.object({
   name: z.string().min(2, "Name is required."),
@@ -79,6 +78,7 @@ function NewDirectorateUserForm({ onSubmit, onCancel, isSubmitting }: { onSubmit
 }
 
 export default function DirectorateUserManagementPage() {
+  const { setHeader } = usePageHeader();
   const { fetchAllUsers, createDirectorateUser, deleteUserDocument, updateUserProfileByAdmin, user: currentUser } = useAuth();
   const { allStaffMembers } = useDataStore();
   const { toast } = useToast();
@@ -87,6 +87,10 @@ export default function DirectorateUserManagementPage() {
   const [isDirectorateUserDialogOpen, setIsDirectorateUserDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  useEffect(() => {
+    setHeader("Directorate User Management", "Create and manage users for the directorate office.");
+  }, [setHeader]);
+
   const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
