@@ -145,8 +145,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         
         const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
         const officeToQuery = !isSuperAdminUser ? user.officeLocation : selectedOffice;
-        const isSuperAdminAllOffices = isSuperAdminUser && !officeToQuery;
-
+        
         const collectionsToSubscribe: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, collectionName: string }> = {
             fileEntries: { setter: setAllFileEntries, loaderKey: 'files', collectionName: 'fileEntries' },
             arsEntries: { setter: setAllArsEntries, loaderKey: 'ars', collectionName: 'arsEntries' },
@@ -181,15 +180,14 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     setLoadingStates(prev => ({...prev, [loaderKey]: false}));
                     return () => {};
                 }
-            } else if (collectionName === 'officeAddresses' && officeToQuery) {
-                 q = query(collection(db, collectionName), where('officeLocation', '==', officeToQuery));
             } else {
+                // Global collections like bidders, lsg, rates, and officeAddresses are not filtered by office.
                 q = query(collection(db, collectionName));
             }
             
             if (collectionName === 'bidders') {
                 q = query(q, orderBy("order"));
-            } else if (collectionName === 'eTenders' && !isSuperAdminAllOffices) { // Do not order collection group queries to avoid needing a composite index
+            } else if (collectionName === 'eTenders' && !isSuperAdminUser) { 
                 q = query(q, orderBy("tenderDate", "desc"));
             }
             
