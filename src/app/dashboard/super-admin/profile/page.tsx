@@ -219,11 +219,7 @@ export default function SuperAdminProfilePage() {
     return (
         <div className="space-y-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>Super Admin Profile</CardTitle>
-                    <CardDescription>View your account details and manage your password.</CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-1">
                           <Card>

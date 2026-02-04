@@ -25,11 +25,7 @@ export default function SuperAdminDashboardPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Welcome, Super Admin</CardTitle>
-          <CardDescription>This is the central administration panel for the GWD Dashboard application.</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {quickLinks.map((link) => (
                 <Card key={link.href} className="bg-secondary/30 hover:shadow-md transition-shadow">
