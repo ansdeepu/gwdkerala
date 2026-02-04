@@ -222,7 +222,20 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-                const data = snapshot.docs.map(doc => processFirestoreDoc({ id: doc.id, data: () => doc.data() }));
+                const data = snapshot.docs.map(doc => {
+                    const docData = doc.data();
+                    const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
+                    if(isSuperAdminUser && !officeToQuery) {
+                        // For collectionGroup queries, officeLocation might not be on the doc. Get it from the path.
+                        const pathSegments = doc.ref.path.split('/');
+                        const officeIdIndex = pathSegments.indexOf('offices');
+                        if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
+                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1].charAt(0).toUpperCase() + pathSegments[officeIdIndex + 1].slice(1);
+                        }
+                    }
+                    return processedData;
+                });
+                
                 if (collectionName === 'staffMembers') {
                     const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
                     data.sort((a: StaffMember, b: StaffMember) => {
