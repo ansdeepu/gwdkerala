@@ -561,22 +561,22 @@ export default function ArsPage() {
       <TooltipProvider>
        <Card>
         <CardContent className="p-4 space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="relative flex-grow min-w-[250px] order-2 sm:order-1">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="relative w-full sm:flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input type="search" placeholder="Search across all fields..." className="w-full rounded-lg bg-background pl-10 shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
-                <div className="flex flex-wrap items-center gap-2 order-1 sm:order-2">
-                  {(canEdit) && <Button size="sm" onClick={handleAddNewClick}> <PlusCircle className="mr-2 h-4 w-4" /> Add New ARS </Button>}
-                  <Button variant="outline" onClick={handleExportExcel} size="sm"> <FileDown className="mr-2 h-4 w-4" /> Export Excel </Button>
+                <div className="flex items-center flex-wrap sm:flex-nowrap justify-end gap-2">
+                  {(canEdit) && <Button size="sm" onClick={handleAddNewClick} className="shrink-0"> <PlusCircle className="mr-2 h-4 w-4" /> Add New ARS </Button>}
+                  <Button variant="outline" onClick={handleExportExcel} size="sm" className="shrink-0"> <FileDown className="mr-2 h-4 w-4" /> Export Excel </Button>
                   {canEdit && ( <> 
                       <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".xlsx, .xls" /> 
-                      <Button onClick={() => fileInputRef.current?.click()} disabled={isUploading} size="sm"> 
+                      <Button onClick={() => fileInputRef.current?.click()} disabled={isUploading} size="sm" className="shrink-0"> 
                           {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
                           {isUploading ? 'Importing...' : 'Import Excel'}
                       </Button> 
-                      <Button variant="outline" onClick={handleDownloadTemplate} size="sm"> <Download className="mr-2 h-4 w-4" /> Template </Button> 
-                      <Button variant="destructive" onClick={() => setIsClearAllDialogOpen(true)} disabled={isClearingAll || arsEntries.length === 0} size="sm"> <Trash2 className="mr-2 h-4 w-4" /> Clear All</Button> 
+                      <Button variant="outline" onClick={handleDownloadTemplate} size="sm" className="shrink-0"> <Download className="mr-2 h-4 w-4" /> Template </Button> 
+                      <Button variant="destructive" onClick={() => setIsClearAllDialogOpen(true)} disabled={isClearingAll || arsEntries.length === 0} size="sm" className="shrink-0"> <Trash2 className="mr-2 h-4 w-4" /> Clear All</Button> 
                   </> )}
                 </div>
             </div>
