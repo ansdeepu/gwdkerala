@@ -26,7 +26,6 @@ import { useDataStore } from '@/hooks/use-data-store';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useOfficeSelection } from '@/hooks/useOfficeSelection';
 
 export const dynamic = 'force-dynamic';
 
@@ -195,8 +194,7 @@ const WellTypeProgressTable = ({
 
 export default function SuperAdminProgressReportPage() {
   const { setHeader } = usePageHeader();
-  const { allFileEntries, isLoading: entriesLoading, officeAddress } = useDataStore();
-  const { selectedOffice } = useOfficeSelection();
+  const { allFileEntries, isLoading: entriesLoading, officeAddress, selectedOffice } = useDataStore();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -406,7 +404,7 @@ export default function SuperAdminProgressReportPage() {
     filesToIncludeForFinancials.forEach(entry => {
         entry.remittanceDetails?.forEach(rd => {
             const remDate = safeParseDate(rd.dateOfRemittance);
-            if (rd.remittedAccount === 'Revenue Head' && remDate && isWithinInterval(remDate, { start: sDate!, end: eDate! })) {
+            if (rd.remittedAccount === 'Revenue Head' && remDate && isWithinInterval(remDate, { start: sDate, end: eDate })) {
                 const amount = Number(rd.amountRemitted) || 0;
                 if (amount > 0) {
                     totalRevenueHeadCredit += amount;
@@ -423,7 +421,7 @@ export default function SuperAdminProgressReportPage() {
     
         entry.paymentDetails?.forEach(pd => {
             const paymentDate = safeParseDate(pd.dateOfPayment);
-            if (paymentDate && isWithinInterval(paymentDate, { start: sDate!, end: eDate! })) {
+            if (paymentDate && isWithinInterval(paymentDate, { start: sDate, end: eDate })) {
                 const amount = Number(pd.revenueHead) || 0;
                 if (amount > 0) {
                     totalRevenueHeadCredit += amount;
