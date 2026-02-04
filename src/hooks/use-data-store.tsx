@@ -258,6 +258,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         return () => unsubscribes.forEach(unsub => unsub());
     }, [user, selectedOffice]);
     
+    // Effect to set the single current officeAddress
     useEffect(() => {
         if (!user) return;
         const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
