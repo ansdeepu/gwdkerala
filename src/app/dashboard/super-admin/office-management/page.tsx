@@ -1,7 +1,7 @@
 // src/app/dashboard/super-admin/office-management/page.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, type UserProfile } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import UserManagementTable from '@/components/admin/UserManagementTable';
 import { useDataStore } from '@/hooks/use-data-store';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, serverTimestamp, getDocs, query, where, collection } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { usePageHeader } from '@/hooks/usePageHeader';
 
@@ -112,7 +112,25 @@ export default function OfficeManagementPage() {
     try {
       const result = await createOfficeAdmin(data.email, data.password, data.name, data.officeLocation);
       if (result.success) {
-        // Create the office document in the 'offices' collection
+        
+        // Check if an officeAddress document already exists for this location
+        const officeAddressesRef = collection(db, "officeAddresses");
+        const q = query(officeAddressesRef, where("officeLocation", "==", data.officeLocation));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            // If it doesn't exist, create a new one.
+            const newOfficeAddressDocRef = doc(officeAddressesRef); // Auto-generates ID
+            await setDoc(newOfficeAddressDocRef, {
+                officeName: `Ground Water Department, ${data.officeLocation}`,
+                officeLocation: data.officeLocation,
+                officeCode: data.officeLocation.substring(0, 3).toUpperCase(), // A sensible default
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+        }
+        
+        // Create the office document for subcollections.
         const officeDocRef = doc(db, "offices", data.officeLocation.toLowerCase());
         await setDoc(officeDocRef, {
             name: "Ground Water Department",
