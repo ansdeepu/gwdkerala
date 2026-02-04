@@ -25,6 +25,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/hooks/use-data-store';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useOfficeSelection } from '@/hooks/useOfficeSelection';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +81,7 @@ const TWC_DIAMETERS = ['150 mm (6”)', '200 mm (8”)'];
 
 const allServicePurposesForSummary: SitePurpose[] = Array.from(sitePurposeOptions);
 const financialSummaryOrder: SitePurpose[] = Array.from(sitePurposeOptions);
+
 
 const REFUNDED_STATUSES: SiteWorkStatus[] = ['To be Refunded'];
 
@@ -191,7 +194,7 @@ const WellTypeProgressTable = ({
 
 export default function SuperAdminProgressReportPage() {
   const { setHeader } = usePageHeader();
-  const { allFileEntries, isLoading: entriesLoading, officeAddress } = useDataStore();
+  const { allFileEntries: reportEntries, isLoading: entriesLoading, officeAddress } = useDataStore();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -217,6 +220,7 @@ export default function SuperAdminProgressReportPage() {
   }, [setHeader]);
 
   useEffect(() => {
+    // Set initial dates on client to avoid hydration mismatch
     setStartDate(startOfMonth(new Date()));
     setEndDate(endOfMonth(new Date()));
   }, []);
@@ -246,7 +250,8 @@ export default function SuperAdminProgressReportPage() {
         return null;
     };
     
-    const includedSites: SiteDetailWithFileContext[] = allFileEntries.flatMap(entry => 
+    // 1. Create a pre-filtered list of all sites to be included in the report.
+    const includedSites: SiteDetailWithFileContext[] = reportEntries.flatMap(entry => 
         (entry.siteDetails || [])
         .filter(site => site.workStatus !== "Addl. AS Awaited")
         .map(site => {
@@ -285,6 +290,7 @@ export default function SuperAdminProgressReportPage() {
     let totalRevenueHeadCredit = 0;
     const revenueHeadCreditData: any[] = [];
     
+    // 2. Process the pre-filtered list of sites
     includedSites.forEach(siteWithFileContext => {
         const { fileRemittanceDate, ...site } = siteWithFileContext;
         const purpose = site.purpose as SitePurpose;
@@ -296,6 +302,8 @@ export default function SuperAdminProgressReportPage() {
         const isCompletedInPeriod = completionDate && isWithinInterval(completionDate, { start: sDate, end: eDate });
         const isToBeRefunded = workStatus && REFUNDED_STATUSES.includes(workStatus);
         
+        // Corrected logic: An application contributes to previous balance if it was remitted before the period
+        // and NOT completed before the period started.
         const wasActiveBeforePeriod = fileRemittanceDate && isBefore(fileRemittanceDate, sDate) &&
                                   (!completionDate || !isBefore(completionDate, sDate));
 
@@ -308,6 +316,7 @@ export default function SuperAdminProgressReportPage() {
                 statsObj.previousBalance++; 
                 statsObj.previousBalanceData.push(siteWithFileContext); 
             }
+            // Only count completions inside the period for the 'completed' metric
             if (isCompletedInPeriod) { 
                 statsObj.completed++; 
                 statsObj.completedData.push(siteWithFileContext); 
@@ -331,8 +340,9 @@ export default function SuperAdminProgressReportPage() {
         }
     });
     
+    // 3. Process file-level data for Financial Summary using the original `reportEntries`
     const processedFilesForFinancials = new Set<string>();
-    const filesToIncludeForFinancials = allFileEntries.filter(entry => !entry.siteDetails?.some(site => site.workStatus === "Addl. AS Awaited"));
+    const filesToIncludeForFinancials = reportEntries.filter(entry => !entry.siteDetails?.some(site => site.workStatus === "Addl. AS Awaited"));
 
     filesToIncludeForFinancials.forEach(entry => {
         const firstRemittanceDate = safeParseDate(entry.remittanceDetails?.[0]?.dateOfRemittance);
@@ -370,6 +380,7 @@ export default function SuperAdminProgressReportPage() {
         }
     });
 
+    // Post-process to fix counts for financial summary
     financialSummaryOrder.forEach(purpose => {
         const pvtSummary = privateFinancialSummary[purpose];
         const govtSummary = governmentFinancialSummary[purpose];
@@ -393,7 +404,7 @@ export default function SuperAdminProgressReportPage() {
     filesToIncludeForFinancials.forEach(entry => {
         entry.remittanceDetails?.forEach(rd => {
             const remDate = safeParseDate(rd.dateOfRemittance);
-            if (rd.remittedAccount === 'Revenue Head' && remDate && isWithinInterval(remDate, { start: sDate, end: eDate })) {
+            if (rd.remittedAccount === 'Revenue Head' && remDate && isWithinInterval(remDate, { start: sDate!, end: eDate! })) {
                 const amount = Number(rd.amountRemitted) || 0;
                 if (amount > 0) {
                     totalRevenueHeadCredit += amount;
@@ -410,7 +421,7 @@ export default function SuperAdminProgressReportPage() {
     
         entry.paymentDetails?.forEach(pd => {
             const paymentDate = safeParseDate(pd.dateOfPayment);
-            if (paymentDate && isWithinInterval(paymentDate, { start: sDate, end: eDate })) {
+            if (paymentDate && isWithinInterval(paymentDate, { start: sDate!, end: eDate! })) {
                 const amount = Number(pd.revenueHead) || 0;
                 if (amount > 0) {
                     totalRevenueHeadCredit += amount;
@@ -456,7 +467,7 @@ export default function SuperAdminProgressReportPage() {
     
     setReportData({ bwcData, twcData, progressSummaryData, privateFinancialSummaryData: privateFinancialSummary, governmentFinancialSummaryData: governmentFinancialSummary, totalRevenueHeadCredit, revenueHeadCreditData });
     setIsFiltering(false);
-  }, [allFileEntries, startDate, endDate, toast]);
+  }, [reportEntries, startDate, endDate, toast]);
   
   useEffect(() => {
     if (!entriesLoading) {
@@ -499,6 +510,7 @@ export default function SuperAdminProgressReportPage() {
       });
     };
 
+    // 1. Progress Summary
     const progressSummaryHeaders = ['Service Type', 'Previous Balance', 'Current Application', 'To be Refunded', 'Total Application', 'Completed', 'Balance'];
     const progressSummaryExport = Object.entries(reportData.progressSummaryData).map(([purpose, stats]) => ({
       'Service Type': purpose,
@@ -511,6 +523,7 @@ export default function SuperAdminProgressReportPage() {
     }));
     addWorksheet(progressSummaryExport, 'Progress Summary', progressSummaryHeaders);
   
+    // 2. Financial Summary - Private
     const financialHeaders = ['Purpose', 'Applications Received', 'Total Remittance (₹)', 'Applications Completed', 'Total Payment (₹)'];
     const privateFinancialExport = Object.entries(reportData.privateFinancialSummaryData).filter(([,summary]) => summary.totalApplications > 0 || summary.totalCompleted > 0).map(([purpose, summary]) => ({
       'Purpose': purpose,
@@ -521,6 +534,7 @@ export default function SuperAdminProgressReportPage() {
     }));
     addWorksheet(privateFinancialExport, 'Financial Summary (Private)', financialHeaders);
   
+    // 3. Financial Summary - Government
     const govFinancialExport = Object.entries(reportData.governmentFinancialSummaryData).filter(([,summary]) => summary.totalApplications > 0 || summary.totalCompleted > 0).map(([purpose, summary]) => ({
       'Purpose': purpose,
       'Applications Received': summary.totalApplications,
@@ -530,6 +544,7 @@ export default function SuperAdminProgressReportPage() {
     }));
     addWorksheet(govFinancialExport, 'Financial Summary (Govt)', financialHeaders);
     
+    // 4 & 5. Well Type Progress (BWC & TWC)
     const wellMetricsHeaders = ['Type of Application', 'Previous Balance', 'Current Application', 'To be Refunded', 'Total Application', 'Completed', 'Balance'];
     
     [...BWC_DIAMETERS, ...TWC_DIAMETERS].forEach(diameter => {
@@ -609,7 +624,7 @@ export default function SuperAdminProgressReportPage() {
                 slNo: index + 1, ...site,
                 totalExpenditure: (Number(site.totalExpenditure) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
             }));
-    } else {
+    } else { // Generic fallback for other cases like "Total Application", "Balance", etc.
          columns = [ { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' }, { key: 'applicantName', label: 'Applicant' }, { key: 'nameOfSite', label: 'Site Name' }, { key: 'purpose', label: 'Purpose' }, { key: 'workStatus', label: 'Work Status' }, ];
          dialogData = (data as SiteDetailWithFileContext[]).map((site, index) => ({
             slNo: index + 1,
@@ -635,17 +650,20 @@ export default function SuperAdminProgressReportPage() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(detailDialogTitle.replace(/[\\/*?:]/g, "").substring(0, 30));
     
+    // Add title and headers
     worksheet.addRow([detailDialogTitle]);
     worksheet.getRow(1).font = { bold: true, size: 16 };
     worksheet.mergeCells('A1', `${String.fromCharCode(65 + detailDialogColumns.length - 1)}1`);
-    worksheet.addRow([]);
+    worksheet.addRow([]); // Spacer
     worksheet.addRow(detailDialogColumns.map(c => c.label)).font = { bold: true };
 
+    // Add data
     detailDialogData.forEach(row => {
       const values = detailDialogColumns.map(col => (row as any)[col.key]);
       worksheet.addRow(values);
     });
 
+    // Auto-fit columns
     worksheet.columns.forEach(column => {
         let maxLength = 0;
         column.eachCell!({ includeEmpty: true }, (cell) => {
@@ -657,6 +675,7 @@ export default function SuperAdminProgressReportPage() {
         column.width = maxLength < 15 ? 15 : maxLength + 2;
     });
 
+    // Save the file
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const url = URL.createObjectURL(blob);
@@ -907,7 +926,7 @@ export default function SuperAdminProgressReportPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 px-6 py-4">
-            <ScrollArea className="h-full pr-4">
+            <ScrollArea className="h-full pr-4 -mr-4">
               {detailDialogData.length > 0 ? (
                 <Table>
                   <TableHeader>
