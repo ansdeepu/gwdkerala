@@ -166,8 +166,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allDepartmentVehicles, setAllDepartmentVehicles] = useState<DepartmentVehicle[]>([]);
     const [allHiredVehicles, setAllHiredVehicles] = useState<HiredVehicle[]>([]);
     const [allRigCompressors, setAllRigCompressors] = useState<RigCompressor[]>([]);
-    const [allOfficeAddresses, setAllOfficeAddresses] = useState<OfficeAddress[]>([]); // The master list for the dropdown
-    const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null); // The currently active office profile
+    const [allOfficeAddresses, setAllOfficeAddresses] = useState<OfficeAddress[]>([]);
+    const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null);
 
     const [loadingStates, setLoadingStates] = useState({
         files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
@@ -181,13 +181,18 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
             return;
         }
-        await deleteDoc(doc(db, 'arsEntries', id));
+        if (!user.officeLocation) throw new Error("User must have an office location for this action.");
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
+        await deleteDoc(doc(db, collectionPath, id));
     }, [user]);
 
     // Effect for GLOBAL (non-office-specific) data
     useEffect(() => {
         if (!user) {
-            setAllLsgConstituencyMaps([]); setAllRateDescriptions(defaultRateDescriptions); setAllBidders([]); setAllOfficeAddresses([]);
+            setAllLsgConstituencyMaps([]);
+            setAllRateDescriptions(defaultRateDescriptions);
+            setAllBidders([]);
+            setAllOfficeAddresses([]);
             setLoadingStates(prev => ({ ...prev, lsg: false, rates: false, bidders: false, officeAddress: false }));
             return;
         }
@@ -281,7 +286,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 const data = snapshot.docs.map(doc => {
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
-                    // If this is a collectionGroup query, manually add officeLocation from the path
                     if (isSuperAdminUser && !officeToQuery) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
@@ -391,7 +395,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             selectedOffice, setSelectedOffice,
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
-            allOfficeAddresses, // Provide the master list
+            allOfficeAddresses,
             officeAddress, 
             isLoading,
             refetchRateDescriptions,
