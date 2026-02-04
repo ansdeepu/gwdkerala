@@ -87,13 +87,21 @@ export default function AppSidebar() {
             className="rounded-sm"
             data-ai-hint="logo abstract"
           />
-          <div className="flex flex-col -space-y-1 group-data-[collapsible=icon]:hidden">
-            <span className="font-semibold text-sm text-sidebar-foreground">
-              {user?.officeLocation || 'Directorate'}
-            </span>
-            <span className="font-bold text-lg text-sidebar-foreground">
-              GWD
-            </span>
+          <div className="flex flex-col items-start -space-y-1 group-data-[collapsible=icon]:hidden">
+             {user?.officeLocation ? (
+                <span className="font-bold text-lg text-sidebar-foreground">
+                  GWD {user.officeLocation}
+                </span>
+              ) : (
+                <>
+                  <span className="font-semibold text-sm text-sidebar-foreground">
+                    Directorate
+                  </span>
+                  <span className="font-bold text-lg text-sidebar-foreground">
+                    GWD
+                  </span>
+                </>
+              )}
           </div>
         </Link>
       </SidebarHeader>
