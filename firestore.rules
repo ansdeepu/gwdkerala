@@ -81,8 +81,8 @@ service cloud.firestore {
     }
 
     match /officeAddresses/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isSuperAdmin() || isEditor();
+      allow read: if isSuperAdmin() || isApproved();
+      allow write: if isSuperAdmin();
     }
     
     /* ================= OFFICE SUBCOLLECTIONS ================= */
