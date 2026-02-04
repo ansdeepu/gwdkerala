@@ -1,11 +1,9 @@
-
 // src/app/dashboard/financial-summary/page.tsx
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useAllFileEntriesForReports } from '@/hooks/useAllFileEntriesForReports';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { format, startOfDay, endOfDay, isWithinInterval, isValid, parseISO, parse } from 'date-fns';
 import { cn } from "@/lib/utils";
@@ -13,14 +11,20 @@ import type { DataEntryFormData, SitePurpose, SiteWorkStatus, ApplicationType } 
 import { sitePurposeOptions, PLAN_FUND_APPLICATION_TYPES, COLLECTOR_APPLICATION_TYPES, PUBLIC_DEPOSIT_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES } from '@/lib/schemas';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { getFirestore, collectionGroup, query, onSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
+import { useDataStore } from '@/hooks/use-data-store';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 export const dynamic = 'force-dynamic';
 
+const db = getFirestore(app);
+
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-);
-const RefreshCw = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M3 12a9 9 0 0 1 9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
 );
 const XCircle = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
@@ -41,6 +45,30 @@ interface FinancialSummary {
 type FinancialSummaryReport = Record<string, FinancialSummary>;
 
 
+const processFirestoreDoc = <T,>(doc: DocumentData): T => {
+    const data = doc.data();
+    const converted: { [key: string]: any } = { id: doc.id };
+
+    for (const key in data) {
+        const value = data[key];
+        if (value instanceof Timestamp) {
+            converted[key] = value.toDate();
+        } else if (Array.isArray(value)) {
+            converted[key] = value.map(item =>
+                typeof item === 'object' && item !== null && !(item instanceof Timestamp)
+                    ? processFirestoreDoc({ data: () => item, id: '' })
+                    : (item instanceof Timestamp ? item.toDate() : item)
+            );
+        } else if (typeof value === 'object' && value !== null) {
+            converted[key] = processFirestoreDoc({ data: () => value, id: '' });
+        } else {
+            converted[key] = value;
+        }
+    }
+    return converted as T;
+};
+
+
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
   if (dateValue instanceof Date) return dateValue;
@@ -57,21 +85,54 @@ const safeParseDate = (dateValue: any): Date | null => {
 
 export default function FinancialSummaryPage() {
     const { setHeader } = usePageHeader();
-    const { reportEntries: allFileEntries, isReportLoading } = useAllFileEntriesForReports();
+    const { user } = useAuth();
+    const { officeAddresses } = useDataStore();
+    const { toast } = useToast();
+    
+    const [allFileEntries, setAllFileEntries] = useState<DataEntryFormData[]>([]);
+    const [entriesLoading, setEntriesLoading] = useState(true);
     const [financeStartDate, setFinanceStartDate] = useState<Date | undefined>(undefined);
     const [financeEndDate, setFinanceEndDate] = useState<Date | undefined>(undefined);
-    const [financeLoading, setFinanceLoading] = useState(false);
+    const [selectedOffice, setSelectedOffice] = useState<string>('all');
     
     useEffect(() => {
         setHeader('Financial Summary', 'An overview of financial metrics including credits, debits, and balances.');
     }, [setHeader]);
 
+    useEffect(() => {
+        if (!user) {
+          setEntriesLoading(false);
+          return;
+        }
+
+        const q = query(collectionGroup(db, 'fileEntries'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const data = snapshot.docs.map(doc => processFirestoreDoc<DataEntryFormData>({ id: doc.id, data: () => doc.data() }));
+          setAllFileEntries(data);
+          setEntriesLoading(false);
+        }, (error) => {
+          console.error("Error fetching all file entries for reports:", error);
+          toast({ title: "Error Loading Data", description: error.message, variant: "destructive" });
+          setEntriesLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [user, toast]);
+
+    const officeLocations = useMemo(() => officeAddresses.map(o => o.officeLocation).sort(), [officeAddresses]);
+
     const transformedFinanceMetrics = useMemo(() => {
-        if (isReportLoading) return null;
+        if (entriesLoading) return null;
     
         const sDate = financeStartDate ? startOfDay(financeStartDate) : null;
         const eDate = financeEndDate ? endOfDay(financeEndDate) : null;
         const isDateFilterActive = !!sDate && !!eDate;
+
+        let entriesToProcess = allFileEntries;
+        if (selectedOffice !== 'all') {
+            entriesToProcess = allFileEntries.filter(e => e.officeLocation === selectedOffice);
+        }
 
         let sbiCredit = 0, stsbCredit = 0, revenueHeadCreditDirect = 0;
         let sbiDebit = 0, stsbDebit = 0;
@@ -80,12 +141,12 @@ export default function FinancialSummaryPage() {
         let planFundExpenditure = 0;
         let collectorFundExpenditure = 0;
 
-        const operationalAccountEntries = allFileEntries.filter(e => {
+        const operationalAccountEntries = entriesToProcess.filter(e => {
             const appType = e.applicationType as ApplicationType;
             return PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(appType as any) || PRIVATE_APPLICATION_TYPES.includes(appType as any) || !appType;
         });
 
-        const adminSanctionEntries = allFileEntries.filter(e => {
+        const adminSanctionEntries = entriesToProcess.filter(e => {
             const appType = e.applicationType as ApplicationType;
             return appType && (COLLECTOR_APPLICATION_TYPES.includes(appType as any) || PLAN_FUND_APPLICATION_TYPES.includes(appType as any));
         });
@@ -141,7 +202,7 @@ export default function FinancialSummaryPage() {
           });
         });
 
-        allFileEntries.forEach((entry: DataEntryFormData) => {
+        entriesToProcess.forEach((entry: DataEntryFormData) => {
             entry.remittanceDetails?.forEach(rd => {
                 const remDate = rd.dateOfRemittance ? safeParseDate(rd.dateOfRemittance) : null;
                 const isInPeriod = !isDateFilterActive || (remDate && isValid(remDate) && isWithinInterval(remDate, { start: sDate!, end: eDate! }));
@@ -167,7 +228,7 @@ export default function FinancialSummaryPage() {
           planFundExpenditure,
           collectorFundExpenditure,
         };
-    }, [financeStartDate, financeEndDate, allFileEntries, isReportLoading]);
+    }, [financeStartDate, financeEndDate, allFileEntries, entriesLoading, selectedOffice]);
 
 
     const handleClearFinanceDates = () => {
@@ -182,7 +243,7 @@ export default function FinancialSummaryPage() {
     };
 
 
-    if (isReportLoading) {
+    if (entriesLoading) {
       return (
         <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -201,9 +262,31 @@ export default function FinancialSummaryPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-4 border-t mt-4">
-              <Input type="text" placeholder="From: dd/mm/yyyy" className="w-[180px]" value={financeStartDate ? format(financeStartDate, "dd/MM/yyyy") : ''} onChange={(e) => setFinanceStartDate(parseDateFromString(e.target.value))} />
-              <Input type="text" placeholder="To: dd/mm/yyyy" className="w-[180px]" value={financeEndDate ? format(financeEndDate, "dd/MM/yyyy") : ''} onChange={(e) => setFinanceEndDate(parseDateFromString(e.target.value))} />
-              <Button onClick={handleClearFinanceDates} variant="ghost" className="h-9 px-3"><XCircle className="mr-2 h-4 w-4"/>Clear Dates</Button>
+              {user?.email === "keralagwd@gmail.com" && (
+                <div className="space-y-1">
+                  <Label htmlFor="office-select">Office Location</Label>
+                  <Select value={selectedOffice} onValueChange={setSelectedOffice}>
+                    <SelectTrigger id="office-select" className="w-full sm:w-[240px]">
+                      <SelectValue placeholder="Select Office" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Offices</SelectItem>
+                        {officeLocations.map(loc => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="space-y-1">
+                <Label>From Date</Label>
+                <Input type="date" placeholder="From: yyyy-mm-dd" className="w-[180px]" value={financeStartDate ? format(financeStartDate, "yyyy-MM-dd") : ''} onChange={(e) => setFinanceStartDate(e.target.value ? new Date(e.target.value) : undefined)} />
+              </div>
+              <div className="space-y-1">
+                <Label>To Date</Label>
+                <Input type="date" placeholder="To: yyyy-mm-dd" className="w-[180px]" value={financeEndDate ? format(financeEndDate, "yyyy-MM-dd") : ''} onChange={(e) => setFinanceEndDate(e.target.value ? new Date(e.target.value) : undefined)} />
+              </div>
+              <div className="self-end">
+                <Button onClick={handleClearFinanceDates} variant="ghost" className="h-9 px-3"><XCircle className="mr-2 h-4 w-4"/>Clear Dates</Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-4">

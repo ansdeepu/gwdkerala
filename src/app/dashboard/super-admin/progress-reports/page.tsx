@@ -865,11 +865,11 @@ export default function SuperAdminProgressReportPage() {
                 </div>
                 <div className="space-y-1">
                     <Label>From Date</Label>
-                    <Input type="date" placeholder="From Date" className="w-full sm:w-auto" value={startDate ? format(startDate, 'yyyy-MM-dd') : ''} onChange={(e) => setStartDate(e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined)} />
+                    <Input type="date" placeholder="From: yyyy-mm-dd" className="w-full sm:w-auto" value={startDate ? format(startDate, 'yyyy-MM-dd') : ''} onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : undefined)} />
                 </div>
                 <div className="space-y-1">
                     <Label>To Date</Label>
-                    <Input type="date" placeholder="To Date" className="w-full sm:w-auto" value={endDate ? format(endDate, 'yyyy-MM-dd') : ''} onChange={(e) => setEndDate(e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined)} />
+                    <Input type="date" placeholder="To: yyyy-mm-dd" className="w-full sm:w-auto" value={endDate ? format(endDate, 'yyyy-MM-dd') : ''} onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : undefined)} />
                 </div>
                 <div className="flex items-end gap-2">
                     <Button onClick={handleGenerateReport} disabled={isFiltering || !startDate || !endDate}>
