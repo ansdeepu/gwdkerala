@@ -87,9 +87,14 @@ export default function AppSidebar() {
             className="rounded-sm"
             data-ai-hint="logo abstract"
           />
-          <span className="font-semibold text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-            GWD {user?.officeLocation || ''}
-          </span>
+          <div className="flex flex-col -space-y-1 group-data-[collapsible=icon]:hidden">
+            <span className="font-semibold text-sm text-sidebar-foreground">
+              {user?.officeLocation || 'Directorate'}
+            </span>
+            <span className="font-bold text-lg text-sidebar-foreground">
+              GWD
+            </span>
+          </div>
         </Link>
       </SidebarHeader>
       <SidebarContent className="flex-1 p-2 overflow-y-auto no-scrollbar">
