@@ -4,21 +4,24 @@
 import { useMemo, useEffect } from 'react';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Users, Briefcase, FileText, Waves, Hammer } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Loader2, Users, Briefcase, FileText, Waves, Hammer, Building } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useOfficeSelection } from '@/hooks/useOfficeSelection';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { Button } from '@/components/ui/button';
 
-const StatCard = ({ title, value, icon: Icon }: { title: string, value: number, icon: React.ElementType }) => (
-    <div className="flex items-center justify-between space-x-4">
-        <div className="flex items-center space-x-2">
+const KPIStatCard = ({ title, value, icon: Icon }: { title: string, value: string | number, icon: React.ElementType }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm font-medium">{title}</p>
-        </div>
-        <p className="text-sm font-bold">{value}</p>
-    </div>
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+        </CardContent>
+    </Card>
 );
-
 
 export default function SuperAdminDashboardPage() {
   const { setHeader } = usePageHeader();
@@ -35,7 +38,7 @@ export default function SuperAdminDashboardPage() {
   const { setSelectedOffice } = useOfficeSelection();
 
   useEffect(() => {
-    setHeader('Super Admin Dashboard', 'Overview of all sub-office activities.');
+    setHeader('Super Admin Dashboard', 'High-level overview of all sub-office activities.');
   }, [setHeader]);
 
   const officeData = useMemo(() => {
@@ -51,6 +54,15 @@ export default function SuperAdminDashboardPage() {
         };
     }).sort((a,b) => a.officeLocation.localeCompare(b.officeLocation));
   }, [officeAddresses, allStaffMembers, allFileEntries, allArsEntries, allAgencyApplications, allE_tenders]);
+  
+  const totals = useMemo(() => ({
+    offices: officeAddresses.length,
+    staff: allStaffMembers.length,
+    files: allFileEntries.length,
+    ars: allArsEntries.length,
+    agencies: allAgencyApplications.length,
+    tenders: allE_tenders.length,
+  }), [officeAddresses, allStaffMembers, allFileEntries, allArsEntries, allAgencyApplications, allE_tenders]);
 
   const handleOfficeClick = (officeLocation: string) => {
     setSelectedOffice(officeLocation);
@@ -61,34 +73,54 @@ export default function SuperAdminDashboardPage() {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-3 text-muted-foreground">Loading office data...</p>
+        <p className="ml-3 text-muted-foreground">Loading department data...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {officeData.map((office) => (
-          <Card 
-            key={office.id} 
-            className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer"
-            onClick={() => handleOfficeClick(office.officeLocation)}
-          >
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <KPIStatCard title="Total Offices" value={totals.offices} icon={Building} />
+            <KPIStatCard title="Total Staff" value={totals.staff} icon={Users} />
+            <KPIStatCard title="Total File Entries" value={totals.files} icon={FileText} />
+            <KPIStatCard title="Total ARS Entries" value={totals.ars} icon={Waves} />
+            <KPIStatCard title="Agency Registrations" value={totals.agencies} icon={Briefcase} />
+            <KPIStatCard title="e-Tenders" value={totals.tenders} icon={Hammer} />
+        </div>
+
+        <Card>
             <CardHeader>
-              <CardTitle>{office.officeLocation}</CardTitle>
-              <CardDescription>{office.officeName}</CardDescription>
+                <CardTitle>Office-wise Summary</CardTitle>
+                <CardDescription>Click on an office row to drill down into its specific dashboard.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <StatCard title="Staff Members" value={office.staffCount} icon={Users} />
-              <StatCard title="File Entries" value={office.fileEntriesCount} icon={FileText} />
-              <StatCard title="ARS Entries" value={office.arsEntriesCount} icon={Waves} />
-              <StatCard title="Agency Registrations" value={office.agencyApplicationsCount} icon={Briefcase} />
-              <StatCard title="e-Tenders" value={office.eTendersCount} icon={Hammer} />
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Office Location</TableHead>
+                            <TableHead className="text-right">Staff</TableHead>
+                            <TableHead className="text-right">Files</TableHead>
+                            <TableHead className="text-right">ARS</TableHead>
+                            <TableHead className="text-right">Agencies</TableHead>
+                            <TableHead className="text-right">e-Tenders</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {officeData.map(office => (
+                            <TableRow key={office.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleOfficeClick(office.officeLocation)}>
+                                <TableCell className="font-medium">{office.officeLocation}</TableCell>
+                                <TableCell className="text-right">{office.staffCount}</TableCell>
+                                <TableCell className="text-right">{office.fileEntriesCount}</TableCell>
+                                <TableCell className="text-right">{office.arsEntriesCount}</TableCell>
+                                <TableCell className="text-right">{office.agencyApplicationsCount}</TableCell>
+                                <TableCell className="text-right">{office.eTendersCount}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
-          </Card>
-        ))}
-      </div>
+        </Card>
     </div>
   );
 }
