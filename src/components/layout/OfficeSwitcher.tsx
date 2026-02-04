@@ -9,7 +9,7 @@ import { Building } from 'lucide-react';
 
 export default function OfficeSwitcher() {
     const { selectedOffice, setSelectedOffice } = useOfficeSelection();
-    const { officeAddresses } = useDataStore();
+    const { officeAddresses } = useDataStore(); // Get the full list from the central store
 
     const officeLocations = React.useMemo(() => {
         const locations = new Set(officeAddresses.map(oa => oa.officeLocation));

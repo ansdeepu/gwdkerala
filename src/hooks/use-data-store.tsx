@@ -177,6 +177,25 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         return () => unsubscribes.forEach(unsub => unsub());
     }, [user]);
 
+    // Effect to set the single active office address based on user role and selection
+    useEffect(() => {
+        if (!user) {
+            setOfficeAddress(null);
+            return;
+        }
+        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+
+        if (isSuperAdminUser) {
+            if (selectedOffice) {
+                setOfficeAddress(officeAddresses.find(oa => oa.officeLocation === selectedOffice) || null);
+            } else {
+                setOfficeAddress(null); // 'All Offices' is selected
+            }
+        } else if (user.officeLocation) {
+            setOfficeAddress(officeAddresses.find(oa => oa.officeLocation === user.officeLocation) || null);
+        }
+    }, [user, selectedOffice, officeAddresses]);
+
     // Effect for OFFICE-SCOPED data
     useEffect(() => {
         if (!user) {
@@ -187,7 +206,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         }
         
         const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
-        const officeToQuery = !isSuperAdminUser ? user.officeLocation : selectedOffice;
+        const officeToQuery = isSuperAdminUser ? selectedOffice : user.officeLocation;
 
         const officeScopedCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, needsSpecialSort?: boolean }> = {
             fileEntries: { setter: setAllFileEntries, loaderKey: 'files' },
@@ -204,26 +223,23 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
             
             let q;
-            if (officeToQuery) {
+            if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
                 const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = query(collection(db, path));
-            } else if (isSuperAdminUser) {
+            } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
                 q = query(collectionGroup(db, collectionName));
-            } else {
+            } else { // Should not happen for authenticated users, but as a safeguard
                 setter([]);
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
                 return () => {};
-            }
-
-            if (collectionName === 'eTenders' && !isSuperAdminUser) { 
-                q = query(q, orderBy("tenderDate", "desc"));
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 const data = snapshot.docs.map(doc => {
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
-                    if(isSuperAdminUser && !officeToQuery) {
+                    // If this is a collectionGroup query, manually add officeLocation from the path
+                    if (isSuperAdminUser && !officeToQuery) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
@@ -258,23 +274,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         return () => unsubscribes.forEach(unsub => unsub());
     }, [user, selectedOffice]);
     
-    // Effect to set the single current officeAddress
-    useEffect(() => {
-        if (!user) return;
-        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
-        
-        if (isSuperAdminUser) {
-            if (selectedOffice) {
-                const currentOffice = officeAddresses.find(oa => oa.officeLocation === selectedOffice);
-                setOfficeAddress(currentOffice || null);
-            } else {
-                setOfficeAddress(null);
-            }
-        } else if (user.officeLocation) {
-            const currentOffice = officeAddresses.find(oa => oa.officeLocation === user.officeLocation);
-            setOfficeAddress(currentOffice || null);
-        }
-    }, [officeAddresses, user, selectedOffice]);
 
     const isLoading = Object.values(loadingStates).some(Boolean);
 

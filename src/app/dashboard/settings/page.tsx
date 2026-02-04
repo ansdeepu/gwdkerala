@@ -32,6 +32,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, UserPlus, Users, Edit, Trash2, ArrowLeft, Move, Eye, Building, FileUp, Download, ShieldAlert, MapPin, PlusCircle, Save, X } from 'lucide-react';
+import { useOfficeSelection } from '@/hooks/useOfficeSelection';
 
 const db = getFirestore(app);
 
@@ -197,6 +198,7 @@ export default function SettingsPage() {
   const { allLsgConstituencyMaps, allStaffMembers, officeAddress } = useDataStore();
   const canManage = user?.role === 'editor';
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
+  const { selectedOffice } = useOfficeSelection();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOfficeDialogOpen, setIsOfficeDialogOpen] = useState(false);
@@ -220,7 +222,6 @@ export default function SettingsPage() {
     try {
         const payload: { [key: string]: any } = { ...data };
         
-        // Sanitize payload to remove 'undefined' values which Firestore doesn't support
         Object.keys(payload).forEach(key => {
             if (payload[key] === undefined) {
                 delete payload[key];
@@ -438,7 +439,7 @@ export default function SettingsPage() {
                 <CardTitle className="flex items-center gap-2 text-primary"><MapPin className="h-5 w-5"/>Current Office Location</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-3xl font-bold">{user?.officeLocation || 'Not Set'}</p>
+                <p className="text-3xl font-bold">{selectedOffice || 'All Offices'}</p>
                  <p className="text-sm text-muted-foreground">This is the office you are currently viewing data for.</p>
             </CardContent>
         </Card>
@@ -456,7 +457,7 @@ export default function SettingsPage() {
                     </div>
                     {canManage && (
                         <div className="flex items-center gap-2">
-                           <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }} disabled={isSuperAdmin && !officeAddress}>
+                           <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }} disabled={isSuperAdmin && !selectedOffice}>
                                <Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}
                             </Button>
                             {officeAddress && (
@@ -500,8 +501,8 @@ export default function SettingsPage() {
                     </div>
                 ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                        {isSuperAdmin && !officeAddress ? (
-                            <p>Select a specific office to view or edit its details.</p>
+                        {isSuperAdmin && !selectedOffice ? (
+                             <p>Select a specific office to view or edit its details.</p>
                         ) : (
                             <>
                                 <p>No office details have been configured for {user?.officeLocation || 'your location'} yet.</p>
