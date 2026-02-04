@@ -25,7 +25,7 @@ const KPIStatCard = ({ title, value, icon: Icon }: { title: string, value: strin
 export default function SuperAdminDashboardPage() {
   const { setHeader } = usePageHeader();
   const { 
-    officeAddresses,
+    allOfficeAddresses,
     allStaffMembers, 
     allFileEntries, 
     allArsEntries, 
@@ -42,7 +42,8 @@ export default function SuperAdminDashboardPage() {
   }, [setHeader]);
 
   const officeData = useMemo(() => {
-    return officeAddresses.map(office => {
+    if (!allOfficeAddresses) return [];
+    return allOfficeAddresses.map(office => {
         const location = office.officeLocation;
         return {
             ...office,
@@ -53,7 +54,7 @@ export default function SuperAdminDashboardPage() {
             eTendersCount: allE_tenders.filter(t => t.officeLocation === location).length,
         };
     }).sort((a,b) => a.officeLocation.localeCompare(b.officeLocation));
-  }, [officeAddresses, allStaffMembers, allFileEntries, allArsEntries, allAgencyApplications, allE_tenders]);
+  }, [allOfficeAddresses, allStaffMembers, allFileEntries, allArsEntries, allAgencyApplications, allE_tenders]);
   
   const filteredOfficeData = useMemo(() => {
     if (!selectedOffice) {
@@ -63,13 +64,13 @@ export default function SuperAdminDashboardPage() {
   }, [officeData, selectedOffice]);
   
   const totals = useMemo(() => ({
-    offices: officeAddresses.length,
+    offices: allOfficeAddresses?.length || 0,
     staff: allStaffMembers.length,
     files: allFileEntries.length,
     ars: allArsEntries.length,
     agencies: allAgencyApplications.length,
     tenders: allE_tenders.length,
-  }), [officeAddresses, allStaffMembers, allFileEntries, allArsEntries, allAgencyApplications, allE_tenders]);
+  }), [allOfficeAddresses, allStaffMembers, allFileEntries, allArsEntries, allAgencyApplications, allE_tenders]);
 
   const handleOfficeClick = (officeLocation: string) => {
     setSelectedOffice(officeLocation);
