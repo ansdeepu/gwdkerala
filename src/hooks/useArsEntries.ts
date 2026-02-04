@@ -40,7 +40,7 @@ const processArsDoc = (docSnap: DocumentData): ArsEntry => {
 
 export function useArsEntries() {
   const { user } = useAuth();
-  const { allArsEntries, isLoading: dataStoreLoading, refetchArsEntries } = useDataStore(); // Use the central store
+  const { allArsEntries, isLoading: dataStoreLoading } = useDataStore(); // Use the central store
   const [arsEntries, setArsEntries] = useState<ArsEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getPendingUpdates } = usePendingUpdates();
@@ -135,26 +135,19 @@ export function useArsEntries() {
         toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
         return;
     }
-    if (!user.officeLocation) throw new Error("User has no office location.");
+     if (!user.officeLocation) {
+        toast({ title: "Cannot Delete", description: "Your user profile is not associated with an office.", variant: "destructive" });
+        return;
+    }
     const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
     await deleteDoc(doc(db, collectionPath, id));
   }, [user, toast]);
   
   const getArsEntryById = useCallback(async (id: string): Promise<ArsEntry | null> => {
-    if (!user || !user.officeLocation) return null;
-    try {
-        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
-        const docRef = doc(db, collectionPath, id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            return processArsDoc(docSnap);
-        }
-        return null;
-    } catch (error) {
-        console.error("Error fetching ARS entry by ID:", error);
-        return null;
-    }
-  }, [user]);
+    // Find the entry from the already loaded data in the central store.
+    const entry = allArsEntries.find(e => e.id === id);
+    return entry || null;
+  }, [allArsEntries]);
 
   const clearAllArsData = useCallback(async () => {
     if (!user || user.role !== 'editor' || !user.officeLocation) {
@@ -167,8 +160,7 @@ export function useArsEntries() {
     const batch = writeBatch(db);
     snapshot.docs.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
-    refetchArsEntries();
-  }, [user, toast, refetchArsEntries]);
+  }, [user, toast]);
   
   return { 
     arsEntries, 
@@ -178,6 +170,5 @@ export function useArsEntries() {
     deleteArsEntry, 
     getArsEntryById,
     clearAllArsData,
-    refreshArsEntries: refetchArsEntries,
   };
 }
