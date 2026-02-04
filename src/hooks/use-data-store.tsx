@@ -136,82 +136,107 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         await deleteDoc(doc(db, 'arsEntries', id));
     }, [user]);
 
+    // Effect for GLOBAL (non-office-specific) data
     useEffect(() => {
         if (!user) {
-            const resetState = { files: false, ars: false, staff: false, agencies: false, lsg: false, rates: false, bidders: false, eTenders: false, officeAddress: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false };
-            setLoadingStates(resetState);
+            setAllLsgConstituencyMaps([]);
+            setAllRateDescriptions(defaultRateDescriptions);
+            setAllBidders([]);
+            setOfficeAddresses([]);
+            setLoadingStates(prev => ({ ...prev, lsg: false, rates: false, bidders: false, officeAddress: false }));
             return;
         }
-        
-        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
-        const officeToQuery = !isSuperAdminUser ? user.officeLocation : selectedOffice;
-        
-        const collectionsToSubscribe: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, collectionName: string }> = {
-            fileEntries: { setter: setAllFileEntries, loaderKey: 'files', collectionName: 'fileEntries' },
-            arsEntries: { setter: setAllArsEntries, loaderKey: 'ars', collectionName: 'arsEntries' },
-            staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff', collectionName: 'staffMembers' },
-            agencyApplications: { setter: setAllAgencyApplications, loaderKey: 'agencies', collectionName: 'agencyApplications' },
-            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', collectionName: 'localSelfGovernments' },
-            rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', collectionName: 'rateDescriptions' },
-            bidders: { setter: setAllBidders, loaderKey: 'bidders', collectionName: 'bidders' },
-            eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', collectionName: 'eTenders' },
-            departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles', collectionName: 'departmentVehicles' },
-            hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles', collectionName: 'hiredVehicles' },
-            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors', collectionName: 'rigCompressors' },
-            officeAddresses: { setter: setOfficeAddresses, loaderKey: 'officeAddress', collectionName: 'officeAddresses' },
+
+        const globalCollections = {
+            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
+            rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates' },
+            bidders: { setter: setAllBidders, loaderKey: 'bidders' },
+            officeAddresses: { setter: setOfficeAddresses, loaderKey: 'officeAddress' }
         };
 
-        const officeScopedCollectionNames = ['fileEntries', 'arsEntries', 'staffMembers', 'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles', 'rigCompressors'];
-        
-        const unsubscribes = Object.entries(collectionsToSubscribe).map(([key, { setter, loaderKey, collectionName }]) => {
-            setLoadingStates(prev => ({...prev, [loaderKey]: true}));
-            
-            let q;
-            const isOfficeScoped = officeScopedCollectionNames.includes(collectionName);
-
-            if (isOfficeScoped) {
-                if (officeToQuery) {
-                    const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
-                    q = query(collection(db, path));
-                } else if (isSuperAdminUser) { // Super Admin with "All Offices" selected
-                    q = query(collectionGroup(db, collectionName));
-                } else {
-                    setter([]);
-                    setLoadingStates(prev => ({...prev, [loaderKey]: false}));
-                    return () => {};
-                }
-            } else {
-                // Global collections like bidders, lsg, rates, and officeAddresses are not filtered by office.
-                q = query(collection(db, collectionName));
-            }
-            
+        const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey }]) => {
+            setLoadingStates(prev => ({ ...prev, [loaderKey]: true }));
+            let q = query(collection(db, collectionName));
             if (collectionName === 'bidders') {
                 q = query(q, orderBy("order"));
-            } else if (collectionName === 'eTenders' && !isSuperAdminUser) { 
-                q = query(q, orderBy("tenderDate", "desc"));
             }
-            
+
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 if (collectionName === 'rateDescriptions') {
                     const descriptions = snapshot.docs.reduce((acc, doc) => ({...acc, [doc.id]: doc.data().description}), {} as Record<RateDescriptionId, string>);
                     setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
                 } else {
                     const data = snapshot.docs.map(doc => processFirestoreDoc({ id: doc.id, data: () => doc.data() }));
-                    if (collectionName === 'staffMembers') {
-                        const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
-                        data.sort((a: StaffMember, b: StaffMember) => {
-                            const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
-                            const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
-                            if (orderA !== orderB) return orderA - orderB;
-                            return a.name.localeCompare(b.name);
-                        });
-                    }
                     setter(data);
                 }
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
             }, (error) => {
+                console.error(`Error fetching global collection ${collectionName}:`, error);
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+            });
+        });
+
+        return () => unsubscribes.forEach(unsub => unsub());
+    }, [user]);
+
+    // Effect for OFFICE-SCOPED data
+    useEffect(() => {
+        if (!user) {
+            setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
+            setAllE_tenders([]); setAllDepartmentVehicles([]); setAllHiredVehicles([]); setAllRigCompressors([]);
+            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false }));
+            return;
+        }
+        
+        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+        const officeToQuery = !isSuperAdminUser ? user.officeLocation : selectedOffice;
+
+        const officeScopedCollections = {
+            fileEntries: { setter: setAllFileEntries, loaderKey: 'files' },
+            arsEntries: { setter: setAllArsEntries, loaderKey: 'ars' },
+            staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff' },
+            agencyApplications: { setter: setAllAgencyApplications, loaderKey: 'agencies' },
+            eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders' },
+            departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
+            hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
+            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' }
+        };
+
+        const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey }]) => {
+            setLoadingStates(prev => ({...prev, [loaderKey]: true}));
+            
+            let q;
+            if (officeToQuery) {
+                const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
+                q = query(collection(db, path));
+            } else if (isSuperAdminUser) {
+                q = query(collectionGroup(db, collectionName));
+            } else {
+                setter([]);
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+                return () => {};
+            }
+
+            if (collectionName === 'eTenders' && !isSuperAdminUser) { 
+                q = query(q, orderBy("tenderDate", "desc"));
+            }
+            
+            return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
+                const data = snapshot.docs.map(doc => processFirestoreDoc({ id: doc.id, data: () => doc.data() }));
+                if (collectionName === 'staffMembers') {
+                    const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
+                    data.sort((a: StaffMember, b: StaffMember) => {
+                        const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
+                        const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
+                        if (orderA !== orderB) return orderA - orderB;
+                        return a.name.localeCompare(b.name);
+                    });
+                }
+                setter(data);
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+            }, (error) => {
                  if (error.code === 'permission-denied') {
-                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `/${collectionName}`, operation: 'list' }));
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `offices/.../${collectionName}`, operation: 'list' }));
                 } else {
                     console.error(`Error fetching ${collectionName}:`, error);
                     toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
@@ -220,12 +245,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             });
         });
 
-        return () => {
-            unsubscribes.forEach(unsub => unsub());
-        };
+        return () => unsubscribes.forEach(unsub => unsub());
     }, [user, selectedOffice]);
     
-    // Set single officeAddress from the fetched array
     useEffect(() => {
         if (!user) return;
         const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
@@ -235,14 +257,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 const currentOffice = officeAddresses.find(oa => oa.officeLocation === selectedOffice);
                 setOfficeAddress(currentOffice || null);
             } else {
-                setOfficeAddress(null); // All offices selected
+                setOfficeAddress(null);
             }
         } else if (user.officeLocation) {
             const currentOffice = officeAddresses.find(oa => oa.officeLocation === user.officeLocation);
             setOfficeAddress(currentOffice || null);
         }
     }, [officeAddresses, user, selectedOffice]);
-
 
     const isLoading = Object.values(loadingStates).some(Boolean);
 
