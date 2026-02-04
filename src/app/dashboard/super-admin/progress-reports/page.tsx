@@ -263,7 +263,14 @@ export default function SuperAdminProgressReportPage() {
     const q = query(collectionGroup(db, 'fileEntries'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => processFirestoreDoc<DataEntryFormData>({ id: doc.id, data: () => doc.data() }));
+      const data = snapshot.docs.map(doc => {
+        const docData = doc.data();
+        const officeLocation = doc.ref.parent.parent?.id;
+        return {
+            ...processFirestoreDoc<DataEntryFormData>({ id: doc.id, data: () => docData }),
+            officeLocation: officeLocation
+        };
+      });
       setAllFileEntries(data);
       setEntriesLoading(false);
     }, (error) => {
