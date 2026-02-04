@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, Users, Briefcase, FileText, Waves, Hammer, Building } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useOfficeSelection } from '@/hooks/useOfficeSelection';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Button } from '@/components/ui/button';
 
@@ -32,10 +31,11 @@ export default function SuperAdminDashboardPage() {
     allArsEntries, 
     allAgencyApplications, 
     allE_tenders, 
-    isLoading 
+    isLoading,
+    setSelectedOffice,
+    selectedOffice,
   } = useDataStore();
   const router = useRouter();
-  const { setSelectedOffice, selectedOffice } = useOfficeSelection();
 
   useEffect(() => {
     setHeader('Super Admin Dashboard', 'High-level overview of all sub-office activities.');

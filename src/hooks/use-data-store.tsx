@@ -1,7 +1,7 @@
 // src/hooks/use-data-store.tsx
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { getFirestore, collection, onSnapshot, query, Timestamp, DocumentData, orderBy, getDocs, type QuerySnapshot, where, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, writeBatch, collectionGroup } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { useAuth, type UserProfile } from './useAuth';
@@ -15,7 +15,6 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { useOfficeSelection } from './useOfficeSelection';
 
 const db = getFirestore(app);
 
@@ -78,6 +77,8 @@ const COLLECTIONS = {
 };
 
 interface DataStoreContextType {
+    selectedOffice: string | null;
+    setSelectedOffice: (office: string | null) => void;
     allFileEntries: DataEntryFormData[];
     allArsEntries: ArsEntry[];
     allStaffMembers: StaffMember[];
@@ -108,6 +109,7 @@ interface DataStoreContextType {
 const DataStoreContext = createContext<DataStoreContextType | undefined>(undefined);
 
 export function DataStoreProvider({ children, user }: { children: ReactNode, user: UserProfile | null }) {
+    const [selectedOffice, setSelectedOffice] = useState<string | null>(null);
     const [allFileEntries, setAllFileEntries] = useState<DataEntryFormData[]>([]);
     const [allArsEntries, setAllArsEntries] = useState<ArsEntry[]>([]);
     const [allStaffMembers, setAllStaffMembers] = useState<StaffMember[]>([]);
@@ -127,7 +129,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true,
     });
     
-    const { selectedOffice } = useOfficeSelection();
     const refetchRateDescriptions = useCallback(() => setLoadingStates(prev => ({...prev, rates: true})), []);
 
      const deleteArsEntry = useCallback(async (id: string) => {
@@ -339,6 +340,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
     return (
         <DataStoreContext.Provider value={{
+            selectedOffice, setSelectedOffice,
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, officeAddresses, officeAddress, isLoading,
             deleteArsEntry, addDepartmentVehicle,

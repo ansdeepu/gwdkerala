@@ -20,7 +20,6 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/comp
 import FirebaseErrorListener from '@/components/FirebaseErrorListener';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, Clock, Building } from 'lucide-react';
-import { OfficeSelectionProvider } from '@/hooks/useOfficeSelection';
 import OfficeSwitcher from '@/components/layout/OfficeSwitcher';
 
 const IDLE_TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
@@ -187,14 +186,12 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <OfficeSelectionProvider>
-      <PageNavigationProvider>
-        <PageHeaderProvider>
-          <TooltipProvider>
-              <InnerDashboardLayout>{children}</InnerDashboardLayout>
-          </TooltipProvider>
-        </PageHeaderProvider>
-      </PageNavigationProvider>
-    </OfficeSelectionProvider>
+    <PageNavigationProvider>
+      <PageHeaderProvider>
+        <TooltipProvider>
+            <InnerDashboardLayout>{children}</InnerDashboardLayout>
+        </TooltipProvider>
+      </PageHeaderProvider>
+    </PageNavigationProvider>
   );
 }
