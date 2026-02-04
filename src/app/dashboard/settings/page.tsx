@@ -32,7 +32,6 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, UserPlus, Users, Edit, Trash2, ArrowLeft, Move, Eye, Building, FileUp, Download, ShieldAlert, MapPin, PlusCircle, Save, X } from 'lucide-react';
-import { useOfficeSelection } from '@/hooks/useOfficeSelection';
 
 const db = getFirestore(app);
 
@@ -195,10 +194,9 @@ export default function SettingsPage() {
   const { setHeader } = usePageHeader();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
-  const { allLsgConstituencyMaps, allStaffMembers, officeAddress } = useDataStore();
+  const { allLsgConstituencyMaps, allStaffMembers, officeAddress, selectedOffice } = useDataStore();
   const canManage = user?.role === 'editor';
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
-  const { selectedOffice } = useOfficeSelection();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOfficeDialogOpen, setIsOfficeDialogOpen] = useState(false);

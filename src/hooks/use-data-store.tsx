@@ -90,8 +90,8 @@ interface DataStoreContextType {
     allDepartmentVehicles: DepartmentVehicle[];
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
-    officeAddresses: OfficeAddress[];
-    officeAddress: OfficeAddress | null;
+    allOfficeAddresses: OfficeAddress[]; // Master list of all offices
+    officeAddress: OfficeAddress | null; // The currently selected/active office
     isLoading: boolean;
     refetchRateDescriptions: () => void;
     deleteArsEntry: (id: string) => Promise<void>;
@@ -121,8 +121,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allDepartmentVehicles, setAllDepartmentVehicles] = useState<DepartmentVehicle[]>([]);
     const [allHiredVehicles, setAllHiredVehicles] = useState<HiredVehicle[]>([]);
     const [allRigCompressors, setAllRigCompressors] = useState<RigCompressor[]>([]);
-    const [officeAddresses, setOfficeAddresses] = useState<OfficeAddress[]>([]);
-    const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null);
+    const [allOfficeAddresses, setAllOfficeAddresses] = useState<OfficeAddress[]>([]); // The master list for the dropdown
+    const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null); // The currently active office profile
 
     const [loadingStates, setLoadingStates] = useState({
         files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
@@ -142,10 +142,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     // Effect for GLOBAL (non-office-specific) data
     useEffect(() => {
         if (!user) {
-            setAllLsgConstituencyMaps([]);
-            setAllRateDescriptions(defaultRateDescriptions);
-            setAllBidders([]);
-            setOfficeAddresses([]);
+            setAllLsgConstituencyMaps([]); setAllRateDescriptions(defaultRateDescriptions); setAllBidders([]); setAllOfficeAddresses([]);
             setLoadingStates(prev => ({ ...prev, lsg: false, rates: false, bidders: false, officeAddress: false }));
             return;
         }
@@ -154,7 +151,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', queryFn: () => query(collection(db, 'localSelfGovernments')) },
             rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
             bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
-            officeAddresses: { setter: setOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) }
+            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) }
         };
 
         const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey, queryFn }]) => {
@@ -165,7 +162,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     const descriptions = snapshot.docs.reduce((acc, doc) => ({...acc, [doc.id]: doc.data().description}), {} as Record<RateDescriptionId, string>);
                     setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
                 } else {
-                    const data = snapshot.docs.map(doc => processFirestoreDoc({ id: doc.id, data: () => doc.data() }));
+                    const data = snapshot.docs.map(doc => processFirestoreDoc(doc));
                     setter(data);
                 }
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
@@ -188,14 +185,14 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
         if (isSuperAdminUser) {
             if (selectedOffice) {
-                setOfficeAddress(officeAddresses.find(oa => oa.officeLocation === selectedOffice) || null);
+                setOfficeAddress(allOfficeAddresses.find(oa => oa.officeLocation === selectedOffice) || null);
             } else {
                 setOfficeAddress(null); // 'All Offices' is selected
             }
         } else if (user.officeLocation) {
-            setOfficeAddress(officeAddresses.find(oa => oa.officeLocation === user.officeLocation) || null);
+            setOfficeAddress(allOfficeAddresses.find(oa => oa.officeLocation === user.officeLocation) || null);
         }
-    }, [user, selectedOffice, officeAddresses]);
+    }, [user, selectedOffice, allOfficeAddresses]);
 
     // Effect for OFFICE-SCOPED data
     useEffect(() => {
@@ -342,10 +339,14 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         <DataStoreContext.Provider value={{
             selectedOffice, setSelectedOffice,
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
-            allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, officeAddresses, officeAddress, isLoading,
+            allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
+            allOfficeAddresses, // Provide the master list
+            officeAddress, 
+            isLoading,
+            refetchRateDescriptions,
             deleteArsEntry, addDepartmentVehicle,
             updateDepartmentVehicle, deleteDepartmentVehicle, addHiredVehicle, updateHiredVehicle, deleteHiredVehicle,
-            addRigCompressor, updateRigCompressor, deleteRigCompressor, refetchRateDescriptions,
+            addRigCompressor, updateRigCompressor, deleteRigCompressor,
         }}>
             {children}
         </DataStoreContext.Provider>

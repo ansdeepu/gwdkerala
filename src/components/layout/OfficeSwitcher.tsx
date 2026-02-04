@@ -7,12 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Building } from 'lucide-react';
 
 export default function OfficeSwitcher() {
-    const { selectedOffice, setSelectedOffice, officeAddresses } = useDataStore();
+    const { selectedOffice, setSelectedOffice, allOfficeAddresses } = useDataStore();
 
     const officeLocations = React.useMemo(() => {
-        const locations = new Set(officeAddresses.map(oa => oa.officeLocation));
+        const locations = new Set(allOfficeAddresses.map(oa => oa.officeLocation));
         return Array.from(locations).sort();
-    }, [officeAddresses]);
+    }, [allOfficeAddresses]);
 
     return (
         <div className="flex items-center gap-2">

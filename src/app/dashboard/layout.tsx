@@ -159,7 +159,6 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   
   // Render the unified layout for all authenticated users.
   return (
-    <DataStoreProvider user={user}>
       <SidebarProvider defaultOpen>
         {isNavigating && (
           <div className="page-transition-spinner">
@@ -179,18 +178,20 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
           </SidebarInset>
         </div>
       </SidebarProvider>
-    </DataStoreProvider>
   );
 }
 
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    const { user } = useAuth();
   return (
     <PageNavigationProvider>
       <PageHeaderProvider>
-        <TooltipProvider>
-            <InnerDashboardLayout>{children}</InnerDashboardLayout>
-        </TooltipProvider>
+        <DataStoreProvider user={user}>
+            <TooltipProvider>
+                <InnerDashboardLayout>{children}</InnerDashboardLayout>
+            </TooltipProvider>
+        </DataStoreProvider>
       </PageHeaderProvider>
     </PageNavigationProvider>
   );
