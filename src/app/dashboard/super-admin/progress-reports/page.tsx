@@ -17,9 +17,6 @@ import {
   type SiteDetailFormData,
   type SiteWorkStatus,
   PRIVATE_APPLICATION_TYPES,
-  PUBLIC_DEPOSIT_APPLICATION_TYPES,
-  COLLECTOR_APPLICATION_TYPES,
-  PLAN_FUND_APPLICATION_TYPES,
 } from '@/lib/schemas';
 import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
@@ -28,48 +25,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/hooks/use-data-store';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Input } from '@/components/ui/input';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { getFirestore, collectionGroup, query, onSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
-import { app } from '@/lib/firebase';
-import { useAuth } from '@/hooks/useAuth';
-import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-
 
 export const dynamic = 'force-dynamic';
 
-const db = getFirestore(app);
+const BarChart3 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> );
+const XCircle = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> );
+const Loader2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> );
+const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="6 3 20 12 6 21 6 3"/></svg> );
+const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
+const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
 
-const BarChart3 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> );
-const XCircle = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> );
-const Loader2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> );
-const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="6 3 20 12 6 21 6 3"/></svg> );
-const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
-const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
 
-const processFirestoreDoc = <T,>(doc: DocumentData): T => {
-    const data = doc.data();
-    const converted: { [key: string]: any } = { id: doc.id };
-
-    for (const key in data) {
-        const value = data[key];
-        if (value instanceof Timestamp) {
-            converted[key] = value.toDate();
-        } else if (Array.isArray(value)) {
-            converted[key] = value.map(item =>
-                typeof item === 'object' && item !== null && !(item instanceof Timestamp)
-                    ? processFirestoreDoc({ data: () => item, id: '' })
-                    : (item instanceof Timestamp ? item.toDate() : item)
-            );
-        } else if (typeof value === 'object' && value !== null) {
-            converted[key] = processFirestoreDoc({ data: () => value, id: '' });
-        } else {
-            converted[key] = value;
-        }
-    }
-    return converted as T;
-};
-
+// Define the structure for the progress report data
 interface SiteDetailWithFileContext extends SiteDetailFormData {
   fileNo: string;
   applicantName: string;
@@ -224,14 +191,9 @@ const WellTypeProgressTable = ({
 
 export default function SuperAdminProgressReportPage() {
   const { setHeader } = usePageHeader();
-  const { user } = useAuth();
-  const { officeAddresses } = useDataStore();
-  const [allFileEntries, setAllFileEntries] = useState<DataEntryFormData[]>([]);
-  const [entriesLoading, setEntriesLoading] = useState(true);
-
+  const { allFileEntries, isLoading: entriesLoading, officeAddress } = useDataStore();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [selectedOffice, setSelectedOffice] = useState<string>('all');
   const [isFiltering, setIsFiltering] = useState(false);
   const { toast } = useToast();
 
@@ -249,40 +211,10 @@ export default function SuperAdminProgressReportPage() {
   const [detailDialogTitle, setDetailDialogTitle] = useState("");
   const [detailDialogData, setDetailDialogData] = useState<Array<SiteDetailWithFileContext | DataEntryFormData | Record<string, any>>>([]);
   const [detailDialogColumns, setDetailDialogColumns] = useState<DetailDialogColumn[]>([]);
-  
+
   useEffect(() => {
     setHeader('Progress Reports (Super Admin)', 'Generate monthly or periodic progress reports for various schemes and services across all offices.');
   }, [setHeader]);
-
-  useEffect(() => {
-    if (user?.email !== SUPER_ADMIN_EMAIL) {
-      setEntriesLoading(false);
-      return;
-    }
-
-    const q = query(collectionGroup(db, 'fileEntries'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => {
-        const docData = doc.data();
-        const officeLocation = doc.ref.parent.parent?.id;
-        return {
-            ...processFirestoreDoc<DataEntryFormData>({ id: doc.id, data: () => docData }),
-            officeLocation: officeLocation
-        };
-      });
-      setAllFileEntries(data);
-      setEntriesLoading(false);
-    }, (error) => {
-      console.error("Error fetching all file entries for super admin reports:", error);
-      toast({ title: "Error Loading Data", description: error.message, variant: "destructive" });
-      setEntriesLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user, toast]);
-
-  const officeLocations = useMemo(() => officeAddresses.map(o => o.officeLocation).sort(), [officeAddresses]);
 
   useEffect(() => {
     setStartDate(startOfMonth(new Date()));
@@ -300,11 +232,6 @@ export default function SuperAdminProgressReportPage() {
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
 
-    let entriesToProcess = allFileEntries || [];
-    if (selectedOffice !== 'all') {
-        entriesToProcess = allFileEntries.filter(e => e.officeLocation?.toLowerCase() === selectedOffice.toLowerCase());
-    }
-
     const safeParseDate = (dateInput: any): Date | null => {
         if (!dateInput) return null;
         if (dateInput instanceof Date && isValid(dateInput)) return dateInput;
@@ -319,7 +246,7 @@ export default function SuperAdminProgressReportPage() {
         return null;
     };
     
-    const includedSites: SiteDetailWithFileContext[] = entriesToProcess.flatMap(entry => 
+    const includedSites: SiteDetailWithFileContext[] = allFileEntries.flatMap(entry => 
         (entry.siteDetails || [])
         .filter(site => site.workStatus !== "Addl. AS Awaited")
         .map(site => {
@@ -405,7 +332,7 @@ export default function SuperAdminProgressReportPage() {
     });
     
     const processedFilesForFinancials = new Set<string>();
-    const filesToIncludeForFinancials = entriesToProcess.filter(entry => !entry.siteDetails?.some(site => site.workStatus === "Addl. AS Awaited"));
+    const filesToIncludeForFinancials = allFileEntries.filter(entry => !entry.siteDetails?.some(site => site.workStatus === "Addl. AS Awaited"));
 
     filesToIncludeForFinancials.forEach(entry => {
         const firstRemittanceDate = safeParseDate(entry.remittanceDetails?.[0]?.dateOfRemittance);
@@ -529,7 +456,7 @@ export default function SuperAdminProgressReportPage() {
     
     setReportData({ bwcData, twcData, progressSummaryData, privateFinancialSummaryData: privateFinancialSummary, governmentFinancialSummaryData: governmentFinancialSummary, totalRevenueHeadCredit, revenueHeadCreditData });
     setIsFiltering(false);
-  }, [allFileEntries, startDate, endDate, toast, selectedOffice]);
+  }, [allFileEntries, startDate, endDate, toast]);
   
   useEffect(() => {
     if (!entriesLoading) {
@@ -546,7 +473,6 @@ export default function SuperAdminProgressReportPage() {
     const today = new Date();
     setStartDate(startOfMonth(today));
     setEndDate(endOfMonth(today));
-    setSelectedOffice('all');
   };
   
   const handleExportExcel = async () => {
@@ -859,24 +785,12 @@ export default function SuperAdminProgressReportPage() {
           <CardHeader>
             <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-4">
                 <div className="space-y-1">
-                    <Label htmlFor="office-select">Office Location</Label>
-                    <Select value={selectedOffice} onValueChange={setSelectedOffice}>
-                        <SelectTrigger id="office-select" className="w-full sm:w-[240px]">
-                            <SelectValue placeholder="Select Office" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Offices</SelectItem>
-                            {officeLocations.map(loc => <SelectItem key={loc} value={loc}>{loc}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1">
                     <Label>From Date</Label>
-                    <Input type="date" placeholder="From: yyyy-mm-dd" className="w-full sm:w-auto" value={startDate ? format(startDate, 'yyyy-MM-dd') : ''} onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : undefined)} />
+                    <Input type="date" placeholder="From: yyyy-mm-dd" className="w-full sm:w-auto" value={startDate ? format(startDate, 'yyyy-MM-dd') : ''} onChange={(e) => setStartDate(e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined)} />
                 </div>
                 <div className="space-y-1">
                     <Label>To Date</Label>
-                    <Input type="date" placeholder="To: yyyy-mm-dd" className="w-full sm:w-auto" value={endDate ? format(endDate, 'yyyy-MM-dd') : ''} onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : undefined)} />
+                    <Input type="date" placeholder="To: yyyy-mm-dd" className="w-full sm:w-auto" value={endDate ? format(endDate, 'yyyy-MM-dd') : ''} onChange={(e) => setEndDate(e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined)} />
                 </div>
                 <div className="flex items-end gap-2">
                     <Button onClick={handleGenerateReport} disabled={isFiltering || !startDate || !endDate}>
@@ -993,10 +907,10 @@ export default function SuperAdminProgressReportPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 px-6 py-4">
-            <ScrollArea className="h-full pr-4 -mr-4">
+            <ScrollArea className="h-full pr-4">
               {detailDialogData.length > 0 ? (
                 <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableHeader>
                     <TableRow>
                       {detailDialogColumns.map(col => <TableHead key={col.key} className={cn(col.isNumeric && 'text-right')}>{col.label}</TableHead>)}
                     </TableRow>
@@ -1019,7 +933,9 @@ export default function SuperAdminProgressReportPage() {
             </ScrollArea>
           </div>
           <DialogFooter className="p-6 pt-4 border-t">
-            <Button variant="outline" onClick={exportDialogDataToExcel} disabled={detailDialogData.length === 0}><FileDown className="mr-2 h-4 w-4" /> Export to Excel</Button>
+            <Button variant="outline" disabled={detailDialogData.length === 0} onClick={exportDialogDataToExcel}>
+              <FileDown className="mr-2 h-4 w-4" /> Export to Excel
+            </Button>
             <DialogClose asChild>
               <Button type="button" variant="secondary">Close</Button>
             </DialogClose>

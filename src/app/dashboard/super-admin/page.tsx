@@ -35,7 +35,7 @@ export default function SuperAdminDashboardPage() {
     isLoading 
   } = useDataStore();
   const router = useRouter();
-  const { setSelectedOffice } = useOfficeSelection();
+  const { setSelectedOffice, selectedOffice } = useOfficeSelection();
 
   useEffect(() => {
     setHeader('Super Admin Dashboard', 'High-level overview of all sub-office activities.');
@@ -54,6 +54,13 @@ export default function SuperAdminDashboardPage() {
         };
     }).sort((a,b) => a.officeLocation.localeCompare(b.officeLocation));
   }, [officeAddresses, allStaffMembers, allFileEntries, allArsEntries, allAgencyApplications, allE_tenders]);
+  
+  const filteredOfficeData = useMemo(() => {
+    if (!selectedOffice) {
+        return officeData; // Show all if "All Offices" is selected
+    }
+    return officeData.filter(office => office.officeLocation === selectedOffice);
+  }, [officeData, selectedOffice]);
   
   const totals = useMemo(() => ({
     offices: officeAddresses.length,
@@ -107,7 +114,7 @@ export default function SuperAdminDashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {officeData.map(office => (
+                        {filteredOfficeData.map(office => (
                             <TableRow key={office.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleOfficeClick(office.officeLocation)}>
                                 <TableCell className="font-medium">{office.officeLocation}</TableCell>
                                 <TableCell className="text-right">{office.staffCount}</TableCell>

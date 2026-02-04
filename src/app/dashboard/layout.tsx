@@ -21,6 +21,7 @@ import FirebaseErrorListener from '@/components/FirebaseErrorListener';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, Clock, Building } from 'lucide-react';
 import { OfficeSelectionProvider } from '@/hooks/useOfficeSelection';
+import OfficeSwitcher from '@/components/layout/OfficeSwitcher';
 
 const IDLE_TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 const LAST_ACTIVE_UPDATE_INTERVAL = 5 * 60 * 1000; // Update Firestore lastActiveAt at most once per 5 minutes
@@ -55,7 +56,9 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
           </div>
         </div>
         <div className={cn("flex items-center gap-4")}>
-           {!isSuperAdmin && user?.officeLocation ? (
+           {isSuperAdmin ? (
+               <OfficeSwitcher />
+           ) : user?.officeLocation ? (
                 <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Building className="h-4 w-4 text-primary" />
                     <span>{user.officeLocation}</span>
