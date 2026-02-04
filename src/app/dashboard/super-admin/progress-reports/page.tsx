@@ -302,7 +302,7 @@ export default function SuperAdminProgressReportPage() {
 
     let entriesToProcess = allFileEntries || [];
     if (selectedOffice !== 'all') {
-        entriesToProcess = allFileEntries.filter(e => e.officeLocation === selectedOffice);
+        entriesToProcess = allFileEntries.filter(e => e.officeLocation?.toLowerCase() === selectedOffice.toLowerCase());
     }
 
     const safeParseDate = (dateInput: any): Date | null => {

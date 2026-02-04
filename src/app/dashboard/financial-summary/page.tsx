@@ -108,7 +108,14 @@ export default function FinancialSummaryPage() {
         const q = query(collectionGroup(db, 'fileEntries'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-          const data = snapshot.docs.map(doc => processFirestoreDoc<DataEntryFormData>({ id: doc.id, data: () => doc.data() }));
+          const data = snapshot.docs.map(doc => {
+              const docData = doc.data();
+              const officeLocation = doc.ref.parent.parent?.id;
+              return {
+                  ...processFirestoreDoc<DataEntryFormData>({ id: doc.id, data: () => docData }),
+                  officeLocation: officeLocation
+              };
+          });
           setAllFileEntries(data);
           setEntriesLoading(false);
         }, (error) => {
@@ -131,7 +138,7 @@ export default function FinancialSummaryPage() {
 
         let entriesToProcess = allFileEntries;
         if (selectedOffice !== 'all') {
-            entriesToProcess = allFileEntries.filter(e => e.officeLocation === selectedOffice);
+            entriesToProcess = allFileEntries.filter(e => e.officeLocation?.toLowerCase() === selectedOffice.toLowerCase());
         }
 
         let sbiCredit = 0, stsbCredit = 0, revenueHeadCreditDirect = 0;
