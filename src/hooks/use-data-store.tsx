@@ -292,7 +292,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                       toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
                   }
               });
-      }, [user, collectionName]);
+      }, [user]);
     };
 
     const addDepartmentVehicle = useAddVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
