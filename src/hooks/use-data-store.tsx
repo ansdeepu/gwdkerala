@@ -15,6 +15,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
+import { isValid, parse } from 'date-fns';
 
 const db = getFirestore(app);
 
@@ -41,6 +42,50 @@ const processFirestoreDoc = <T,>(doc: DocumentData): T => {
     }
     return converted as T;
 };
+
+const toDateOrNull = (value: any): Date | null => {
+    if (value === null || value === undefined || value === '') return null;
+    if (value instanceof Date && !isNaN(value.getTime())) return value;
+    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
+        try {
+            const ms = value.seconds * 1000 + (value.nanoseconds ? Math.round(value.nanoseconds / 1e6) : 0);
+            const d = new Date(ms);
+            if (!isNaN(d.getTime())) return d;
+        } catch { /* fallthrough */ }
+    }
+    if (typeof value === 'number' && isFinite(value)) {
+        const ms = value < 1e12 ? value * 1000 : value;
+        const d = new Date(ms);
+        if (!isNaN(d.getTime())) return d;
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '') return null;
+        // Attempt to parse various common date formats
+        const formats = [
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", // ISO with milliseconds
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",     // ISO without milliseconds
+            "yyyy-MM-dd'T'HH:mm",           // Datetime-local input
+            "yyyy-MM-dd",                   // Date input
+            'dd/MM/yyyy',                   // Common display format
+        ];
+        for (const fmt of formats) {
+            try {
+                const parsedDate = parse(trimmed, fmt, new Date());
+                if (isValid(parsedDate)) return parsedDate;
+            } catch (e) {
+                // continue
+            }
+        }
+        // Final fallback for other string formats Date constructor might handle
+        try {
+            const fallback = new Date(trimmed);
+            if (!isNaN(fallback.getTime())) return fallback;
+        } catch { /* ignore */ }
+    }
+    return null;
+};
+
 
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
 
