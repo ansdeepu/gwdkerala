@@ -1,4 +1,4 @@
-// src/app/dashboard/gwd-rates/page.tsx
+// src/app/dashboard/super-admin/gwd-rates/page.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
@@ -401,8 +401,7 @@ export default function GwdRatesPage() {
 
   return (
     <div className="space-y-6">
-       <Card className="rounded-lg">
-        <CardContent className="p-4">
+       <div className="p-4">
           <Tabs defaultValue="gwdRates" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="gwdRates">GWD Rates</TabsTrigger>
@@ -489,8 +488,7 @@ export default function GwdRatesPage() {
               </div>
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
 
       <Dialog open={isItemFormOpen} onOpenChange={setIsItemFormOpen}>
         <DialogContent>

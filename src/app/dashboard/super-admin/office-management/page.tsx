@@ -150,46 +150,38 @@ export default function OfficeManagementPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Office Management</CardTitle>
-              <CardDescription>Manage administrator accounts for each office location.</CardDescription>
-            </div>
-            <Button onClick={() => setIsOfficeUserDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Create New Office User</Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            {isLoading ? (
-                 <div className="flex items-center justify-center py-10"><Loader2 className="h-8 w-8 animate-spin"/></div>
-            ) : offices.length > 0 ? (
-                offices.map(([officeLocation, officeUsers]) => (
-                    <Card key={officeLocation} className="bg-secondary/50">
-                        <CardHeader>
-                            <CardTitle className="text-lg">{officeLocation}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                           <UserManagementTable
-                                users={officeUsers}
-                                isLoading={isLoading}
-                                onDataChange={loadUsers}
-                                currentUser={currentUser}
-                                isViewer={false} // Super admin is never a viewer
-                                updateUserApproval={updateUserApproval}
-                                updateUserRole={updateUserRole}
-                                deleteUserDocument={deleteUserDocument}
-                                staffMembers={allStaffMembers}
-                                onEditUser={(user) => setUserToEdit(user)}
-                            />
-                        </CardContent>
-                    </Card>
-                ))
-            ) : (
-                 <p className="text-center text-muted-foreground py-10">No offices with assigned admins found.</p>
-            )}
-        </CardContent>
-      </Card>
+      <div className="flex justify-end">
+        <Button onClick={() => setIsOfficeUserDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Create New Office User</Button>
+      </div>
+      <div className="space-y-4">
+        {isLoading ? (
+              <div className="flex items-center justify-center py-10"><Loader2 className="h-8 w-8 animate-spin"/></div>
+        ) : offices.length > 0 ? (
+            offices.map(([officeLocation, officeUsers]) => (
+                <Card key={officeLocation} className="bg-secondary/50">
+                    <CardHeader>
+                        <CardTitle className="text-lg">{officeLocation}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <UserManagementTable
+                            users={officeUsers}
+                            isLoading={isLoading}
+                            onDataChange={loadUsers}
+                            currentUser={currentUser}
+                            isViewer={false} // Super admin is never a viewer
+                            updateUserApproval={updateUserApproval}
+                            updateUserRole={updateUserRole}
+                            deleteUserDocument={deleteUserDocument}
+                            staffMembers={allStaffMembers}
+                            onEditUser={(user) => setUserToEdit(user)}
+                        />
+                    </CardContent>
+                </Card>
+            ))
+        ) : (
+              <p className="text-center text-muted-foreground py-10">No offices with assigned admins found.</p>
+        )}
+      </div>
       
       <Dialog open={isOfficeUserDialogOpen} onOpenChange={setIsOfficeUserDialogOpen}>
         <DialogContent>
