@@ -40,7 +40,7 @@ const processArsDoc = (docSnap: DocumentData): ArsEntry => {
 
 export function useArsEntries() {
   const { user } = useAuth();
-  const { allArsEntries, isLoading: dataStoreLoading } = useDataStore(); // Use the central store
+  const { allArsEntries, isLoading: dataStoreLoading, refetchArsEntries } = useDataStore(); // Use the central store
   const [arsEntries, setArsEntries] = useState<ArsEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getPendingUpdates } = usePendingUpdates();
@@ -167,7 +167,8 @@ export function useArsEntries() {
     const batch = writeBatch(db);
     snapshot.docs.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
-  }, [user, toast]);
+    refetchArsEntries();
+  }, [user, toast, refetchArsEntries]);
   
   return { 
     arsEntries, 
@@ -177,5 +178,6 @@ export function useArsEntries() {
     deleteArsEntry, 
     getArsEntryById,
     clearAllArsData,
+    refreshArsEntries: refetchArsEntries,
   };
 }
