@@ -30,8 +30,15 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { getFirestore, collectionGroup, query, onSnapshot, DocumentData, Timestamp } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
+import { useAuth } from '@/hooks/useAuth';
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
+
 
 export const dynamic = 'force-dynamic';
+
+const db = getFirestore(app);
 
 const BarChart3 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> );
 const XCircle = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> );
@@ -40,6 +47,28 @@ const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.
 const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
 const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
 
+const processFirestoreDoc = <T,>(doc: DocumentData): T => {
+    const data = doc.data();
+    const converted: { [key: string]: any } = { id: doc.id };
+
+    for (const key in data) {
+        const value = data[key];
+        if (value instanceof Timestamp) {
+            converted[key] = value.toDate();
+        } else if (Array.isArray(value)) {
+            converted[key] = value.map(item =>
+                typeof item === 'object' && item !== null && !(item instanceof Timestamp)
+                    ? processFirestoreDoc({ data: () => item, id: '' })
+                    : (item instanceof Timestamp ? item.toDate() : item)
+            );
+        } else if (typeof value === 'object' && value !== null) {
+            converted[key] = processFirestoreDoc({ data: () => value, id: '' });
+        } else {
+            converted[key] = value;
+        }
+    }
+    return converted as T;
+};
 
 interface SiteDetailWithFileContext extends SiteDetailFormData {
   fileNo: string;
@@ -195,11 +224,11 @@ const WellTypeProgressTable = ({
 
 export default function SuperAdminProgressReportPage() {
   const { setHeader } = usePageHeader();
-  useEffect(() => {
-    setHeader('Progress Reports (Super Admin)', 'Generate monthly or periodic progress reports for various schemes and services across all offices.');
-  }, [setHeader]);
+  const { user } = useAuth();
+  const { officeAddresses } = useDataStore();
+  const [allFileEntries, setAllFileEntries] = useState<DataEntryFormData[]>([]);
+  const [entriesLoading, setEntriesLoading] = useState(true);
 
-  const { allFileEntries, isLoading: entriesLoading, officeAddresses } = useDataStore();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [selectedOffice, setSelectedOffice] = useState<string>('all');
@@ -220,6 +249,31 @@ export default function SuperAdminProgressReportPage() {
   const [detailDialogTitle, setDetailDialogTitle] = useState("");
   const [detailDialogData, setDetailDialogData] = useState<Array<SiteDetailWithFileContext | DataEntryFormData | Record<string, any>>>([]);
   const [detailDialogColumns, setDetailDialogColumns] = useState<DetailDialogColumn[]>([]);
+  
+  useEffect(() => {
+    setHeader('Progress Reports (Super Admin)', 'Generate monthly or periodic progress reports for various schemes and services across all offices.');
+  }, [setHeader]);
+
+  useEffect(() => {
+    if (user?.email !== SUPER_ADMIN_EMAIL) {
+      setEntriesLoading(false);
+      return;
+    }
+
+    const q = query(collectionGroup(db, 'fileEntries'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => processFirestoreDoc<DataEntryFormData>({ id: doc.id, data: () => doc.data() }));
+      setAllFileEntries(data);
+      setEntriesLoading(false);
+    }, (error) => {
+      console.error("Error fetching all file entries for super admin reports:", error);
+      toast({ title: "Error Loading Data", description: error.message, variant: "destructive" });
+      setEntriesLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, toast]);
 
   const officeLocations = useMemo(() => officeAddresses.map(o => o.officeLocation).sort(), [officeAddresses]);
 
