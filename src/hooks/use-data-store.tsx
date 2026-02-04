@@ -255,6 +255,12 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                         if (orderA !== orderB) return orderA - orderB;
                         return a.name.localeCompare(b.name);
                     });
+                } else if (needsSpecialSort && collectionName === 'eTenders') {
+                    (data as E_tender[]).sort((a, b) => {
+                         const dateA = toDateOrNull(a.tenderDate)?.getTime() ?? 0;
+                         const dateB = toDateOrNull(b.tenderDate)?.getTime() ?? 0;
+                         return dateB - dateA;
+                    });
                 }
                 setter(data);
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
