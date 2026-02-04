@@ -9,9 +9,22 @@ import { Building } from 'lucide-react';
 export default function OfficeSwitcher() {
     const { selectedOffice, setSelectedOffice, allOfficeAddresses } = useDataStore();
 
-    const officeLocations = React.useMemo(() => {
-        const locations = new Set(allOfficeAddresses.map(oa => oa.officeLocation));
-        return Array.from(locations).sort();
+    const officeOptions = React.useMemo(() => {
+        const locationMap = new Map<string, string>(); // Map lowercase to original case for display
+        allOfficeAddresses.forEach(oa => {
+            if (oa.officeLocation) {
+                const lowerCaseLocation = oa.officeLocation.toLowerCase();
+                if (!locationMap.has(lowerCaseLocation)) {
+                    locationMap.set(lowerCaseLocation, oa.officeLocation);
+                }
+            }
+        });
+        return Array.from(locationMap.entries())
+            .map(([lower, original]) => ({
+                value: lower,
+                label: original.charAt(0).toUpperCase() + original.slice(1),
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label));
     }, [allOfficeAddresses]);
 
     return (
@@ -23,9 +36,9 @@ export default function OfficeSwitcher() {
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">All Offices</SelectItem>
-                    {officeLocations.map(location => (
-                        <SelectItem key={location} value={location}>
-                            {location.charAt(0).toUpperCase() + location.slice(1)}
+                    {officeOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
                         </SelectItem>
                     ))}
                 </SelectContent>

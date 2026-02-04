@@ -15,7 +15,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { isValid, parse } from 'date-fns';
+import { isValid, parse, parseISO } from 'date-fns';
 
 const db = getFirestore(app);
 
@@ -235,7 +235,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
         if (isSuperAdminUser) {
             if (selectedOffice) {
-                setOfficeAddress(allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null);
+                 setOfficeAddress(allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice) || null);
             } else {
                 setOfficeAddress(null); // 'All Offices' is selected
             }
@@ -272,7 +272,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             let q;
             if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
-                const path = `offices/${officeToQuery}/${collectionName}`;
+                const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
                 q = query(collectionGroup(db, collectionName));
