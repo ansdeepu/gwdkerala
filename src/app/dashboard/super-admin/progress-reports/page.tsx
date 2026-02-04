@@ -64,7 +64,7 @@ interface ProgressStats {
 }
 
 type DiameterProgress = Record<string, ProgressStats>;
-type ApplicationTypeProgress = Record<ApplicationType, DiameterProgress>;
+type ApplicationTypeProgress = Record<ApplicationType, ProgressStats>;
 type OtherServiceProgress = Record<SitePurpose, ProgressStats>;
 
 interface FinancialSummary {
@@ -199,7 +199,7 @@ export default function SuperAdminProgressReportPage() {
     setHeader('Progress Reports (Super Admin)', 'Generate monthly or periodic progress reports for various schemes and services across all offices.');
   }, [setHeader]);
 
-  const { reportEntries: allFileEntries, isReportLoading: entriesLoading, officeAddresses } = useDataStore();
+  const { allFileEntries, isLoading: entriesLoading, officeAddresses } = useDataStore();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [selectedOffice, setSelectedOffice] = useState<string>('all');
@@ -239,7 +239,7 @@ export default function SuperAdminProgressReportPage() {
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
 
-    let entriesToProcess = allFileEntries;
+    let entriesToProcess = allFileEntries || [];
     if (selectedOffice !== 'all') {
         entriesToProcess = allFileEntries.filter(e => e.officeLocation === selectedOffice);
     }
