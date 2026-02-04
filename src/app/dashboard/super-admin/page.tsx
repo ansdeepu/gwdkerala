@@ -1,12 +1,13 @@
 // src/app/dashboard/super-admin/page.tsx
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, Users, Briefcase, FileText, Waves, Hammer } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useOfficeSelection } from '@/hooks/useOfficeSelection';
+import { usePageHeader } from '@/hooks/usePageHeader';
 
 const StatCard = ({ title, value, icon: Icon }: { title: string, value: number, icon: React.ElementType }) => (
     <div className="flex items-center justify-between space-x-4">
@@ -20,6 +21,7 @@ const StatCard = ({ title, value, icon: Icon }: { title: string, value: number, 
 
 
 export default function SuperAdminDashboardPage() {
+  const { setHeader } = usePageHeader();
   const { 
     officeAddresses,
     allStaffMembers, 
@@ -31,6 +33,10 @@ export default function SuperAdminDashboardPage() {
   } = useDataStore();
   const router = useRouter();
   const { setSelectedOffice } = useOfficeSelection();
+
+  useEffect(() => {
+    setHeader('Super Admin Dashboard', 'Overview of all sub-office activities.');
+  }, [setHeader]);
 
   const officeData = useMemo(() => {
     return officeAddresses.map(office => {
