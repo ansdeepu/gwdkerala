@@ -451,12 +451,12 @@ export default function SettingsPage() {
                     <div>
                         <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" />Office Details</CardTitle>
                         <CardDescription>
-                            Manage the contact and official details for the <span className="font-semibold text-primary">{user?.officeLocation || 'department'}</span> office.
+                            Manage the contact and official details for the <span className="font-semibold text-primary">{isSuperAdmin && !officeAddress ? "selected" : user?.officeLocation || 'department'}</span> office.
                         </CardDescription>
                     </div>
                     {canManage && (
                         <div className="flex items-center gap-2">
-                           <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }}>
+                           <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }} disabled={isSuperAdmin && !officeAddress}>
                                <Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}
                             </Button>
                             {officeAddress && (
@@ -500,8 +500,14 @@ export default function SettingsPage() {
                     </div>
                 ) : (
                     <div className="text-center py-8 text-muted-foreground">
-                        <p>No office details have been configured for {user?.officeLocation || 'your location'} yet.</p>
-                        {canManage && <p className="text-sm mt-1">Click "Add Details" to set them up.</p>}
+                        {isSuperAdmin && !officeAddress ? (
+                            <p>Select a specific office to view or edit its details.</p>
+                        ) : (
+                            <>
+                                <p>No office details have been configured for {user?.officeLocation || 'your location'} yet.</p>
+                                {canManage && <p className="text-sm mt-1">Click "Add Details" to set them up.</p>}
+                            </>
+                        )}
                     </div>
                 )}
             </CardContent>

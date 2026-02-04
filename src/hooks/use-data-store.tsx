@@ -1,7 +1,7 @@
 // src/hooks/use-data-store.tsx
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useMemo } from 'react';
 import { getFirestore, collection, onSnapshot, query, Timestamp, DocumentData, orderBy, getDocs, type QuerySnapshot, where, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, writeBatch, collectionGroup } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { useAuth, type UserProfile } from './useAuth';
@@ -92,6 +92,7 @@ interface DataStoreContextType {
     officeAddresses: OfficeAddress[];
     officeAddress: OfficeAddress | null;
     isLoading: boolean;
+    refetchRateDescriptions: () => void;
     deleteArsEntry: (id: string) => Promise<void>;
     addDepartmentVehicle: (data: DepartmentVehicle) => Promise<void>;
     updateDepartmentVehicle: (data: DepartmentVehicle) => Promise<void>;
@@ -127,7 +128,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     });
     
     const { selectedOffice } = useOfficeSelection();
-    
+    const refetchRateDescriptions = useCallback(() => setLoadingStates(prev => ({...prev, rates: true})), []);
+
      const deleteArsEntry = useCallback(async (id: string) => {
         if (!user || user.role !== 'editor') {
             toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
@@ -147,21 +149,17 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             return;
         }
 
-        const globalCollections = {
-            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
-            rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates' },
-            bidders: { setter: setAllBidders, loaderKey: 'bidders' },
-            officeAddresses: { setter: setOfficeAddresses, loaderKey: 'officeAddress' }
+        const globalCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, queryFn: () => any }> = {
+            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', queryFn: () => query(collection(db, 'localSelfGovernments')) },
+            rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
+            bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
+            officeAddresses: { setter: setOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) }
         };
 
-        const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey }]) => {
+        const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey, queryFn }]) => {
             setLoadingStates(prev => ({ ...prev, [loaderKey]: true }));
-            let q = query(collection(db, collectionName));
-            if (collectionName === 'bidders') {
-                q = query(q, orderBy("order"));
-            }
-
-            return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
+            
+            return onSnapshot(queryFn(), (snapshot: QuerySnapshot<DocumentData>) => {
                 if (collectionName === 'rateDescriptions') {
                     const descriptions = snapshot.docs.reduce((acc, doc) => ({...acc, [doc.id]: doc.data().description}), {} as Record<RateDescriptionId, string>);
                     setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
@@ -191,18 +189,18 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
         const officeToQuery = !isSuperAdminUser ? user.officeLocation : selectedOffice;
 
-        const officeScopedCollections = {
+        const officeScopedCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, needsSpecialSort?: boolean }> = {
             fileEntries: { setter: setAllFileEntries, loaderKey: 'files' },
             arsEntries: { setter: setAllArsEntries, loaderKey: 'ars' },
-            staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff' },
+            staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff', needsSpecialSort: true },
             agencyApplications: { setter: setAllAgencyApplications, loaderKey: 'agencies' },
-            eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders' },
+            eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', needsSpecialSort: true },
             departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
             rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' }
         };
 
-        const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey }]) => {
+        const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
             
             let q;
@@ -226,7 +224,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
                     if(isSuperAdminUser && !officeToQuery) {
-                        // For collectionGroup queries, officeLocation might not be on the doc. Get it from the path.
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
@@ -236,9 +233,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     return processedData;
                 });
                 
-                if (collectionName === 'staffMembers') {
+                if (needsSpecialSort && collectionName === 'staffMembers') {
                     const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
-                    data.sort((a: StaffMember, b: StaffMember) => {
+                    (data as StaffMember[]).sort((a, b) => {
                         const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
                         const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
                         if (orderA !== orderB) return orderA - orderB;
@@ -346,7 +343,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, officeAddresses, officeAddress, isLoading,
             deleteArsEntry, addDepartmentVehicle,
             updateDepartmentVehicle, deleteDepartmentVehicle, addHiredVehicle, updateHiredVehicle, deleteHiredVehicle,
-            addRigCompressor, updateRigCompressor, deleteRigCompressor,
+            addRigCompressor, updateRigCompressor, deleteRigCompressor, refetchRateDescriptions,
         }}>
             {children}
         </DataStoreContext.Provider>

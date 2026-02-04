@@ -83,6 +83,7 @@ const allServicePurposesForSummary: SitePurpose[] = Array.from(sitePurposeOption
 const financialSummaryOrder: SitePurpose[] = Array.from(sitePurposeOptions);
 
 
+
 const REFUNDED_STATUSES: SiteWorkStatus[] = ['To be Refunded'];
 
 interface DetailDialogColumn {
@@ -194,7 +195,8 @@ const WellTypeProgressTable = ({
 
 export default function SuperAdminProgressReportPage() {
   const { setHeader } = usePageHeader();
-  const { allFileEntries: reportEntries, isLoading: entriesLoading, officeAddress } = useDataStore();
+  const { allFileEntries, isLoading: entriesLoading, officeAddress } = useDataStore();
+  const { selectedOffice } = useOfficeSelection();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -251,7 +253,7 @@ export default function SuperAdminProgressReportPage() {
     };
     
     // 1. Create a pre-filtered list of all sites to be included in the report.
-    const includedSites: SiteDetailWithFileContext[] = reportEntries.flatMap(entry => 
+    const includedSites: SiteDetailWithFileContext[] = allFileEntries.flatMap(entry => 
         (entry.siteDetails || [])
         .filter(site => site.workStatus !== "Addl. AS Awaited")
         .map(site => {
@@ -340,9 +342,9 @@ export default function SuperAdminProgressReportPage() {
         }
     });
     
-    // 3. Process file-level data for Financial Summary using the original `reportEntries`
+    // 3. Process file-level data for Financial Summary using the original `allFileEntries`
     const processedFilesForFinancials = new Set<string>();
-    const filesToIncludeForFinancials = reportEntries.filter(entry => !entry.siteDetails?.some(site => site.workStatus === "Addl. AS Awaited"));
+    const filesToIncludeForFinancials = allFileEntries.filter(entry => !entry.siteDetails?.some(site => site.workStatus === "Addl. AS Awaited"));
 
     filesToIncludeForFinancials.forEach(entry => {
         const firstRemittanceDate = safeParseDate(entry.remittanceDetails?.[0]?.dateOfRemittance);
@@ -467,7 +469,7 @@ export default function SuperAdminProgressReportPage() {
     
     setReportData({ bwcData, twcData, progressSummaryData, privateFinancialSummaryData: privateFinancialSummary, governmentFinancialSummaryData: governmentFinancialSummary, totalRevenueHeadCredit, revenueHeadCreditData });
     setIsFiltering(false);
-  }, [reportEntries, startDate, endDate, toast]);
+  }, [allFileEntries, startDate, endDate, toast]);
   
   useEffect(() => {
     if (!entriesLoading) {
@@ -929,25 +931,23 @@ export default function SuperAdminProgressReportPage() {
             <ScrollArea className="h-full pr-4 -mr-4">
               {detailDialogData.length > 0 ? (
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
                       {detailDialogColumns.map(col => <TableHead key={col.key} className={cn(col.isNumeric && 'text-right')}>{col.label}</TableHead>)}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {detailDialogData.map((row, index) => (
-                      <TableRow key={index}>
-                        {detailDialogColumns.map(col => (
-                          <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>
-                             {(row as any)[col.key] !== undefined && (row as any)[col.key] !== null ? String((row as any)[col.key]) : 'N/A'}
-                          </TableCell>
-                        ))}
+                    {detailDialogData.map((row, rowIndex) => (
+                      <TableRow key={rowIndex}>
+                        {detailDialogColumns.map(col => 
+                          <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>{row[col.key]}</TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               ) : (
-                <p className="py-4 text-center text-muted-foreground">No details found for this selection.</p>
+                <p className="text-center text-muted-foreground py-8">No details found for this selection.</p>
               )}
             </ScrollArea>
           </div>
