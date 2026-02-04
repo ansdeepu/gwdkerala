@@ -235,12 +235,12 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
         if (isSuperAdminUser) {
             if (selectedOffice) {
-                setOfficeAddress(allOfficeAddresses.find(oa => oa.officeLocation === selectedOffice) || null);
+                setOfficeAddress(allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null);
             } else {
                 setOfficeAddress(null); // 'All Offices' is selected
             }
         } else if (user.officeLocation) {
-            setOfficeAddress(allOfficeAddresses.find(oa => oa.officeLocation === user.officeLocation) || null);
+            setOfficeAddress(allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null);
         }
     }, [user, selectedOffice, allOfficeAddresses]);
 
@@ -290,7 +290,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1].charAt(0).toUpperCase() + pathSegments[officeIdIndex + 1].slice(1);
+                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
                         }
                     }
                     return processedData;

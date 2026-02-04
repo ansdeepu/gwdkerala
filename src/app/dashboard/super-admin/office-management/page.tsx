@@ -109,13 +109,14 @@ export default function OfficeManagementPage() {
 
   const handleCreateOfficeUser = async (data: NewOfficeUserFormData) => {
     setIsSubmitting(true);
+    const lowerCaseOfficeLocation = data.officeLocation.toLowerCase();
     try {
       const result = await createOfficeAdmin(data.email, data.password, data.name, data.officeLocation);
       if (result.success) {
         
         // Check if an officeAddress document already exists for this location
         const officeAddressesRef = collection(db, "officeAddresses");
-        const q = query(officeAddressesRef, where("officeLocation", "==", data.officeLocation));
+        const q = query(officeAddressesRef, where("officeLocation", "==", lowerCaseOfficeLocation));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
@@ -123,7 +124,7 @@ export default function OfficeManagementPage() {
             const newOfficeAddressDocRef = doc(officeAddressesRef); // Auto-generates ID
             await setDoc(newOfficeAddressDocRef, {
                 officeName: `Ground Water Department, ${data.officeLocation}`,
-                officeLocation: data.officeLocation,
+                officeLocation: lowerCaseOfficeLocation,
                 officeCode: data.officeLocation.substring(0, 3).toUpperCase(), // A sensible default
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
@@ -131,11 +132,11 @@ export default function OfficeManagementPage() {
         }
         
         // Create the office document for subcollections.
-        const officeDocRef = doc(db, "offices", data.officeLocation.toLowerCase());
+        const officeDocRef = doc(db, "offices", lowerCaseOfficeLocation);
         await setDoc(officeDocRef, {
-            name: "Ground Water Department",
+            name: `Ground Water Department, ${data.officeLocation}`,
             createdAt: serverTimestamp(),
-        });
+        }, { merge: true });
         
         toast({ title: "User and Office Created", description: `Account for ${data.name} and office for ${data.officeLocation} created.` });
         setIsOfficeUserDialogOpen(false);
@@ -178,7 +179,7 @@ export default function OfficeManagementPage() {
             offices.map(([officeLocation, officeUsers]) => (
                 <Card key={officeLocation} className="bg-secondary/50">
                     <CardHeader>
-                        <CardTitle className="text-lg">{officeLocation}</CardTitle>
+                        <CardTitle className="text-lg capitalize">{officeLocation}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <UserManagementTable

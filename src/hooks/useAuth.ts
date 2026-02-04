@@ -292,7 +292,7 @@ export function useAuth() {
       const userProfileData = {
         email: newFirebaseUser.email,
         name: name,
-        officeLocation: officeLocation,
+        officeLocation: officeLocation.toLowerCase(),
         role: 'editor' as UserRole, // Office admins are editors
         isApproved: true, // Super admin creates them as approved
         createdAt: Timestamp.now(),
@@ -568,7 +568,11 @@ export function useAuth() {
     }
     try {
         const userDocRef = doc(db, "users", targetUserUid);
-        await updateDoc(userDocRef, data);
+        const updatePayload = {...data};
+        if (updatePayload.officeLocation) {
+            updatePayload.officeLocation = updatePayload.officeLocation.toLowerCase();
+        }
+        await updateDoc(userDocRef, updatePayload);
         return { success: true };
     } catch(error: any) {
         console.error(`[Auth] Failed to update profile for ${targetUserUid}:`, error);

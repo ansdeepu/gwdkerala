@@ -117,7 +117,7 @@ export default function SuperAdminDashboardPage() {
                     <TableBody>
                         {filteredOfficeData.map(office => (
                             <TableRow key={office.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleOfficeClick(office.officeLocation)}>
-                                <TableCell className="font-medium">{office.officeLocation}</TableCell>
+                                <TableCell className="font-medium capitalize">{office.officeLocation}</TableCell>
                                 <TableCell className="text-right">{office.staffCount}</TableCell>
                                 <TableCell className="text-right">{office.fileEntriesCount}</TableCell>
                                 <TableCell className="text-right">{office.arsEntriesCount}</TableCell>
