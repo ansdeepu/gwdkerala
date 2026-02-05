@@ -135,8 +135,8 @@ interface DataStoreContextType {
     allDepartmentVehicles: DepartmentVehicle[];
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
-    allOfficeAddresses: OfficeAddress[]; // Master list of all offices
-    officeAddress: OfficeAddress | null; // The currently selected/active office
+    allOfficeAddresses: OfficeAddress[]; // This will be the list from the selected office/all offices
+    officeAddress: OfficeAddress | null; // The single, active office details document
     isLoading: boolean;
     refetchRateDescriptions: () => void;
     deleteArsEntry: (id: string) => Promise<void>;
@@ -227,19 +227,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setOfficeAddress(null);
             return;
         }
-        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
-    
-        if (isSuperAdminUser) {
-            if (selectedOffice) {
-                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
-                 setOfficeAddress(foundOffice);
-            } else {
-                setOfficeAddress(null); // 'All Offices' is selected
-            }
-        } else if (user.officeLocation) {
-            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
-            setOfficeAddress(foundOffice);
-        }
+        // `allOfficeAddresses` is now populated from the office-scoped useEffect.
+        // It will contain one or zero items for sub-office users, and potentially more for super admin.
+        const activeOffice = allOfficeAddresses.length > 0 ? allOfficeAddresses[0] : null;
+        setOfficeAddress(activeOffice);
+
     }, [user, selectedOffice, allOfficeAddresses]);
     
 
