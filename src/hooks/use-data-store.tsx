@@ -186,7 +186,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         await deleteDoc(doc(db, collectionPath, id));
     }, [user]);
 
-    // Effect for GLOBAL (non-office-specific) data
+    // Effect for GLOBAL (non-office-specific) data that are NOT office-specific
     useEffect(() => {
         if (!user) {
             setAllRateDescriptions(defaultRateDescriptions);
@@ -221,6 +221,54 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         return () => unsubscribes.forEach(unsub => unsub());
     }, [user]);
 
+    // Effect for GLOBAL data that ARE office-specific in subcollections (lsg, officeAddress)
+    useEffect(() => {
+        if (!user) {
+            setAllLsgConstituencyMaps([]);
+            setAllOfficeAddresses([]);
+            setLoadingStates(prev => ({ ...prev, lsg: false, officeAddress: false}));
+            return;
+        }
+        
+        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+        
+        const collectionsToFetch = {
+            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
+            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress' },
+        };
+        
+        const unsubscribes = Object.entries(collectionsToFetch).map(([collectionName, { setter, loaderKey }]) => {
+            setLoadingStates(prev => ({ ...prev, [loaderKey]: true }));
+            const q = query(collectionGroup(db, collectionName));
+            
+            return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
+                const data = snapshot.docs.map(doc => {
+                    const processedData = processFirestoreDoc(doc);
+                    // Add officeLocation for super admin context
+                    const pathSegments = doc.ref.path.split('/');
+                    const officeIdIndex = pathSegments.indexOf('offices');
+                    if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
+                        (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
+                    }
+                    return processedData;
+                });
+                setter(data);
+                setLoadingStates(prev => ({ ...prev, [loaderKey]: false }));
+            }, (error) => {
+                 if (error.code === 'permission-denied') {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `offices/.../${collectionName}`, operation: 'list' }));
+                } else {
+                    console.error(`Error fetching global subcollection ${collectionName}:`, error);
+                    toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
+                }
+                setLoadingStates(prev => ({ ...prev, [loaderKey]: false }));
+            });
+        });
+        
+        return () => unsubscribes.forEach(unsub => unsub());
+    }, [user]);
+
+
     // Effect to set the single active office address based on user role and selection
     useEffect(() => {
         if (!user) {
@@ -231,13 +279,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     
         if (isSuperAdminUser) {
             if (selectedOffice) {
-                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
+                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
                  setOfficeAddress(foundOffice);
             } else {
                 setOfficeAddress(null); // 'All Offices' is selected
             }
         } else if (user.officeLocation) {
-            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
+            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
             setOfficeAddress(foundOffice);
         }
     }, [user, selectedOffice, allOfficeAddresses]);
@@ -248,8 +296,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         if (!user) {
             setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
             setAllE_tenders([]); setAllDepartmentVehicles([]); setAllHiredVehicles([]); setAllRigCompressors([]);
-            setAllLsgConstituencyMaps([]); setAllOfficeAddresses([]);
-            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, officeAddress: false }));
+            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false }));
             return;
         }
         
@@ -264,9 +311,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', needsSpecialSort: true },
             departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
-            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
-            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
-            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress' }
+            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' }
         };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
@@ -274,7 +319,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             let q;
             if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
-                const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
+                const path = `offices/${officeToQuery}/${collectionName}`; // No .toLowerCase()
                 q = query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
                 q = query(collectionGroup(db, collectionName));
@@ -318,13 +363,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             }, (error) => {
                  if (error.code === 'permission-denied') {
                     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `offices/.../${collectionName}`, operation: 'list' }));
-                } else if (error.code === 'resource-exhausted') {
-                    toast({
-                        title: "Firebase Quota Exceeded",
-                        description: `Could not load ${collectionName}. Your project's database usage limit has been reached. Please check your Firebase console.`,
-                        variant: "destructive",
-                        duration: 9000
-                    });
                 } else {
                     console.error(`Error fetching ${collectionName}:`, error);
                     toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
