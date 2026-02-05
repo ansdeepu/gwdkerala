@@ -50,10 +50,6 @@ export const regularNavItems: NavItem[] = [
 
 export const superAdminNavItems: NavItem[] = [
     { href: '/dashboard/super-admin', label: 'Dashboard', icon: LayoutDashboard },
-    { href: '/dashboard/super-admin/office-management', label: 'Office Management', icon: Building },
-    { href: '/dashboard/super-admin/user-management', label: 'Directorate Users', icon: Users },
-    { href: '/dashboard/super-admin/establishment', label: 'Establishment', icon: Briefcase },
-    { href: '/dashboard/super-admin/gwd-rates', label: 'GWD Rates', icon: DollarSign },
     { href: '/dashboard/super-admin/plan-fund-works?code=4702-02-102-94', label: 'GWBDWS (4702)', icon: Landmark },
     { href: '/dashboard/super-admin/plan-fund-works?code=2702-02-103-99', label: 'GWBDWS (2702)', icon: Landmark },
     { href: '/dashboard/super-admin/ars-plan', label: 'ARS - Plan', icon: Waves },
@@ -61,6 +57,10 @@ export const superAdminNavItems: NavItem[] = [
     { href: '/dashboard/super-admin/vehicles', label: 'Vehicle & Rig', icon: Truck },
     { href: '/dashboard/super-admin/progress-reports', label: 'Progress Reports', icon: BarChart3 },
     { href: '/dashboard/super-admin/report-builder', label: 'Report Builder', icon: FileText },
+    { href: '/dashboard/super-admin/gwd-rates', label: 'GWD Rates', icon: DollarSign },
+    { href: '/dashboard/super-admin/establishment', label: 'Establishment', icon: Briefcase },
+    { href: '/dashboard/super-admin/office-management', label: 'Office Management', icon: Building },
+    { href: '/dashboard/super-admin/user-management', label: 'Directorate Users', icon: Users },
     { href: '/dashboard/super-admin/settings', label: 'Settings', icon: Settings },
 ];
 
