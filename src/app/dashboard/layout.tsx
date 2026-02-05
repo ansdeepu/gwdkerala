@@ -93,14 +93,23 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
     if (!user) {
         // If there's no user, always redirect to login.
         router.replace('/login');
-    } else if (user.email === SUPER_ADMIN_EMAIL && !pathname.startsWith('/dashboard/super-admin')) {
-        // If the user IS the super admin but is NOT on a super admin page, redirect them.
+        return;
+    } 
+
+    const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
+
+    // If Super Admin lands on the main sub-office dashboard, redirect to their specific dashboard.
+    if (isSuperAdmin && pathname === '/dashboard') {
         router.replace('/dashboard/super-admin');
-    } else if (user.email !== SUPER_ADMIN_EMAIL && pathname.startsWith('/dashboard/super-admin')) {
-        // If the user is NOT the super admin but IS on a super admin page, redirect them away.
-        router.replace('/dashboard');
+        return;
     }
-    // No action needed if the user is in the correct section of the site.
+
+    // If a regular user tries to access any super admin page, redirect them to their dashboard.
+    if (!isSuperAdmin && pathname.startsWith('/dashboard/super-admin')) {
+        router.replace('/dashboard');
+        return;
+    }
+
   }, [user, isLoading, pathname, router]);
 
   const performIdleLogout = useCallback(() => {
@@ -149,7 +158,12 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   }, [pathname, setIsNavigating]);
 
   // While loading auth OR if a user is being redirected, show a clean loader.
-  if (isLoading || !user || (user.email === SUPER_ADMIN_EMAIL && !pathname.startsWith('/dashboard/super-admin')) || (user.email !== SUPER_ADMIN_EMAIL && pathname.startsWith('/dashboard/super-admin'))) {
+  const isRedirecting = !isLoading && user && (
+    (user.email === SUPER_ADMIN_EMAIL && pathname === '/dashboard') ||
+    (user.email !== SUPER_ADMIN_EMAIL && pathname.startsWith('/dashboard/super-admin'))
+  );
+
+  if (isLoading || !user || isRedirecting) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
