@@ -128,6 +128,7 @@ export default function ArsEntryPage() {
     const entryIdToEdit = searchParams?.get('id');
     const approveUpdateId = searchParams?.get("approveUpdateId");
     const pageToReturnTo = searchParams?.get('page');
+    const readOnlyParam = searchParams?.get('readOnly');
     
     const { isLoading: entriesLoading, getArsEntryById, updateArsEntry, addArsEntry } = useArsEntries();
     const { createArsPendingUpdate, getPendingUpdateById, hasPendingUpdateForFile } = usePendingUpdates();
@@ -137,7 +138,7 @@ export default function ArsEntryPage() {
     const isEditing = !!entryIdToEdit;
     const canEdit = user?.role === 'editor';
     const isSupervisor = user?.role === 'supervisor';
-    const isViewer = user?.role === 'viewer';
+    const isViewer = user?.role === 'viewer' || readOnlyParam === 'true';
     const isApprovingUpdate = canEdit && !!approveUpdateId;
     
     const [isFormDisabledForSupervisor, setIsFormDisabledForSupervisor] = useState(false);
@@ -163,7 +164,7 @@ export default function ArsEntryPage() {
     const isSupervisorDropdownDisabled = false;
 
     const isFieldReadOnly = (fieldName: keyof ArsEntryFormData): boolean => {
-        if (canEdit) return false; // Editor can edit everything
+        if (canEdit && !isViewer) return false; // Editor can edit everything unless in read-only mode
         if (isViewer) return true; // Viewer can edit nothing
     
         if (isSupervisor) {
@@ -281,9 +282,10 @@ export default function ArsEntryPage() {
     }, [allLsgConstituencyMaps]);
     
     const returnPath = useMemo(() => {
-        const base = isApprovingUpdate ? '/dashboard/pending-updates' : '/dashboard/ars';
-        return pageToReturnTo ? `${base}?page=${pageToReturnTo}` : base;
-    }, [isApprovingUpdate, pageToReturnTo]);
+        if (isApprovingUpdate) return '/dashboard/pending-updates';
+        if (user?.email === 'keralagwd@gmail.com') return '/dashboard/super-admin/ars-plan';
+        return '/dashboard/ars';
+    }, [isApprovingUpdate, pageToReturnTo, user]);
 
 
     useEffect(() => {
@@ -401,8 +403,9 @@ export default function ArsEntryPage() {
                 await updateArsEntry(entryIdToEdit, payload);
                 toast({ title: "ARS Site Updated", description: `Site "${data.nameOfSite}" has been updated.` });
             } else if (canEdit && !isEditing) {
+                 if (!user.officeLocation) { throw new Error("User has no office location.") };
                 const fileNoTrimmed = data.fileNo.trim().toUpperCase();
-                const q = query(collection(db, "arsEntries"), where("fileNo", "==", fileNoTrimmed));
+                const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/arsEntries`), where("fileNo", "==", fileNoTrimmed));
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
                     toast({
@@ -621,4 +624,3 @@ export default function ArsEntryPage() {
         </div>
     );
 }
-

@@ -1,4 +1,3 @@
-
 // src/app/dashboard/agency-registration/page.tsx
 "use client";
 
@@ -500,6 +499,8 @@ export default function AgencyRegistrationPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageFromUrl = searchParams?.get('page');
   const idFromUrl = searchParams?.get('id');
+  const readOnlyParam = searchParams?.get('readOnly');
+
 
   useEffect(() => {
     if (pageFromUrl) {
@@ -517,8 +518,8 @@ export default function AgencyRegistrationPage() {
   const isSupervisor = user?.role === 'supervisor';
   const isViewer = user?.role === 'viewer';
   
-  const isReadOnly = isViewer || isSupervisor;
-  const canEdit = isEditor;
+  const isReadOnly = isViewer || isSupervisor || readOnlyParam === 'true';
+  const canEdit = isEditor && !isReadOnly;
 
   useEffect(() => {
     let title = 'Rig Registration';
@@ -557,9 +558,12 @@ export default function AgencyRegistrationPage() {
   
   const returnPath = useMemo(() => {
       const page = pageFromUrl ? parseInt(pageFromUrl, 10) : 1;
-      const base = '/dashboard/agency-registration';
+      let base = '/dashboard/agency-registration';
+      if (user?.email === 'keralagwd@gmail.com') {
+          base = '/dashboard/super-admin/rig-registration';
+      }
       return page > 1 ? `${base}?page=${page}` : base;
-  }, [pageFromUrl]);
+  }, [pageFromUrl, user]);
 
   useEffect(() => {
     if (selectedApplicationId) {
@@ -2022,100 +2026,3 @@ function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialDat
     );
 }
     
-
-    
-
-    
-
-
-
-    
-
-    
-
-    
-
-
-
-    
-
-      
-
-    
-
-
-
-
-
-
-
-
-
-    
-
-    
-
-    
-
-
-
-
-    
-
-
-
-
-
-
-    
-
-    
-
-
-    
-
-    
-
-    
-
-      
-
-
-
-
-
-    
-
-    
-
-    
-
-      
-
-    
-
-
-
-    
-
-    
-
-
-      
-
-
-
-
-
-
-
-    
-
-    
-
-
-
-
-    
-
-
