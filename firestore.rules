@@ -155,37 +155,37 @@ service cloud.firestore {
     /* ================= COLLECTION GROUP RULES FOR SUPER ADMIN LISTS ================= */
 
     match /{path=**}/fileEntries/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
     match /{path=**}/arsEntries/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
     match /{path=**}/staffMembers/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
     match /{path=**}/agencyApplications/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
     match /{path=**}/eTenders/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
     match /{path=**}/departmentVehicles/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
     match /{path=**}/hiredVehicles/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
     match /{path=**}/rigCompressors/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
     match /{path=**}/officeAddresses/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
     match /{path=**}/localSelfGovernments/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
      match /{path=**}/users/{docId} {
-      allow list: if isSuperAdmin();
+      allow read: if isSuperAdmin();
     }
   }
 }
