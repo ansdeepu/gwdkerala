@@ -253,7 +253,7 @@ export function useAuth() {
         email: newFirebaseUser.email,
         name: name,
         staffId: staffId,
-        officeLocation: officeLocation,
+        officeLocation: officeLocation.toLowerCase(),
         role: 'viewer' as UserRole,
         isApproved: false,
         createdAt: Timestamp.now(),
@@ -568,7 +568,7 @@ export function useAuth() {
     }
     try {
         const userDocRef = doc(db, "users", targetUserUid);
-        const updatePayload = {...data};
+        const updatePayload: { [key: string]: any } = { ...data };
         if (updatePayload.officeLocation) {
             updatePayload.officeLocation = updatePayload.officeLocation.toLowerCase();
         }

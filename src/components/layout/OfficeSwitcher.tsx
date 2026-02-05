@@ -28,7 +28,7 @@ export default function OfficeSwitcher() {
     }, [allOfficeAddresses]);
 
     const handleValueChange = (value: string) => {
-        const newSelection = value === 'all' ? null : value;
+        const newSelection = value === 'all' ? null : value.toLowerCase();
         setSelectedOffice(newSelection);
     };
 

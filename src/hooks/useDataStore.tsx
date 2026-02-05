@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { getFirestore, collection, onSnapshot, query, Timestamp, DocumentData, orderBy, getDocs, type QuerySnapshot, where, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, query, Timestamp, DocumentData, orderBy, getDocs, type QuerySnapshot, where, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, writeBatch, collectionGroup } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { useAuth, type UserProfile } from './useAuth';
 import type { DataEntryFormData } from '@/lib/schemas/DataEntrySchema';
@@ -14,7 +14,8 @@ import { designationOptions } from '@/lib/schemas';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
-
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
+import { isValid, parse, parseISO } from 'date-fns';
 
 const db = getFirestore(app);
 
@@ -42,11 +43,55 @@ const processFirestoreDoc = <T,>(doc: DocumentData): T => {
     return converted as T;
 };
 
+const toDateOrNull = (value: any): Date | null => {
+    if (value === null || value === undefined || value === '') return null;
+    if (value instanceof Date && !isNaN(value.getTime())) return value;
+    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
+        try {
+            const ms = value.seconds * 1000 + (value.nanoseconds ? Math.round(value.nanoseconds / 1e6) : 0);
+            const d = new Date(ms);
+            if (!isNaN(d.getTime())) return d;
+        } catch { /* fallthrough */ }
+    }
+    if (typeof value === 'number' && isFinite(value)) {
+        const ms = value < 1e12 ? value * 1000 : value;
+        const d = new Date(ms);
+        if (!isNaN(d.getTime())) return d;
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '') return null;
+        // Attempt to parse various common date formats
+        const formats = [
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", // ISO with milliseconds
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",     // ISO without milliseconds
+            "yyyy-MM-dd'T'HH:mm",           // Datetime-local input
+            "yyyy-MM-dd",                   // Date input
+            'dd/MM/yyyy',                   // Common display format
+        ];
+        for (const fmt of formats) {
+            try {
+                const parsedDate = parse(trimmed, fmt, new Date());
+                if (isValid(parsedDate)) return parsedDate;
+            } catch (e) {
+                // continue
+            }
+        }
+        // Final fallback for other string formats Date constructor might handle
+        try {
+            const fallback = new Date(trimmed);
+            if (!isNaN(fallback.getTime())) return fallback;
+        } catch { /* ignore */ }
+    }
+    return null;
+};
+
+
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
 
 export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
-    tenderFee: "For Works:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 500\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\n- Over 50 Lakhs up to 1 Crore: Rs 5000\n- Above 1 Crore: Rs 10000\n\nFor Purchase:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 800\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\n- Above 25 Lakhs: Rs 3000",
-    emd: "For Works:\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\n- Above Rs. 10 Crore: Rs. 5 Lakh\n\nFor Purchase:\n- Up to 2 Crore: 1.00% of the project cost\n- Above 2 Crore: No EMD",
+    tenderFee: "For Works:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 500\\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\\n- Over 50 Lakhs up to 1 Crore: Rs 5000\\n- Above 1 Crore: Rs 10000\\n\\nFor Purchase:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 800\\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\\n- Above 25 Lakhs: Rs 3000",
+    emd: "For Works:\\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\\n- Above Rs. 10 Crore: Rs. 5 Lakh\\n\\nFor Purchase:\\n- Up to 2 Crore: 1.00% of the project cost\\n- Above 2 Crore: No EMD",
     performanceGuarantee: "Performance Guarantee , the amount collected at the time of executing contract agreement will be 5% of the contract value(agrecd PAC)and the deposit will be retained till the texpiry of Defect Liability Period. At least fifty percent(50%) of this deposit shall be collected in the form of Treasury Fixed Deposit and the rest in the form of Bank Guarantee or any other forms prescribed in the revised PWD Manual.",
     additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%. This deposit is calculated as 25% of the difference between the estimate cost and the tender amount, but it will not exceed 10% of the estimate cost. This deposit will be released after satisfactory completion of the work.",
     stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
@@ -54,7 +99,9 @@ export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
 
 export interface OfficeAddress {
   id: string;
-  officeName?: string;
+  officeName: string;
+  officeLocation: string;
+  officeCode: string;
   officeNameMalayalam?: string;
   address?: string;
   addressMalayalam?: string;
@@ -75,6 +122,8 @@ const COLLECTIONS = {
 };
 
 interface DataStoreContextType {
+    selectedOffice: string | null;
+    setSelectedOffice: (office: string | null) => void;
     allFileEntries: DataEntryFormData[];
     allArsEntries: ArsEntry[];
     allStaffMembers: StaffMember[];
@@ -86,17 +135,11 @@ interface DataStoreContextType {
     allDepartmentVehicles: DepartmentVehicle[];
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
-    officeAddress: OfficeAddress | null;
+    allOfficeAddresses: OfficeAddress[]; // Master list of all offices
+    officeAddress: OfficeAddress | null; // The currently selected/active office
     isLoading: boolean;
-    refetchFileEntries: () => void;
-    refetchArsEntries: () => void;
-    deleteArsEntry: (id: string) => Promise<void>;
-    refetchStaffMembers: () => void;
-    refetchAgencyApplications: () => void;
-    refetchLsgConstituencyMaps: () => void;
     refetchRateDescriptions: () => void;
-    refetchBidders: () => void;
-    refetchE_tenders: () => void;
+    deleteArsEntry: (id: string) => Promise<void>;
     addDepartmentVehicle: (data: DepartmentVehicle) => Promise<void>;
     updateDepartmentVehicle: (data: DepartmentVehicle) => Promise<void>;
     deleteDepartmentVehicle: (id: string, name: string) => Promise<void>;
@@ -106,12 +149,12 @@ interface DataStoreContextType {
     addRigCompressor: (data: RigCompressor) => Promise<void>;
     updateRigCompressor: (data: RigCompressor) => Promise<void>;
     deleteRigCompressor: (id: string, name: string) => Promise<void>;
-    refetchOfficeAddress: () => void;
 }
 
 const DataStoreContext = createContext<DataStoreContextType | undefined>(undefined);
 
 export function DataStoreProvider({ children, user }: { children: ReactNode, user: UserProfile | null }) {
+    const [selectedOffice, setSelectedOffice] = useState<string | null>(null);
     const [allFileEntries, setAllFileEntries] = useState<DataEntryFormData[]>([]);
     const [allArsEntries, setAllArsEntries] = useState<ArsEntry[]>([]);
     const [allStaffMembers, setAllStaffMembers] = useState<StaffMember[]>([]);
@@ -123,242 +166,206 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allDepartmentVehicles, setAllDepartmentVehicles] = useState<DepartmentVehicle[]>([]);
     const [allHiredVehicles, setAllHiredVehicles] = useState<HiredVehicle[]>([]);
     const [allRigCompressors, setAllRigCompressors] = useState<RigCompressor[]>([]);
+    const [allOfficeAddresses, setAllOfficeAddresses] = useState<OfficeAddress[]>([]);
     const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null);
 
     const [loadingStates, setLoadingStates] = useState({
-        files: true,
-        ars: true,
-        staff: true,
-        agencies: true,
-        lsg: true,
-        rates: true,
-        bidders: true,
-        eTenders: true,
-        departmentVehicles: true,
-        hiredVehicles: true,
-        rigCompressors: true,
-        officeAddress: true,
+        files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
+        departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true,
     });
     
-    const [refetchCounters, setRefetchCounters] = useState({
-        files: 0,
-        ars: 0,
-        staff: 0,
-        agencies: 0,
-        lsg: 0,
-        rates: 0,
-        bidders: 0,
-        eTenders: 0,
-        departmentVehicles: 0,
-        hiredVehicles: 0,
-        rigCompressors: 0,
-        officeAddress: 0,
-    });
-
-    const refetchFileEntries = useCallback(() => setRefetchCounters(c => ({...c, files: c.files + 1})), []);
-    const refetchArsEntries = useCallback(() => setRefetchCounters(c => ({...c, ars: c.ars + 1})), []);
-    const refetchStaffMembers = useCallback(() => setRefetchCounters(c => ({...c, staff: c.staff + 1})), []);
-    const refetchAgencyApplications = useCallback(() => setRefetchCounters(c => ({...c, agencies: c.agencies + 1})), []);
-    const refetchLsgConstituencyMaps = useCallback(() => setRefetchCounters(c => ({ ...c, lsg: c.lsg + 1 })), []);
-    const refetchRateDescriptions = useCallback(() => setRefetchCounters(c => ({ ...c, rates: c.rates + 1 })), []);
-    const refetchBidders = useCallback(() => setRefetchCounters(c => ({ ...c, bidders: c.bidders + 1 })), []);
-    const refetchE_tenders = useCallback(() => setRefetchCounters(c => ({ ...c, eTenders: c.eTenders + 1 })), []);
-    const refetchDepartmentVehicles = useCallback(() => setRefetchCounters(c => ({...c, departmentVehicles: c.departmentVehicles + 1})), []);
-    const refetchHiredVehicles = useCallback(() => setRefetchCounters(c => ({...c, hiredVehicles: c.hiredVehicles + 1})), []);
-    const refetchRigCompressors = useCallback(() => setRefetchCounters(c => ({...c, rigCompressors: c.rigCompressors + 1})), []);
-    const refetchOfficeAddress = useCallback(() => setRefetchCounters(c => ({...c, officeAddress: c.officeAddress + 1})), []);
-
+    const refetchRateDescriptions = useCallback(() => setLoadingStates(prev => ({...prev, rates: true})), []);
 
      const deleteArsEntry = useCallback(async (id: string) => {
         if (!user || user.role !== 'editor') {
             toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
             return;
         }
-        await deleteDoc(doc(db, 'arsEntries', id));
-        refetchArsEntries(); // This will trigger the listener to refetch
-    }, [user, refetchArsEntries]);
+        if (!user.officeLocation) throw new Error("User must have an office location for this action.");
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
+        await deleteDoc(doc(db, collectionPath, id));
+    }, [user]);
 
-
+    // Effect for GLOBAL (non-office-specific) data
     useEffect(() => {
         if (!user) {
-            setAllFileEntries([]);
-            setAllArsEntries([]);
-            setAllStaffMembers([]);
-            setAllAgencyApplications([]);
             setAllLsgConstituencyMaps([]);
             setAllRateDescriptions(defaultRateDescriptions);
             setAllBidders([]);
-            setAllE_tenders([]);
-            setAllDepartmentVehicles([]);
-            setAllHiredVehicles([]);
-            setAllRigCompressors([]);
-            setOfficeAddress(null);
-            setLoadingStates({ files: false, ars: false, staff: false, agencies: false, lsg: false, rates: false, bidders: false, eTenders: false, officeAddress: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false });
+            setAllOfficeAddresses([]);
+            setLoadingStates(prev => ({ ...prev, lsg: false, rates: false, bidders: false, officeAddress: false }));
             return;
         }
 
-        const getQueryForCollection = (collectionName: string) => {
-            if (collectionName === 'fileEntries' && user?.role === 'supervisor' && user.uid) {
-                return query(collection(db, 'fileEntries'), where('assignedSupervisorUids', 'array-contains', user.uid));
-            }
-            return query(collection(db, collectionName));
-        };
-        
-        const collections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, collectionName: string }> = {
-            fileEntries: { setter: setAllFileEntries, loaderKey: 'files', collectionName: 'fileEntries' },
-            arsEntries: { setter: setAllArsEntries, loaderKey: 'ars', collectionName: 'arsEntries' },
-            staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff', collectionName: 'staffMembers' },
-            agencyApplications: { setter: setAllAgencyApplications, loaderKey: 'agencies', collectionName: 'agencyApplications' },
-            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', collectionName: 'localSelfGovernments' },
-            rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', collectionName: 'rateDescriptions' },
-            bidders: { setter: setAllBidders, loaderKey: 'bidders', collectionName: 'bidders' },
-            eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', collectionName: 'eTenders' },
-            departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles', collectionName: 'departmentVehicles' },
-            hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles', collectionName: 'hiredVehicles' },
-            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors', collectionName: 'rigCompressors' },
-            officeAddress: { setter: setOfficeAddress, loaderKey: 'officeAddress', collectionName: 'officeAddresses' },
+        const globalCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, queryFn: () => any }> = {
+            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', queryFn: () => query(collection(db, 'localSelfGovernments')) },
+            rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
+            bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
+            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) }
         };
 
-        const unsubscribes = Object.entries(collections).map(([key, { setter, loaderKey, collectionName }]) => {
-            let q;
-            if (collectionName === 'bidders') {
-                q = query(collection(db, collectionName), orderBy("order"));
-            } else if (collectionName === 'eTenders') {
-                 q = query(collection(db, collectionName), orderBy("tenderDate", "desc"));
-            } else {
-                 q = getQueryForCollection(collectionName);
-            }
+        const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey, queryFn }]) => {
+            setLoadingStates(prev => ({ ...prev, [loaderKey]: true }));
             
-            return onSnapshot(
-                q,
-                (snapshot: QuerySnapshot<DocumentData>) => {
-                    if (collectionName === 'rateDescriptions') {
-                        if (snapshot.empty) {
-                            setter(defaultRateDescriptions);
-                        } else {
-                            const descriptions: Partial<Record<RateDescriptionId, string>> = {};
-                            snapshot.forEach(doc => {
-                                descriptions[doc.id as RateDescriptionId] = doc.data().description;
-                            });
-                            setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
-                        }
-                    } else if (collectionName === 'officeAddresses') {
-                        if (snapshot.empty) {
-                            setter(null);
-                        } else {
-                            const doc = snapshot.docs[0];
-                            setter({ id: doc.id, ...doc.data() } as OfficeAddress);
-                        }
-                    } else {
-                        const data = snapshot.docs.map(doc => {
-                            const docData = doc.data();
-                            const processed = processFirestoreDoc<any>({ id: doc.id, data: () => docData });
-                            processed.id = doc.id;
-                            return processed;
-                        });
-
-                        if (collectionName === 'staffMembers') {
-                            const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
-                            data.sort((a: StaffMember, b: StaffMember) => {
-                                const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
-                                const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
-                                if (orderA !== orderB) return orderA - orderB;
-                                return a.name.localeCompare(b.name);
-                            });
-                        }
-
-                        setter(data);
-                    }
-
-                    setLoadingStates(prev => ({ ...prev, [loaderKey]: false }));
-                },
-                async (error) => {
-                    if (error.code === 'permission-denied') {
-                        const permissionError = new FirestorePermissionError({
-                            path: `/${collectionName}`,
-                            operation: 'list',
-                        });
-                        errorEmitter.emit('permission-error', permissionError);
-                    } else {
-                        console.error(`Error fetching ${collectionName}:`, error);
-                        toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
-                    }
-                    setLoadingStates(prev => ({ ...prev, [loaderKey]: false }));
+            return onSnapshot(queryFn(), (snapshot: QuerySnapshot<DocumentData>) => {
+                if (collectionName === 'rateDescriptions') {
+                    const descriptions = snapshot.docs.reduce((acc, doc) => ({...acc, [doc.id]: doc.data().description}), {} as Record<RateDescriptionId, string>);
+                    setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
+                } else {
+                    const data = snapshot.docs.map(doc => processFirestoreDoc(doc));
+                    setter(data);
                 }
-            );
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+            }, (error) => {
+                console.error(`Error fetching global collection ${collectionName}:`, error);
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+            });
         });
 
-        return () => {
-            unsubscribes.forEach(unsub => unsub());
+        return () => unsubscribes.forEach(unsub => unsub());
+    }, [user]);
+
+    // Effect to set the single active office address based on user role and selection
+    useEffect(() => {
+        if (!user) {
+            setOfficeAddress(null);
+            return;
+        }
+        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+    
+        if (isSuperAdminUser) {
+            if (selectedOffice) {
+                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
+                 setOfficeAddress(foundOffice);
+            } else {
+                setOfficeAddress(null); // 'All Offices' is selected
+            }
+        } else if (user.officeLocation) {
+            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
+            setOfficeAddress(foundOffice);
+        }
+    }, [user, selectedOffice, allOfficeAddresses]);
+    
+
+    // Effect for OFFICE-SCOPED data
+    useEffect(() => {
+        if (!user) {
+            setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
+            setAllE_tenders([]); setAllDepartmentVehicles([]); setAllHiredVehicles([]); setAllRigCompressors([]);
+            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false }));
+            return;
+        }
+        
+        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+        const officeToQuery = isSuperAdminUser ? selectedOffice : user.officeLocation;
+
+        const officeScopedCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, needsSpecialSort?: boolean }> = {
+            fileEntries: { setter: setAllFileEntries, loaderKey: 'files' },
+            arsEntries: { setter: setAllArsEntries, loaderKey: 'ars' },
+            staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff', needsSpecialSort: true },
+            agencyApplications: { setter: setAllAgencyApplications, loaderKey: 'agencies' },
+            eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', needsSpecialSort: true },
+            departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
+            hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
+            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' }
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, refetchCounters]);
+
+        const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
+            setLoadingStates(prev => ({...prev, [loaderKey]: true}));
+            
+            let q;
+            if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
+                const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
+                q = query(collection(db, path));
+            } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
+                q = query(collectionGroup(db, collectionName));
+            } else { // Should not happen for authenticated users, but as a safeguard
+                setter([]);
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+                return () => {};
+            }
+            
+            return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
+                const data = snapshot.docs.map(doc => {
+                    const docData = doc.data();
+                    const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
+                    if (isSuperAdminUser && !officeToQuery) {
+                        const pathSegments = doc.ref.path.split('/');
+                        const officeIdIndex = pathSegments.indexOf('offices');
+                        if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
+                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
+                        }
+                    }
+                    return processedData;
+                });
+                
+                if (needsSpecialSort && collectionName === 'staffMembers') {
+                    const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
+                    (data as StaffMember[]).sort((a, b) => {
+                        const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
+                        const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
+                        if (orderA !== orderB) return orderA - orderB;
+                        return a.name.localeCompare(b.name);
+                    });
+                } else if (needsSpecialSort && collectionName === 'eTenders') {
+                    (data as E_tender[]).sort((a, b) => {
+                         const dateA = toDateOrNull(a.tenderDate)?.getTime() ?? 0;
+                         const dateB = toDateOrNull(b.tenderDate)?.getTime() ?? 0;
+                         return dateB - dateA;
+                    });
+                }
+                setter(data);
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+            }, (error) => {
+                 if (error.code === 'permission-denied') {
+                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `offices/.../${collectionName}`, operation: 'list' }));
+                } else {
+                    console.error(`Error fetching ${collectionName}:`, error);
+                    toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
+                }
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+            });
+        });
+
+        return () => unsubscribes.forEach(unsub => unsub());
+    }, [user, selectedOffice]);
+    
 
     const isLoading = Object.values(loadingStates).some(Boolean);
 
-    // --- Vehicle Management Logic ---
-
-    const useAddVehicle = <T extends {}>(collectionName: string, refetch: () => void) => {
+    const useAddVehicle = <T extends {}>(collectionName: string) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
+          if (!user.officeLocation) throw new Error("User must have an office location.");
+          const collectionPath = `offices/${user.officeLocation.toLowerCase()}/${collectionName}`;
           const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
-  
-          addDoc(collection(db, collectionName), payload)
-              .then(() => {
-                  toast({ title: 'Item Added', description: 'The new item has been saved.' });
-                  refetch();
-              })
-              .catch(error => {
-                  if (error.code === 'permission-denied') {
-                      errorEmitter.emit('permission-error', new FirestorePermissionError({
-                          path: `/${collectionName}`,
-                          operation: 'create',
-                          requestResourceData: payload,
-                      }));
-                  } else {
-                      toast({ title: "Error Adding Item", description: error.message, variant: "destructive" });
-                  }
-              });
-      }, [user, collectionName, refetch]);
+          await addDoc(collection(db, collectionPath), payload);
+          toast({ title: 'Item Added', description: 'The new item has been saved.' });
+      }, [user]);
     };
   
-    const useUpdateVehicle = <T extends { id?: string }>(collectionName: string, refetch: () => void) => {
+    const useUpdateVehicle = <T extends { id?: string }>(collectionName: string) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
+          if (!user.officeLocation) throw new Error("User must have an office location.");
           if (!data.id) throw new Error("Document ID is missing for update.");
-          const docRef = doc(db, collectionName, data.id);
+          const docRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/${collectionName}`, data.id);
           const payload = { ...data, updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
-          
-          updateDoc(docRef, payload)
-              .then(() => {
-                  toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
-                  refetch();
-              })
-              .catch(error => {
-                  if (error.code === 'permission-denied') {
-                      errorEmitter.emit('permission-error', new FirestorePermissionError({
-                          path: docRef.path,
-                          operation: 'update',
-                          requestResourceData: payload,
-                      }));
-                  } else {
-                      toast({ title: "Error Updating Item", description: error.message, variant: "destructive" });
-                  }
-              });
-      }, [user, collectionName, refetch]);
+          await updateDoc(docRef, payload);
+          toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
+      }, [user]);
     };
   
-    const useDeleteVehicle = (collectionName: string, refetch: () => void) => {
+    const useDeleteVehicle = (collectionName: string) => {
       return useCallback(async (id: string, name: string) => {
           if (!user) throw new Error("User must be logged in.");
-          const docRef = doc(db, collectionName, id);
-          
+           if (!user.officeLocation) throw new Error("User must have an office location.");
+          const docRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/${collectionName}`, id);
           deleteDoc(docRef)
               .then(() => {
                   toast({ title: 'Item Deleted', description: `${name} has been removed.` });
-                  refetch();
               })
               .catch(error => {
                   if (error.code === 'permission-denied') {
@@ -370,56 +377,34 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                       toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
                   }
               });
-      }, [user, collectionName, refetch]);
+      }, [user]);
     };
 
-    const addDepartmentVehicle = useAddVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT, refetchDepartmentVehicles);
-    const updateDepartmentVehicle = useUpdateVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT, refetchDepartmentVehicles);
-    const deleteDepartmentVehicle = useDeleteVehicle(COLLECTIONS.DEPARTMENT, refetchDepartmentVehicles);
+    const addDepartmentVehicle = useAddVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
+    const updateDepartmentVehicle = useUpdateVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
+    const deleteDepartmentVehicle = useDeleteVehicle(COLLECTIONS.DEPARTMENT);
 
-    const addHiredVehicle = useAddVehicle<HiredVehicle>(COLLECTIONS.HIRED, refetchHiredVehicles);
-    const updateHiredVehicle = useUpdateVehicle<HiredVehicle>(COLLECTIONS.HIRED, refetchHiredVehicles);
-    const deleteHiredVehicle = useDeleteVehicle(COLLECTIONS.HIRED, refetchHiredVehicles);
+    const addHiredVehicle = useAddVehicle<HiredVehicle>(COLLECTIONS.HIRED);
+    const updateHiredVehicle = useUpdateVehicle<HiredVehicle>(COLLECTIONS.HIRED);
+    const deleteHiredVehicle = useDeleteVehicle(COLLECTIONS.HIRED);
 
-    const addRigCompressor = useAddVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR, refetchRigCompressors);
-    const updateRigCompressor = useUpdateVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR, refetchRigCompressors);
-    const deleteRigCompressor = useDeleteVehicle(COLLECTIONS.RIG_COMPRESSOR, refetchRigCompressors);
+    const addRigCompressor = useAddVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR);
+    const updateRigCompressor = useUpdateVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR);
+    const deleteRigCompressor = useDeleteVehicle(COLLECTIONS.RIG_COMPRESSOR);
 
 
     return (
         <DataStoreContext.Provider value={{
-            allFileEntries,
-            allArsEntries,
-            allStaffMembers,
-            allAgencyApplications,
-            allLsgConstituencyMaps,
-            allRateDescriptions,
-            allBidders,
-            allE_tenders,
-            allDepartmentVehicles,
-            allHiredVehicles,
-            allRigCompressors,
-            officeAddress,
+            selectedOffice, setSelectedOffice,
+            allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
+            allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
+            allOfficeAddresses,
+            officeAddress, 
             isLoading,
-            refetchFileEntries,
-            refetchArsEntries,
-            deleteArsEntry,
-            refetchStaffMembers,
-            refetchAgencyApplications,
-            refetchLsgConstituencyMaps,
             refetchRateDescriptions,
-            refetchBidders,
-            refetchE_tenders,
-            addDepartmentVehicle,
-            updateDepartmentVehicle,
-            deleteDepartmentVehicle,
-            addHiredVehicle,
-            updateHiredVehicle,
-            deleteHiredVehicle,
-            addRigCompressor,
-            updateRigCompressor,
-            deleteRigCompressor,
-            refetchOfficeAddress,
+            deleteArsEntry, addDepartmentVehicle,
+            updateDepartmentVehicle, deleteDepartmentVehicle, addHiredVehicle, updateHiredVehicle, deleteHiredVehicle,
+            addRigCompressor, updateRigCompressor, deleteRigCompressor,
         }}>
             {children}
         </DataStoreContext.Provider>
