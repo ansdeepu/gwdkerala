@@ -241,7 +241,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 setOfficeAddress(null); // 'All Offices' is selected
             }
         } else if (user.officeLocation) {
-            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation === user.officeLocation) || null;
+            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
             setOfficeAddress(foundOffice);
         }
     }, [user, selectedOffice, allOfficeAddresses]);
