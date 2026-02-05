@@ -21,16 +21,21 @@ export default function OfficeSwitcher() {
         });
         return Array.from(locationMap.entries())
             .map(([lower, original]) => ({
-                value: lower,
+                value: lower, // Use lowercase for value consistency
                 label: original.charAt(0).toUpperCase() + original.slice(1),
             }))
             .sort((a, b) => a.label.localeCompare(b.label));
     }, [allOfficeAddresses]);
 
+    const handleValueChange = (value: string) => {
+        const newSelection = value === 'all' ? null : value;
+        setSelectedOffice(newSelection);
+    };
+
     return (
         <div className="flex items-center gap-2">
             <Building className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedOffice || 'all'} onValueChange={(value) => setSelectedOffice(value === 'all' ? null : value)}>
+            <Select value={selectedOffice || 'all'} onValueChange={handleValueChange}>
                 <SelectTrigger className="w-[200px] h-9">
                     <SelectValue placeholder="Select Office" />
                 </SelectTrigger>

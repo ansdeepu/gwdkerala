@@ -232,17 +232,20 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             return;
         }
         const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
-
+    
         if (isSuperAdminUser) {
             if (selectedOffice) {
-                 setOfficeAddress(allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice) || null);
+                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
+                 setOfficeAddress(foundOffice);
             } else {
                 setOfficeAddress(null); // 'All Offices' is selected
             }
         } else if (user.officeLocation) {
-            setOfficeAddress(allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null);
+            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
+            setOfficeAddress(foundOffice);
         }
     }, [user, selectedOffice, allOfficeAddresses]);
+    
 
     // Effect for OFFICE-SCOPED data
     useEffect(() => {

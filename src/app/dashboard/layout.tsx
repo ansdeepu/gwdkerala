@@ -56,7 +56,7 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
         </div>
         <div className={cn("flex items-center gap-4")}>
            {isSuperAdmin ? (
-                null
+                <OfficeSwitcher />
             ) : user?.officeLocation ? (
                 <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Building className="h-4 w-4 text-primary" />
@@ -87,23 +87,21 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const { isNavigating, setIsNavigating } = usePageNavigation();
 
   useEffect(() => {
-    // This effect should only run after the initial loading is complete.
     if (isLoading) return;
 
     if (!user) {
-        // If there's no user, always redirect to login.
         router.replace('/login');
         return;
     } 
 
     const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
 
-    // If Super Admin lands on the main sub-office dashboard, redirect to their specific dashboard.
+    // If Super Admin lands on a page that is not theirs, redirect. But allow access to shared pages
     if (isSuperAdmin && pathname === '/dashboard') {
         router.replace('/dashboard/super-admin');
         return;
     }
-
+    
     // If a regular user tries to access any super admin page, redirect them to their dashboard.
     if (!isSuperAdmin && pathname.startsWith('/dashboard/super-admin')) {
         router.replace('/dashboard');
