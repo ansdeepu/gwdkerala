@@ -189,19 +189,15 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     // Effect for GLOBAL (non-office-specific) data
     useEffect(() => {
         if (!user) {
-            setAllLsgConstituencyMaps([]);
             setAllRateDescriptions(defaultRateDescriptions);
             setAllBidders([]);
-            setAllOfficeAddresses([]);
-            setLoadingStates(prev => ({ ...prev, lsg: false, rates: false, bidders: false, officeAddress: false }));
+            setLoadingStates(prev => ({ ...prev, rates: false, bidders: false }));
             return;
         }
 
         const globalCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, queryFn: () => any }> = {
-            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', queryFn: () => query(collection(db, 'localSelfGovernments')) },
             rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
             bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
-            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) }
         };
 
         const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey, queryFn }]) => {
@@ -252,7 +248,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         if (!user) {
             setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
             setAllE_tenders([]); setAllDepartmentVehicles([]); setAllHiredVehicles([]); setAllRigCompressors([]);
-            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false }));
+            setAllLsgConstituencyMaps([]); setAllOfficeAddresses([]);
+            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, officeAddress: false }));
             return;
         }
         
@@ -267,7 +264,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', needsSpecialSort: true },
             departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
-            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' }
+            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
+            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
+            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress' }
         };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
@@ -320,7 +319,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                  if (error.code === 'permission-denied') {
                     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `offices/.../${collectionName}`, operation: 'list' }));
                 } else if (error.code === 'resource-exhausted') {
-                    console.error(`Firestore quota exceeded for ${collectionName}:`, error);
                     toast({
                         title: "Firebase Quota Exceeded",
                         description: `Could not load ${collectionName}. Your project's database usage limit has been reached. Please check your Firebase console.`,
