@@ -235,13 +235,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     
         if (isSuperAdminUser) {
             if (selectedOffice) {
-                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
+                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation === selectedOffice) || null;
                  setOfficeAddress(foundOffice);
             } else {
                 setOfficeAddress(null); // 'All Offices' is selected
             }
         } else if (user.officeLocation) {
-            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
+            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation === user.officeLocation) || null;
             setOfficeAddress(foundOffice);
         }
     }, [user, selectedOffice, allOfficeAddresses]);
@@ -275,7 +275,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             let q;
             if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
-                const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
+                const path = `offices/${officeToQuery}/${collectionName}`;
                 q = query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
                 q = query(collectionGroup(db, collectionName));

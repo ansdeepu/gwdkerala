@@ -10,25 +10,25 @@ export default function OfficeSwitcher() {
     const { selectedOffice, setSelectedOffice, allOfficeAddresses } = useDataStore();
 
     const officeOptions = React.useMemo(() => {
-        const locationMap = new Map<string, string>(); // Map lowercase to original case for display
+        // Use a Set to ensure unique office locations, preserving original casing.
+        const locations = new Set<string>();
         allOfficeAddresses.forEach(oa => {
             if (oa.officeLocation) {
-                const lowerCaseLocation = oa.officeLocation.toLowerCase();
-                if (!locationMap.has(lowerCaseLocation)) {
-                    locationMap.set(lowerCaseLocation, oa.officeLocation);
-                }
+                locations.add(oa.officeLocation);
             }
         });
-        return Array.from(locationMap.entries())
-            .map(([lower, original]) => ({
-                value: lower, // Use lowercase for value consistency
-                label: original.charAt(0).toUpperCase() + original.slice(1),
+        
+        return Array.from(locations)
+            .map(location => ({
+                value: location, // Use original casing for value
+                label: location.charAt(0).toUpperCase() + location.slice(1).toLowerCase(), // Keep display friendly
             }))
             .sort((a, b) => a.label.localeCompare(b.label));
+            
     }, [allOfficeAddresses]);
 
     const handleValueChange = (value: string) => {
-        const newSelection = value === 'all' ? null : value.toLowerCase();
+        const newSelection = value === 'all' ? null : value;
         setSelectedOffice(newSelection);
     };
 
