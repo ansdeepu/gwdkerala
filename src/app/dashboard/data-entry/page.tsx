@@ -104,6 +104,7 @@ export default function DataEntryPage() {
   const approveUpdateId = searchParams?.get("approveUpdateId");
   const pageToReturnTo = searchParams?.get('page') ?? null;
   const workTypeContext = searchParams?.get('workType') as 'public' | 'private' | 'collector' | 'planFund' | null;
+  const readOnlyParam = searchParams?.get('readOnly');
 
   const { user, isLoading: authIsLoading, fetchAllUsers } = useAuth();
   const { fetchEntryForEditing } = useFileEntries();
@@ -119,6 +120,8 @@ export default function DataEntryPage() {
   const [isFormDisabledForSupervisor, setIsFormDisabledForSupervisor] = useState(false);
   
   const isApprovingUpdate = !!(user?.role === 'editor' && approveUpdateId);
+  
+  const effectiveUserRole = readOnlyParam === 'true' ? 'viewer' : user?.role;
   
  const returnPath = useMemo(() => {
     let base = '/dashboard/file-room'; // Default to Deposit Works
@@ -251,7 +254,7 @@ export default function DataEntryPage() {
                title = "Error Loading File";
                description = "Could not find the requested file. You may not have permission to view it.";
            }
-        } else if (user?.role === 'viewer') {
+        } else if (user?.role === 'viewer' || readOnlyParam === 'true') {
             if (fileNoForHeader) {
                 title = "View File Data";
                 description = `Viewing details for File No: ${fileNoForHeader}. You are in read-only mode.`;
@@ -266,7 +269,7 @@ export default function DataEntryPage() {
     }
     
     setHeader(title, description);
-  }, [fileIdToEdit, user, approveUpdateId, setHeader, fileNoForHeader, workTypeContext, dataLoading, errorState]);
+  }, [fileIdToEdit, user, approveUpdateId, setHeader, fileNoForHeader, workTypeContext, dataLoading, errorState, readOnlyParam]);
 
 
   const supervisorList = useMemo(() => {
@@ -356,7 +359,7 @@ export default function DataEntryPage() {
                 fileNoToEdit={fileNoForHeader ?? undefined}
                 initialData={pageData.initialData}
                 supervisorList={supervisorList}
-                userRole={user?.role}
+                userRole={effectiveUserRole}
                 workTypeContext={workTypeContext}
                 returnPath={returnPath}
                 pageToReturnTo={pageToReturnTo}

@@ -1,3 +1,4 @@
+
 // src/app/dashboard/plan-fund-works/page.tsx
 "use client";
 
@@ -8,14 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import type { SiteWorkStatus, DataEntryFormData, ApplicationType } from '@/lib/schemas';
-import { applicationTypeDisplayMap } from '@/lib/schemas';
+import type { SiteWorkStatus, DataEntryFormData, ApplicationType, SitePurpose } from '@/lib/schemas';
+import { applicationTypeDisplayMap, PLAN_FUND_APPLICATION_TYPES } from '@/lib/schemas';
 import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { parseISO, isValid, format } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
 import PaginationControls from '@/components/shared/PaginationControls';
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +31,6 @@ const Clock = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 
-const PLAN_FUND_APPLICATION_TYPES: ApplicationType[] = ["GWBDWS"];
 const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig"];
 
 
@@ -58,6 +59,7 @@ export default function PlanFundWorksPage() {
   const { fileEntries, isLoading } = useFileEntries();
   const searchParams = useSearchParams();
   const codeFilter = searchParams.get('code');
+  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
   
   useEffect(() => {
     const description = 'List of all deposit works funded by the Plan Fund (GWBDWS).';
@@ -72,18 +74,68 @@ export default function PlanFundWorksPage() {
   const router = useRouter();
   const { setIsNavigating } = usePageNavigation();
   
-  const canCreate = user?.role === 'editor';
+  const canCreate = user?.role === 'editor' && !isSuperAdmin;
   
-  const { planFundWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
+  const { filteredEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => 
-        !!entry.applicationType && PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType)
+        !!entry.applicationType && PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)
     );
 
     if (codeFilter) {
-      entries = entries.filter(entry => entry.fileNo && entry.fileNo.includes(codeFilter));
+        const purposesFor2702: SitePurpose[] = ['MWSS Pump Reno', 'HPR'];
+        const is2702Report = codeFilter.includes('2702');
+
+        entries = entries.map(entry => {
+            if (!entry.siteDetails || entry.siteDetails.length === 0) return null;
+
+            const filteredSites = entry.siteDetails.filter(site => {
+                const purpose = site.purpose as SitePurpose;
+                return is2702Report ? purposesFor2702.includes(purpose) : !purposesFor2702.includes(purpose);
+            });
+            if (filteredSites.length > 0) {
+                return { ...entry, siteDetails: filteredSites };
+            }
+            return null;
+        }).filter((entry): entry is DataEntryFormData => entry !== null);
     }
     
-    // Sort all entries by the first remittance date, newest first.
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      entries = entries.filter(entry => {
+          const appTypeDisplay = entry.applicationType ? applicationTypeDisplayMap[entry.applicationType as ApplicationType] : "";
+          const searchableContent = [
+              entry.fileNo, entry.applicantName, entry.phoneNo, entry.secondaryMobileNo, appTypeDisplay, entry.fileStatus, entry.remarks, entry.constituency,
+              entry.estimateAmount, entry.totalRemittance, entry.totalPaymentAllEntries, entry.overallBalance,
+              ...(entry.siteDetails || []).flatMap(site => [
+                  site.nameOfSite, site.purpose, site.workStatus, site.contractorName,
+                  site.supervisorName, site.tenderNo, site.drillingRemarks,
+                  site.workRemarks, site.surveyRemarks, site.surveyLocation,
+                  site.pumpDetails, site.latitude, site.longitude, site.estimateAmount,
+                  site.remittedAmount, site.siteConditions, site.accessibleRig,
+                  site.tsAmount, site.diameter, site.totalDepth, site.casingPipeUsed,
+                  site.outerCasingPipe, site.innerCasingPipe, site.yieldDischarge,
+                  site.zoneDetails, site.waterLevel, site.waterTankCapacity,
+                  site.noOfTapConnections, site.noOfBeneficiary, site.typeOfRig,
+                  site.totalExpenditure, site.surveyOB, site.surveyPlainPipe,
+                  site.surveySlottedPipe, site.surveyRecommendedDiameter,
+                  site.surveyRecommendedTD, site.surveyRecommendedOB,
+                  site.surveyRecommendedCasingPipe, site.surveyRecommendedPlainPipe,
+                  site.surveyRecommendedSlottedPipe, site.surveyRecommendedMsCasingPipe,
+                  site.arsNumberOfStructures, site.arsStorageCapacity, site.arsNumberOfFillings,
+                  site.constituency, site.localSelfGovt, site.pumpingLineLength, site.deliveryLineLength,
+                  site.pilotDrillingDepth,
+              ]),
+              ...(entry.remittanceDetails || []).flatMap(rd => [ rd.amountRemitted, rd.remittedAccount, rd.remittanceRemarks, rd.dateOfRemittance ? format(new Date(rd.dateOfRemittance), "dd/MM/yyyy") : '']),
+              ...(entry.paymentDetails || []).flatMap(pd => [ pd.paymentAccount, pd.revenueHead, pd.contractorsPayment, pd.gst, pd.incomeTax, pd.kbcwb, pd.refundToParty, pd.totalPaymentPerEntry, pd.paymentRemarks, pd.dateOfPayment ? format(new Date(pd.dateOfPayment), "dd/MM/yyyy") : '' ]),
+          ]
+          .filter(val => val !== null && val !== undefined)
+          .map(val => String(val).toLowerCase())
+          .join(' || '); 
+  
+          return searchableContent.includes(lowerSearchTerm);
+      });
+    }
+
     entries.sort((a, b) => {
       const dateAValue = a.remittanceDetails?.[0]?.dateOfRemittance;
       const dateBValue = b.remittanceDetails?.[0]?.dateOfRemittance;
@@ -108,16 +160,7 @@ export default function PlanFundWorksPage() {
       return 0;
     });
 
-    let totalSiteCount = 0;
-    if (user?.role === 'supervisor' && user.uid) {
-        totalSiteCount = entries.reduce((acc, entry) => {
-            const supervisorSites = entry.siteDetails?.filter(site => site.supervisorUid === user.uid && site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus)) || [];
-            return acc + supervisorSites.length;
-        }, 0);
-    } else {
-        totalSiteCount = entries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
-    }
-
+    const totalSiteCount = entries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
 
     const lastCreated = entries.reduce((latest, entry) => {
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
@@ -127,50 +170,9 @@ export default function PlanFundWorksPage() {
         return latest;
     }, null as Date | null);
     
-    return { planFundWorkEntries: entries, totalSites: totalSiteCount, lastCreatedDate: lastCreated };
-  }, [fileEntries, user, codeFilter]);
+    return { filteredEntries: entries, totalSites: totalSiteCount, lastCreatedDate: lastCreated };
+  }, [fileEntries, user, codeFilter, searchTerm]);
   
-  const filteredEntries = useMemo(() => {
-    if (!searchTerm) {
-      return planFundWorkEntries;
-    }
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    return planFundWorkEntries.filter(entry => {
-        const appTypeDisplay = entry.applicationType ? applicationTypeDisplayMap[entry.applicationType as ApplicationType] : "";
-        const searchableContent = [
-            entry.fileNo, entry.applicantName, entry.phoneNo, entry.secondaryMobileNo, appTypeDisplay, entry.fileStatus, entry.remarks, entry.constituency,
-            entry.estimateAmount, entry.totalRemittance, entry.totalPaymentAllEntries, entry.overallBalance,
-            ...(entry.siteDetails || []).flatMap(site => [
-                site.nameOfSite, site.purpose, site.workStatus, site.contractorName,
-                site.supervisorName, site.tenderNo, site.drillingRemarks,
-                site.workRemarks, site.surveyRemarks, site.surveyLocation,
-                site.pumpDetails, site.latitude, site.longitude, site.estimateAmount,
-                site.remittedAmount, site.siteConditions, site.accessibleRig,
-                site.tsAmount, site.diameter, site.totalDepth, site.casingPipeUsed,
-                site.outerCasingPipe, site.innerCasingPipe, site.yieldDischarge,
-                site.zoneDetails, site.waterLevel, site.waterTankCapacity,
-                site.noOfTapConnections, site.noOfBeneficiary, site.typeOfRig,
-                site.totalExpenditure, site.surveyOB, site.surveyPlainPipe,
-                site.surveySlottedPipe, site.surveyRecommendedDiameter,
-                site.surveyRecommendedTD, site.surveyRecommendedOB,
-                site.surveyRecommendedCasingPipe, site.surveyRecommendedPlainPipe,
-                site.surveyRecommendedSlottedPipe, site.surveyRecommendedMsCasingPipe,
-                site.arsNumberOfStructures, site.arsStorageCapacity, site.arsNumberOfFillings,
-                site.constituency, site.localSelfGovt, site.pumpingLineLength, site.deliveryLineLength,
-                site.pilotDrillingDepth,
-            ]),
-            ...(entry.remittanceDetails || []).flatMap(rd => [ rd.amountRemitted, rd.remittedAccount, rd.remittanceRemarks, rd.dateOfRemittance ? format(new Date(rd.dateOfRemittance), "dd/MM/yyyy") : '']),
-            ...(entry.paymentDetails || []).flatMap(pd => [ pd.paymentAccount, pd.revenueHead, pd.contractorsPayment, pd.gst, pd.incomeTax, pd.kbcwb, pd.refundToParty, pd.totalPaymentPerEntry, pd.paymentRemarks, pd.dateOfPayment ? format(new Date(pd.dateOfPayment), "dd/MM/yyyy") : '' ]),
-        ]
-        .filter(val => val !== null && val !== undefined)
-        .map(val => String(val).toLowerCase())
-        .join(' || '); 
-
-        return searchableContent.includes(lowerSearchTerm);
-    });
-  }, [planFundWorkEntries, searchTerm]);
-
-
   const handleAddNewClick = () => {
     setIsNavigating(true);
     router.push('/dashboard/data-entry?workType=planFund');
@@ -247,6 +249,7 @@ export default function PlanFundWorksPage() {
         isLoading={isLoading}
         searchActive={!!searchTerm}
         totalEntries={filteredEntries.length}
+        isReadOnly={isSuperAdmin}
       />
        {totalPages > 1 && (
         <div className="flex items-center justify-center pt-4">

@@ -87,9 +87,10 @@ interface FileDatabaseTableProps {
   isLoading: boolean;
   searchActive: boolean;
   totalEntries: number;
+  isReadOnly?: boolean;
 }
 
-export default function FileDatabaseTable({ fileEntries, isLoading, searchActive, totalEntries }: FileDatabaseTableProps) {
+export default function FileDatabaseTable({ fileEntries, isLoading, searchActive, totalEntries, isReadOnly = false }: FileDatabaseTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -105,9 +106,9 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
   const [currentPage, setCurrentPage] = useState(1);
   const [pendingUpdatesMap, setPendingUpdatesMap] = useState<Record<string, boolean>>({});
 
-  const canEdit = user?.role === 'editor' || user?.role === 'supervisor';
-  const canDelete = user?.role === 'editor';
-  const canCopy = user?.role === 'editor';
+  const canEdit = !isReadOnly && (user?.role === 'editor' || user?.role === 'supervisor');
+  const canDelete = !isReadOnly && user?.role === 'editor';
+  const canCopy = !isReadOnly && user?.role === 'editor';
 
   useEffect(() => {
     if (user?.role === 'supervisor' && user.uid) {
@@ -155,8 +156,11 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
     if (!item.id) return;
     const workTypeParam = item.applicationType?.startsWith("Private_") ? "private" : "public";
     const pageParam = currentPage > 1 ? `&page=${currentPage}` : '';
-    const queryParams = new URLSearchParams({ id: item.id, workType: workTypeParam, ...(pageParam && { page: String(currentPage) }) }).toString();
-    router.push(`/dashboard/data-entry?${queryParams}`);
+    const queryParams = new URLSearchParams({ id: item.id, workType: workTypeParam, ...(pageParam && { page: String(currentPage) }) });
+    if(isReadOnly) {
+        queryParams.set('readOnly', 'true');
+    }
+    router.push(`/dashboard/data-entry?${queryParams.toString()}`);
   };
 
   const handleDeleteClick = (item: DataEntryFormData) => {
