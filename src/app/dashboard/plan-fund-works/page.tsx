@@ -1,4 +1,3 @@
-
 // src/app/dashboard/plan-fund-works/page.tsx
 "use client";
 
@@ -65,10 +64,16 @@ export default function PlanFundWorksPage() {
     const description = 'List of all deposit works funded by the Plan Fund (GWBDWS).';
     let title = 'Plan Fund Works';
     if (codeFilter) {
-      title = `GWBDWS (${codeFilter})`;
+      if (codeFilter.includes('4702')) {
+        title = 'GWBDWS (4702)';
+      } else if (codeFilter.includes('2702')) {
+        title = 'GWBDWS (2702)';
+      } else {
+        title = `GWBDWS (${codeFilter})`;
+      }
     }
     setHeader(title, description);
-  }, [setHeader, user, codeFilter]);
+  }, [setHeader, codeFilter]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
