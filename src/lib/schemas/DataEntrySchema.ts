@@ -45,11 +45,16 @@ export const COLLECTOR_APPLICATION_TYPES = [
 
 export const PLAN_FUND_APPLICATION_TYPES = ["GWBDWS"] as const;
 
+export const GW_INVESTIGATION_TYPES = ["GW_Investigation"] as const;
+export const LOGGING_PUMPING_TEST_TYPES = ["Logging_Pumping_Test"] as const;
+
 export const applicationTypeOptions = [
   ...PRIVATE_APPLICATION_TYPES,
   ...PUBLIC_DEPOSIT_APPLICATION_TYPES,
   ...COLLECTOR_APPLICATION_TYPES,
   ...PLAN_FUND_APPLICATION_TYPES,
+  ...GW_INVESTIGATION_TYPES,
+  ...LOGGING_PUMPING_TEST_TYPES,
 ] as const;
 export type ApplicationType = typeof applicationTypeOptions[number];
 

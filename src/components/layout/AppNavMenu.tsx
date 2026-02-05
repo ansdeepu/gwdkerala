@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useEffect, useState, useMemo } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { LayoutDashboard, Users, LogOut, User, Menu, KeyRound, ShieldCheck, FileText, BarChart3, Briefcase, Truck, ClipboardList, Waves, Landmark, HelpCircle, Settings, FolderOpen, Building, DollarSign, Hammer, Hourglass, ArrowUpRight } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, User, Menu, KeyRound, ShieldCheck, FileText, BarChart3, Briefcase, Truck, ClipboardList, Waves, Landmark, HelpCircle, Settings, FolderOpen, Building, DollarSign, Hammer, Hourglass, ArrowUpRight, TestTube2, Droplets } from 'lucide-react';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 
@@ -29,6 +29,8 @@ export interface NavItem {
 
 export const regularNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/gw-investigation', label: 'GW Investigation', icon: TestTube2 },
+  { href: '/dashboard/logging-pumping-test', label: 'Logging & Pumping Test', icon: Droplets },
   { href: '/dashboard/file-room', label: 'Deposit Works', icon: FolderOpen },
   { href: '/dashboard/collectors-deposit-works', label: "Collector's Deposit Works", icon: Landmark },
   { href: '/dashboard/private-deposit-works', label: 'Private Deposit Works', icon: Building },

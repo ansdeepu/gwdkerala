@@ -1,4 +1,3 @@
-
 // src/app/dashboard/data-entry/page.tsx
 "use client";
 import DataEntryFormComponent from "@/components/shared/DataEntryForm";
@@ -16,6 +15,7 @@ import { usePendingUpdates } from "@/hooks/usePendingUpdates";
 import { isValid, parse, format, parseISO } from 'date-fns';
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { useDataStore } from "@/hooks/use-data-store";
+import { PUBLIC_DEPOSIT_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES, COLLECTOR_APPLICATION_TYPES, PLAN_FUND_APPLICATION_TYPES, GW_INVESTIGATION_TYPES, LOGGING_PUMPING_TEST_TYPES } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,7 +103,7 @@ export default function DataEntryPage() {
   const fileIdToEdit = searchParams?.get("id");
   const approveUpdateId = searchParams?.get("approveUpdateId");
   const pageToReturnTo = searchParams?.get('page') ?? null;
-  const workTypeContext = searchParams?.get('workType') as 'public' | 'private' | 'collector' | 'planFund' | null;
+  const workTypeContext = searchParams?.get('workType') as 'public' | 'private' | 'collector' | 'planFund' | 'gwInvestigation' | 'loggingPumpingTest' | null;
   const readOnlyParam = searchParams?.get('readOnly');
 
   const { user, isLoading: authIsLoading, fetchAllUsers } = useAuth();
@@ -131,17 +131,23 @@ export default function DataEntryPage() {
         base = '/dashboard/pending-updates';
     } else if (fileIdToEdit && appType) {
         // This is the "edit" case. It needs to determine the work type from the loaded data.
-        if (COLLECTOR_APPLICATION_TYPES.includes(appType)) {
+        if (COLLECTOR_APPLICATION_TYPES.includes(appType as any)) {
             base = '/dashboard/collectors-deposit-works';
-        } else if (PLAN_FUND_APPLICATION_TYPES.includes(appType)) {
+        } else if (PLAN_FUND_APPLICATION_TYPES.includes(appType as any)) {
             base = '/dashboard/plan-fund-works';
-        } else if (PRIVATE_APPLICATION_TYPES.includes(appType)) {
+        } else if (PRIVATE_APPLICATION_TYPES.includes(appType as any)) {
             base = '/dashboard/private-deposit-works';
+        } else if (GW_INVESTIGATION_TYPES.includes(appType as any)) {
+            base = '/dashboard/gw-investigation';
+        } else if (LOGGING_PUMPING_TEST_TYPES.includes(appType as any)) {
+            base = '/dashboard/logging-pumping-test';
         }
     } else { // This is the "new file" case, which relies on the URL param
         if (workTypeContext === 'collector') base = '/dashboard/collectors-deposit-works';
         else if (workTypeContext === 'planFund') base = '/dashboard/plan-fund-works';
         else if (workTypeContext === 'private') base = '/dashboard/private-deposit-works';
+        else if (workTypeContext === 'gwInvestigation') base = '/dashboard/gw-investigation';
+        else if (workTypeContext === 'loggingPumpingTest') base = '/dashboard/logging-pumping-test';
     }
     return pageToReturnTo ? `${base}?page=${pageToReturnTo}` : base;
 }, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
@@ -229,6 +235,10 @@ export default function DataEntryPage() {
                     title = "New Collector's Deposit Work";
                 } else if (workTypeContext === 'planFund') {
                     title = "New Plan Fund Work";
+                } else if (workTypeContext === 'gwInvestigation') {
+                    title = "New GW Investigation";
+                } else if (workTypeContext === 'loggingPumpingTest') {
+                    title = "New Logging & Pumping Test";
                 } else {
                      title = "New Deposit Work";
                 }
