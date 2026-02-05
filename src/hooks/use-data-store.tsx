@@ -235,7 +235,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     
         if (isSuperAdminUser) {
             if (selectedOffice) {
-                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation === selectedOffice) || null;
+                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
                  setOfficeAddress(foundOffice);
             } else {
                 setOfficeAddress(null); // 'All Offices' is selected
@@ -275,7 +275,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             let q;
             if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
-                const path = `offices/${officeToQuery}/${collectionName}`;
+                const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
                 q = query(collectionGroup(db, collectionName));
@@ -319,6 +319,14 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             }, (error) => {
                  if (error.code === 'permission-denied') {
                     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `offices/.../${collectionName}`, operation: 'list' }));
+                } else if (error.code === 'resource-exhausted') {
+                    console.error(`Firestore quota exceeded for ${collectionName}:`, error);
+                    toast({
+                        title: "Firebase Quota Exceeded",
+                        description: `Could not load ${collectionName}. Your project's database usage limit has been reached. Please check your Firebase console.`,
+                        variant: "destructive",
+                        duration: 9000
+                    });
                 } else {
                     console.error(`Error fetching ${collectionName}:`, error);
                     toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
