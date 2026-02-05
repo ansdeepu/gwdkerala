@@ -41,7 +41,7 @@ service cloud.firestore {
     }
 
     function sameOffice(officeId) {
-      return isOfficeUser() && officeId == getUserData().officeLocation.lower();
+      return isOfficeUser() && officeId == getUserData().officeLocation;
     }
 
     /* ================= GLOBAL COLLECTIONS ================= */
