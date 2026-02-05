@@ -42,7 +42,7 @@ service cloud.firestore {
     }
 
     function sameOffice(officeId) {
-      return isOfficeUser() && officeId == getUserData().officeLocation;
+      return isOfficeUser() && officeId.lower() == getUserData().officeLocation.lower();
     }
 
     /* ================= GLOBAL COLLECTIONS ================= */
