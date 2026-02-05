@@ -45,7 +45,8 @@ export default function UserManagementPage() {
       return;
     }
     setUsersLoading(true);
-    const q = query(collection(db, "users"), where("officeLocation", "==", user.officeLocation));
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/users`;
+    const q = query(collection(db, collectionPath));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const usersList: UserProfile[] = [];
        querySnapshot.forEach((docSnap) => {
@@ -182,6 +183,7 @@ export default function UserManagementPage() {
             updateUserRole={updateUserRole}
             deleteUserDocument={deleteUserDocument}
             staffMembers={allStaffMembers}
+            isSubCollection={true}
           />
         </CardContent>
       </Card>

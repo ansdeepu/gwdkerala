@@ -1,4 +1,3 @@
-
 // src/components/admin/UserManagementTable.tsx
 "use client";
 
@@ -84,11 +83,12 @@ interface UserManagementTableProps {
   isLoading: boolean;
   onDataChange: () => void;
   isViewer: boolean;
-  updateUserApproval: (uid: string, isApproved: boolean) => Promise<void>;
-  updateUserRole: (uid: string, newRole: UserRole, staffId?: string) => Promise<void>;
-  deleteUserDocument: (uid: string) => Promise<void>;
+  updateUserApproval: (uid: string, isApproved: boolean, officeLocation?: string) => Promise<void>;
+  updateUserRole: (uid: string, newRole: UserRole, staffId?: string, officeLocation?: string) => Promise<void>;
+  deleteUserDocument: (uid: string, officeLocation?: string) => Promise<void>;
   staffMembers: StaffMember[];
   onEditUser?: (user: UserProfile) => void;
+  isSubCollection?: boolean;
 }
 
 export default function UserManagementTable({
@@ -102,6 +102,7 @@ export default function UserManagementTable({
   deleteUserDocument,
   staffMembers,
   onEditUser,
+  isSubCollection = false,
 }: UserManagementTableProps) {
   const { toast } = useToast();
   const [updatingUsers, setUpdatingUsers] = useState<Record<string, { approval?: boolean, role?: boolean }>>({});
@@ -122,58 +123,58 @@ export default function UserManagementTable({
   }, [users]);
 
 
-  const handleApprovalChange = async (uid: string, currentIsApproved: boolean) => {
-    if (currentUser?.uid === uid) {
+  const handleApprovalChange = async (userRow: UserProfile) => {
+    if (currentUser?.uid === userRow.uid) {
       toast({ title: "Action Restricted", description: "You cannot change your own approval status.", variant: "default" });
       return;
     }
-    setUpdatingUsers(prev => ({ ...prev, [uid]: { ...prev[uid], approval: true } }));
+    const officeLocationForUpdate = isSubCollection ? userRow.officeLocation : undefined;
+    setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], approval: true } }));
     try {
-      await updateUserApproval(uid, !currentIsApproved);
-      toast({ title: "Approval Updated", description: `User approval status changed to ${!currentIsApproved ? 'Approved' : 'Pending'}.` });
+      await updateUserApproval(userRow.uid, !userRow.isApproved, officeLocationForUpdate);
+      toast({ title: "Approval Updated", description: `User approval status changed to ${!userRow.isApproved ? 'Approved' : 'Pending'}.` });
       onDataChange();
     } catch (error: any) {
       toast({ title: "Update Failed", description: error.message || "Could not update approval status.", variant: "destructive" });
     } finally {
-      setUpdatingUsers(prev => ({ ...prev, [uid]: { ...prev[uid], approval: false } }));
+      setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], approval: false } }));
     }
   };
 
-  const handleRoleChange = async (uid: string, newRole: UserRole) => {
-    if (currentUser?.uid === uid) {
+  const handleRoleChange = async (userRow: UserProfile, newRole: UserRole) => {
+    if (currentUser?.uid === userRow.uid) {
       toast({ title: "Action Restricted", description: "You cannot change your own role.", variant: "default" });
       return;
     }
 
     let staffIdToLink: string | undefined = undefined;
-    const userToUpdate = users.find(u => u.uid === uid);
-
-    if (userToUpdate && !userToUpdate.staffId && (newRole === 'supervisor' || newRole === 'editor')) {
-        const matchingStaffMember = (staffMembers || []).find(staff => staff.name === userToUpdate.name);
+    if (!userRow.staffId && (newRole === 'supervisor' || newRole === 'editor')) {
+        const matchingStaffMember = (staffMembers || []).find(staff => staff.name === userRow.name);
         if (matchingStaffMember) {
             staffIdToLink = matchingStaffMember.id;
         } else {
             toast({
                 title: "Staff Linking Failed",
-                description: `Could not find a matching staff profile for ${userToUpdate.name}. The user can still be a Supervisor, but won't be assignable to sites. Please ensure staff and user names match exactly.`,
+                description: `Could not find a matching staff profile for ${userRow.name}. The user can still be a Supervisor, but won't be assignable to sites. Please ensure staff and user names match exactly.`,
                 variant: "destructive",
                 duration: 9000
             });
         }
     }
 
-    setUpdatingUsers(prev => ({ ...prev, [uid]: { ...prev[uid], role: true } }));
+    const officeLocationForUpdate = isSubCollection ? userRow.officeLocation : undefined;
+    setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], role: true } }));
     try {
-      await updateUserRole(uid, newRole, staffIdToLink);
-      toast({ title: "Role Updated", description: `User role for ${userToUpdate?.name || 'user'} changed to ${newRole}.` });
+      await updateUserRole(userRow.uid, newRole, staffIdToLink, officeLocationForUpdate);
+      toast({ title: "Role Updated", description: `User role for ${userRow?.name || 'user'} changed to ${newRole}.` });
       if (staffIdToLink) {
-        toast({ title: "Staff Profile Linked", description: `User ${userToUpdate?.name} successfully linked to their staff profile.` });
+        toast({ title: "Staff Profile Linked", description: `User ${userRow?.name} successfully linked to their staff profile.` });
       }
       onDataChange();
     } catch (error: any) {
       toast({ title: "Update Failed", description: error.message || "Could not update role.", variant: "destructive" });
     } finally {
-      setUpdatingUsers(prev => ({ ...prev, [uid]: { ...prev[uid], role: false } }));
+      setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], role: false } }));
     }
   };
 
@@ -186,7 +187,8 @@ export default function UserManagementTable({
     if (!userToDelete) return;
     setIsDeletingUser(true);
     try {
-      await deleteUserDocument(userToDelete.uid);
+      const officeLocationForUpdate = isSubCollection ? userToDelete.officeLocation : undefined;
+      await deleteUserDocument(userToDelete.uid, officeLocationForUpdate);
       toast({ title: "User Removed", description: `Profile for ${userToDelete.name || userToDelete.email} has been removed.` });
       onDataChange();
     } catch (error: any) {
@@ -211,7 +213,7 @@ export default function UserManagementTable({
       <div className="py-10 text-center text-muted-foreground border rounded-lg bg-secondary/30">
          <UserCog className="mx-auto h-16 w-16 text-muted-foreground/70 mb-4" />
         <p className="text-lg font-medium">No Users Found</p>
-        <p className="text-sm">There are no registered users in the system yet.</p>
+        <p className="text-sm">There are no registered users in this office yet.</p>
       </div>
     );
   }
@@ -263,7 +265,7 @@ export default function UserManagementTable({
                 <TableCell className="px-3 py-2 text-center">
                     <Select
                       value={userRow.role}
-                      onValueChange={(newRole) => handleRoleChange(userRow.uid, newRole as UserRole)}
+                      onValueChange={(newRole) => handleRoleChange(userRow, newRole as UserRole)}
                       disabled={isViewer || disableActions || updatingUsers[userRow.uid]?.role}
                     >
                       <SelectTrigger className="w-[120px] h-8 text-xs focus:ring-primary" aria-label={`Change role for ${userRow.name}`}>
@@ -282,7 +284,7 @@ export default function UserManagementTable({
                   <div className="flex items-center justify-center space-x-2">
                     <Switch
                       checked={userRow.isApproved}
-                      onCheckedChange={() => handleApprovalChange(userRow.uid, userRow.isApproved)}
+                      onCheckedChange={() => handleApprovalChange(userRow)}
                       disabled={isViewer || disableActions || updatingUsers[userRow.uid]?.approval}
                       aria-label={`Toggle approval for ${userRow.name}`}
                       className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-destructive/30"
