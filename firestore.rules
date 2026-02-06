@@ -91,6 +91,11 @@ service cloud.firestore {
         return isEditor() && sameOffice(officeId);
       }
 
+      match /users/{userId} {
+        allow read: if isSuperAdmin() || sameOffice(officeId);
+        allow write: if isSuperAdmin() || (isEditor() && sameOffice(officeId));
+      }
+
       match /fileEntries/{docId} {
         allow get: if officeRead() || (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
         allow list: if officeRead();

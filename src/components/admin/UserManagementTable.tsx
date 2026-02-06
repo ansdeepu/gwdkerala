@@ -83,9 +83,9 @@ interface UserManagementTableProps {
   isLoading: boolean;
   onDataChange: () => void;
   isViewer: boolean;
-  updateUserApproval: (uid: string, isApproved: boolean) => Promise<void>;
-  updateUserRole: (uid: string, newRole: UserRole, staffId?: string) => Promise<void>;
-  deleteUserDocument: (uid: string) => Promise<void>;
+  updateUserApproval: (uid: string, isApproved: boolean, officeLocation?: string) => Promise<void>;
+  updateUserRole: (uid: string, newRole: UserRole, staffId?: string, officeLocation?: string) => Promise<void>;
+  deleteUserDocument: (uid: string, officeLocation?: string) => Promise<void>;
   staffMembers: StaffMember[];
   onEditUser?: (user: UserProfile) => void;
 }
@@ -128,7 +128,7 @@ export default function UserManagementTable({
     }
     setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], approval: true } }));
     try {
-      await updateUserApproval(userRow.uid, !userRow.isApproved);
+      await updateUserApproval(userRow.uid, !userRow.isApproved, userRow.officeLocation);
       toast({ title: "Approval Updated", description: `User approval status changed to ${!userRow.isApproved ? 'Approved' : 'Pending'}.` });
       onDataChange();
     } catch (error: any) {
@@ -161,7 +161,7 @@ export default function UserManagementTable({
 
     setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], role: true } }));
     try {
-      await updateUserRole(userRow.uid, newRole, staffIdToLink);
+      await updateUserRole(userRow.uid, newRole, staffIdToLink, userRow.officeLocation);
       toast({ title: "Role Updated", description: `User role for ${userRow?.name || 'user'} changed to ${newRole}.` });
       if (staffIdToLink) {
         toast({ title: "Staff Profile Linked", description: `User ${userRow?.name} successfully linked to their staff profile.` });
@@ -183,7 +183,7 @@ export default function UserManagementTable({
     if (!userToDelete) return;
     setIsDeletingUser(true);
     try {
-      await deleteUserDocument(userToDelete.uid);
+      await deleteUserDocument(userToDelete.uid, userToDelete.officeLocation);
       toast({ title: "User Removed", description: `Profile for ${userToDelete.name || userToDelete.email} has been removed.` });
       onDataChange();
     } catch (error: any) {

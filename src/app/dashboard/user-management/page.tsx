@@ -45,7 +45,8 @@ export default function UserManagementPage() {
       return;
     }
     setUsersLoading(true);
-    const q = query(collection(db, "users"), where("officeLocation", "==", user.officeLocation));
+    const usersSubCollectionPath = `offices/${user.officeLocation.toLowerCase()}/users`;
+    const q = query(collection(db, usersSubCollectionPath));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const usersList: UserProfile[] = [];
@@ -60,7 +61,7 @@ export default function UserManagementPage() {
           staffId: data.staffId || undefined,
           createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : undefined,
           lastActiveAt: data.lastActiveAt instanceof Timestamp ? data.lastActiveAt.toDate() : undefined,
-          officeLocation: data.officeLocation || undefined,
+          officeLocation: data.officeLocation || user.officeLocation, // ensure officeLocation is present
         });
       });
       setAllUsers(usersList);
