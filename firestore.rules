@@ -48,17 +48,19 @@ service cloud.firestore {
     /* ================= GLOBAL COLLECTIONS ================= */
 
     match /users/{userId} {
-      allow get: if
-        isSuperAdmin() ||
-        (isApproved() && request.auth.uid == userId);
+      function isManagingOwnOfficeUser() {
+        return isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
+      }
       
+      function isReadingOwnOfficeUser() {
+          return isEditor() && resource.data.officeLocation == getUserData().officeLocation;
+      }
+
+      allow get: if isSuperAdmin() || (isApproved() && request.auth.uid == userId) || isReadingOwnOfficeUser();
       allow list: if isSuperAdmin() || isEditor();
-
-      allow create: if isSuperAdmin() || isEditor();
-
-      allow update: if isSuperAdmin() || isEditor();
-
-      allow delete: if isSuperAdmin() || isEditor();
+      allow create: if isSuperAdmin() || isManagingOwnOfficeUser();
+      allow update: if isSuperAdmin() || isManagingOwnOfficeUser() || (isApproved() && request.auth.uid == userId);
+      allow delete: if isSuperAdmin() || (isEditor() && getUserData().officeLocation == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation);
     }
     
     match /gwdRates/{docId} {
@@ -75,6 +77,16 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isSuperAdmin();
     }
+
+    match /localSelfGovernments/{docId} {
+        allow read: if isSignedIn();
+        allow write: if isEditor();
+    }
+    
+     match /officeAddresses/{docId} {
+        allow read: if isSignedIn();
+        allow write: if isEditor();
+    }
     
     /* ================= OFFICE SUBCOLLECTIONS ================= */
 
@@ -89,21 +101,6 @@ service cloud.firestore {
         return isSuperAdmin() || (isEditor() && sameOffice(officeId));
       }
 
-      match /users/{userId} {
-        allow read: if officeRead();
-        allow write: if officeWrite();
-      }
-
-      match /officeAddresses/{docId} {
-        allow read: if officeRead();
-        allow write: if officeWrite();
-      }
-
-      match /localSelfGovernments/{docId} {
-        allow read: if officeRead();
-        allow write: if officeWrite();
-      }
-      
       match /fileEntries/{docId} {
         allow get: if officeRead() || (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
         allow list: if officeRead();
@@ -177,15 +174,6 @@ service cloud.firestore {
       allow read: if isSuperAdmin();
     }
     match /{path=**}/rigCompressors/{docId} {
-      allow read: if isSuperAdmin();
-    }
-    match /{path=**}/officeAddresses/{docId} {
-      allow read: if isSuperAdmin();
-    }
-    match /{path=**}/localSelfGovernments/{docId} {
-      allow read: if isSuperAdmin();
-    }
-     match /{path=**}/users/{docId} {
       allow read: if isSuperAdmin();
     }
   }

@@ -93,7 +93,10 @@ export function useAuth() {
             let staffInfo: { designation?: Designation } = {};
             if (userData.staffId) {
                 try {
-                    const staffDocRef = doc(db, "staffMembers", userData.staffId);
+                    // This assumes staffMembers are in a root collection.
+                    // If they are in sub-collections, this needs adjustment.
+                    const staffCollectionPath = `offices/${userData.officeLocation.toLowerCase()}/staffMembers`;
+                    const staffDocRef = doc(db, staffCollectionPath, userData.staffId);
                     const staffDocSnap = await getDoc(staffDocRef);
                     if (staffDocSnap.exists()) {
                         staffInfo = staffDocSnap.data() as { designation?: Designation };
@@ -183,7 +186,7 @@ export function useAuth() {
     });
 
     return () => { isMounted = false; unsubscribe(); };
-  }, []);
+  }, [toast]); // Added toast to dependency array
 
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: any }> => {
     setAuthState(prevState => ({ ...prevState, isAuthenticating: true }));
@@ -260,8 +263,7 @@ export function useAuth() {
         lastActiveAt: Timestamp.now(),
       };
       
-      const collectionPath = `offices/${officeLocation.toLowerCase()}/users`;
-      await setDoc(doc(db, collectionPath, newFirebaseUser.uid), userProfileData);
+      await setDoc(doc(db, "users", newFirebaseUser.uid), userProfileData);
   
       await signOut(tempAuth);
       await deleteApp(tempApp);
@@ -394,13 +396,12 @@ export function useAuth() {
     }
   }, [authState.user]); 
 
-  const updateUserApproval = useCallback(async (targetUserUid: string, isApproved: boolean, officeLocation?: string): Promise<void> => {
+  const updateUserApproval = useCallback(async (targetUserUid: string, isApproved: boolean): Promise<void> => {
     if (!authState.user || authState.user.role !== 'editor') {
       throw new Error("User does not have permission to update approval.");
     }
     try {
-      const path = officeLocation ? `offices/${officeLocation.toLowerCase()}/users` : 'users';
-      const userDocRef = doc(db, path, targetUserUid);
+      const userDocRef = doc(db, "users", targetUserUid);
       await updateDoc(userDocRef, { isApproved });
     } catch (error: any) {
       console.error(`[Auth] Error updating approval for target UID '${targetUserUid}'. Firestore error:`, error);
@@ -408,13 +409,12 @@ export function useAuth() {
     }
   }, [authState.user]);
 
-  const updateUserRole = useCallback(async (targetUserUid: string, newRole: UserRole, staffId?: string, officeLocation?: string): Promise<void> => {
+  const updateUserRole = useCallback(async (targetUserUid: string, newRole: UserRole, staffId?: string): Promise<void> => {
     if (!authState.user || authState.user.role !== 'editor') {
         throw new Error("User does not have permission to update role.");
     }
 
-    const path = officeLocation ? `offices/${officeLocation.toLowerCase()}/users` : 'users';
-    const userDocRef = doc(db, path, targetUserUid);
+    const userDocRef = doc(db, "users", targetUserUid);
     const userDocSnap = await getDoc(userDocRef);
     if (!userDocSnap.exists()) {
         throw new Error("User profile not found.");
@@ -422,6 +422,7 @@ export function useAuth() {
 
     const oldRole = userDocSnap.data().role;
     const userName = userDocSnap.data().name;
+    const officeLocation = userDocSnap.data().officeLocation;
 
     if (oldRole === 'supervisor' && newRole !== 'supervisor' && officeLocation) {
         const fileEntriesRef = collection(db, `offices/${officeLocation.toLowerCase()}/fileEntries`);
@@ -485,7 +486,7 @@ export function useAuth() {
     }
   }, [authState.user, toast]);
 
-  const deleteUserDocument = useCallback(async (targetUserUid: string, officeLocation?: string): Promise<void> => {
+  const deleteUserDocument = useCallback(async (targetUserUid: string): Promise<void> => {
     if (!authState.user || (authState.user.role !== 'editor' && authState.user.email !== SUPER_ADMIN_EMAIL)) {
       throw new Error("User does not have permission to delete user documents.");
     }
@@ -493,8 +494,7 @@ export function useAuth() {
       throw new Error("You cannot delete your own user profile.");
     }
 
-    const path = officeLocation ? `offices/${officeLocation.toLowerCase()}/users` : 'users';
-    const targetUserDocRef = doc(db, path, targetUserUid);
+    const targetUserDocRef = doc(db, "users", targetUserUid);
     const targetUserDocSnap = await getDoc(targetUserDocRef);
     if (targetUserDocSnap.exists() && targetUserDocSnap.data().email === SUPER_ADMIN_EMAIL) {
         throw new Error(`The main admin user ('${SUPER_ADMIN_EMAIL}') cannot be deleted.`);

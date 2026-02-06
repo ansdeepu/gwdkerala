@@ -83,12 +83,11 @@ interface UserManagementTableProps {
   isLoading: boolean;
   onDataChange: () => void;
   isViewer: boolean;
-  updateUserApproval: (uid: string, isApproved: boolean, officeLocation?: string) => Promise<void>;
-  updateUserRole: (uid: string, newRole: UserRole, staffId?: string, officeLocation?: string) => Promise<void>;
-  deleteUserDocument: (uid: string, officeLocation?: string) => Promise<void>;
+  updateUserApproval: (uid: string, isApproved: boolean) => Promise<void>;
+  updateUserRole: (uid: string, newRole: UserRole, staffId?: string) => Promise<void>;
+  deleteUserDocument: (uid: string) => Promise<void>;
   staffMembers: StaffMember[];
   onEditUser?: (user: UserProfile) => void;
-  isSubCollection?: boolean;
 }
 
 export default function UserManagementTable({
@@ -102,7 +101,6 @@ export default function UserManagementTable({
   deleteUserDocument,
   staffMembers,
   onEditUser,
-  isSubCollection = false,
 }: UserManagementTableProps) {
   const { toast } = useToast();
   const [updatingUsers, setUpdatingUsers] = useState<Record<string, { approval?: boolean, role?: boolean }>>({});
@@ -128,10 +126,9 @@ export default function UserManagementTable({
       toast({ title: "Action Restricted", description: "You cannot change your own approval status.", variant: "default" });
       return;
     }
-    const officeLocationForUpdate = isSubCollection ? userRow.officeLocation : undefined;
     setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], approval: true } }));
     try {
-      await updateUserApproval(userRow.uid, !userRow.isApproved, officeLocationForUpdate);
+      await updateUserApproval(userRow.uid, !userRow.isApproved);
       toast({ title: "Approval Updated", description: `User approval status changed to ${!userRow.isApproved ? 'Approved' : 'Pending'}.` });
       onDataChange();
     } catch (error: any) {
@@ -162,10 +159,9 @@ export default function UserManagementTable({
         }
     }
 
-    const officeLocationForUpdate = isSubCollection ? userRow.officeLocation : undefined;
     setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], role: true } }));
     try {
-      await updateUserRole(userRow.uid, newRole, staffIdToLink, officeLocationForUpdate);
+      await updateUserRole(userRow.uid, newRole, staffIdToLink);
       toast({ title: "Role Updated", description: `User role for ${userRow?.name || 'user'} changed to ${newRole}.` });
       if (staffIdToLink) {
         toast({ title: "Staff Profile Linked", description: `User ${userRow?.name} successfully linked to their staff profile.` });
@@ -187,8 +183,7 @@ export default function UserManagementTable({
     if (!userToDelete) return;
     setIsDeletingUser(true);
     try {
-      const officeLocationForUpdate = isSubCollection ? userToDelete.officeLocation : undefined;
-      await deleteUserDocument(userToDelete.uid, officeLocationForUpdate);
+      await deleteUserDocument(userToDelete.uid);
       toast({ title: "User Removed", description: `Profile for ${userToDelete.name || userToDelete.email} has been removed.` });
       onDataChange();
     } catch (error: any) {
