@@ -227,11 +227,19 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setOfficeAddress(null);
             return;
         }
-        // `allOfficeAddresses` is now populated from the office-scoped useEffect.
-        // It will contain one or zero items for sub-office users, and potentially more for super admin.
-        const activeOffice = allOfficeAddresses.length > 0 ? allOfficeAddresses[0] : null;
-        setOfficeAddress(activeOffice);
-
+        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+    
+        if (isSuperAdminUser) {
+            if (selectedOffice) {
+                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
+                 setOfficeAddress(foundOffice);
+            } else {
+                setOfficeAddress(null); // 'All Offices' is selected
+            }
+        } else if (user.officeLocation) {
+            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
+            setOfficeAddress(foundOffice);
+        }
     }, [user, selectedOffice, allOfficeAddresses]);
     
 
@@ -310,13 +318,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             }, (error) => {
                  if (error.code === 'permission-denied') {
                     errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `offices/.../${collectionName}`, operation: 'list' }));
-                } else if (error.code === 'resource-exhausted') {
-                    toast({
-                        title: "Firebase Quota Exceeded",
-                        description: "The database is temporarily unavailable. Please try again later.",
-                        variant: "destructive",
-                        duration: 9000,
-                    });
                 } else {
                     console.error(`Error fetching ${collectionName}:`, error);
                     toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
