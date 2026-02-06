@@ -53,6 +53,8 @@ import {
   PRIVATE_APPLICATION_TYPES,
   COLLECTOR_APPLICATION_TYPES,
   PLAN_FUND_APPLICATION_TYPES,
+  GW_INVESTIGATION_TYPES,
+  LOGGING_PUMPING_TEST_TYPES,
   type Bidder,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
@@ -173,7 +175,7 @@ interface DataEntryFormProps {
     initialData: DataEntryFormData;
     supervisorList: (StaffMember & { uid: string; name: string })[];
     userRole?: UserRole;
-    workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | null;
+    workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | 'gwInvestigation' | 'loggingPumpingTest' | null;
     returnPath: string; // Add this prop
     pageToReturnTo: string | null;
     isFormDisabled?: boolean;
@@ -745,6 +747,31 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
   const { control, handleSubmit, setValue, getValues, watch, trigger } = form;
 
+  const getApplicationTypeOptions = () => {
+    switch (workTypeContext) {
+        case 'private':
+            return PRIVATE_APPLICATION_TYPES;
+        case 'collector':
+            return COLLECTOR_APPLICATION_TYPES;
+        case 'planFund':
+            return PLAN_FUND_APPLICATION_TYPES;
+        case 'gwInvestigation':
+            return GW_INVESTIGATION_TYPES;
+        case 'loggingPumpingTest':
+            return LOGGING_PUMPING_TEST_TYPES;
+        case 'public':
+        default:
+            return PUBLIC_DEPOSIT_APPLICATION_TYPES;
+    }
+  };
+  const applicationTypeOptionsForForm = getApplicationTypeOptions();
+  
+    useEffect(() => {
+        if (!fileIdToEdit && applicationTypeOptionsForForm.length === 1) {
+            setValue("applicationType", applicationTypeOptionsForForm[0]);
+        }
+    }, [fileIdToEdit, applicationTypeOptionsForForm, setValue]);
+
   const isDeferredFunding = useMemo(() => {
     const appType = getValues('applicationType');
     if (fileIdToEdit && appType) {
@@ -916,20 +943,6 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   
   const closeDialog = () => setDialogState({ type: null, data: null, isView: false });
   
-  const getApplicationTypeOptions = () => {
-    switch (workTypeContext) {
-        case 'private':
-            return PRIVATE_APPLICATION_TYPES;
-        case 'collector':
-            return COLLECTOR_APPLICATION_TYPES;
-        case 'planFund':
-            return PLAN_FUND_APPLICATION_TYPES;
-        case 'public':
-        default:
-            return PUBLIC_DEPOSIT_APPLICATION_TYPES;
-    }
-  };
-  const applicationTypeOptionsForForm = getApplicationTypeOptions();
 
   const handleEyeIconClick = (site: SiteDetailFormData, index: number) => {
     openDialog('site', { index, ...site });
