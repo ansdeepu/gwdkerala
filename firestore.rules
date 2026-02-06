@@ -77,16 +77,6 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isSuperAdmin();
     }
-
-    match /localSelfGovernments/{docId} {
-        allow read: if isSignedIn();
-        allow write: if isEditor();
-    }
-    
-     match /officeAddresses/{docId} {
-        allow read: if isSignedIn();
-        allow write: if isEditor();
-    }
     
     /* ================= OFFICE SUBCOLLECTIONS ================= */
 
@@ -98,7 +88,7 @@ service cloud.firestore {
       }
       
       function officeWrite() {
-        return isSuperAdmin() || (isEditor() && sameOffice(officeId));
+        return isEditor() && sameOffice(officeId);
       }
 
       match /fileEntries/{docId} {
@@ -148,6 +138,16 @@ service cloud.firestore {
         allow read: if officeRead();
         allow write: if officeWrite();
       }
+      
+      match /localSelfGovernments/{docId} {
+          allow read: if officeRead();
+          allow write: if officeWrite();
+      }
+      
+       match /officeAddresses/{docId} {
+          allow read: if officeRead();
+          allow write: if officeWrite();
+      }
     }
     
     /* ================= COLLECTION GROUP RULES FOR SUPER ADMIN LISTS ================= */
@@ -174,6 +174,12 @@ service cloud.firestore {
       allow read: if isSuperAdmin();
     }
     match /{path=**}/rigCompressors/{docId} {
+      allow read: if isSuperAdmin();
+    }
+    match /{path=**}/localSelfGovernments/{docId} {
+      allow read: if isSuperAdmin();
+    }
+    match /{path=**}/officeAddresses/{docId} {
       allow read: if isSuperAdmin();
     }
   }

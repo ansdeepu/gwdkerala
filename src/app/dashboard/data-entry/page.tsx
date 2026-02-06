@@ -19,10 +19,6 @@ import { PUBLIC_DEPOSIT_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES, COLLECTOR_
 
 export const dynamic = 'force-dynamic';
 
-const COLLECTOR_APPLICATION_TYPES: ApplicationType[] = ["Collector_MPLAD", "Collector_MLASDF", "Collector_MLA_Asset_Development_Fund", "Collector_DRW", "Collector_SC/ST", "Collector_ARWSS", "Collector_Others"];
-const PLAN_FUND_APPLICATION_TYPES: ApplicationType[] = ["GWBDWS"];
-const PRIVATE_APPLICATION_TYPES: ApplicationType[] = ["Private_Domestic", "Private_Irrigation", "Private_Institution", "Private_Industry"];
-
 const toDateOrNull = (value: any): Date | null => {
     if (value === null || value === undefined || value === '') return null;
     if (value instanceof Date && isValid(value)) return value;
