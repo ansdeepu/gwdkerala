@@ -419,10 +419,10 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
     const isGW = workTypeContext === 'gwInvestigation';
 
     useEffect(() => {
-        if (isGW) {
+        if (isGW && !initialData?.nameOfSite) {
             setValue('purpose', 'GW Investigation' as SitePurpose);
         }
-    }, [isGW, setValue]);
+    }, [isGW, initialData, setValue]);
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
         onConfirm(data);

@@ -41,31 +41,25 @@ export default function GWInvestigationPage() {
   useEffect(() => { setHeader('GW Investigation', 'List of all Ground Water Investigation files.'); }, [setHeader]);
 
   const allInvestigationEntries = useMemo(() => {
+    // Filter strictly for entries that have a category (new logic) or the legacy GW_Investigation type
     let entries = fileEntries.filter(entry => 
-        entry.applicationType === 'GW_Investigation' || 
-        (entry as any).category ||
-        INVESTIGATION_GOVT_TYPES.includes(entry.applicationType as any) ||
-        INVESTIGATION_PRIVATE_TYPES.includes(entry.applicationType as any) ||
-        INVESTIGATION_COMPLAINT_TYPES.includes(entry.applicationType as any)
+        (entry as any).category || 
+        entry.applicationType === 'GW_Investigation'
     );
     entries.sort((a, b) => (safeParseDate(b.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0) - (safeParseDate(a.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0));
     return entries;
   }, [fileEntries]);
 
   const { investigationEntries, counts, lastCreatedDate } = useMemo(() => {
-    const govt = allInvestigationEntries.filter(e => (e as any).category === 'Govt');
+    // Categorize entries based on the new 'category' field
+    const govt = allInvestigationEntries.filter(e => (e as any).category === 'Govt' || (e.applicationType === 'GW_Investigation' && !(e as any).category));
     const pvt = allInvestigationEntries.filter(e => (e as any).category === 'Private');
     const complaints = allInvestigationEntries.filter(e => (e as any).category === 'Complaints');
-    const other = allInvestigationEntries.filter(e => 
-        !(e as any).category && 
-        !INVESTIGATION_PRIVATE_TYPES.includes(e.applicationType as any) && 
-        !INVESTIGATION_COMPLAINT_TYPES.includes(e.applicationType as any)
-    );
 
     let filtered = govt;
     if (activeTab === 'Private') filtered = pvt;
     if (activeTab === 'Complaints') filtered = complaints;
-    if (activeTab === 'Govt') filtered = [...govt, ...other];
+    if (activeTab === 'Govt') filtered = govt;
 
     const lastCreated = allInvestigationEntries.reduce((latest, entry) => {
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
@@ -74,7 +68,7 @@ export default function GWInvestigationPage() {
 
     return { 
         investigationEntries: filtered, 
-        counts: { Govt: govt.length + other.length, Private: pvt.length, Complaints: complaints.length },
+        counts: { Govt: govt.length, Private: pvt.length, Complaints: complaints.length },
         lastCreatedDate: lastCreated 
     };
   }, [allInvestigationEntries, activeTab]);
