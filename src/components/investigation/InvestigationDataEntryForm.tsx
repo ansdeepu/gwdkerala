@@ -54,6 +54,7 @@ import {
   INVESTIGATION_COMPLAINT_TYPES,
   LOGGING_PUMPING_TEST_TYPES,
   type Bidder,
+  typeOfWellOptions,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -78,7 +79,7 @@ const db = getFirestore(app);
 
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "SBI", remittanceRemarks: "" });
 const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "SBI", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
-const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: undefined, estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "" });
+const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", vesRequired: "No", feasibility: "No", nameOfInvestigator: undefined, vesInvestigator: undefined });
 
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
@@ -86,13 +87,8 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
   return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
 };
 
-const PURPOSES_REQUIRING_DIAMETER: SitePurpose[] = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev"];
-const PURPOSES_REQUIRING_RIG_ACCESSIBILITY: SitePurpose[] = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev"];
-const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
-const SUPERVISOR_WORK_STATUS_OPTIONS: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Work Failed", "Work Completed"];
-const SITE_DIALOG_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
-    (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued"].includes(status)
-);
+const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed', 'Completed'];
+const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
 
 
 const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): string[] => {
@@ -296,7 +292,6 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
 };
 
 const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean; }) => {
-    const { toast } = useToast();
     const form = useForm<RemittanceDetailFormData>({
       resolver: zodResolver(RemittanceDetailSchema),
       defaultValues: {
@@ -405,61 +400,31 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel }: { initialDat
     );
 };
 
-const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, isReadOnly, isSupervisor, allLsgConstituencyMaps, allE_tenders, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, supervisorList: any[], isReadOnly: boolean, isSupervisor: boolean, allLsgConstituencyMaps: any[], allE_tenders: any[], workTypeContext: string | null }) => {
+const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, isReadOnly, allLsgConstituencyMaps }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, supervisorList: any[], isReadOnly: boolean, allLsgConstituencyMaps: any[] }) => {
     const defaults = {
         ...(initialData?.nameOfSite ? initialData : createDefaultSiteDetail()),
     };
 
     const form = useForm<SiteDetailFormData>({
       resolver: zodResolver(SiteDetailSchema),
-      defaultValues: { ...defaults, dateOfCompletion: formatDateForInput(defaults.dateOfCompletion), arsSanctionedDate: formatDateForInput(defaults.arsSanctionedDate) },
+      defaultValues: { 
+        ...defaults, 
+        dateOfCompletion: formatDateForInput(defaults.dateOfCompletion),
+        dateOfInvestigation: formatDateForInput(defaults.dateOfInvestigation),
+        vesDate: formatDateForInput(defaults.vesDate)
+      },
     });
     
     const { control, setValue, trigger, watch, handleSubmit, getValues } = form;
-
-    const isGW = workTypeContext === 'gwInvestigation';
-
-    useEffect(() => {
-        if (isGW && !initialData?.nameOfSite) {
-            setValue('purpose', 'GW Investigation' as SitePurpose);
-        }
-    }, [isGW, initialData, setValue]);
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
         onConfirm(data);
     };
     
-    const sortedTenders = useMemo(() => {
-        return [...allE_tenders].sort((a, b) => {
-            const dateA = toDateOrNull(a.tenderDate)?.getTime() ?? 0;
-            const dateB = toDateOrNull(b.tenderDate)?.getTime() ?? 0;
-            if (dateA !== dateB) return dateB - dateA;
-            const getTenderNumber = (tenderNo: string | undefined | null): number => {
-                if (!tenderNo) return 0;
-                const match = tenderNo.match(/T-(\d+)/);
-                return match ? parseInt(match[1], 10) : 0;
-            };
-            const numA = getTenderNumber(a.eTenderNo);
-            const numB = getTenderNumber(b.eTenderNo);
-            return numB - numA;
-        });
-    }, [allE_tenders]);
-
-    const watchedPurpose = watch('purpose');
+    const watchedTypeOfWell = watch('typeOfWell');
+    const watchedVesRequired = watch('vesRequired');
     const watchedWorkStatus = watch('workStatus');
-    const watchedTenderNo = watch('tenderNo');
-    const isCompletionDateRequired = watchedWorkStatus && FINAL_WORK_STATUSES.includes(watchedWorkStatus as SiteWorkStatus);
-    
-    const wellConstructionPurposes: SitePurpose[] = ["BWC", "TWC", "FPW"];
-    const isDrillingPurpose = wellConstructionPurposes.includes(watchedPurpose as SitePurpose);
-    const wellDevelopmentPurposes: SitePurpose[] = ["BW Dev", "TW Dev", "FPW Dev"];
-    const isDevelopingPurpose = wellDevelopmentPurposes.includes(watchedPurpose as SitePurpose);
-    
-    const isSchemePurpose = !isDrillingPurpose && !isDevelopingPurpose && watchedPurpose;
-    const isMWSSSchemePurpose = ['MWSS', 'MWSS Ext', 'Pumping Scheme', 'MWSS Pump Reno'].includes(watchedPurpose as SitePurpose);
-    const isHPSPurpose = ['HPS', 'HPR'].includes(watchedPurpose as SitePurpose);
-    const isARSPurpose = ['ARS'].includes(watchedPurpose as SitePurpose);
-
+    const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
     const watchedLsg = watch("localSelfGovt");
     const sortedLsgMaps = useMemo(() => {
@@ -484,162 +449,207 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
         trigger('constituency');
     }, [setValue, allLsgConstituencyMaps, trigger]);
 
-    useEffect(() => {
-        const lsgName = watch("localSelfGovt");
-        if (!lsgName) return;
-        const map = allLsgConstituencyMaps.find(m => m.name === lsgName);
-        const constituencies = map?.constituencies || [];
-        if (constituencies.length === 1 && getValues("constituency") !== constituencies[0]) {
-            setValue('constituency', constituencies[0] as Constituency);
-        }
-    }, [watchedLsg, allLsgConstituencyMaps, setValue, watch, getValues]);
-
-    const siteConditionOptionsForPurpose = useMemo(() => {
-        if (watchedPurpose && PURPOSES_REQUIRING_RIG_ACCESSIBILITY.includes(watchedPurpose as SitePurpose)) {
-            return siteConditionsOptions;
-        }
-        return ['Land Dispute', 'Work Disputes and Conflicts'];
-    }, [watchedPurpose]);
-    
-    const isFieldReadOnly = (isSupervisorEditable: boolean) => {
-        if (isReadOnly) return true;
-        if (isSupervisor) return !isSupervisorEditable;
-        return false;
-    };
-    
-    const staffMap = useMemo(() => {
-        const map = new Map<string, StaffMember & { uid: string }>();
-        supervisorList.forEach(item => map.set(item.id, item));
-        return map;
+    const hydroStaff = useMemo(() => {
+        const hydroDesignations = ["Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant"];
+        return supervisorList.filter(s => hydroDesignations.includes(s.designation));
     }, [supervisorList]);
 
-    const tenderSupervisors = useMemo(() => {
-        if (!watchedTenderNo) return [];
-        const tender = allE_tenders.find(t => t.eTenderNo === watchedTenderNo);
-        if (!tender) return [];
-        const supervisors: { id: string; name: string; designation?: string }[] = [];
-        const addedUids = new Set<string>();
-        const addSupervisor = (staffId: string | null | undefined) => {
-            if (!staffId || addedUids.has(staffId)) return;
-            const supervisorUser = staffMap.get(staffId);
-            if (supervisorUser) {
-                supervisors.push({ id: supervisorUser.uid, name: supervisorUser.name, designation: supervisorUser.designation });
-                addedUids.add(staffId);
-            }
-        };
-        if (tender.nameOfAssistantEngineer) {
-            const ae = Array.from(staffMap.values()).find(s => s.name === tender.nameOfAssistantEngineer);
-            if (ae) addSupervisor(ae.id);
-        }
-        addSupervisor(tender.supervisor1Id);
-        addSupervisor(tender.supervisor2Id);
-        addSupervisor(tender.supervisor3Id);
-        return supervisors;
-    }, [watchedTenderNo, allE_tenders, staffMap]);
-
-    useEffect(() => {
-        const selectedTender = allE_tenders.find(t => t.eTenderNo === watchedTenderNo);
-        if (selectedTender) {
-            const validBidders = (selectedTender.bidders || []).filter((b: Bidder) => typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
-            const l1Bidder = validBidders.length > 0 
-                ? validBidders.reduce((lowest: Bidder, current: Bidder) => (lowest.quotedAmount! < current.quotedAmount!) ? lowest : current)
-                : null;
-            setValue('contractorName', l1Bidder ? `${l1Bidder.name}, ${l1Bidder.address}` : '');
-            if (tenderSupervisors.length === 1) {
-                const supervisor = tenderSupervisors[0];
-                setValue('supervisorUid', supervisor.id);
-                setValue('supervisorName', supervisor.name);
-                setValue('supervisorDesignation', supervisor.designation);
-            } else {
-                setValue('supervisorUid', undefined);
-                setValue('supervisorName', '');
-                setValue('supervisorDesignation', undefined);
-            }
-        }
-    }, [watchedTenderNo, allE_tenders, setValue, tenderSupervisors]);
-
-    const handleSupervisorDropdownChange = (uid: string) => {
-        const staff = supervisorList.find(s => s.uid === uid);
-        setValue('supervisorUid', uid);
-        setValue('supervisorName', staff?.name || '');
-        setValue('supervisorDesignation', staff?.designation as string || undefined);
-    };
+    const geophysStaff = useMemo(() => {
+        const geophysDesignations = ["Geophysicist", "Junior Geophysicist", "Geophysical Assistant"];
+        return supervisorList.filter(s => geophysDesignations.includes(s.designation));
+    }, [supervisorList]);
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
             <DialogHeader className="p-6 pb-4 shrink-0">
-                <DialogTitle>Investigation Site Detail</DialogTitle>
+                <DialogTitle>Add New Investigation Site</DialogTitle>
             </DialogHeader>
             <div className="flex-1 min-h-0">
                 <ScrollArea className="h-full px-6 py-4">
                     <Form {...form}>
-                        <form id="investigation-site-dialog-form" onSubmit={(e) => { e.stopPropagation(); handleSubmit(handleDialogSubmit)(e); }} className="space-y-4">
-                            <Card><CardHeader><CardTitle>Location & Identification</CardTitle></CardHeader><CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                            <FormField name="purpose" control={control} render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
-                                    <Select 
-                                        onValueChange={field.onChange} 
-                                        value={field.value} 
-                                        disabled={isFieldReadOnly(false) || isGW}
-                                    >
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>
-                                            {sitePurposeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                            <FormField name="localSelfGovt" control={control} render={({ field }) => <FormItem><FormLabel>Local Self Govt.</FormLabel>{isFieldReadOnly(false) ? (<Select onValueChange={(value) => handleLsgChange(value)} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl><SelectContent><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}</SelectContent></Select>) : (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>)}<FormMessage/></FormItem>} />
-                            <FormField name="constituency" control={control} render={({ field }) => <FormItem><FormLabel>Constituency (LAC)</FormLabel>{isFieldReadOnly(false) ? (<Select onValueChange={field.onChange} value={field.value} disabled={constituencyOptionsForLsg.length <= 1}><FormControl><SelectTrigger><SelectValue placeholder="Select Constituency"/></SelectTrigger></FormControl><SelectContent><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select>) : (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>)}<FormMessage/></FormItem>} />
-                            <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
-                            <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
-                        </div>
-                            </CardContent></Card>
-                            
-                            <Card><CardHeader><CardTitle>Investigation Implementation</CardTitle></CardHeader><CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                   <FormField name="siteConditions" control={control} render={({ field }) => <FormItem><FormLabel>Site Conditions</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(false)}><FormControl><SelectTrigger><SelectValue placeholder="Select Condition" /></SelectTrigger></FormControl><SelectContent><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{siteConditionOptionsForPurpose.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                                   <FormField name="estimateAmount" control={control} render={({ field }) => <FormItem><FormLabel>Estimate Amount (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                                   <FormField name="remittedAmount" control={control} render={({ field }) => <FormItem><FormLabel>Remitted Amount (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                                   <FormField name="tsAmount" control={control} render={({ field }) => <FormItem><FormLabel>TS Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                                   <FormField name="tenderNo" control={control} render={({ field }) => ( <FormItem> <FormLabel>Tender No.</FormLabel> <Select onValueChange={(value) => field.onChange(value === '_clear_' ? '' : value)} value={field.value || ''} disabled={isFieldReadOnly(false)}> <FormControl><SelectTrigger><SelectValue placeholder="Select a Tender" /></SelectTrigger></FormControl> <SelectContent className="max-h-80"> <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(''); }}>-- Clear Selection --</SelectItem> {sortedTenders.filter(t => t.eTenderNo).map(t => ( <SelectItem key={t.id} value={t.eTenderNo!}>{t.eTenderNo}</SelectItem> ))} </SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                                   <FormField name="contractorName" control={control} render={({ field }) => <FormItem><FormLabel>Contractor</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly className="bg-muted min-h-[40px]"/></FormControl><FormMessage/></FormItem>} />
-                                   {tenderSupervisors.length > 1 ? (
-                                        <FormField name="supervisorUid" control={form.control} render={({ field }) => (
+                        <form id="investigation-site-dialog-form" onSubmit={(e) => { e.stopPropagation(); handleSubmit(handleDialogSubmit)(e); }} className="space-y-6">
+                            <Card>
+                                <CardHeader><CardTitle>Main Details</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="purpose" control={control} render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Supervisor</FormLabel>
-                                                <Select onValueChange={(uid) => handleSupervisorDropdownChange(uid)} value={field.value || ""}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a Supervisor" /></SelectTrigger></FormControl>
-                                                    <SelectContent>{tenderSupervisors.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name} ({s.designation})</SelectItem>))}</SelectContent>
+                                                <FormLabel>Purpose</FormLabel>
+                                                <FormControl><Input value="GW Investigation" readOnly className="bg-muted" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="localSelfGovt" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Local Self Govt.</FormLabel>
+                                                <Select onValueChange={(value) => handleLsgChange(value)} value={field.value} disabled={isReadOnly}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl>
+                                                    <SelectContent className="max-h-80">
+                                                        <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>
+                                                        {sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage/>
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="constituency" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Constituency (LAC)</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || constituencyOptionsForLsg.length <= 1}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Constituency"/></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>
+                                                        {constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage/>
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            
+                            <Card>
+                                <CardHeader><CardTitle>Survey Details</CardTitle></CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <FormField name="nameOfInvestigator" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Name of Investigator (Hydrogeological)</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Staff" /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        {hydroStaff.map(staff => <SelectItem key={staff.id} value={staff.name}>{staff.name} ({staff.designation})</SelectItem>)}
+                                                    </SelectContent>
                                                 </Select>
                                                 <FormMessage />
                                             </FormItem>
-                                        )}/>
-                                    ) : (
-                                      <FormItem><FormLabel>Supervisor</FormLabel><FormControl><Textarea value={getValues('supervisorName') ? `${getValues('supervisorName')}, ${getValues('supervisorDesignation') || ''}` : ''} readOnly className="bg-muted min-h-[40px]" /></FormControl><FormMessage /></FormItem>
-                                    )}
-                                   <FormField name="implementationRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Implementation Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
-                                </div>
-                            </CardContent></Card>
-
-                            <Card><CardHeader><CardTitle>Final Status</CardTitle></CardHeader><CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <FormField name="workStatus" control={control} render={({ field }) => <FormItem><FormLabel>Work Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{(isSupervisor ? SUPERVISOR_WORK_STATUS_OPTIONS : SITE_DIALOG_WORK_STATUS_OPTIONS).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                                        <FormField name="dateOfCompletion" control={control} render={({ field }) => <FormItem><FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
-                                        {!isSupervisor && <FormField name="totalExpenditure" control={control} render={({ field }) => <FormItem><FormLabel>Total Expenditure (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />}
-                                        <FormField name="workRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Work Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
+                                        )} />
+                                        <FormField name="dateOfInvestigation" control={control} render={({ field }) => <FormItem><FormLabel>Date of Investigation</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="typeOfWell" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Type of Well</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Well Type" /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        {typeOfWellOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="vesRequired" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>VES Required</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="Yes">Yes</SelectItem>
+                                                        <SelectItem value="No">No</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
                                     </div>
-                                </CardContent></Card>
+
+                                    {watchedVesRequired === "Yes" && (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-md bg-secondary/20">
+                                            <FormField name="vesInvestigator" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Name of Investigator (Geophysical)</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Staff" /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            {geophysStaff.map(staff => <SelectItem key={staff.id} value={staff.name}>{staff.name} ({staff.designation})</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                            <FormField name="vesDate" control={control} render={({ field }) => <FormItem><FormLabel>Date of VES conducted</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField name="feasibility" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Feasibility</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="Yes">Yes</SelectItem>
+                                                            <SelectItem value="No">No</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+                                    )}
+
+                                    {watchedTypeOfWell && (
+                                        <div className="space-y-4 pt-4 border-t">
+                                            <h4 className="font-semibold text-sm">Recommended measurements for {watchedTypeOfWell}</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <FormField name="diameter" control={control} render={({ field }) => <FormItem><FormLabel>Diameter (mm)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
+                                                {watchedTypeOfWell === "Bore Well" && <FormField name="surveyOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />}
+                                                <FormField name="totalDepth" control={control} render={({ field }) => <FormItem><FormLabel>TD (m)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
+                                                {(watchedTypeOfWell === "Bore Well" || watchedTypeOfWell === "Tube Well" || watchedTypeOfWell === "Filter Point Well") && (
+                                                    <FormField name="casingPipeUsed" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
+                                                )}
+                                                {watchedTypeOfWell === "Bore Well" && (
+                                                    <FormField name="innerCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Inner Casing (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
+                                                )}
+                                                {watchedTypeOfWell === "Tube Well" && (
+                                                    <>
+                                                        <FormField name="surveyPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
+                                                        <FormField name="surveySlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
+                                                        <FormField name="outerCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
+                                                    </>
+                                                )}
+                                                <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Location of well</FormLabel><FormControl><Textarea {...field} value={field.value || ""} className="min-h-[40px]" /></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem className="md:col-span-3"><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
+                                            </div>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader><CardTitle>Investigation Status</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField name="workStatus" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        {INVESTIGATION_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="dateOfCompletion" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel>
+                                                <FormControl><Input type="date" {...field} value={field.value || ''} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="workRemarks" control={control} render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Add status-related remarks..." /></FormControl><FormMessage /></FormItem>} />
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </form>
                     </Form>
                 </ScrollArea>
             </div>
-            <DialogFooter className="p-6 pt-4 shrink-0"><Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>{!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save</Button>}</DialogFooter>
+            <DialogFooter className="p-6 pt-4 shrink-0">
+                <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
+                {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save</Button>}
+            </DialogFooter>
         </div>
     );
 };
@@ -654,7 +664,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const { createPendingUpdate } = usePendingUpdates();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { allLsgConstituencyMaps, allE_tenders } = useDataStore();
+  const { allLsgConstituencyMaps } = useDataStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
@@ -666,7 +676,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const isViewer = userRole === 'viewer';
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
-  const { control, handleSubmit, setValue, getValues, watch, trigger } = form;
+  const { control, handleSubmit, setValue, getValues, watch } = form;
 
   const applicationTypeOptionsForForm = useMemo(() => {
     switch (workTypeContext) {
@@ -762,13 +772,13 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. Investigation Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues())} disabled={isSupervisor || isViewer}><Edit className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name & Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">2. Remittance Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('remittance', createDefaultRemittanceDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount (₹)</TableHead><TableHead>Account</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{remittanceFields.length > 0 ? remittanceFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell>{(Number(item.amountRemitted) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.remittedAccount}</TableCell><TableCell>{item.remittanceRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item })}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold">₹{watch('totalRemittance')?.toLocaleString('en-IN')}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
-        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">3. Investigation Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group"><div className="flex justify-between items-center w-full"><div>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"}</div><div className="flex items-center space-x-1 mr-2"><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }); }}><Eye className="h-4 w-4"/></Button>{isEditor && !isFormDisabled && (<><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Estimate (₹)" value={site.estimateAmount} /><DetailRow label="Contractor" value={site.contractorName} /><DetailRow label="Status" value={site.workStatus} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">3. Investigation Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group"><div className="flex justify-between items-center w-full"><div>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"}</div><div className="flex items-center space-x-1 mr-2"><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }); }}><Eye className="h-4 w-4"/></Button>{isEditor && !isFormDisabled && (<><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /><DetailRow label="Investigator" value={site.nameOfInvestigator} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell><TableCell>{item.paymentAccount}</TableCell><TableCell className="text-right">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.paymentRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item })}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Paid</TableCell><TableCell className="font-bold text-right">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN')}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         <Card><CardHeader><CardTitle className="text-xl">5. Final Status</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN')}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN')}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN')}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} supervisorList={supervisorList} isReadOnly={dialogState.isView || isViewer} isSupervisor={isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders} workTypeContext={workTypeContext}/></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} supervisorList={supervisorList} isReadOnly={dialogState.isView || isViewer} allLsgConstituencyMaps={allLsgConstituencyMaps} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>

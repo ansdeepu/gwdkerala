@@ -182,6 +182,7 @@ export const siteWorkStatusOptions = [
   "Bill Prepared",
   "Payment Completed",
   "Utilization Certificate Issued",
+  "Pending", // Added for Investigation
 ] as const;
 export type SiteWorkStatus = typeof siteWorkStatusOptions[number];
 
@@ -250,6 +251,14 @@ export const siteConditionsOptions = [
 ] as const;
 export type SiteConditions = typeof siteConditionsOptions[number];
 
+export const typeOfWellOptions = [
+  "Open Well",
+  "Bore Well",
+  "Tube Well",
+  "Filter Point Well",
+] as const;
+export type TypeOfWell = typeof typeOfWellOptions[number];
+
 const PURPOSES_REQUIRING_DIAMETER: SitePurpose[] = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev"];
 const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
 
@@ -291,7 +300,7 @@ export const SiteDetailSchema = z.object({
   supervisorName: z.string().optional().nullable(),
   supervisorDesignation: z.string().optional().nullable(),
   totalExpenditure: optionalNumber("Total Expenditure must be a valid number."),
-  workStatus: z.enum(siteWorkStatusOptions).optional(),
+  workStatus: z.enum(siteWorkStatusOptions, { required_error: "Status is required." }).optional(),
   implementationRemarks: z.string().optional().nullable().default(""),
   workRemarks: z.string().optional().nullable().default(""),
 
@@ -325,8 +334,17 @@ export const SiteDetailSchema = z.object({
   isArsImport: z.boolean().optional(),
   isPending: z.boolean().optional(), // Internal state, not part of form
 
+  // Investigation specific fields
+  nameOfInvestigator: z.string().optional().nullable(),
+  dateOfInvestigation: nativeDateSchema,
+  typeOfWell: z.enum(typeOfWellOptions).optional(),
+  vesRequired: z.enum(["Yes", "No"]).optional(),
+  vesInvestigator: z.string().optional().nullable(),
+  vesDate: nativeDateSchema,
+  feasibility: z.enum(["Yes", "No"]).optional(),
+
 }).superRefine((data, ctx) => {
-    if (data.workStatus && FINAL_WORK_STATUSES.includes(data.workStatus as SiteWorkStatus) && !data.dateOfCompletion) {
+    if ((data.workStatus === 'Completed' || FINAL_WORK_STATUSES.includes(data.workStatus as SiteWorkStatus)) && !data.dateOfCompletion) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: `is required when status is '${data.workStatus}'.`,
