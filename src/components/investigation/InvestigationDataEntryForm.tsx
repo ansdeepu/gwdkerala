@@ -402,7 +402,9 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel }: { initialDat
     );
 };
 
-const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, isReadOnly, allLsgConstituencyMaps }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, supervisorList: any[], isReadOnly: boolean, allLsgConstituencyMaps: any[] }) => {
+const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLsgConstituencyMaps }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isReadOnly: boolean, allLsgConstituencyMaps: any[] }) => {
+    const { allStaffMembers, allE_tenders } = useDataStore();
+    
     const defaults = {
         ...(initialData?.nameOfSite ? initialData : createDefaultSiteDetail()),
     };
@@ -426,6 +428,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
     const watchedTypeOfWell = watch('typeOfWell');
     const watchedVesRequired = watch('vesRequired');
     const watchedWorkStatus = watch('workStatus');
+    const watchedFeasibility = watch('feasibility');
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
     const watchedLsg = watch("localSelfGovt");
@@ -453,18 +456,18 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
 
     const hydroStaff = useMemo(() => {
         const hydroDesignations = ["Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant"];
-        return supervisorList.filter(s => hydroDesignations.includes(s.designation));
-    }, [supervisorList]);
+        return allStaffMembers.filter(s => hydroDesignations.includes(s.designation as string) && s.status === 'Active');
+    }, [allStaffMembers]);
 
     const geophysStaff = useMemo(() => {
         const geophysDesignations = ["Geophysicist", "Junior Geophysicist", "Geophysical Assistant"];
-        return supervisorList.filter(s => geophysDesignations.includes(s.designation));
-    }, [supervisorList]);
+        return allStaffMembers.filter(s => geophysDesignations.includes(s.designation as string) && s.status === 'Active');
+    }, [allStaffMembers]);
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
             <DialogHeader className="p-6 pb-4 shrink-0">
-                <DialogTitle>Add New Investigation Site</DialogTitle>
+                <DialogTitle>{initialData?.nameOfSite ? 'Edit Investigation Site' : 'Add New Investigation Site'}</DialogTitle>
             </DialogHeader>
             <div className="flex-1 min-h-0">
                 <ScrollArea className="h-full px-6 py-4">
@@ -556,19 +559,6 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField name="feasibility" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Feasibility</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="Yes">Yes</SelectItem>
-                                                        <SelectItem value="No">No</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
                                     </div>
 
                                     {watchedVesRequired === "Yes" && (
@@ -592,7 +582,25 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                                         </div>
                                     )}
 
-                                    {watchedTypeOfWell && (
+                                    <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." /></FormControl><FormMessage /></FormItem>} />
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <FormField name="feasibility" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Feasibility</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="Yes">Yes</SelectItem>
+                                                        <SelectItem value="No">No</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </div>
+
+                                    {watchedTypeOfWell && watchedFeasibility === "Yes" && (
                                         <div className="space-y-4 pt-4 border-t">
                                             <h4 className="font-semibold text-sm">Recommended measurements for {watchedTypeOfWell}</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -613,10 +621,10 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                                                     </>
                                                 )}
                                                 <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Location of well</FormLabel><FormControl><Textarea {...field} value={field.value || ""} className="min-h-[40px]" /></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem className="md:col-span-3"><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Recommended measurements remarks..." /></FormControl><FormMessage /></FormItem>} />
                                             </div>
                                         </div>
                                     )}
-                                    <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." /></FormControl><FormMessage /></FormItem>} />
                                 </CardContent>
                             </Card>
 
@@ -783,7 +791,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} supervisorList={supervisorList} isReadOnly={dialogState.isView || isViewer} allLsgConstituencyMaps={allLsgConstituencyMaps} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={dialogState.isView || isViewer} allLsgConstituencyMaps={allLsgConstituencyMaps} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>
