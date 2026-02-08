@@ -68,7 +68,7 @@ import { getFirestore, doc, updateDoc, serverTimestamp, query, collection, where
 import { app } from "@/lib/firebase";
 import { useDataStore } from "@/hooks/use-data-store";
 import { ScrollArea } from "../ui/scroll-area";
-import { format, isValid } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as TableFooterComponent } from "@/components/ui/table";
 import { v4 as uuidv4 } from 'uuid';
@@ -87,7 +87,7 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
   return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
 };
 
-const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed', 'Completed'];
+const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
 const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
 
 
@@ -187,7 +187,9 @@ const toDateOrNull = (value: any): Date | null => {
         if (isValid(d)) return d;
     }
     if (typeof value === 'string') {
-        let d = new Date(value);
+        let d = parseISO(value);
+        if (isValid(d)) return d;
+        d = new Date(value);
         if (isValid(d)) return d;
     }
     return null;
@@ -554,10 +556,23 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
+                                        <FormField name="feasibility" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Feasibility</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="Yes">Yes</SelectItem>
+                                                        <SelectItem value="No">No</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
                                     </div>
 
                                     {watchedVesRequired === "Yes" && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-md bg-secondary/20">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-md bg-secondary/20">
                                             <FormField name="vesInvestigator" control={control} render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Name of Investigator (Geophysical)</FormLabel>
@@ -571,19 +586,6 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                                                 </FormItem>
                                             )} />
                                             <FormField name="vesDate" control={control} render={({ field }) => <FormItem><FormLabel>Date of VES conducted</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
-                                            <FormField name="feasibility" control={control} render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Feasibility</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value}>
-                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="Yes">Yes</SelectItem>
-                                                            <SelectItem value="No">No</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
                                         </div>
                                     )}
 
