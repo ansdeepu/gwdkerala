@@ -107,6 +107,8 @@ export default function UserManagementTable({
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
 
+  const isSuperAdmin = currentUser?.email === SUPER_ADMIN_EMAIL;
+
   const sortedUsers = useMemo(() => {
     const roleOrder: Record<UserRole, number> = { 'editor': 1, 'viewer': 2, 'supervisor': 3 };
     return [...users].filter(u => u.email !== SUPER_ADMIN_EMAIL).sort((a, b) => {
@@ -122,8 +124,8 @@ export default function UserManagementTable({
 
 
   const handleApprovalChange = async (userRow: UserProfile) => {
-    if (currentUser?.uid === userRow.uid) {
-      toast({ title: "Action Restricted", description: "You cannot change your own approval status.", variant: "default" });
+    if (currentUser?.uid === userRow.uid || (!isSuperAdmin && userRow.role === 'editor')) {
+      toast({ title: "Action Restricted", description: "This account status can only be modified by Super Admin.", variant: "default" });
       return;
     }
     setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], approval: true } }));
@@ -139,8 +141,8 @@ export default function UserManagementTable({
   };
 
   const handleRoleChange = async (userRow: UserProfile, newRole: UserRole) => {
-    if (currentUser?.uid === userRow.uid) {
-      toast({ title: "Action Restricted", description: "You cannot change your own role.", variant: "default" });
+    if (currentUser?.uid === userRow.uid || (!isSuperAdmin && userRow.role === 'editor')) {
+      toast({ title: "Action Restricted", description: "Administrator roles can only be changed by Super Admin.", variant: "default" });
       return;
     }
 
@@ -175,7 +177,10 @@ export default function UserManagementTable({
   };
 
   const handleDeleteUserClick = (user: UserProfile) => {
-    if (currentUser?.uid === user.uid) return;
+    if (currentUser?.uid === user.uid || (!isSuperAdmin && user.role === 'editor')) {
+      toast({ title: "Action Restricted", description: "Administrator accounts can only be removed by Super Admin.", variant: "default" });
+      return;
+    }
     setUserToDelete(user);
   };
 
@@ -232,7 +237,10 @@ export default function UserManagementTable({
           <TableBody>
             {sortedUsers.map((userRow, index) => {
               const isCurrentUserTheUserInRow = currentUser?.uid === userRow.uid;
-              const disableActions = updatingUsers[userRow.uid]?.approval || updatingUsers[userRow.uid]?.role || isCurrentUserTheUserInRow;
+              // Restriction: User cannot edit themselves, and sub-office admins cannot edit other admins.
+              const isEditingRestricted = isCurrentUserTheUserInRow || (!isSuperAdmin && userRow.role === 'editor');
+              
+              const disableActions = updatingUsers[userRow.uid]?.approval || updatingUsers[userRow.uid]?.role || isEditingRestricted;
               const staffInfo = (staffMembers || []).find(s => s.id === userRow.staffId);
               const photoUrl = staffInfo?.photoUrl;
               const avatarColorClass = getColorClass(userRow.name || userRow.email || 'user');
@@ -293,10 +301,17 @@ export default function UserManagementTable({
                 {!isViewer && 
                     <TableCell className="px-3 py-2 text-center">
                         <div className="flex items-center justify-center space-x-0.5">
-                            {isCurrentUserTheUserInRow ? (
+                            {isEditingRestricted ? (
                                 <Tooltip>
-                                    <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 cursor-not-allowed opacity-70"><Edit className="h-4 w-4 text-blue-600" /></Button></TooltipTrigger>
-                                    <TooltipContent><p>This is you (Cannot be modified here)</p></TooltipContent>
+                                    <TooltipTrigger asChild>
+                                        <div className="flex items-center justify-center gap-1 opacity-50 cursor-not-allowed">
+                                            <Button variant="ghost" size="icon" disabled className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" disabled className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                        </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{isCurrentUserTheUserInRow ? "You cannot modify your own account." : "Administrators can only be managed by Super Admin."}</p>
+                                    </TooltipContent>
                                 </Tooltip>
                             ) : (
                                 <>
