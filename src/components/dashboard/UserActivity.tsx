@@ -66,7 +66,9 @@ export default function UserActivity({ allUsers, staffMembers }: UserActivityPro
                   <div className="flex-1">
                     <div className="flex items-baseline gap-2">
                       <p className="font-semibold text-foreground">{usr.name || usr.email?.split('@')[0]}</p>
-                      <Badge variant="outline" className="text-xs">{(usr.role.charAt(0).toUpperCase() + usr.role.slice(1))}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {usr.role ? (usr.role.charAt(0).toUpperCase() + usr.role.slice(1)) : 'User'}
+                      </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {usr.lastActiveAt ? <>Last active: {formatDistanceToNow(usr.lastActiveAt, { addSuffix: true })}<span className="hidden sm:inline"> ({format(usr.lastActiveAt, 'dd MMM, p')})</span></> : (usr.createdAt ? `Registered: ${format(usr.createdAt, 'dd MMM yyyy, p')} (No activity logged)` : 'Activity status unknown')}

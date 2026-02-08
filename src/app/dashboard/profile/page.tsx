@@ -112,7 +112,9 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-center space-x-2">
                     <ShieldCheck className="h-5 w-5 text-primary" />
                     <span className="font-medium">Role:</span>
-                    <Badge variant={user.role === 'editor' ? 'default' : 'secondary'}>{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</Badge>
+                    <Badge variant={user.role === 'editor' ? 'default' : 'secondary'}>
+                      {user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'N/A'}
+                    </Badge>
                 </div>
                  {user.designation && (
                     <div className="flex items-center justify-center space-x-2">

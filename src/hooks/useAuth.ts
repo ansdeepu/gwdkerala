@@ -1,4 +1,3 @@
-
 // src/hooks/useAuth.ts
 "use client";
 
@@ -37,14 +36,6 @@ export interface UserProfile {
   officeLocation?: string; 
   createdAt?: Date;
   lastActiveAt?: Date;
-}
-
-interface AuthState {
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  isAuthenticating: boolean;
-  user: UserProfile | null;
-  firebaseUser: FirebaseUser | null;
 }
 
 export const updateUserLastActive = async (uid: string): Promise<void> => {
@@ -280,10 +271,17 @@ export function useAuth() {
     
     try {
       const querySnapshot = await getDocs(collection(db, "users"));
-      return querySnapshot.docs.map(docSnap => ({
-          uid: docSnap.id,
-          ...processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() })
-      } as UserProfile));
+      return querySnapshot.docs.map(docSnap => {
+          const data = docSnap.data();
+          const processed = processFirestoreDoc(data);
+          return {
+              uid: docSnap.id,
+              ...processed,
+              email: data.email || null,
+              role: data.role || 'viewer',
+              isApproved: data.isApproved === true,
+          } as UserProfile;
+      });
     } catch (error: any) {
       throw error;
     }
@@ -387,6 +385,14 @@ export function useAuth() {
   }, [authState.user]);
 
   return { ...authState, login, logout, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, createUserByAdmin, createOfficeAdmin, createDirectorateUser, updatePassword, updateSuperAdminProfile, updateUserProfileByAdmin };
+}
+
+interface AuthState {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  isAuthenticating: boolean;
+  user: UserProfile | null;
+  firebaseUser: FirebaseUser | null;
 }
 
 // Utility to convert Firestore Timestamps to JS Dates recursively
