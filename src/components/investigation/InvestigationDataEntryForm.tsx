@@ -200,8 +200,8 @@ const toDateOrNull = (value: any): Date | null => {
 // Dialog Content Components
 const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOptions, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, formOptions: readonly ApplicationType[] | ApplicationType[], workTypeContext: string | null }) => {
     const [data, setData] = useState({
-        ...initialData,
-        category: initialData.category || 'Govt'
+        ...(initialData || {}),
+        category: initialData?.category || 'Govt'
     });
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; }>({});
 
@@ -251,18 +251,18 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
              <div className="grid grid-cols-3 gap-4 items-start">
                 <div className="space-y-2 col-span-1">
                     <Label htmlFor="fileNo">File No *</Label>
-                    <Input id="fileNo" value={data.fileNo} onChange={(e) => handleChange('fileNo', e.target.value)} />
+                    <Input id="fileNo" value={data.fileNo || ''} onChange={(e) => handleChange('fileNo', e.target.value)} />
                     {errors.fileNo && <p className="text-xs text-destructive mt-1">{errors.fileNo}</p>}
                 </div>
                 <div className="space-y-2 col-span-2">
                     <Label htmlFor="applicantName">Name & Address of Institution/Applicant *</Label>
-                    <Textarea id="applicantName" value={data.applicantName} onChange={(e) => handleChange('applicantName', e.target.value)} className="min-h-[40px]"/>
+                    <Textarea id="applicantName" value={data.applicantName || ''} onChange={(e) => handleChange('applicantName', e.target.value)} className="min-h-[40px]"/>
                     {errors.applicantName && <p className="text-xs text-destructive mt-1">{errors.applicantName}</p>}
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo} onChange={(e) => handleChange('phoneNo', e.target.value)} /></div>
-                <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} /></div>
+                <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo || ''} onChange={(e) => handleChange('phoneNo', e.target.value)} /></div>
+                <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo || ''} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} /></div>
                 
                 {isGW && (
                     <div className="space-y-2">
@@ -280,7 +280,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
 
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType}>
+                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''}>
                         <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                         <SelectContent className="max-h-80">
                             {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
