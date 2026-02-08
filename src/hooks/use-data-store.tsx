@@ -1,3 +1,4 @@
+
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -61,23 +62,19 @@ const toDateOrNull = (value: any): Date | null => {
     if (typeof value === 'string') {
         const trimmed = value.trim();
         if (trimmed === '') return null;
-        // Attempt to parse various common date formats
         const formats = [
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", // ISO with milliseconds
-            "yyyy-MM-dd'T'HH:mm:ss'Z'",     // ISO without milliseconds
-            "yyyy-MM-dd'T'HH:mm",           // Datetime-local input
-            "yyyy-MM-dd",                   // Date input
-            'dd/MM/yyyy',                   // Common display format
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm",
+            "yyyy-MM-dd",
+            'dd/MM/yyyy',
         ];
         for (const fmt of formats) {
             try {
                 const parsedDate = parse(trimmed, fmt, new Date());
                 if (isValid(parsedDate)) return parsedDate;
-            } catch (e) {
-                // continue
-            }
+            } catch (e) {}
         }
-        // Final fallback for other string formats Date constructor might handle
         try {
             const fallback = new Date(trimmed);
             if (!isNaN(fallback.getTime())) return fallback;
@@ -90,8 +87,8 @@ const toDateOrNull = (value: any): Date | null => {
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
 
 export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
-    tenderFee: "For Works:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 500\\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\\n- Over 50 Lakhs up to 1 Crore: Rs 5000\\n- Above 1 Crore: Rs 10000\\n\\nFor Purchase:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 800\\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\\n- Above 25 Lakhs: Rs 3000",
-    emd: "For Works:\\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\\n- Above Rs. 10 Crore: Rs. 5 Lakh\\n\\nFor Purchase:\\n- Up to 2 Crore: 1.00% of the project cost\\n- Above 2 Crore: No EMD",
+    tenderFee: "For Works:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 500\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\n- Over 50 Lakhs up to 1 Crore: Rs 5000\n- Above 1 Crore: Rs 10000\n\nFor Purchase:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 800\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\n- Above 25 Lakhs: Rs 3000",
+    emd: "For Works:\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\n- Above Rs. 10 Crore: Rs. 5 Lakh\n\nFor Purchase:\n- Up to 2 Crore: 1.00% of the project cost\n- Above 2 Crore: No EMD",
     performanceGuarantee: "Performance Guarantee , the amount collected at the time of executing contract agreement will be 5% of the contract value(agrecd PAC)and the deposit will be retained till the texpiry of Defect Liability Period. At least fifty percent(50%) of this deposit shall be collected in the form of Treasury Fixed Deposit and the rest in the form of Bank Guarantee or any other forms prescribed in the revised PWD Manual.",
     additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%. This deposit is calculated as 25% of the difference between the estimate cost and the tender amount, but it will not exceed 10% of the estimate cost. This deposit will be released after satisfactory completion of the work.",
     stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
@@ -135,8 +132,8 @@ interface DataStoreContextType {
     allDepartmentVehicles: DepartmentVehicle[];
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
-    allOfficeAddresses: OfficeAddress[]; // This will be the list from the selected office/all offices
-    officeAddress: OfficeAddress | null; // The single, active office details document
+    allOfficeAddresses: OfficeAddress[]; 
+    officeAddress: OfficeAddress | null; 
     isLoading: boolean;
     refetchRateDescriptions: () => void;
     deleteArsEntry: (id: string) => Promise<void>;
@@ -237,13 +234,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 setOfficeAddress(null); // 'All Offices' is selected
             }
         } else if (user.officeLocation) {
-            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
-            setOfficeAddress(foundOffice);
+            // For sub-office users, we directly fetch from their office sub-collection, so allOfficeAddresses contains ONLY their office's address.
+            setOfficeAddress(allOfficeAddresses[0] || null);
         }
     }, [user, selectedOffice, allOfficeAddresses]);
     
 
-    // Effect for OFFICE-SCOPED data, including the moved collections
+    // Effect for OFFICE-SCOPED data
     useEffect(() => {
         if (!user) {
             setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
@@ -278,7 +275,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 q = query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
                 q = query(collectionGroup(db, collectionName));
-            } else { // Should not happen for authenticated users, but as a safeguard
+            } else { // Should not happen for authenticated users
                 setter([]);
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
                 return () => {};

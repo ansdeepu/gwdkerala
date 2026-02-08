@@ -49,18 +49,18 @@ service cloud.firestore {
 
     match /users/{userId} {
       function isManagingOwnOfficeUser() {
-        return isEditor() && request.resource.data.officeLocation == getUserData().officeLocation;
+        return isEditor() && request.resource.data.officeLocation.lower() == getUserData().officeLocation.lower();
       }
       
       function isReadingOwnOfficeUser() {
-          return isEditor() && resource.data.officeLocation == getUserData().officeLocation;
+          return isEditor() && resource.data.officeLocation.lower() == getUserData().officeLocation.lower();
       }
 
       allow get: if isSuperAdmin() || (isApproved() && request.auth.uid == userId) || isReadingOwnOfficeUser();
       allow list: if isSuperAdmin() || isEditor();
       allow create: if isSuperAdmin() || isManagingOwnOfficeUser();
       allow update: if isSuperAdmin() || isManagingOwnOfficeUser() || (isApproved() && request.auth.uid == userId);
-      allow delete: if isSuperAdmin() || (isEditor() && getUserData().officeLocation == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation);
+      allow delete: if isSuperAdmin() || (isEditor() && getUserData().officeLocation.lower() == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation.lower());
     }
     
     match /gwdRates/{docId} {

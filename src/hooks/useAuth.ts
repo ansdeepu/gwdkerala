@@ -1,3 +1,4 @@
+
 // src/hooks/useAuth.ts
 "use client";
 
@@ -32,8 +33,8 @@ export interface UserProfile {
   role: UserRole;
   isApproved: boolean;
   staffId?: string;
-  designation?: Designation; // Added designation
-  officeLocation?: string; // New field for office admins
+  designation?: Designation;
+  officeLocation?: string; 
   createdAt?: Date;
   lastActiveAt?: Date;
 }
@@ -51,10 +52,7 @@ export const updateUserLastActive = async (uid: string): Promise<void> => {
   const userDocRef = doc(db, "users", uid);
   try {
     await updateDoc(userDocRef, { lastActiveAt: Timestamp.now() });
-  } catch (error) {
-    // Suppress console warnings for this non-critical, throttled operation.
-    // console.warn(`[Auth] Failed to update lastActiveAt for user ${uid}:`, error);
-  }
+  } catch (error) {}
 };
 
 
@@ -90,20 +88,6 @@ export function useAuth() {
             const userData = userDocSnap.data();
             const isApproved = isAdminByEmail || userData.isApproved === true;
 
-            let staffInfo: { designation?: Designation } = {};
-            if (userData.staffId && userData.officeLocation) {
-                try {
-                    const staffCollectionPath = `offices/${userData.officeLocation.toLowerCase()}/staffMembers`;
-                    const staffDocRef = doc(db, staffCollectionPath, userData.staffId);
-                    const staffDocSnap = await getDoc(staffDocRef);
-                    if (staffDocSnap.exists()) {
-                        staffInfo = staffDocSnap.data() as { designation?: Designation };
-                    }
-                } catch (staffError) {
-                    console.error(`Error fetching staff info for user '${firebaseUser.uid}':`, staffError);
-                }
-            }
-
             userProfile = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
@@ -111,13 +95,11 @@ export function useAuth() {
                 role: isAdminByEmail ? 'editor' : (userData.role || 'viewer'),
                 isApproved: isApproved,
                 staffId: userData.staffId || undefined,
-                designation: staffInfo.designation,
                 officeLocation: userData.officeLocation,
                 createdAt: userData.createdAt instanceof Timestamp ? userData.createdAt.toDate() : new Date(),
                 lastActiveAt: userData.lastActiveAt instanceof Timestamp ? userData.lastActiveAt.toDate() : undefined,
             };
         } else if (isAdminByEmail) {
-            // This logic creates the admin user document if it doesn't exist.
             userProfile = {
                 uid: firebaseUser.uid, email: firebaseUser.email, name: firebaseUser.email?.split('@')[0],
                 role: 'editor', isApproved: true,
@@ -134,57 +116,28 @@ export function useAuth() {
             setAuthState({ isAuthenticated: true, isLoading: false, isAuthenticating: false, user: userProfile, firebaseUser });
         } else {
              if (auth.currentUser) {
-                try { await signOut(auth); } catch (signOutError) { console.error('[Auth] Error signing out during auth state check:', signOutError); }
+                try { await signOut(auth); } catch (signOutError) {}
             }
             setAuthState({ isAuthenticated: false, isLoading: false, isAuthenticating: false, user: userProfile, firebaseUser: null });
             
             if (userProfile && !userProfile.isApproved) {
                 toast({
                     title: "Account Pending Approval",
-                    description: "Your account is not yet approved by an administrator. Please contact 8547650853 for activation.",
+                    description: "Your account is not yet approved. Contact administrator for activation.",
                     variant: "destructive",
-                    duration: 8000
-                });
-            } else if (!userProfile) {
-                toast({
-                    title: "User Profile Not Found",
-                    description: "Your account credentials are valid, but your user profile could not be found. This may happen if the Firestore database is not enabled in your project. Please contact an administrator.",
-                    variant: "destructive",
-                    duration: 9000
                 });
             }
         }
       } catch (error: any) {
-        console.error('[Auth] Error in onAuthStateChanged callback:', error);
+        console.error('[Auth] Error:', error);
         if (isMounted) {
-            let title = "Authentication Error";
-            let description = "An unexpected error occurred while verifying your account.";
-
-            if (error.code === 'resource-exhausted') {
-                title = "Database Quota Exceeded";
-                description = "The application has exceeded its database usage limits for the day. Please try again later.";
-            } else if (error.code === 'permission-denied' || error.message.toLowerCase().includes('firestore')) {
-                title = "Could Not Load User Profile";
-                description = "Your login was successful, but we could not load your profile from the database. Please ensure the Firestore service is enabled in your Firebase project and that you have a user document.";
-            }
-
-            toast({
-                title: title,
-                description: description,
-                variant: "destructive",
-                duration: 9000
-            });
-
-            if (auth.currentUser) {
-                try { await signOut(auth); } catch (signOutError) { console.error('[Auth] Error signing out after onAuthStateChanged error:', signOutError); }
-            }
             setAuthState({ isAuthenticated: false, isLoading: false, isAuthenticating: false, user: null, firebaseUser: null });
         }
       }
     });
 
     return () => { isMounted = false; unsubscribe(); };
-  }, [toast]); // Added toast to dependency array
+  }, [toast]);
 
   const login = useCallback(async (email: string, password: string): Promise<{ success: boolean; error?: any }> => {
     setAuthState(prevState => ({ ...prevState, isAuthenticating: true }));
@@ -192,57 +145,17 @@ export function useAuth() {
       await signInWithEmailAndPassword(auth, email, password);
       return { success: true };
     } catch (error: any) {
-      console.error(`[Auth] Login failed for '${email}':`, error);
       setAuthState(prevState => ({ ...prevState, isAuthenticating: false }));
-      if (error.code === 'resource-exhausted') {
-        return { success: false, error: { message: "The database is temporarily unavailable due to high traffic (quota exceeded). Please try again later.", code: error.code } };
-      }
       return { success: false, error: error };
-    }
-  }, []);
-
-  const register = useCallback(async (email: string, password: string, name?: string): Promise<{ success: boolean; error?: any }> => {
-    let firebaseUser: FirebaseUser | null = null;
-    const isAdmin = email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      firebaseUser = userCredential.user;
-
-      const roleToAssign: UserRole = isAdmin ? 'editor' : 'viewer';
-      const isApprovedToAssign = isAdmin;
-
-      const userProfileData: Omit<UserProfile, 'uid' | 'createdAt' | 'lastActiveAt' | 'designation'> & { createdAt: Timestamp, lastActiveAt: Timestamp, email: string | null, name?: string } = {
-        email: firebaseUser.email,
-        name: name || firebaseUser.email?.split('@')[0],
-        role: roleToAssign,
-        isApproved: isApprovedToAssign,
-        createdAt: Timestamp.now(),
-        lastActiveAt: Timestamp.now(),
-      };
-
-      await setDoc(doc(db, "users", firebaseUser.uid), userProfileData);
-
-      if (!isAdmin && auth.currentUser && auth.currentUser.uid === firebaseUser.uid) {
-        await signOut(auth); 
-      }
-      
-      return { success: true, error: null };
-    } catch (error: any) {
-      let errorMessage = error.message || "An unexpected error occurred during registration.";
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = `The email address '${email}' is already in use by another account.`;
-      }
-      return { success: false, error: { message: errorMessage, code: error.code } };
     }
   }, []);
 
   const createUserByAdmin = useCallback(async (email: string, password: string, name: string, staffId: string, officeLocation: string): Promise<{ success: boolean; error?: any }> => {
     if (!authState.user || authState.user.role !== 'editor') {
-      return { success: false, error: { message: "You do not have permission to create users." } };
+      return { success: false, error: { message: "Permission denied." } };
     }
   
-    const tempAppName = `temp-app-create-user-${Date.now()}`;
+    const tempAppName = `temp-app-${Date.now()}`;
     const tempApp = initializeApp(app.options, tempAppName);
     const tempAuth = getAuth(tempApp);
   
@@ -261,30 +174,31 @@ export function useAuth() {
         lastActiveAt: Timestamp.now(),
       };
       
-      const newUserDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/users`, newFirebaseUser.uid);
-      await setDoc(newUserDocRef, userProfileData);
+      const batch = writeBatch(db);
+      
+      // Source of truth for Auth and Security Rules
+      batch.set(doc(db, "users", newFirebaseUser.uid), userProfileData);
+      
+      // Office-specific list for the sub-office admin
+      batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, newFirebaseUser.uid), userProfileData);
   
+      await batch.commit();
       await signOut(tempAuth);
       await deleteApp(tempApp);
   
       return { success: true };
     } catch (error: any) {
-      console.error(`[Auth] [CreateUserByAdmin] Failed for '${email}':`, error);
-      let errorMessage = error.message || "An unexpected error occurred during user creation.";
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = `The email address '${email}' is already in use.`;
-      }
-      await deleteApp(tempApp).catch(e => console.error("Failed to delete temp app on error", e));
-      return { success: false, error: { message: errorMessage, code: error.code } };
+      await deleteApp(tempApp).catch(() => {});
+      return { success: false, error };
     }
   }, [authState.user]);
   
   const createOfficeAdmin = useCallback(async (email: string, password: string, name: string, officeLocation: string): Promise<{ success: boolean; error?: any }> => {
     if (!authState.user || authState.user.email !== SUPER_ADMIN_EMAIL) {
-      return { success: false, error: { message: "You do not have permission to create office admins." } };
+      return { success: false, error: { message: "Permission denied." } };
     }
 
-    const tempAppName = `temp-app-create-office-admin-${Date.now()}`;
+    const tempAppName = `temp-office-admin-${Date.now()}`;
     const tempApp = initializeApp(app.options, tempAppName);
     const tempAuth = getAuth(tempApp);
 
@@ -296,34 +210,33 @@ export function useAuth() {
         email: newFirebaseUser.email,
         name: name,
         officeLocation: officeLocation.toLowerCase(),
-        role: 'editor' as UserRole, // Office admins are editors
-        isApproved: true, // Super admin creates them as approved
+        role: 'editor' as UserRole,
+        isApproved: true,
         createdAt: Timestamp.now(),
         lastActiveAt: Timestamp.now(),
       };
-      await setDoc(doc(db, "users", newFirebaseUser.uid), userProfileData);
-
+      
+      const batch = writeBatch(db);
+      batch.set(doc(db, "users", newFirebaseUser.uid), userProfileData);
+      batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, newFirebaseUser.uid), userProfileData);
+      
+      await batch.commit();
       await signOut(tempAuth);
       await deleteApp(tempApp);
 
       return { success: true };
     } catch (error: any) {
-      console.error(`[Auth] [CreateOfficeAdmin] Failed for '${email}':`, error);
-      let errorMessage = error.message || "An unexpected error occurred.";
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = `The email address '${email}' is already in use.`;
-      }
-      await deleteApp(tempApp).catch(e => console.error("Failed to delete temp app on error", e));
-      return { success: false, error: { message: errorMessage, code: error.code } };
+      await deleteApp(tempApp).catch(() => {});
+      return { success: false, error };
     }
   }, [authState.user]);
 
   const createDirectorateUser = useCallback(async (email: string, password: string, name: string): Promise<{ success: boolean; error?: any }> => {
     if (!authState.user || authState.user.email !== SUPER_ADMIN_EMAIL) {
-      return { success: false, error: { message: "You do not have permission to create directorate users." } };
+      return { success: false, error: { message: "Permission denied." } };
     }
 
-    const tempAppName = `temp-app-create-dir-user-${Date.now()}`;
+    const tempAppName = `temp-dir-user-${Date.now()}`;
     const tempApp = initializeApp(app.options, tempAppName);
     const tempAuth = getAuth(tempApp);
 
@@ -346,13 +259,8 @@ export function useAuth() {
 
       return { success: true };
     } catch (error: any) {
-      console.error(`[Auth] [CreateDirectorateUser] Failed for '${email}':`, error);
-      let errorMessage = error.message || "An unexpected error occurred.";
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = `The email address '${email}' is already in use.`;
-      }
-      await deleteApp(tempApp).catch(e => console.error("Failed to delete temp app on error", e));
-      return { success: false, error: { message: errorMessage, code: error.code } };
+      await deleteApp(tempApp).catch(() => {});
+      return { success: false, error };
     }
   }, [authState.user]);
   
@@ -361,7 +269,7 @@ export function useAuth() {
       await signOut(auth);
       router.push('/login');
     } catch (error) {
-      console.error("[Auth] Firebase logout error:", error);
+      console.error("[Auth] Logout error:", error);
     }
   }, [router]);
 
@@ -371,189 +279,65 @@ export function useAuth() {
     }
     
     try {
-      const usersCollectionRef = collection(db, "users");
-      const querySnapshot = await getDocs(usersCollectionRef);
-      const usersList: UserProfile[] = [];
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        usersList.push({
+      const querySnapshot = await getDocs(collection(db, "users"));
+      return querySnapshot.docs.map(docSnap => ({
           uid: docSnap.id,
-          email: data.email || null,
-          name: data.name || undefined,
-          role: data.role || 'viewer',
-          isApproved: data.isApproved === true,
-          staffId: data.staffId || undefined,
-          createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : undefined,
-          lastActiveAt: data.lastActiveAt instanceof Timestamp ? data.lastActiveAt.toDate() : undefined,
-          officeLocation: data.officeLocation || undefined,
-        });
-      });
-      return usersList;
+          ...processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() })
+      } as UserProfile));
     } catch (error: any) {
-      console.error(`[Auth] Error fetching users. Firestore error:`, error);
       throw error;
     }
   }, [authState.user]); 
 
   const updateUserApproval = useCallback(async (targetUserUid: string, isApproved: boolean, officeLocation?: string): Promise<void> => {
     if (!authState.user || authState.user.role !== 'editor') {
-      throw new Error("User does not have permission to update approval.");
+      throw new Error("Permission denied.");
     }
-    try {
-      const path = officeLocation ? `offices/${officeLocation.toLowerCase()}/users` : 'users';
-      const userDocRef = doc(db, path, targetUserUid);
-      await updateDoc(userDocRef, { isApproved });
-    } catch (error: any) {
-      console.error(`[Auth] Error updating approval for target UID '${targetUserUid}'. Firestore error:`, error);
-      throw error;
+    const batch = writeBatch(db);
+    batch.update(doc(db, "users", targetUserUid), { isApproved });
+    if (officeLocation) {
+        batch.update(doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid), { isApproved });
     }
+    await batch.commit();
   }, [authState.user]);
 
   const updateUserRole = useCallback(async (targetUserUid: string, newRole: UserRole, staffId?: string, officeLocation?: string): Promise<void> => {
     if (!authState.user || authState.user.role !== 'editor') {
-        throw new Error("User does not have permission to update role.");
+        throw new Error("Permission denied.");
     }
     
-    const path = officeLocation ? `offices/${officeLocation.toLowerCase()}/users` : 'users';
-    const userDocRef = doc(db, path, targetUserUid);
-    const userDocSnap = await getDoc(userDocRef);
-    if (!userDocSnap.exists()) {
-        throw new Error("User profile not found.");
+    const batch = writeBatch(db);
+    const updates: any = { role: newRole };
+    if (staffId) updates.staffId = staffId;
+    else if (newRole === 'viewer') updates.staffId = null;
+
+    batch.update(doc(db, "users", targetUserUid), updates);
+    if (officeLocation) {
+        batch.update(doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid), updates);
     }
-
-    const oldRole = userDocSnap.data().role;
-    const userName = userDocSnap.data().name;
-    const userOfficeLocation = userDocSnap.data().officeLocation;
-
-    if (oldRole === 'supervisor' && newRole !== 'supervisor' && userOfficeLocation) {
-        const fileEntriesRef = collection(db, `offices/${userOfficeLocation.toLowerCase()}/fileEntries`);
-        const q = query(fileEntriesRef, where('assignedSupervisorUids', 'array-contains', targetUserUid));
-        const fileSnapshot = await getDocs(q);
-        const batch = writeBatch(db);
-        const ongoingStatuses = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig"];
-
-        fileSnapshot.forEach(fileDoc => {
-            const fileData = fileDoc.data();
-            let wasModified = false;
-            const updatedSiteDetails = fileData.siteDetails?.map((site: any) => {
-                if (site.supervisorUid === targetUserUid && ongoingStatuses.includes(site.workStatus)) {
-                    wasModified = true;
-                    const pendingUpdateData = {
-                        fileNo: fileData.fileNo,
-                        updatedSiteDetails: [{ nameOfSite: site.nameOfSite, purpose: site.purpose }],
-                        submittedByUid: authState.user!.uid,
-                        submittedByName: `'${authState.user!.name}' (System)`,
-                        status: 'supervisor-unassigned',
-                        notes: `Supervisor '${userName}' removed from site while role was changed.`,
-                        submittedAt: serverTimestamp(),
-                    };
-                    const newPendingUpdateRef = doc(collection(db, `offices/${userOfficeLocation.toLowerCase()}/pendingUpdates`));
-                    batch.set(newPendingUpdateRef, pendingUpdateData);
-                    return { ...site, supervisorUid: null, supervisorName: null };
-                }
-                return site;
-            });
-
-            if (wasModified) {
-                const updatedAssignedUids = (fileData.assignedSupervisorUids || []).filter((uid: string) => uid !== targetUserUid);
-                batch.update(fileDoc.ref, { 
-                    siteDetails: updatedSiteDetails,
-                    assignedSupervisorUids: updatedAssignedUids
-                });
-            }
-        });
-
-        await batch.commit();
-        if (!fileSnapshot.empty) {
-            toast({
-                title: "Supervisor Un-assigned",
-                description: `'${userName}' was removed from their ongoing projects. Check 'Pending Updates' to re-assign.`,
-                duration: 7000
-            });
-        }
-    }
-
-    try {
-        const dataToUpdate: any = { role: newRole };
-        if (staffId) {
-            dataToUpdate.staffId = staffId;
-        } else if (newRole === 'viewer') { 
-            dataToUpdate.staffId = null;
-        }
-        await updateDoc(userDocRef, dataToUpdate);
-    } catch (error: any) {
-        console.error(`[Auth] Error updating role for target UID '${targetUserUid}'. Firestore error:`, error);
-        throw error;
-    }
-  }, [authState.user, toast]);
+    await batch.commit();
+  }, [authState.user]);
 
   const deleteUserDocument = useCallback(async (targetUserUid: string, officeLocation?: string): Promise<void> => {
     if (!authState.user || (authState.user.role !== 'editor' && authState.user.email !== SUPER_ADMIN_EMAIL)) {
-      throw new Error("User does not have permission to delete user documents.");
+      throw new Error("Permission denied.");
     }
     if (authState.user.uid === targetUserUid) {
-      throw new Error("You cannot delete your own user profile.");
+      throw new Error("You cannot delete yourself.");
     }
 
-    const path = officeLocation ? `offices/${officeLocation.toLowerCase()}/users` : 'users';
-    const targetUserDocRef = doc(db, path, targetUserUid);
-
-    // This check only works for root users, but that's fine. It's a safety rail.
-    if (!officeLocation) {
-        const targetUserDocSnap = await getDoc(targetUserDocRef);
-        if (targetUserDocSnap.exists() && targetUserDocSnap.data().email === SUPER_ADMIN_EMAIL) {
-            throw new Error(`The main admin user ('${SUPER_ADMIN_EMAIL}') cannot be deleted.`);
-        }
+    const batch = writeBatch(db);
+    batch.delete(doc(db, "users", targetUserUid));
+    if (officeLocation) {
+        batch.delete(doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid));
     }
-
-    try {
-      await deleteDoc(targetUserDocRef);
-    } catch (error: any) {
-      console.error(`[Auth] Error deleting document for target UID '${targetUserUid}'. Firestore error:`, error);
-      throw error;
-    }
-  }, [authState.user]);
-
-  const batchDeleteUserDocuments = useCallback(async (targetUserUids: string[]): Promise<{ successCount: number, failureCount: number, errors: string[] }> => {
-    if (!authState.user || authState.user.role !== 'editor') {
-      throw new Error("User does not have permission to delete user documents.");
-    }
-
-    let successCount = 0;
-    let failureCount = 0;
-    const errorsEncountered: string[] = [];
-
-    for (const targetUserUid of targetUserUids) {
-      if (authState.user.uid === targetUserUid) {
-        failureCount++;
-        errorsEncountered.push(`Cannot delete own profile (UID: '${targetUserUid}').`);
-        continue;
-      }
-
-      const targetUserDocRef = doc(db, "users", targetUserUid);
-      const targetUserDocSnap = await getDoc(targetUserDocRef);
-
-      if (targetUserDocSnap.exists() && targetUserDocSnap.data().email === SUPER_ADMIN_EMAIL) {
-        failureCount++;
-        errorsEncountered.push(`Main admin profile ('${SUPER_ADMIN_EMAIL}') cannot be deleted.`);
-        continue;
-      }
-
-      try {
-        await deleteDoc(targetUserDocRef);
-        successCount++;
-      } catch (error: any) {
-        failureCount++;
-        errorsEncountered.push(`Failed to delete '${targetUserDocSnap.data()?.email || targetUserUid}': ${error.message}`);
-      }
-    }
-    return { successCount, failureCount, errors: errorsEncountered };
+    await batch.commit();
   }, [authState.user]);
 
   const updatePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: any }> => {
     const firebaseUser = auth.currentUser;
     if (!firebaseUser || !firebaseUser.email) {
-      return { success: false, error: { message: "No authenticated user found." } };
+      return { success: false, error: { message: "No user found." } };
     }
 
     try {
@@ -562,14 +346,7 @@ export function useAuth() {
       await firebaseUpdatePassword(firebaseUser, newPassword);
       return { success: true };
     } catch (error: any) {
-      let errorMessage = "An unexpected error occurred.";
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        errorMessage = "The current password you entered is incorrect.";
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = "The new password is too weak. It must be at least 6 characters.";
-      }
-      console.error("[Auth] Update password error:", error);
-      return { success: false, error: { message: errorMessage, code: error.code } };
+      return { success: false, error };
     }
   }, []);
   
@@ -578,49 +355,55 @@ export function useAuth() {
         return { success: false, error: { message: "Permission denied." } };
     }
     try {
-        const userDocRef = doc(db, "users", targetUserUid);
+        const batch = writeBatch(db);
         const updatePayload: { [key: string]: any } = { ...data };
         if (updatePayload.officeLocation) {
             updatePayload.officeLocation = updatePayload.officeLocation.toLowerCase();
         }
-        await updateDoc(userDocRef, updatePayload);
+        batch.update(doc(db, "users", targetUserUid), updatePayload);
+        if (data.officeLocation) {
+            batch.update(doc(db, `offices/${data.officeLocation.toLowerCase()}/users`, targetUserUid), updatePayload);
+        }
+        await batch.commit();
         return { success: true };
     } catch(error: any) {
-        console.error(`[Auth] Failed to update profile for ${targetUserUid}:`, error);
         return { success: false, error };
     }
   }, [authState.user]);
 
   const updateSuperAdminProfile = useCallback(async (newName: string): Promise<{ success: boolean; error?: any }> => {
-    const firebaseUser = auth.currentUser;
-    if (!firebaseUser || !authState.user) {
-      return { success: false, error: { message: "No authenticated user found." } };
-    }
-    if (authState.user.email !== SUPER_ADMIN_EMAIL) {
+    if (!auth.currentUser || authState.user?.email !== SUPER_ADMIN_EMAIL) {
       return { success: false, error: { message: "Permission denied." } };
     }
 
     try {
-      // Update Firebase Auth display name
-      await firebaseUpdateProfile(firebaseUser, { displayName: newName });
-
-      // Update Firestore document
-      const userDocRef = doc(db, "users", firebaseUser.uid);
-      await updateDoc(userDocRef, { name: newName });
-
-      // Update local state
-      setAuthState(prevState => ({
-        ...prevState,
-        user: prevState.user ? { ...prevState.user, name: newName } : null,
-      }));
-
+      await firebaseUpdateProfile(auth.currentUser, { displayName: newName });
+      await updateDoc(doc(db, "users", auth.currentUser.uid), { name: newName });
+      setAuthState(prev => ({ ...prev, user: prev.user ? { ...prev.user, name: newName } : null }));
       return { success: true };
     } catch (error: any) {
-      console.error("[Auth] Update profile error:", error);
       return { success: false, error };
     }
   }, [authState.user]);
 
-
-  return { ...authState, login, logout, register, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, batchDeleteUserDocuments, updateUserLastActive, createUserByAdmin, createOfficeAdmin, createDirectorateUser, updatePassword, updateSuperAdminProfile, updateUserProfileByAdmin };
+  return { ...authState, login, logout, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, createUserByAdmin, createOfficeAdmin, createDirectorateUser, updatePassword, updateSuperAdminProfile, updateUserProfileByAdmin };
 }
+
+// Utility to convert Firestore Timestamps to JS Dates recursively
+const processFirestoreDoc = (data: any): any => {
+    if (!data) return data;
+    const converted: { [key: string]: any } = {};
+    for (const key in data) {
+        const value = data[key];
+        if (value instanceof Timestamp) {
+            converted[key] = value.toDate();
+        } else if (Array.isArray(value)) {
+            converted[key] = value.map(item => typeof item === 'object' ? processFirestoreDoc(item) : item);
+        } else if (typeof value === 'object' && value !== null) {
+            converted[key] = processFirestoreDoc(value);
+        } else {
+            converted[key] = value;
+        }
+    }
+    return converted;
+};

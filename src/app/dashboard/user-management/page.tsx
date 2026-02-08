@@ -1,7 +1,8 @@
+
 // src/app/dashboard/user-management/page.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import UserManagementTable from "@/components/admin/UserManagementTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
@@ -17,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { Loader2, UserPlus, ShieldAlert } from 'lucide-react';
 import { useDataStore } from "@/hooks/use-data-store";
-import { getFirestore, collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
+import { getFirestore, collection, query, onSnapshot, Timestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 
 const db = getFirestore(app);
@@ -44,7 +45,9 @@ export default function UserManagementPage() {
       setUsersLoading(false);
       return;
     }
+    
     setUsersLoading(true);
+    // Fetch users from the office-specific sub-collection as requested
     const usersSubCollectionPath = `offices/${user.officeLocation.toLowerCase()}/users`;
     const q = query(collection(db, usersSubCollectionPath));
     
@@ -61,14 +64,14 @@ export default function UserManagementPage() {
           staffId: data.staffId || undefined,
           createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : undefined,
           lastActiveAt: data.lastActiveAt instanceof Timestamp ? data.lastActiveAt.toDate() : undefined,
-          officeLocation: data.officeLocation || user.officeLocation, // ensure officeLocation is present
+          officeLocation: data.officeLocation || user.officeLocation,
         });
       });
       setAllUsers(usersList);
       setUsersLoading(false);
     }, (error) => {
-      console.error("Failed to fetch users:", error);
-      toast({ title: "Error Loading Users", description: "Could not load user data. Please try again.", variant: "destructive" });
+      console.error("Failed to fetch office users:", error);
+      toast({ title: "Error Loading Users", description: "Could not load office-specific user data.", variant: "destructive" });
       setUsersLoading(false);
     });
 
@@ -100,7 +103,7 @@ export default function UserManagementPage() {
         return;
       }
       if (!user?.officeLocation) {
-        toast({ title: "Error", description: "Your admin account is not associated with an office location.", variant: "destructive" });
+        toast({ title: "Error", description: "Admin account office location missing.", variant: "destructive" });
         setIsSubmitting(false);
         return;
       }
@@ -109,7 +112,7 @@ export default function UserManagementPage() {
       if (result.success) {
         toast({
           title: "User Created",
-          description: `Account for ${data.email} has been successfully created and is pending approval.`,
+          description: `Account for ${data.email} created in ${user.officeLocation} database.`,
         });
         setIsStaffFormOpen(false);
       } else {
@@ -120,11 +123,7 @@ export default function UserManagementPage() {
         });
       }
     } catch (error: any) {
-       toast({
-          title: "Error",
-          description: error.message || "An unexpected error occurred.",
-          variant: "destructive",
-        });
+       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -134,7 +133,6 @@ export default function UserManagementPage() {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-3 text-muted-foreground">Loading permissions...</p>
       </div>
     );
   }
@@ -144,9 +142,6 @@ export default function UserManagementPage() {
       <div className="space-y-6 p-6 text-center">
         <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Access Denied</h1>
-        <p className="text-muted-foreground">
-          You do not have permission to access this page or you are not logged in.
-        </p>
       </div>
     );
   }
@@ -169,12 +164,11 @@ export default function UserManagementPage() {
         <CardHeader>
           <CardTitle className="text-xl">Registered Users ({allUsers.length})</CardTitle>
           <CardDescription>
-            A list of all user accounts in the {user.officeLocation} office.
+            User accounts stored in the {user.officeLocation} sub-office database.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <UserManagementTable
-            key={allUsers.length} // Force re-render when users change
             users={allUsers}
             isLoading={usersLoading}
             onDataChange={() => {}}
