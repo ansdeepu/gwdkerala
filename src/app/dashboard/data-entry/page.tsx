@@ -1,6 +1,7 @@
 // src/app/dashboard/data-entry/page.tsx
 "use client";
 import DataEntryFormComponent from "@/components/shared/DataEntryForm";
+import InvestigationDataEntryFormComponent from "@/components/investigation/InvestigationDataEntryForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, Loader2, ArrowLeft } from "lucide-react";
@@ -8,14 +9,13 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useFileEntries } from "@/hooks/useFileEntries";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
-import { useMemo, useEffect, useState, useCallback } from "react";
-import type { DataEntryFormData, StaffMember, UserRole, ApplicationType } from "@/lib/schemas";
+import { useMemo, useEffect, useState } from "react";
+import type { DataEntryFormData, StaffMember, ApplicationType } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { usePendingUpdates } from "@/hooks/usePendingUpdates";
-import { isValid, parse, format, parseISO } from 'date-fns';
+import { isValid, format, parseISO } from 'date-fns';
 import { usePageHeader } from "@/hooks/usePageHeader";
-import { useDataStore } from "@/hooks/use-data-store";
-import { PUBLIC_DEPOSIT_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES, COLLECTOR_APPLICATION_TYPES, PLAN_FUND_APPLICATION_TYPES, GW_INVESTIGATION_TYPES, LOGGING_PUMPING_TEST_TYPES } from '@/lib/schemas';
+import { COLLECTOR_APPLICATION_TYPES, PLAN_FUND_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES, GW_INVESTIGATION_TYPES, LOGGING_PUMPING_TEST_TYPES } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,40 +27,29 @@ const toDateOrNull = (value: any): Date | null => {
         if (isValid(d)) return d;
     }
     if (typeof value === 'string') {
-        let d = parseISO(value); // Handles yyyy-MM-dd and ISO strings from new Date()
+        let d = parseISO(value); 
         if (isValid(d)) return d;
-        d = parse(value, 'dd/MM/yyyy', new Date()); // Handles dd/MM/yyyy from user input
+        d = new Date(value);
         if (isValid(d)) return d;
     }
     return null;
 };
 
-// This function now recursively processes the data and formats dates to 'yyyy-MM-dd' or ""
 const processDataForForm = (data: any): any => {
   const transform = (obj: any): any => {
     if (obj === null || obj === undefined) return obj;
-
-    if (Array.isArray(obj)) {
-      return obj.map(transform);
-    }
-
+    if (Array.isArray(obj)) return obj.map(transform);
     if (typeof obj === 'object') {
       const maybeDate = toDateOrNull(obj);
-      if (maybeDate) {
-        return format(maybeDate, 'yyyy-MM-dd');
-      }
-
+      if (maybeDate) return format(maybeDate, 'yyyy-MM-dd');
       const newObj: { [key: string]: any } = {};
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
           const value = obj[key];
-          // Check for keys that are likely to be dates
           if (key.toLowerCase().includes('date')) {
             const date = toDateOrNull(value);
-            // Format to the string 'yyyy-MM-dd' or an empty string
             newObj[key] = date && isValid(date) ? format(date, 'yyyy-MM-dd') : "";
           } else {
-            // Recursively transform nested objects
             newObj[key] = transform(value);
           }
         }
@@ -72,25 +61,19 @@ const processDataForForm = (data: any): any => {
   return transform(data);
 };
 
-
-// Helper function to create default form values, ensuring consistency.
 const getFormDefaults = (): DataEntryFormData => ({
   fileNo: "", applicantName: "", phoneNo: "", secondaryMobileNo: "",
-  applicationType: undefined,
-  constituency: undefined,
+  applicationType: undefined, constituency: undefined,
   estimateAmount: undefined, assignedSupervisorUids: [],
-  remittanceDetails: [], // Starts empty
-  totalRemittance: 0, 
-  siteDetails: [], // Starts empty
-  paymentDetails: [], // Starts empty
+  remittanceDetails: [], totalRemittance: 0, 
+  siteDetails: [], paymentDetails: [], 
   totalPaymentAllEntries: 0, overallBalance: 0,
   fileStatus: undefined, remarks: "",
 });
 
-
 interface PageData {
   initialData: DataEntryFormData;
-  allUsers: UserProfile[]; // Keep for supervisor list generation
+  allUsers: UserProfile[];
 }
 
 export default function DataEntryPage() {
@@ -116,29 +99,19 @@ export default function DataEntryPage() {
   const [isFormDisabledForSupervisor, setIsFormDisabledForSupervisor] = useState(false);
   
   const isApprovingUpdate = !!(user?.role === 'editor' && approveUpdateId);
-  
   const effectiveUserRole = readOnlyParam === 'true' ? 'viewer' : user?.role;
   
- const returnPath = useMemo(() => {
-    let base = '/dashboard/file-room'; // Default to Deposit Works
+  const returnPath = useMemo(() => {
+    let base = '/dashboard/file-room'; 
     const appType = pageData?.initialData.applicationType;
-
-    if (approveUpdateId) {
-        base = '/dashboard/pending-updates';
-    } else if (fileIdToEdit && appType) {
-        // This is the "edit" case. It needs to determine the work type from the loaded data.
-        if (COLLECTOR_APPLICATION_TYPES.includes(appType as any)) {
-            base = '/dashboard/collectors-deposit-works';
-        } else if (PLAN_FUND_APPLICATION_TYPES.includes(appType as any)) {
-            base = '/dashboard/plan-fund-works';
-        } else if (PRIVATE_APPLICATION_TYPES.includes(appType as any)) {
-            base = '/dashboard/private-deposit-works';
-        } else if (GW_INVESTIGATION_TYPES.includes(appType as any)) {
-            base = '/dashboard/gw-investigation';
-        } else if (LOGGING_PUMPING_TEST_TYPES.includes(appType as any)) {
-            base = '/dashboard/logging-pumping-test';
-        }
-    } else { // This is the "new file" case, which relies on the URL param
+    if (approveUpdateId) base = '/dashboard/pending-updates';
+    else if (fileIdToEdit && appType) {
+        if (COLLECTOR_APPLICATION_TYPES.includes(appType as any)) base = '/dashboard/collectors-deposit-works';
+        else if (PLAN_FUND_APPLICATION_TYPES.includes(appType as any)) base = '/dashboard/plan-fund-works';
+        else if (PRIVATE_APPLICATION_TYPES.includes(appType as any)) base = '/dashboard/private-deposit-works';
+        else if (GW_INVESTIGATION_TYPES.includes(appType as any)) base = '/dashboard/gw-investigation';
+        else if (LOGGING_PUMPING_TEST_TYPES.includes(appType as any)) base = '/dashboard/logging-pumping-test';
+    } else {
         if (workTypeContext === 'collector') base = '/dashboard/collectors-deposit-works';
         else if (workTypeContext === 'planFund') base = '/dashboard/plan-fund-works';
         else if (workTypeContext === 'private') base = '/dashboard/private-deposit-works';
@@ -146,236 +119,105 @@ export default function DataEntryPage() {
         else if (workTypeContext === 'loggingPumpingTest') base = '/dashboard/logging-pumping-test';
     }
     return pageToReturnTo ? `${base}?page=${pageToReturnTo}` : base;
-}, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
-
-
+  }, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
 
   useEffect(() => {
     const loadAllData = async () => {
         setDataLoading(true);
-        setErrorState(null);
-
         if (authIsLoading) return;
-        if (!user) {
-            setErrorState("You must be logged in to view this page.");
-            setDataLoading(false);
-            return;
-        }
-
+        if (!user) { setErrorState("You must be logged in."); setDataLoading(false); return; }
         try {
             const allUsersResult = (user.role === 'editor') ? await fetchAllUsers() : [];
-
-            if (!fileIdToEdit) {
-                setPageData({ initialData: getFormDefaults(), allUsers: allUsersResult });
-                return;
-            }
-
+            if (!fileIdToEdit) { setPageData({ initialData: getFormDefaults(), allUsers: allUsersResult }); return; }
             const originalEntry = await fetchEntryForEditing(fileIdToEdit);
-
-            if (!originalEntry) {
-                setErrorState("Could not find the requested file. It may have been deleted or you may not have permission.");
-                return;
-            }
-
+            if (!originalEntry) { setErrorState("Could not find the requested file."); return; }
             if (user.role === 'supervisor' && user.uid) {
                 const hasPending = await hasPendingUpdateForFile(originalEntry.fileNo, user.uid);
-                if (hasPending) {
-                    setIsFormDisabledForSupervisor(true);
-                    toast({ title: "Edits Locked", description: "This file has a pending update and cannot be edited until reviewed by an admin.", duration: 6000 });
-                }
+                if (hasPending) { setIsFormDisabledForSupervisor(true); toast({ title: "Edits Locked", description: "Pending update review required." }); }
             }
-            
             let dataForForm: DataEntryFormData = originalEntry;
-
             if (isApprovingUpdate && approveUpdateId) {
                 const pendingUpdate = await getPendingUpdateById(approveUpdateId);
                 if (pendingUpdate) {
                     let mergedData = JSON.parse(JSON.stringify(originalEntry));
                     const updatedSitesMap = new Map(pendingUpdate.updatedSiteDetails.map(site => [site.nameOfSite, site]));
-                    
                     mergedData.siteDetails = mergedData.siteDetails?.map((originalSite: any) => updatedSitesMap.get(originalSite.nameOfSite) || originalSite) || [];
                     dataForForm = mergedData;
-                    toast({ title: "Reviewing Update", description: `Loading changes from ${pendingUpdate.submittedByName}. Please review and save.` });
                 }
             }
-
             setFileNoForHeader(dataForForm.fileNo);
             setPageData({ initialData: processDataForForm(dataForForm), allUsers: allUsersResult });
-
-        } catch (error) {
-            console.error("Error loading data for form:", error);
-            setErrorState("Could not load all required data.");
-            toast({ title: "Error Loading Data", description: "An unexpected error occurred.", variant: "destructive" });
-        } finally {
-            setDataLoading(false);
-        }
+        } catch (error) { setErrorState("Could not load all required data."); } finally { setDataLoading(false); }
     };
-    
     loadAllData();
   }, [fileIdToEdit, approveUpdateId, user, authIsLoading, fetchAllUsers, fetchEntryForEditing, getPendingUpdateById, toast, isApprovingUpdate, hasPendingUpdateForFile]);
 
   useEffect(() => {
     let title = "Loading...";
-    let description = "Please wait while the page content is loading.";
+    let description = "Please wait...";
     const isCreatingNew = !fileIdToEdit;
-
     if (!dataLoading) {
-        if (errorState) {
-            title = "Error Loading File";
-            description = errorState;
-        } else if (user?.role === 'editor') {
+        if (errorState) { title = "Error"; description = errorState; } 
+        else if (user?.role === 'editor') {
             if (isCreatingNew) {
-                if (workTypeContext === 'private') {
-                    title = "New Private Deposit Work";
-                } else if (workTypeContext === 'collector') {
-                    title = "New Collector's Deposit Work";
-                } else if (workTypeContext === 'planFund') {
-                    title = "New Plan Fund Work";
-                } else if (workTypeContext === 'gwInvestigation') {
-                    title = "New GW Investigation";
-                } else if (workTypeContext === 'loggingPumpingTest') {
-                    title = "New Logging & Pumping Test";
-                } else {
-                     title = "New Deposit Work";
-                }
-                description = "Use this form to input new work orders, project updates, or other relevant data for the Ground Water Department.";
-            } else if (approveUpdateId) {
-                title = "Approve Pending Updates";
-                description = `Reviewing and approving updates for File No: ${fileNoForHeader}. Click "Save Changes" to finalize.`;
-            } else if (fileNoForHeader) {
-                title = "Edit File Data";
-                description = `Editing details for File No: ${fileNoForHeader}. Please make your changes and submit.`;
-            } else if (fileIdToEdit) {
-                 title = "Error Loading File";
-                 description = "Could not find the requested file. It may have been deleted.";
-            }
-        } else if (user?.role === 'supervisor') {
-           if (isCreatingNew) {
-             title = "Access Denied";
-             description = "Supervisors cannot create new files.";
-           } else if (fileNoForHeader) {
-             title = "Edit Assigned Site Details";
-             description = `Editing assigned sites for File No: ${fileNoForHeader}. Submit your changes for approval.`;
-           } else if (fileIdToEdit) {
-               title = "Error Loading File";
-               description = "Could not find the requested file. You may not have permission to view it.";
-           }
+                if (workTypeContext === 'private') title = "New Private Deposit Work";
+                else if (workTypeContext === 'collector') title = "New Collector's Deposit Work";
+                else if (workTypeContext === 'planFund') title = "New Plan Fund Work";
+                else if (workTypeContext === 'gwInvestigation') title = "New GW Investigation";
+                else if (workTypeContext === 'loggingPumpingTest') title = "New Logging & Pumping Test";
+                else title = "New Deposit Work";
+            } else if (approveUpdateId) title = "Approve Pending Updates";
+            else if (fileNoForHeader) title = `Edit File: ${fileNoForHeader}`;
         } else if (user?.role === 'viewer' || readOnlyParam === 'true') {
-            if (fileNoForHeader) {
-                title = "View File Data";
-                description = `Viewing details for File No: ${fileNoForHeader}. You are in read-only mode.`;
-            } else if (isCreatingNew) {
-                 title = "Access Denied";
-                 description = "You do not have permission to create new file entries. This action is restricted to Editors.";
-            } else if(fileIdToEdit) {
-                 title = "Error Loading File";
-                 description = "Could not find the requested file. It may have been deleted.";
-            }
+            if (fileNoForHeader) title = `View File: ${fileNoForHeader}`;
         }
     }
-    
     setHeader(title, description);
   }, [fileIdToEdit, user, approveUpdateId, setHeader, fileNoForHeader, workTypeContext, dataLoading, errorState, readOnlyParam]);
 
-
   const supervisorList = useMemo(() => {
     if (!user || !pageData || staffIsLoading) return [];
-    
-    const activeSupervisors = pageData.allUsers
-      .filter(u => u.role === 'supervisor' && u.isApproved && u.staffId)
-      .map(userProfile => {
+    return pageData.allUsers.filter(u => u.role === 'supervisor' && u.isApproved && u.staffId).map(userProfile => {
         const staffInfo = staffMembers.find(s => s.id === userProfile.staffId && s.status === 'Active');
-        if (staffInfo) {
-          return {
-            ...staffInfo,
-            uid: userProfile.uid,
-            name: staffInfo.name,
-          };
-        }
-        return null;
-      })
-      .filter((s): s is (StaffMember & { uid: string; name: string }) => s !== null);
-
-    return activeSupervisors.sort((a, b) => a.name.localeCompare(b.name));
+        return staffInfo ? { ...staffInfo, uid: userProfile.uid, name: staffInfo.name } : null;
+    }).filter((s): s is (StaffMember & { uid: string; name: string }) => s !== null).sort((a, b) => a.name.localeCompare(b.name));
   }, [pageData, staffMembers, user, staffIsLoading]);
   
-  const isLoading = authIsLoading || dataLoading;
-  
-  const isDeniedAccess = !isLoading && ((user?.role === 'viewer' && !fileIdToEdit) || (user?.role === 'supervisor' && !fileIdToEdit) || !user);
+  if (authIsLoading || dataLoading) return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+  if (errorState) return <div className="flex h-screen items-center justify-center text-center p-6"><Card><CardContent className="pt-6"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-xl font-bold">{errorState}</h1><Button className="mt-4" variant="outline" onClick={() => router.back()}>Go Back</Button></CardContent></Card></div>;
 
-  if (isLoading) {
-    return (
-      <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-3 text-muted-foreground">Loading file data...</p>
-      </div>
-    );
-  }
-
-  if (errorState) {
-    return (
-        <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
-            <div className="space-y-6 p-6 text-center">
-                <ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" />
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">Error Loading File</h1>
-                <p className="text-muted-foreground">{errorState}</p>
-                 <Button variant="outline" onClick={() => router.back()}>Go Back</Button>
-            </div>
-             {isApprovingUpdate && <p className="text-sm text-muted-foreground animate-pulse">Redirecting...</p>}
-        </div>
-    );
-  }
-  
-  if (isDeniedAccess) {
-     return (
-      <div className="space-y-6 p-6 text-center">
-        <ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" />
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Access Denied</h1>
-        <p className="text-muted-foreground">
-          You do not have permission to create new file entries. This action is restricted to Editors.
-        </p>
-      </div>
-    );
-  }
-  
-  if (!pageData && fileIdToEdit) {
-    return (
-      <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="ml-3 text-muted-foreground">Finalizing...</p>
-      </div>
-    );
-  }
+  const isInvestigationType = workTypeContext === 'gwInvestigation' || workTypeContext === 'loggingPumpingTest' || (pageData?.initialData.applicationType && [...GW_INVESTIGATION_TYPES, ...LOGGING_PUMPING_TEST_TYPES].includes(pageData.initialData.applicationType as any));
 
   return (
     <div className="space-y-6">
-       {fileIdToEdit && (
-        <div className="flex justify-end mb-4">
-            <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-            </Button>
-        </div>
-       )}
+       {fileIdToEdit && <div className="flex justify-end mb-4"><Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button></div>}
       <Card className="shadow-lg">
         <CardContent className="p-6">
           {pageData && pageData.initialData ? (
-             <DataEntryFormComponent
-                key={approveUpdateId || fileIdToEdit || 'new-entry'} 
-                fileNoToEdit={fileNoForHeader ?? undefined}
-                initialData={pageData.initialData}
-                supervisorList={supervisorList}
-                userRole={effectiveUserRole}
-                workTypeContext={workTypeContext}
-                returnPath={returnPath}
-                pageToReturnTo={pageToReturnTo}
-                isFormDisabled={isFormDisabledForSupervisor}
-             />
-          ) : (
-            <div className="flex h-64 items-center justify-center">
-              <p className="text-muted-foreground">Form data could not be loaded or you do not have permission.</p>
-            </div>
-          )}
+             isInvestigationType ? (
+                <InvestigationDataEntryFormComponent
+                    fileNoToEdit={fileNoForHeader ?? undefined}
+                    initialData={pageData.initialData}
+                    supervisorList={supervisorList}
+                    userRole={effectiveUserRole}
+                    workTypeContext={workTypeContext}
+                    returnPath={returnPath}
+                    pageToReturnTo={pageToReturnTo}
+                    isFormDisabled={isFormDisabledForSupervisor}
+                />
+             ) : (
+                <DataEntryFormComponent
+                    fileNoToEdit={fileNoForHeader ?? undefined}
+                    initialData={pageData.initialData}
+                    supervisorList={supervisorList}
+                    userRole={effectiveUserRole}
+                    workTypeContext={workTypeContext}
+                    returnPath={returnPath}
+                    pageToReturnTo={pageToReturnTo}
+                    isFormDisabled={isFormDisabledForSupervisor}
+                />
+             )
+          ) : <div className="flex h-64 items-center justify-center"><p className="text-muted-foreground">Form data could not be loaded.</p></div>}
         </CardContent>
       </Card>
     </div>
