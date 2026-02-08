@@ -342,6 +342,8 @@ export const SiteDetailSchema = z.object({
   vesInvestigator: z.string().optional().nullable(),
   vesDate: nativeDateSchema,
   feasibility: z.enum(["Yes", "No"]).optional(),
+  hydrogeologicalRemarks: z.string().optional().nullable().default(""),
+  geophysicalRemarks: z.string().optional().nullable().default(""),
 
 }).superRefine((data, ctx) => {
     if ((data.workStatus === 'Completed' || FINAL_WORK_STATUSES.includes(data.workStatus as SiteWorkStatus)) && !data.dateOfCompletion) {
