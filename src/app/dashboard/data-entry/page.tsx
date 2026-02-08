@@ -15,7 +15,18 @@ import { useToast } from "@/hooks/use-toast";
 import { usePendingUpdates } from "@/hooks/usePendingUpdates";
 import { isValid, format, parseISO } from 'date-fns';
 import { usePageHeader } from "@/hooks/usePageHeader";
-import { COLLECTOR_APPLICATION_TYPES, PLAN_FUND_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES, GW_INVESTIGATION_TYPES, LOGGING_PUMPING_TEST_TYPES } from '@/lib/schemas';
+import { useDataStore } from "@/hooks/use-data-store";
+import { 
+    PUBLIC_DEPOSIT_APPLICATION_TYPES, 
+    PRIVATE_APPLICATION_TYPES, 
+    COLLECTOR_APPLICATION_TYPES, 
+    PLAN_FUND_APPLICATION_TYPES, 
+    GW_INVESTIGATION_TYPES, 
+    LOGGING_PUMPING_TEST_TYPES,
+    INVESTIGATION_GOVT_TYPES,
+    INVESTIGATION_PRIVATE_TYPES,
+    INVESTIGATION_COMPLAINT_TYPES
+} from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,14 +72,24 @@ const processDataForForm = (data: any): any => {
   return transform(data);
 };
 
-const getFormDefaults = (): DataEntryFormData => ({
-  fileNo: "", applicantName: "", phoneNo: "", secondaryMobileNo: "",
-  applicationType: undefined, constituency: undefined,
-  estimateAmount: undefined, assignedSupervisorUids: [],
-  remittanceDetails: [], totalRemittance: 0, 
-  siteDetails: [], paymentDetails: [], 
-  totalPaymentAllEntries: 0, overallBalance: 0,
-  fileStatus: undefined, remarks: "",
+const getFormDefaults = (workType: string | null): DataEntryFormData => ({
+  fileNo: "", 
+  applicantName: "", 
+  phoneNo: "", 
+  secondaryMobileNo: "",
+  category: workType === 'gwInvestigation' ? 'Govt' : undefined,
+  applicationType: undefined, 
+  constituency: undefined,
+  estimateAmount: undefined, 
+  assignedSupervisorUids: [],
+  remittanceDetails: [], 
+  totalRemittance: 0, 
+  siteDetails: [], 
+  paymentDetails: [], 
+  totalPaymentAllEntries: 0, 
+  overallBalance: 0,
+  fileStatus: 'File Under Process', 
+  remarks: "",
 });
 
 interface PageData {
@@ -128,7 +149,7 @@ export default function DataEntryPage() {
         if (!user) { setErrorState("You must be logged in."); setDataLoading(false); return; }
         try {
             const allUsersResult = (user.role === 'editor') ? await fetchAllUsers() : [];
-            if (!fileIdToEdit) { setPageData({ initialData: getFormDefaults(), allUsers: allUsersResult }); return; }
+            if (!fileIdToEdit) { setPageData({ initialData: getFormDefaults(workTypeContext), allUsers: allUsersResult }); return; }
             const originalEntry = await fetchEntryForEditing(fileIdToEdit);
             if (!originalEntry) { setErrorState("Could not find the requested file."); return; }
             if (user.role === 'supervisor' && user.uid) {
@@ -150,7 +171,7 @@ export default function DataEntryPage() {
         } catch (error) { setErrorState("Could not load all required data."); } finally { setDataLoading(false); }
     };
     loadAllData();
-  }, [fileIdToEdit, approveUpdateId, user, authIsLoading, fetchAllUsers, fetchEntryForEditing, getPendingUpdateById, toast, isApprovingUpdate, hasPendingUpdateForFile]);
+  }, [fileIdToEdit, approveUpdateId, user, authIsLoading, fetchAllUsers, fetchEntryForEditing, getPendingUpdateById, toast, isApprovingUpdate, hasPendingUpdateForFile, workTypeContext]);
 
   useEffect(() => {
     let title = "Loading...";
@@ -186,7 +207,8 @@ export default function DataEntryPage() {
   if (authIsLoading || dataLoading) return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (errorState) return <div className="flex h-screen items-center justify-center text-center p-6"><Card><CardContent className="pt-6"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-xl font-bold">{errorState}</h1><Button className="mt-4" variant="outline" onClick={() => router.back()}>Go Back</Button></CardContent></Card></div>;
 
-  const isInvestigationType = workTypeContext === 'gwInvestigation' || workTypeContext === 'loggingPumpingTest' || (pageData?.initialData.applicationType && [...GW_INVESTIGATION_TYPES, ...LOGGING_PUMPING_TEST_TYPES].includes(pageData.initialData.applicationType as any));
+  const investigationTypes = [...GW_INVESTIGATION_TYPES, ...LOGGING_PUMPING_TEST_TYPES, ...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES];
+  const isInvestigationType = workTypeContext === 'gwInvestigation' || workTypeContext === 'loggingPumpingTest' || (pageData?.initialData.applicationType && investigationTypes.includes(pageData.initialData.applicationType as any));
 
   return (
     <div className="space-y-6">
