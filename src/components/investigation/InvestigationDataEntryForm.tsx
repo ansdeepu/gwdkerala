@@ -546,6 +546,11 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
+                                    </div>
+
+                                    <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." /></FormControl><FormMessage /></FormItem>} />
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <FormField name="vesRequired" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>VES Required</FormLabel>
@@ -581,8 +586,6 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                             <FormField name="geophysicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the VES..." /></FormControl><FormMessage /></FormItem>} />
                                         </div>
                                     )}
-
-                                    <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." /></FormControl><FormMessage /></FormItem>} />
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <FormField name="feasibility" control={control} render={({ field }) => (
