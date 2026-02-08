@@ -8,11 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import type { SiteWorkStatus, ApplicationType } from '@/lib/schemas';
 import { parseISO, isValid, format } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { INVESTIGATION_GOVT_TYPES, INVESTIGATION_PRIVATE_TYPES, INVESTIGATION_COMPLAINT_TYPES } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,20 +34,50 @@ export default function GWInvestigationPage() {
   const { user } = useAuth();
   const { fileEntries, isLoading } = useFileEntries();
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("Govt");
   const router = useRouter();
   const { setIsNavigating } = usePageNavigation();
   
   useEffect(() => { setHeader('GW Investigation', 'List of all Ground Water Investigation files.'); }, [setHeader]);
 
-  const { investigationEntries, lastCreatedDate } = useMemo(() => {
-    let entries = fileEntries.filter(entry => entry.applicationType === 'GW_Investigation');
+  const allInvestigationEntries = useMemo(() => {
+    let entries = fileEntries.filter(entry => 
+        entry.applicationType === 'GW_Investigation' || 
+        (entry as any).category ||
+        INVESTIGATION_GOVT_TYPES.includes(entry.applicationType as any) ||
+        INVESTIGATION_PRIVATE_TYPES.includes(entry.applicationType as any) ||
+        INVESTIGATION_COMPLAINT_TYPES.includes(entry.applicationType as any)
+    );
     entries.sort((a, b) => (safeParseDate(b.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0) - (safeParseDate(a.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0));
-    const lastCreated = entries.reduce((latest, entry) => {
+    return entries;
+  }, [fileEntries]);
+
+  const { investigationEntries, counts, lastCreatedDate } = useMemo(() => {
+    const govt = allInvestigationEntries.filter(e => (e as any).category === 'Govt');
+    const pvt = allInvestigationEntries.filter(e => (e as any).category === 'Private');
+    const complaints = allInvestigationEntries.filter(e => (e as any).category === 'Complaints');
+    const other = allInvestigationEntries.filter(e => 
+        !(e as any).category && 
+        !INVESTIGATION_PRIVATE_TYPES.includes(e.applicationType as any) && 
+        !INVESTIGATION_COMPLAINT_TYPES.includes(e.applicationType as any)
+    );
+
+    let filtered = govt;
+    if (activeTab === 'Private') filtered = pvt;
+    if (activeTab === 'Complaints') filtered = complaints;
+    if (activeTab === 'Govt') filtered = [...govt, ...other];
+
+    const lastCreated = allInvestigationEntries.reduce((latest, entry) => {
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
         return (createdAt && (!latest || createdAt > latest)) ? createdAt : latest;
     }, null as Date | null);
-    return { investigationEntries: entries, lastCreatedDate: lastCreated };
-  }, [fileEntries]);
+
+    return { 
+        investigationEntries: filtered, 
+        counts: { Govt: govt.length + other.length, Private: pvt.length, Complaints: complaints.length },
+        lastCreatedDate: lastCreated 
+    };
+  }, [allInvestigationEntries, activeTab]);
   
   const filteredEntries = useMemo(() => {
     if (!searchTerm) return investigationEntries;
@@ -55,7 +87,37 @@ export default function GWInvestigationPage() {
 
   return (
     <div className="space-y-6">
-       <Card><CardContent className="p-4 space-y-4"><div className="flex flex-col sm:flex-row items-center justify-between gap-4"><div className="relative flex-grow w-full"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" /><Input placeholder="Search investigations..." className="w-full pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div><div className="flex items-center gap-4 w-full sm:w-auto">{lastCreatedDate && (<div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap"><Clock className="h-3.5 w-3.5"/>Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy')}</span></div>)}{user?.role === 'editor' && (<Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=gwInvestigation'); }}><FilePlus2 className="mr-2 h-5 w-5" /> New File</Button>)}</div></div></CardContent></Card>
+       <Card>
+         <CardContent className="p-4 space-y-4">
+           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+             <div className="relative flex-grow w-full">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+               <Input placeholder="Search investigations..." className="w-full pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+             </div>
+             <div className="flex items-center gap-4 w-full sm:w-auto">
+               {lastCreatedDate && (
+                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                   <Clock className="h-3.5 w-3.5"/>Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy')}</span>
+                 </div>
+               )}
+               {user?.role === 'editor' && (
+                 <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=gwInvestigation'); }}>
+                   <FilePlus2 className="mr-2 h-5 w-5" /> New File
+                 </Button>
+               )}
+             </div>
+           </div>
+           
+           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full pt-4 border-t">
+             <TabsList className="grid w-full grid-cols-3 sm:w-[450px]">
+               <TabsTrigger value="Govt">Govt <Badge variant="secondary" className="ml-2">{counts.Govt}</Badge></TabsTrigger>
+               <TabsTrigger value="Private">Private <Badge variant="secondary" className="ml-2">{counts.Private}</Badge></TabsTrigger>
+               <TabsTrigger value="Complaints">Complaints <Badge variant="secondary" className="ml-2">{counts.Complaints}</Badge></TabsTrigger>
+             </TabsList>
+           </Tabs>
+         </CardContent>
+       </Card>
+       
       <InvestigationTable fileEntries={filteredEntries} isLoading={isLoading} searchActive={!!searchTerm} totalEntries={filteredEntries.length} />
     </div>
   );

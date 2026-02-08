@@ -48,6 +48,22 @@ export const PLAN_FUND_APPLICATION_TYPES = ["GWBDWS"] as const;
 export const GW_INVESTIGATION_TYPES = ["GW_Investigation"] as const;
 export const LOGGING_PUMPING_TEST_TYPES = ["Logging_Pumping_Test"] as const;
 
+export const INVESTIGATION_GOVT_TYPES = [
+  "Government Institution", "Government Water Authority", "Government Infrastructure", 
+  "Government Industry", "Government Others", "Government PMKSY", "MPLAD", "MLASDF", 
+  "MLA Asset development Fund", "Collector DRW", "Collector SC/ST", 
+  "Collector ARWSS", "Collector PMKSY", "Collector Others", "LSGD", "MGNRES", "Others", "GWBDWS", "ARS"
+] as const;
+
+export const INVESTIGATION_PRIVATE_TYPES = [
+  "Private Domestic", "Private Irrigation", "Private Institution", "Private Infra structure", "Private Industry"
+] as const;
+
+export const INVESTIGATION_COMPLAINT_TYPES = [
+  "Complaints Illegal Well Construction", "Complaints Groundwater extraction without NOC", 
+  "Complaints Groundwater Pollution", "Complaints Chief Minister’s Grievance Redressal Cell", "Complaints Others"
+] as const;
+
 export const applicationTypeOptions = [
   ...PRIVATE_APPLICATION_TYPES,
   ...PUBLIC_DEPOSIT_APPLICATION_TYPES,
@@ -55,6 +71,9 @@ export const applicationTypeOptions = [
   ...PLAN_FUND_APPLICATION_TYPES,
   ...GW_INVESTIGATION_TYPES,
   ...LOGGING_PUMPING_TEST_TYPES,
+  ...INVESTIGATION_GOVT_TYPES,
+  ...INVESTIGATION_PRIVATE_TYPES,
+  ...INVESTIGATION_COMPLAINT_TYPES,
 ] as const;
 export type ApplicationType = typeof applicationTypeOptions[number];
 
@@ -200,6 +219,7 @@ export const sitePurposeOptions = [
   "HPS",
   "HPR",
   "ARS",
+  "GW Investigation",
 ] as const;
 export type SitePurpose = typeof sitePurposeOptions[number];
 
@@ -330,6 +350,7 @@ export const DataEntrySchema = z.object({
   applicantName: z.string().min(1, "Name & Address of Institution / Applicant is required."),
   phoneNo: z.string().optional(),
   secondaryMobileNo: z.string().optional(),
+  category: z.enum(['Govt', 'Private', 'Complaints']).optional(),
   applicationType: z.enum(applicationTypeOptions).optional(),
   constituency: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(constituencyOptions).optional()),
   estimateAmount: optionalNumber("Estimate Amount must be a valid number."),
