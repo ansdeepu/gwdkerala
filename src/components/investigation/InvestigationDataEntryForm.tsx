@@ -53,8 +53,10 @@ import {
   INVESTIGATION_PRIVATE_TYPES,
   INVESTIGATION_COMPLAINT_TYPES,
   LOGGING_PUMPING_TEST_TYPES,
+  GW_INVESTIGATION_TYPES,
   type Bidder,
   typeOfWellOptions,
+  type Designation,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -199,7 +201,7 @@ const toDateOrNull = (value: any): Date | null => {
 const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOptions, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, formOptions: readonly ApplicationType[] | ApplicationType[], workTypeContext: string | null }) => {
     const [data, setData] = useState({
         ...(initialData || {}),
-        category: initialData?.category || 'Govt'
+        category: initialData?.category || undefined
     });
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; }>({});
 
@@ -455,13 +457,13 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
     }, [setValue, allLsgConstituencyMaps, trigger]);
 
     const hydroStaff = useMemo(() => {
-        const hydroDesignations = ["Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant"];
-        return allStaffMembers.filter(s => hydroDesignations.includes(s.designation as string) && s.status === 'Active');
+        const hydroDesignations: Designation[] = ["Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant"];
+        return allStaffMembers.filter(s => hydroDesignations.includes(s.designation as Designation) && s.status === 'Active');
     }, [allStaffMembers]);
 
     const geophysStaff = useMemo(() => {
-        const geophysDesignations = ["Geophysicist", "Junior Geophysicist", "Geophysical Assistant"];
-        return allStaffMembers.filter(s => geophysDesignations.includes(s.designation as string) && s.status === 'Active');
+        const geophysDesignations: Designation[] = ["Geophysicist", "Junior Geophysicist", "Geophysical Assistant"];
+        return allStaffMembers.filter(s => geophysDesignations.includes(s.designation as Designation) && s.status === 'Active');
     }, [allStaffMembers]);
 
     return (
@@ -533,7 +535,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField name="dateOfInvestigation" control={control} render={({ field }) => <FormItem><FormLabel>Date of Investigation</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="dateOfInvestigation" control={control} render={({ field }) => <FormItem><FormLabel>Date of Investigation</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
                                         <FormField name="typeOfWell" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Type of Well</FormLabel>
@@ -549,11 +551,24 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                     </div>
 
                                     <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." /></FormControl><FormMessage /></FormItem>} />
-
+                                    
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <FormField name="vesRequired" control={control} render={({ field }) => (
+                                         <FormField name="vesRequired" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>VES Required</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="Yes">Yes</SelectItem>
+                                                        <SelectItem value="No">No</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="feasibility" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Feasibility</FormLabel>
                                                 <Select onValueChange={field.onChange} value={field.value}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
                                                     <SelectContent>
@@ -581,27 +596,11 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                                         <FormMessage />
                                                     </FormItem>
                                                 )} />
-                                                <FormField name="vesDate" control={control} render={({ field }) => <FormItem><FormLabel>Date of VES conducted</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="vesDate" control={control} render={({ field }) => <FormItem><FormLabel>Date of VES conducted</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
                                             </div>
                                             <FormField name="geophysicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the VES..." /></FormControl><FormMessage /></FormItem>} />
                                         </div>
                                     )}
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <FormField name="feasibility" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Feasibility</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="Yes">Yes</SelectItem>
-                                                        <SelectItem value="No">No</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </div>
 
                                     {watchedTypeOfWell && watchedFeasibility === "Yes" && (
                                         <div className="space-y-4 pt-4 border-t">
@@ -680,7 +679,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const { createPendingUpdate } = usePendingUpdates();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { allLsgConstituencyMaps } = useDataStore();
+  const { allLsgConstituencyMaps, allE_tenders } = useDataStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
