@@ -183,6 +183,7 @@ export const siteWorkStatusOptions = [
   "Payment Completed",
   "Utilization Certificate Issued",
   "Pending", // Added for Investigation
+  "VES Pending",
 ] as const;
 export type SiteWorkStatus = typeof siteWorkStatusOptions[number];
 

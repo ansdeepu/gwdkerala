@@ -112,6 +112,7 @@ export default function DataEntryPage() {
   const { getPendingUpdateById, hasPendingUpdateForFile } = usePendingUpdates();
   const { toast } = useToast();
   const { setHeader } = usePageHeader();
+  const { allLsgConstituencyMaps, allE_tenders } = useDataStore();
   
   const [pageData, setPageData] = useState<PageData | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
@@ -152,7 +153,7 @@ export default function DataEntryPage() {
             if (!fileIdToEdit) { 
                 let defaultData = getFormDefaults(workTypeContext);
                 if (workTypeContext === 'gwInvestigation') {
-                    defaultData.category = undefined; 
+                    defaultData.category = 'Govt'; 
                 }
                 setPageData({ initialData: defaultData, allUsers: allUsersResult }); 
                 return; 
@@ -182,7 +183,7 @@ export default function DataEntryPage() {
 
   useEffect(() => {
     let title = "Loading...";
-    let description = "Loading entry details...";
+    let description = "";
     const isCreatingNew = !fileIdToEdit;
     if (!dataLoading) {
         if (errorState) { title = "Error"; description = errorState; } 
@@ -233,6 +234,7 @@ export default function DataEntryPage() {
                     returnPath={returnPath}
                     pageToReturnTo={pageToReturnTo}
                     isFormDisabled={isFormDisabledForSupervisor}
+                    allLsgConstituencyMaps={allLsgConstituencyMaps}
                 />
              ) : (
                 <DataEntryFormComponent
