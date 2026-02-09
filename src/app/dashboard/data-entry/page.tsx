@@ -112,7 +112,7 @@ export default function DataEntryPage() {
   const { getPendingUpdateById, hasPendingUpdateForFile } = usePendingUpdates();
   const { toast } = useToast();
   const { setHeader } = usePageHeader();
-  const { allLsgConstituencyMaps, allE_tenders } = useDataStore();
+  const { allLsgConstituencyMaps, allE_tenders, allStaffMembers } = useDataStore();
   
   const [pageData, setPageData] = useState<PageData | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
@@ -152,9 +152,6 @@ export default function DataEntryPage() {
             const allUsersResult = (user.role === 'editor') ? await fetchAllUsers() : [];
             if (!fileIdToEdit) { 
                 let defaultData = getFormDefaults(workTypeContext);
-                if (workTypeContext === 'gwInvestigation') {
-                    defaultData.category = 'Govt'; 
-                }
                 setPageData({ initialData: defaultData, allUsers: allUsersResult }); 
                 return; 
             }
@@ -228,7 +225,7 @@ export default function DataEntryPage() {
                 <InvestigationDataEntryFormComponent
                     fileNoToEdit={fileNoForHeader ?? undefined}
                     initialData={pageData.initialData}
-                    supervisorList={supervisorList}
+                    allStaffMembers={allStaffMembers}
                     userRole={effectiveUserRole}
                     workTypeContext={workTypeContext}
                     returnPath={returnPath}
@@ -248,7 +245,7 @@ export default function DataEntryPage() {
                     isFormDisabled={isFormDisabledForSupervisor}
                 />
              )
-          ) : <div className="flex h-64 items-center justify-center"><p className="text-muted-foreground">Form data could not be loaded.</p></div>}
+          ) : <div className="flex h-64 items-center justify-center"><p className="text-muted-foreground">Loading entry details...</p></div>}
         </CardContent>
       </Card>
     </div>

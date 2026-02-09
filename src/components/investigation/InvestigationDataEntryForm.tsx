@@ -169,7 +169,7 @@ const DetailRow = ({ label, value, className }: { label: string; value: any, cla
 interface DataEntryFormProps {
     fileNoToEdit?: string;
     initialData: DataEntryFormData;
-    supervisorList: (StaffMember & { uid: string; name: string })[];
+    allStaffMembers: StaffMember[];
     userRole?: UserRole;
     workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | 'gwInvestigation' | 'loggingPumpingTest' | null;
     returnPath: string; 
@@ -186,7 +186,7 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
 // Dialog Content Components
 const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOptions, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, formOptions: readonly ApplicationType[] | ApplicationType[], workTypeContext: string | null }) => {
     const [data, setData] = useState({
-        ...(initialData || {}),
+        ...initialData,
         category: initialData?.category || undefined
     });
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; }>({});
@@ -436,12 +436,12 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
 
     const hydroStaff = useMemo(() => {
         const hydroDesignations: Designation[] = ["Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant"];
-        return allStaffMembers.filter(s => hydroDesignations.includes(s.designation as Designation) && s.status === 'Active');
+        return allStaffMembers.filter(s => s.designation && hydroDesignations.includes(s.designation) && s.status === 'Active');
     }, [allStaffMembers]);
 
     const geophysStaff = useMemo(() => {
         const geophysDesignations: Designation[] = ["Geophysicist", "Junior Geophysicist", "Geophysical Assistant"];
-        return allStaffMembers.filter(s => geophysDesignations.includes(s.designation as Designation) && s.status === 'Active');
+        return allStaffMembers.filter(s => s.designation && geophysDesignations.includes(s.designation) && s.status === 'Active');
     }, [allStaffMembers]);
 
     return (
@@ -645,7 +645,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
     );
 };
 
-export default function InvestigationDataEntryFormComponent({ fileNoToEdit, initialData, supervisorList, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps }: DataEntryFormProps) {
+export default function InvestigationDataEntryFormComponent({ fileNoToEdit, initialData, allStaffMembers, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps }: DataEntryFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileIdToEdit = searchParams.get("id");
@@ -655,7 +655,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const { createPendingUpdate } = usePendingUpdates();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { allE_tenders, allStaffMembers } = useDataStore();
+  const { allE_tenders } = useDataStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
@@ -781,10 +781,36 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={dialogState.isView || isViewer || isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={supervisorList} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={dialogState.isView || isViewer} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>
     </FormProvider>
   );
 }
+
+const ReorderSiteDialog = ({ fromIndex, siteCount, onConfirm, onCancel }: { fromIndex: number, siteCount: number, onConfirm: (data: any) => void, onCancel: () => void }) => {
+    const [toPosition, setToPosition] = useState(fromIndex + 1);
+
+    const handleConfirm = () => {
+        const toIndex = toPosition - 1;
+        if (toIndex >= 0 && toIndex < siteCount) {
+            onConfirm({ from: fromIndex, to: toIndex });
+        } else {
+            alert("Invalid position.");
+        }
+    };
+    return (
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()}>
+            <DialogHeader className="p-6 pb-4"><DialogTitle>Move Site</DialogTitle></DialogHeader>
+            <div className="p-6 pt-0 space-y-4">
+                <Label>New Position (1 to {siteCount})</Label>
+                <Input type="number" min={1} max={siteCount} value={toPosition} onChange={(e) => setToPosition(parseInt(e.target.value))} />
+            </div>
+            <DialogFooter className="p-6 pt-4">
+                <Button variant="outline" onClick={onCancel}>Cancel</Button>
+                <Button onClick={handleConfirm}>Move</Button>
+            </DialogFooter>
+        </DialogContent>
+    );
+};
