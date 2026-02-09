@@ -347,7 +347,11 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel }: { initialDat
     return (
         <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(handleConfirmSubmit)}
+              onSubmit={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                form.handleSubmit(handleConfirmSubmit)(e);
+              }}
                className="flex flex-col h-full"
             >
                 <DialogHeader className="p-6 pb-4 shrink-0">
@@ -399,19 +403,20 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
       },
     });
     
-    const { control, setValue, trigger, watch, handleSubmit, getValues } = form;
+    const { control, setValue, trigger, handleSubmit, getValues } = form;
+
+    const watchedTypeOfWell = useWatch({ control, name: 'typeOfWell' });
+    const watchedVesRequired = useWatch({ control, name: 'vesRequired' });
+    const watchedWorkStatus = useWatch({ control, name: 'workStatus' });
+    const watchedFeasibility = useWatch({ control, name: 'feasibility' });
+    const watchedLsg = useWatch({ control, name: "localSelfGovt" });
+    const isCompletionDateRequired = watchedWorkStatus === 'Completed';
+
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
         onConfirm(data);
     };
     
-    const watchedTypeOfWell = watch('typeOfWell');
-    const watchedVesRequired = watch('vesRequired');
-    const watchedWorkStatus = watch('workStatus');
-    const watchedFeasibility = watch('feasibility');
-    const isCompletionDateRequired = watchedWorkStatus === 'Completed';
-
-    const watchedLsg = watch("localSelfGovt");
     const sortedLsgMaps = useMemo(() => {
         return [...allLsgConstituencyMaps].sort((a, b) => a.name.localeCompare(b.name));
     }, [allLsgConstituencyMaps]);
@@ -762,11 +767,11 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   
   const investigationFileStatusOptions = [
     "File Under Process",
-    "Fully Completed",
-    "Partially Completed",
     "Completed Except Disputed",
     "Partially Completed Except Disputed",
     "Fully Disputed",
+    "Fully Completed",
+    "Partially Completed",
     "File Closed",
   ] as const;
 
