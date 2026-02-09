@@ -12,8 +12,8 @@ type PageHeaderContextType = {
 const PageHeaderContext = createContext<PageHeaderContextType | undefined>(undefined);
 
 export function PageHeaderProvider({ children }: { children: ReactNode }) {
-  const [title, setTitle] = useState("Loading...");
-  const [description, setDescription] = useState("Please wait while the page content is loading.");
+  const [title, setTitle] = useState("Dashboard");
+  const [description, setDescription] = useState("");
 
   const setHeader = useCallback((newTitle: string, newDescription: string) => {
     setTitle(newTitle);
