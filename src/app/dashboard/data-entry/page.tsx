@@ -149,7 +149,14 @@ export default function DataEntryPage() {
         if (!user) { setErrorState("You must be logged in."); setDataLoading(false); return; }
         try {
             const allUsersResult = (user.role === 'editor') ? await fetchAllUsers() : [];
-            if (!fileIdToEdit) { setPageData({ initialData: getFormDefaults(workTypeContext), allUsers: allUsersResult }); return; }
+            if (!fileIdToEdit) { 
+                let defaultData = getFormDefaults(workTypeContext);
+                if (workTypeContext === 'gwInvestigation') {
+                    defaultData.category = undefined; 
+                }
+                setPageData({ initialData: defaultData, allUsers: allUsersResult }); 
+                return; 
+            }
             const originalEntry = await fetchEntryForEditing(fileIdToEdit);
             if (!originalEntry) { setErrorState("Could not find the requested file."); return; }
             if (user.role === 'supervisor' && user.uid) {
@@ -175,7 +182,7 @@ export default function DataEntryPage() {
 
   useEffect(() => {
     let title = "Loading...";
-    let description = "Please wait...";
+    let description = "Loading entry details...";
     const isCreatingNew = !fileIdToEdit;
     if (!dataLoading) {
         if (errorState) { title = "Error"; description = errorState; } 
