@@ -337,7 +337,7 @@ export const SiteDetailSchema = z.object({
   // Investigation specific fields
   nameOfInvestigator: z.string().optional().nullable(),
   dateOfInvestigation: nativeDateSchema,
-  typeOfWell: z.enum(typeOfWellOptions).optional(),
+  typeOfWell: z.enum(typeOfWellOptions, { required_error: "Type of Well is required." }),
   vesRequired: z.enum(["Yes", "No"]).optional(),
   vesInvestigator: z.string().optional().nullable(),
   vesDate: nativeDateSchema,
