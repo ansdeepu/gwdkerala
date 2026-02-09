@@ -11,7 +11,7 @@ const nextConfig = {
     ignoreDuringBuilds: false,
   },
   allowedDevOrigins: [
-    "https://6000-firebase-gwd-kollam1812252-1766645722275.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev",
+    "https://6000-firebase-gwd-kerala1-1770522254979.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev",
   ],
   images: {
     remotePatterns: [
