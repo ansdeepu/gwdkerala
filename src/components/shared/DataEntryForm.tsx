@@ -53,8 +53,6 @@ import {
   PRIVATE_APPLICATION_TYPES,
   COLLECTOR_APPLICATION_TYPES,
   PLAN_FUND_APPLICATION_TYPES,
-  GW_INVESTIGATION_TYPES,
-  LOGGING_PUMPING_TEST_TYPES,
   type Bidder,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
@@ -258,7 +256,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                     <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType}>
                         <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                         <SelectContent className="max-h-80">
-                            {formOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o] || o}</SelectItem>)}
+                            {formOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
                         </SelectContent>
                     </Select>
                      {errors.applicationType && <p className="text-xs text-destructive mt-1">{errors.applicationType}</p>}
@@ -285,12 +283,11 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
         onConfirm(data);
     };
     
-    // Filtered options for the Account dropdown
     const availableRemittanceAccounts = useMemo(() => {
         if (isDeferredFunding) {
-            return remittedAccountOptions.filter(o => o === "Plan Fund"); // Or whatever is appropriate
+            return remittedAccountOptions.filter(o => o === "Plan Fund");
         }
-        return remittedAccountOptions.filter(o => o !== "Plan Fund");
+        return remittedAccountOptions.filter(o => o !== "Plan Fund" && o !== "Revenue Head");
     }, [isDeferredFunding]);
 
     return (
@@ -324,7 +321,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
     );
 };
 
-const PaymentDialogContent = ({ initialData, onConfirm, onCancel }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void }) => {
+const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean }) => {
     const form = useForm<PaymentDetailFormData>({
       resolver: zodResolver(PaymentDetailSchema),
       defaultValues: {
@@ -337,6 +334,13 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel }: { initialDat
     const handleConfirmSubmit = (data: PaymentDetailFormData) => {
         onConfirm(data);
     };
+
+    const availablePaymentAccounts = useMemo(() => {
+        if (isDeferredFunding) {
+            return paymentAccountOptions.filter(o => o === "Plan Fund");
+        }
+        return paymentAccountOptions.filter(o => o !== "Plan Fund");
+    }, [isDeferredFunding]);
 
     return (
         <Form {...form}>
@@ -356,7 +360,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel }: { initialDat
                       <div className="space-y-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{paymentAccountOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                           </div>
                           <Separator/>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -1176,7 +1180,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} supervisorList={supervisorList} isReadOnly={dialogState.isView || isViewer} isSupervisor={isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders}/></DialogContent>
         </Dialog>
          <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}>
-            <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent>
+            <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent>
         </Dialog>
         {dialogState.type === 'reorderSite' && dialogState.data && (
             <Dialog open={true} onOpenChange={closeDialog}>
