@@ -287,7 +287,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
         if (isDeferredFunding) {
             return remittedAccountOptions.filter(o => o === "Plan Fund");
         }
-        return remittedAccountOptions.filter(o => o !== "Plan Fund" && o !== "Revenue Head");
+        return remittedAccountOptions.filter(o => o !== "Plan Fund");
     }, [isDeferredFunding]);
 
     return (
@@ -744,12 +744,19 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const isSupervisor = userRole === 'supervisor';
   const isViewer = userRole === 'viewer';
   
-  const form = useForm<DataEntryFormData>({
-    resolver: zodResolver(DataEntrySchema),
-    defaultValues: initialData,
-  });
-
+  const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
   const { control, handleSubmit, setValue, getValues, watch, trigger } = form;
+
+  const isDeferredFunding = useMemo(() => {
+    const appType = getValues('applicationType');
+    if (fileIdToEdit && appType) {
+        return PLAN_FUND_APPLICATION_TYPES.includes(appType as any) || COLLECTOR_APPLICATION_TYPES.includes(appType as any);
+    }
+    return workTypeContext === 'planFund' || workTypeContext === 'collector';
+  }, [workTypeContext, fileIdToEdit, getValues]);
+
+
+  const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction Details" : "2. Remittance Details";
 
   const getApplicationTypeOptions = () => {
     switch (workTypeContext) {
@@ -772,16 +779,6 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         }
     }, [fileIdToEdit, applicationTypeOptionsForForm, setValue]);
 
-  const isDeferredFunding = useMemo(() => {
-    const appType = getValues('applicationType');
-    if (fileIdToEdit && appType) {
-        return PLAN_FUND_APPLICATION_TYPES.includes(appType as any) || COLLECTOR_APPLICATION_TYPES.includes(appType as any);
-    }
-    return workTypeContext === 'planFund' || workTypeContext === 'collector';
-  }, [workTypeContext, fileIdToEdit, getValues]);
-
-
-  const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction Details" : "2. Remittance Details";
 
 
   const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
@@ -793,12 +790,20 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const watchedSiteDetails = watch("siteDetails");
 
   useEffect(() => {
-    const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => sum + (Number(item.amountRemitted) || 0), 0) || 0;
-    setValue("totalRemittance", totalRemittance);
-    
+    // Calculate the total spendable remittance, excluding direct-to-government funds
+    const spendableRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
+        if (item.remittedAccount !== 'Revenue Head') {
+            return sum + (Number(item.amountRemitted) || 0);
+        }
+        return sum;
+    }, 0) || 0;
+    setValue("totalRemittance", spendableRemittance);
+
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
-    setValue("overallBalance", totalRemittance - totalPayment);
+    
+    // The balance is calculated from the spendable remittance
+    setValue("overallBalance", spendableRemittance - totalPayment);
     
     // Update file-level assignedSupervisorUids
     const supervisorUids = new Set<string>();
@@ -892,10 +897,30 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         setValue("secondaryMobileNo", data.secondaryMobileNo, { shouldDirty: true });
         setValue("applicationType", data.applicationType, { shouldDirty: true });
     } else if (type === 'remittance') {
+        const remittanceData = data as RemittanceDetailFormData;
         if (originalData.index !== undefined) {
-            updateRemittance(originalData.index, data);
+            updateRemittance(originalData.index, remittanceData);
         } else {
-            appendRemittance(data);
+            appendRemittance(remittanceData);
+        }
+        if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
+            const newPaymentEntry: PaymentDetailFormData = {
+                dateOfPayment: remittanceData.dateOfRemittance,
+                paymentAccount: "SBI",
+                revenueHead: remittanceData.amountRemitted,
+                contractorsPayment: undefined,
+                gst: undefined,
+                incomeTax: undefined,
+                kbcwb: undefined,
+                refundToParty: undefined,
+                totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
+                paymentRemarks: "Auto-entry for remittance to Revenue Head.",
+            };
+            appendPayment(newPaymentEntry);
+            toast({
+                title: "Payment Entry Added",
+                description: "An automatic payment entry was created for the Revenue Head remittance.",
+            });
         }
     } else if (type === 'payment') {
         const paymentData = { ...data, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal(data) };
@@ -1001,16 +1026,12 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                 </TableRow>
                             )) : <TableRow><TableCell colSpan={isEditor && !isFormDisabled ? (!isDeferredFunding ? 5 : 4) : (!isDeferredFunding ? 4 : 3)} className="text-center h-24">No details added.</TableCell></TableRow>}
                         </TableBody>
-                        <TableFooterComponent>
-                            <TableRow>
-                                <TableCell colSpan={isEditor && !isFormDisabled ? (!isDeferredFunding ? 4 : 3) : (!isDeferredFunding ? 3 : 2)} className="text-right font-bold">
+                        <TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? (!isDeferredFunding ? 4 : 3) : (!isDeferredFunding ? 3 : 2)} className="text-right font-bold">
                                     Total Remittance
                                 </TableCell>
                                 <TableCell className="font-bold">
                                     ₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}
-                                </TableCell>
-                            </TableRow>
-                        </TableFooterComponent>
+                                </TableCell></TableRow></TableFooterComponent>
                     </Table>
                 </div>
             </CardContent>

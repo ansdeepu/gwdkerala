@@ -312,13 +312,17 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
         if (isDeferredFunding) {
             return remittedAccountOptions.filter(o => o === "Plan Fund");
         }
-        return remittedAccountOptions.filter(o => o !== "Plan Fund");
+        return remittedAccountOptions;
     }, [isDeferredFunding]);
 
     return (
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(handleConfirmSubmit)}
+          onSubmit={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            form.handleSubmit(handleConfirmSubmit)(e);
+          }}
         >
             <DialogHeader>
                 <DialogTitle>{isDeferredFunding ? 'Administrative Sanction Details' : 'Remittance Details'}</DialogTitle>
@@ -711,20 +715,12 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment } = useFieldArray({ control, name: "paymentDetails" });
 
   useEffect(() => {
-    // Calculate the total spendable remittance, excluding direct-to-government funds
-    const spendableRemittance = watch("remittanceDetails")?.reduce((sum, item) => {
-        if (item.remittedAccount !== 'Revenue Head') {
-            return sum + (Number(item.amountRemitted) || 0);
-        }
-        return sum;
-    }, 0) || 0;
-    setValue("totalRemittance", spendableRemittance);
-
+    const totalRemittance = watch("remittanceDetails")?.reduce((sum, item) => sum + (Number(item.amountRemitted) || 0), 0) || 0;
+    setValue("totalRemittance", totalRemittance);
+    
     const totalPayment = watch("paymentDetails")?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
-    
-    // The balance is calculated from the spendable remittance
-    setValue("overallBalance", spendableRemittance - totalPayment);
+    setValue("overallBalance", totalRemittance - totalPayment);
     
     const supervisorUids = new Set<string>();
     watch("siteDetails")?.forEach(site => { if (site.supervisorUid) supervisorUids.add(site.supervisorUid); });
@@ -768,7 +764,31 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         setValue("applicationType", data.applicationType, { shouldDirty: true });
         setValue("category", data.category, { shouldDirty: true });
     } else if (type === 'remittance') {
-        if (originalData.index !== undefined) updateRemittance(originalData.index, data); else appendRemittance(data);
+        const remittanceData = data as RemittanceDetailFormData;
+        if (originalData.index !== undefined) {
+            updateRemittance(originalData.index, remittanceData);
+        } else {
+            appendRemittance(remittanceData);
+        }
+        if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
+            const newPaymentEntry: PaymentDetailFormData = {
+                dateOfPayment: remittanceData.dateOfRemittance,
+                paymentAccount: "SBI",
+                revenueHead: remittanceData.amountRemitted,
+                contractorsPayment: undefined,
+                gst: undefined,
+                incomeTax: undefined,
+                kbcwb: undefined,
+                refundToParty: undefined,
+                totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
+                paymentRemarks: "Auto-entry for remittance to Revenue Head.",
+            };
+            appendPayment(newPaymentEntry);
+            toast({
+                title: "Payment Entry Added",
+                description: "An automatic payment entry was created for the Revenue Head remittance.",
+            });
+        }
     } else if (type === 'payment') {
         if (originalData.index !== undefined) {
             const existingData = getValues(`paymentDetails.${originalData.index}`);
