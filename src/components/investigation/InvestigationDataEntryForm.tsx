@@ -405,11 +405,11 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
     
     const { control, setValue, trigger, handleSubmit, getValues } = form;
 
+    const watchedLsg = useWatch({ control, name: "localSelfGovt" });
     const watchedTypeOfWell = useWatch({ control, name: 'typeOfWell' });
     const watchedVesRequired = useWatch({ control, name: 'vesRequired' });
     const watchedWorkStatus = useWatch({ control, name: 'workStatus' });
     const watchedFeasibility = useWatch({ control, name: 'feasibility' });
-    const watchedLsg = useWatch({ control, name: "localSelfGovt" });
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
 
@@ -438,6 +438,17 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
         }
         trigger('constituency');
     }, [setValue, allLsgConstituencyMaps, trigger]);
+
+    useEffect(() => {
+        if (!watchedLsg) return;
+
+        const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
+        const constituencies = map?.constituencies || [];
+        
+        if (constituencies.length === 1 && getValues("constituency") !== constituencies[0]) {
+            setValue('constituency', constituencies[0] as Constituency);
+        }
+    }, [watchedLsg, allLsgConstituencyMaps, setValue, getValues]);
 
     const hydroStaff = useMemo(() => {
         const hydroDesignations: Designation[] = ["Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant"];
