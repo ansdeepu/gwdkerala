@@ -87,7 +87,7 @@ const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameO
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
   if (!payment) return 0;
-  return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
+  return (Number(payment.revenueHead) || 0);
 };
 
 const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
@@ -342,7 +342,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
     );
 };
 
-const PaymentDialogContent = ({ initialData, onConfirm, onCancel }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void }) => {
+const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean }) => {
     const form = useForm<PaymentDetailFormData>({
       resolver: zodResolver(PaymentDetailSchema),
       defaultValues: {
@@ -359,11 +359,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel }: { initialDat
     return (
         <Form {...form}>
             <form
-              onSubmit={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                form.handleSubmit(handleConfirmSubmit)(e);
-              }}
+              onSubmit={form.handleSubmit(handleConfirmSubmit)}
                className="flex flex-col h-full"
             >
                 <DialogHeader className="p-6 pb-4 shrink-0">
@@ -711,11 +707,21 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment } = useFieldArray({ control, name: "paymentDetails" });
 
   useEffect(() => {
-    const totalRemittance = watch("remittanceDetails")?.reduce((sum, item) => sum + (Number(item.amountRemitted) || 0), 0) || 0;
-    setValue("totalRemittance", totalRemittance);
+    // Calculate the total spendable remittance, excluding direct-to-government funds
+    const spendableRemittance = watch("remittanceDetails")?.reduce((sum, item) => {
+        if (item.remittedAccount !== 'Revenue Head') {
+            return sum + (Number(item.amountRemitted) || 0);
+        }
+        return sum;
+    }, 0) || 0;
+    setValue("totalRemittance", spendableRemittance);
+
     const totalPayment = watch("paymentDetails")?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
-    setValue("overallBalance", totalRemittance - totalPayment);
+    
+    // The balance is calculated from the spendable remittance
+    setValue("overallBalance", spendableRemittance - totalPayment);
+    
     const supervisorUids = new Set<string>();
     watch("siteDetails")?.forEach(site => { if (site.supervisorUid) supervisorUids.add(site.supervisorUid); });
     setValue("assignedSupervisorUids", Array.from(supervisorUids));
@@ -800,7 +806,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={dialogState.isView || isViewer} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>
     </FormProvider>
