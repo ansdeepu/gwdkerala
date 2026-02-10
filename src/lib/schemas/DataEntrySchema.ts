@@ -266,7 +266,7 @@ const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
 export const SiteDetailSchema = z.object({
   nameOfSite: z.string().min(1, "Name of Site is required."),
   localSelfGovt: z.string().optional(),
-  constituency: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(constituencyOptions).optional()),
+  constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
   latitude: optionalNumber("Latitude must be a valid number."),
   longitude: optionalNumber("Longitude must be a valid number."),
   purpose: z.enum(sitePurposeOptions, { required_error: "Purpose is required." }).optional(),
@@ -373,7 +373,7 @@ export const DataEntrySchema = z.object({
   secondaryMobileNo: z.string().optional(),
   category: z.enum(['Govt', 'Private', 'Complaints']).optional(),
   applicationType: z.enum(applicationTypeOptions).optional(),
-  constituency: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(constituencyOptions).optional()),
+  constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
   estimateAmount: optionalNumber("Estimate Amount must be a valid number."),
   assignedSupervisorUids: z.array(z.string()).optional(),
   officeLocation: z.string().optional(),
