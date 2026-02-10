@@ -173,7 +173,7 @@ interface DataEntryFormProps {
     initialData: DataEntryFormData;
     supervisorList: (StaffMember & { uid: string; name: string })[];
     userRole?: UserRole;
-    workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | 'gwInvestigation' | 'loggingPumpingTest' | null;
+    workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | null;
     returnPath: string; // Add this prop
     pageToReturnTo: string | null;
     isFormDisabled?: boolean;
@@ -399,7 +399,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
     
     const { control, setValue, trigger, watch, handleSubmit, getValues } = form;
 
-    const watchedLsg = useWatch({ control, name: "localSelfGovt" });
+    const watchedLsg = watch("localSelfGovt");
     const watchedPurpose = watch('purpose');
     const watchedWorkStatus = watch('workStatus');
     const watchedTenderNo = watch('tenderNo');
