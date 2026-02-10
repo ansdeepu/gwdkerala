@@ -16,9 +16,6 @@ import {
     PLAN_FUND_APPLICATION_TYPES, 
     GW_INVESTIGATION_TYPES,
     LOGGING_PUMPING_TEST_TYPES,
-    INVESTIGATION_GOVT_TYPES,
-    INVESTIGATION_PRIVATE_TYPES,
-    INVESTIGATION_COMPLAINT_TYPES
 } from '@/lib/schemas';
 import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { parseISO, isValid, format } from 'date-fns';
@@ -31,13 +28,13 @@ import PaginationControls from '@/components/shared/PaginationControls';
 export const dynamic = 'force-dynamic';
 
 const Search = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
 );
 const FilePlus2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><path d="M14 2v6h6"/><path d="M3 15h6"/><path d="M6 12v6"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><path d="M14 2v6h6"/><path d="M3 15h6"/><path d="M6 12v6"/></svg>
 );
 const Clock = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 
 const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig"];
@@ -79,22 +76,31 @@ export default function FileManagerPage() {
   const canCreate = user?.role === 'editor';
   
   const { depositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
-    const allInvestigationTypes = [
-        ...GW_INVESTIGATION_TYPES,
-        ...LOGGING_PUMPING_TEST_TYPES,
-        ...INVESTIGATION_GOVT_TYPES,
-        ...INVESTIGATION_PRIVATE_TYPES,
-        ...INVESTIGATION_COMPLAINT_TYPES,
-    ];
-
     let entries = fileEntries.filter(entry => {
-        if ((entry as any).category) return false;
-        if (!entry.applicationType) return true; // Include if type is not set
-        if (PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)) return false; // Exclude private
-        if (COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)) return false; // Exclude collector
-        if (PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)) return false; // Exclude plan fund
-        if (allInvestigationTypes.includes(entry.applicationType as any)) return false; // Exclude all investigation types
-        return true; // Include all others (government, LSGD, etc.)
+        // Exclude all investigation files, which are identified by the 'category' field.
+        if ((entry as any).category) {
+            return false;
+        }
+
+        // Also exclude legacy investigation/logging types
+        if (entry.applicationType && (GW_INVESTIGATION_TYPES.includes(entry.applicationType as any) || LOGGING_PUMPING_TEST_TYPES.includes(entry.applicationType as any))) {
+            return false;
+        }
+
+        // Exclude other specific work types that have their own pages.
+        if (entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)) {
+            return false;
+        }
+        if (entry.applicationType && COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)) {
+            return false;
+        }
+        if (entry.applicationType && PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)) {
+            return false;
+        }
+        
+        // If it's none of the above, it belongs in Deposit Works.
+        // This includes entries with no applicationType or a public/government type.
+        return true;
     });
     
     // Sort all entries by the first remittance date, newest first.
