@@ -15,6 +15,7 @@ import {
   writeBatch,
   serverTimestamp,
   getDocs,
+  Timestamp,
 } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import type { DataEntryFormData, SiteWorkStatus } from '@/lib/schemas';
@@ -29,6 +30,32 @@ const PENDING_UPDATES_COLLECTION = 'pendingUpdates';
 
 // Statuses that are considered "ongoing" for a supervisor
 const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
+
+// Helper function to recursively remove `undefined` values, replacing them with `null`.
+const sanitizeDataForFirestore = (data: any): any => {
+    if (data === undefined) {
+        return null;
+    }
+    if (Array.isArray(data)) {
+        return data.map(item => sanitizeDataForFirestore(item));
+    }
+    if (data && typeof data === 'object' && !(data instanceof Date) && !(data instanceof Timestamp)) {
+        const sanitized: { [key: string]: any } = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                const value = data[key];
+                // Firestore does not support 'undefined'. Convert to 'null'.
+                if (value === undefined) {
+                    sanitized[key] = null;
+                } else {
+                    sanitized[key] = sanitizeDataForFirestore(value);
+                }
+            }
+        }
+        return sanitized;
+    }
+    return data;
+};
 
 
 export function useFileEntries() {
@@ -96,7 +123,9 @@ export function useFileEntries() {
         const payload = { ...entryData, officeLocation: user.officeLocation };
         if (payload.id) delete payload.id;
 
-        const docRef = await addDoc(collection(db, collectionPath), { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        const sanitizedPayload = sanitizeDataForFirestore({ ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+
+        const docRef = await addDoc(collection(db, collectionPath), sanitizedPayload);
         return docRef.id;
     }, [user]);
 
@@ -110,15 +139,16 @@ export function useFileEntries() {
         if (payload.id) delete payload.id;
 
         const finalPayload = { ...payload, updatedAt: serverTimestamp() };
+        const sanitizedPayload = sanitizeDataForFirestore(finalPayload);
 
         if (approveUpdateId && user.role === 'editor') {
             const batch = writeBatch(db);
-            batch.update(docRef, finalPayload);
+            batch.update(docRef, sanitizedPayload);
             const updateRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`, approveUpdateId);
             batch.update(updateRef, { status: 'approved', reviewedByUid: user.uid, reviewedAt: serverTimestamp() });
             await batch.commit();
         } else {
-            await updateDoc(docRef, finalPayload);
+            await updateDoc(docRef, sanitizedPayload);
         }
         
     }, [user]);
