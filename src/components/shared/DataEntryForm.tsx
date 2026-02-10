@@ -358,9 +358,11 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                 <div className="flex-1 min-h-0">
                   <ScrollArea className="h-full px-6 py-4">
                       <div className="space-y-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className={cn("grid grid-cols-1 gap-4", !isDeferredFunding && "md:grid-cols-2")}>
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                              {!isDeferredFunding && (
+                                <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                              )}
                           </div>
                           <Separator/>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -757,10 +759,6 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             return COLLECTOR_APPLICATION_TYPES;
         case 'planFund':
             return PLAN_FUND_APPLICATION_TYPES;
-        case 'gwInvestigation':
-            return GW_INVESTIGATION_TYPES;
-        case 'loggingPumpingTest':
-            return LOGGING_PUMPING_TEST_TYPES;
         case 'public':
         default:
             return PUBLIC_DEPOSIT_APPLICATION_TYPES;
