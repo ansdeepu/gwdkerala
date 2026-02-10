@@ -21,7 +21,7 @@ import {
     PRIVATE_APPLICATION_TYPES, 
     COLLECTOR_APPLICATION_TYPES, 
     PLAN_FUND_APPLICATION_TYPES, 
-    GW_INVESTIGATION_TYPES, 
+    GW_INVESTIGATION_TYPES,
     LOGGING_PUMPING_TEST_TYPES,
     INVESTIGATION_GOVT_TYPES,
     INVESTIGATION_PRIVATE_TYPES,
@@ -126,19 +126,40 @@ export default function DataEntryPage() {
   const returnPath = useMemo(() => {
     let base = '/dashboard/file-room'; 
     const appType = pageData?.initialData.applicationType;
-    if (approveUpdateId) base = '/dashboard/pending-updates';
-    else if (fileIdToEdit && appType) {
-        if (COLLECTOR_APPLICATION_TYPES.includes(appType as any)) base = '/dashboard/collectors-deposit-works';
-        else if (PLAN_FUND_APPLICATION_TYPES.includes(appType as any)) base = '/dashboard/plan-fund-works';
-        else if (PRIVATE_APPLICATION_TYPES.includes(appType as any)) base = '/dashboard/private-deposit-works';
-        else if (GW_INVESTIGATION_TYPES.includes(appType as any)) base = '/dashboard/gw-investigation';
-        else if (LOGGING_PUMPING_TEST_TYPES.includes(appType as any)) base = '/dashboard/logging-pumping-test';
-    } else {
-        if (workTypeContext === 'collector') base = '/dashboard/collectors-deposit-works';
-        else if (workTypeContext === 'planFund') base = '/dashboard/plan-fund-works';
-        else if (workTypeContext === 'private') base = '/dashboard/private-deposit-works';
-        else if (workTypeContext === 'gwInvestigation') base = '/dashboard/gw-investigation';
-        else if (workTypeContext === 'loggingPumpingTest') base = '/dashboard/logging-pumping-test';
+    
+    const allInvestigationTypes = [
+        ...GW_INVESTIGATION_TYPES, 
+        ...INVESTIGATION_GOVT_TYPES, 
+        ...INVESTIGATION_PRIVATE_TYPES, 
+        ...INVESTIGATION_COMPLAINT_TYPES
+    ];
+
+    if (approveUpdateId) {
+        base = '/dashboard/pending-updates';
+    } else if (fileIdToEdit && appType) { // Editing existing
+        if (COLLECTOR_APPLICATION_TYPES.includes(appType as any)) {
+            base = '/dashboard/collectors-deposit-works';
+        } else if (PLAN_FUND_APPLICATION_TYPES.includes(appType as any)) {
+            base = '/dashboard/plan-fund-works';
+        } else if (PRIVATE_APPLICATION_TYPES.includes(appType as any)) {
+            base = '/dashboard/private-deposit-works';
+        } else if (allInvestigationTypes.includes(appType as any)) {
+            base = '/dashboard/gw-investigation';
+        } else if (LOGGING_PUMPING_TEST_TYPES.includes(appType as any)) {
+            base = '/dashboard/logging-pumping-test';
+        }
+    } else if (workTypeContext) { // Creating new
+        if (workTypeContext === 'collector') {
+            base = '/dashboard/collectors-deposit-works';
+        } else if (workTypeContext === 'planFund') {
+            base = '/dashboard/plan-fund-works';
+        } else if (workTypeContext === 'private') {
+            base = '/dashboard/private-deposit-works';
+        } else if (workTypeContext === 'gwInvestigation') {
+            base = '/dashboard/gw-investigation';
+        } else if (workTypeContext === 'loggingPumpingTest') {
+            base = '/dashboard/logging-pumping-test';
+        }
     }
     return pageToReturnTo ? `${base}?page=${pageToReturnTo}` : base;
   }, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
