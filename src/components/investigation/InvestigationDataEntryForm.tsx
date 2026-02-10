@@ -92,6 +92,15 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
 
 const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
 const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
+const investigationFileStatusOptions = [
+    "File Under Process",
+    "Completed Except Disputed",
+    "Partially Completed Except Disputed",
+    "Fully Disputed",
+    "Fully Completed",
+    "Partially Completed",
+    "File Closed",
+] as const;
 
 
 const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): string[] => {
@@ -169,13 +178,13 @@ const DetailRow = ({ label, value, className }: { label: string; value: any, cla
 interface DataEntryFormProps {
     fileNoToEdit?: string;
     initialData: DataEntryFormData;
-    allStaffMembers: StaffMember[];
     userRole?: UserRole;
     workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | 'gwInvestigation' | 'loggingPumpingTest' | null;
     returnPath: string; 
     pageToReturnTo: string | null;
     isFormDisabled?: boolean;
     allLsgConstituencyMaps: any[];
+    allStaffMembers: StaffMember[];
 }
 
 const formatDateForInput = (date: Date | string | null | undefined): string => {
@@ -205,6 +214,9 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
         setData((prev: any) => ({ ...prev, [key]: value }));
         if (value && String(value).trim()) {
             setErrors(prev => ({...prev, [key]: undefined}));
+        }
+         if (key === 'category') {
+            setData((prev: any) => ({ ...prev, applicationType: undefined }));
         }
     };
     
@@ -266,8 +278,8 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
 
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''}>
-                        <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
+                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={isGW && !data.category}>
+                        <SelectTrigger><SelectValue placeholder={isGW && !data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
                         <SelectContent className="max-h-80">
                             {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
                         </SelectContent>
@@ -365,14 +377,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel }: { initialDat
                               <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{paymentAccountOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                           </div>
                           <Separator/>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                              <FormField name="revenueHead" control={form.control} render={({ field }) => <FormItem><FormLabel>Revenue Head (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="contractorsPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Contractor's Payment (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="gst" control={form.control} render={({ field }) => <FormItem><FormLabel>GST (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="incomeTax" control={form.control} render={({ field }) => <FormItem><FormLabel>Income Tax (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="kbcwb" control={form.control} render={({ field }) => <FormItem><FormLabel>KBCWB (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="refundToParty" control={form.control} render={({ field }) => <FormItem><FormLabel>Refund to Party (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
-                          </div>
+                          <FormField name="revenueHead" control={form.control} render={({ field }) => <FormItem><FormLabel>Revenue Head (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
                           <Separator/>
                           <FormField name="paymentRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this payment entry..." /></FormControl><FormMessage /></FormItem>} />
                       </div>
@@ -755,8 +760,15 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     } else if (type === 'remittance') {
         if (originalData.index !== undefined) updateRemittance(originalData.index, data); else appendRemittance(data);
     } else if (type === 'payment') {
-        const paymentData = { ...data, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal(data) };
-        if (originalData.index !== undefined) updatePayment(originalData.index, paymentData); else appendPayment(paymentData);
+        if (originalData.index !== undefined) {
+            const existingData = getValues(`paymentDetails.${originalData.index}`);
+            const mergedData = { ...existingData, ...data };
+            const paymentData = { ...mergedData, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal(mergedData) };
+            updatePayment(originalData.index, paymentData);
+        } else {
+            const paymentData = { ...data, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal(data) };
+            appendPayment(paymentData);
+        }
     } else if (type === 'site') {
         if (originalData.index !== undefined) updateSite(originalData.index, data); else appendSite(data);
     }
@@ -776,16 +788,6 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     setItemToDelete(null);
   };
   
-  const investigationFileStatusOptions = [
-    "File Under Process",
-    "Completed Except Disputed",
-    "Partially Completed Except Disputed",
-    "Fully Disputed",
-    "Fully Completed",
-    "Partially Completed",
-    "File Closed",
-  ] as const;
-
   return (
     <FormProvider {...form}>
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
