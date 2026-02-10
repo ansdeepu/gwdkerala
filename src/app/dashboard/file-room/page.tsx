@@ -1,5 +1,3 @@
-
-
 // src/app/dashboard/file-room/page.tsx
 "use client";
 
@@ -11,7 +9,17 @@ import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import type { SiteWorkStatus, DataEntryFormData, ApplicationType } from '@/lib/schemas';
-import { applicationTypeDisplayMap } from '@/lib/schemas';
+import { 
+    applicationTypeDisplayMap, 
+    PRIVATE_APPLICATION_TYPES, 
+    COLLECTOR_APPLICATION_TYPES, 
+    PLAN_FUND_APPLICATION_TYPES, 
+    GW_INVESTIGATION_TYPES,
+    LOGGING_PUMPING_TEST_TYPES,
+    INVESTIGATION_GOVT_TYPES,
+    INVESTIGATION_PRIVATE_TYPES,
+    INVESTIGATION_COMPLAINT_TYPES
+} from '@/lib/schemas';
 import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { parseISO, isValid, format } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -32,9 +40,6 @@ const Clock = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 
-const PRIVATE_APPLICATION_TYPES: ApplicationType[] = ["Private_Domestic", "Private_Irrigation", "Private_Institution", "Private_Industry"];
-const COLLECTOR_APPLICATION_TYPES: ApplicationType[] = ["Collector_MPLAD", "Collector_MLASDF", "Collector_MLA_Asset_Development_Fund", "Collector_DRW", "Collector_SC/ST", "Collector_ARWSS", "Collector_Others"];
-const PLAN_FUND_APPLICATION_TYPES: ApplicationType[] = ["GWBDWS"];
 const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig"];
 
 
@@ -74,11 +79,21 @@ export default function FileManagerPage() {
   const canCreate = user?.role === 'editor';
   
   const { depositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
+    const allInvestigationTypes = [
+        ...GW_INVESTIGATION_TYPES,
+        ...LOGGING_PUMPING_TEST_TYPES,
+        ...INVESTIGATION_GOVT_TYPES,
+        ...INVESTIGATION_PRIVATE_TYPES,
+        ...INVESTIGATION_COMPLAINT_TYPES,
+    ];
+
     let entries = fileEntries.filter(entry => {
+        if ((entry as any).category) return false;
         if (!entry.applicationType) return true; // Include if type is not set
         if (PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)) return false; // Exclude private
         if (COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)) return false; // Exclude collector
         if (PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)) return false; // Exclude plan fund
+        if (allInvestigationTypes.includes(entry.applicationType as any)) return false; // Exclude all investigation types
         return true; // Include all others (government, LSGD, etc.)
     });
     
