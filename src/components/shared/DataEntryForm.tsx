@@ -67,7 +67,7 @@ import { getFirestore, doc, updateDoc, serverTimestamp, query, collection, where
 import { app } from "@/lib/firebase";
 import { useDataStore } from "@/hooks/use-data-store";
 import { ScrollArea } from "../ui/scroll-area";
-import { format, isValid } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as TableFooterComponent } from "@/components/ui/table";
@@ -344,14 +344,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
 
     return (
         <Form {...form}>
-            <form
-              onSubmit={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                form.handleSubmit(handleConfirmSubmit)(e);
-              }}
-               className="flex flex-col h-full"
-            >
+             <form onSubmit={form.handleSubmit(handleConfirmSubmit)} className="flex flex-col h-full">
                 <DialogHeader className="p-6 pb-4 shrink-0">
                     <DialogTitle>Payment Details</DialogTitle>
                 </DialogHeader>
@@ -806,7 +799,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     setValue("totalPaymentAllEntries", totalPayment);
     
     const projectExpenses = watchedPaymentDetails?.reduce((sum, item) => {
-        return sum + (Number(item.contractorsPayment) || 0) + (Number(item.gst) || 0) + (Number(item.incomeTax) || 0) + (Number(item.kbcwb) || 0) + (Number(item.refundToParty) || 0);
+        return sum + (Number(item.contractorsPayment) || 0) + (Number(item.gst) || 0) + (Number(item.incomeTax) || 0) + (Number(item.kbcwb) || 0);
     }, 0) || 0;
 
     setValue("overallBalance", spendableRemittance - projectExpenses);

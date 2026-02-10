@@ -86,8 +86,8 @@ const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameO
 
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
-  if (!payment) return 0;
-  return (Number(payment.revenueHead) || 0);
+    if (!payment) return 0;
+    return (Number(payment.revenueHead) || 0);
 };
 
 const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
@@ -731,7 +731,10 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
 
-    setValue("overallBalance", spendableRemittance - totalPayment);
+    // For investigation forms, there are no project expenses to deduct from the balance.
+    const projectExpenses = 0;
+
+    setValue("overallBalance", spendableRemittance - projectExpenses);
     
   }, [watchedRemittanceDetails, watchedPaymentDetails, setValue]);
 
