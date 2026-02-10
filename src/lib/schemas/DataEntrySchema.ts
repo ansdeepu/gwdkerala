@@ -313,7 +313,7 @@ export const SiteDetailSchema = z.object({
 
   // Survey Details (Recommended)
   surveyRemarks: z.string().optional().nullable(),
-  surveyRecommendedDiameter: z.string().optional().nullable(),
+  surveyRecommendedDiameter: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(siteDiameterOptions).optional()),
   surveyRecommendedTD: z.string().optional().nullable(),
   surveyRecommendedOB: z.string().optional().nullable(),
   surveyRecommendedCasingPipe: z.string().optional().nullable(),

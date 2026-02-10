@@ -312,7 +312,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
         if (isDeferredFunding) {
             return remittedAccountOptions.filter(o => o === "Plan Fund");
         }
-        // For GW Investigation, remove Plan Fund
+        // For GW Investigation, allow SBI, STSB, Revenue Head
         return remittedAccountOptions.filter(o => o !== 'Plan Fund');
     }, [isDeferredFunding]);
 
@@ -356,14 +356,14 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
         dateOfPayment: formatDateForInput(initialData?.dateOfPayment),
       },
     });
-
-    const availablePaymentAccounts = useMemo(() => {
-        return paymentAccountOptions.filter(o => o !== 'Plan Fund');
-    }, []);
     
     const handleConfirmSubmit = (data: PaymentDetailFormData) => {
         onConfirm(data);
     };
+
+    const availablePaymentAccounts = useMemo(() => {
+        return paymentAccountOptions.filter(o => o !== 'Plan Fund');
+    }, []);
 
     return (
         <Form {...form}>
@@ -375,7 +375,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                   <ScrollArea className="h-full px-6 py-4">
                       <div className="space-y-4">
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
+                              <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
                               <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                           </div>
                           <Separator/>
@@ -605,24 +605,32 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                         <div className="space-y-4 pt-4 border-t">
                                             <h4 className="font-semibold text-sm">Recommended measurements for {watchedTypeOfWell}</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <FormField name="diameter" control={control} render={({ field }) => <FormItem><FormLabel>Diameter (mm)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
-                                                {watchedTypeOfWell === "Bore Well" && <FormField name="surveyOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />}
-                                                <FormField name="totalDepth" control={control} render={({ field }) => <FormItem><FormLabel>TD (m)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
-                                                {(watchedTypeOfWell === "Bore Well" || watchedTypeOfWell === "Tube Well" || watchedTypeOfWell === "Filter Point Well") && (
-                                                    <FormField name="casingPipeUsed" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
-                                                )}
-                                                {watchedTypeOfWell === "Bore Well" && (
-                                                    <FormField name="innerCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Inner Casing (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
-                                                )}
+                                                <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Diameter (mm)</FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}>
+                                                            <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
+                                                            <SelectContent>
+                                                                <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>
+                                                                {siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+                                                <FormField name="surveyRecommendedTD" control={control} render={({ field }) => <FormItem><FormLabel>TD (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                                {watchedTypeOfWell === "Bore Well" && <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />}
+                                                {watchedTypeOfWell === "Bore Well" && <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />}
+                                                {watchedTypeOfWell === "Filter Point Well" && <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />}
                                                 {watchedTypeOfWell === "Tube Well" && (
                                                     <>
-                                                        <FormField name="surveyPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
-                                                        <FormField name="surveySlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
-                                                        <FormField name="outerCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem>} />
+                                                        <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                                        <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                                        <FormField name="surveyRecommendedMsCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
                                                     </>
                                                 )}
-                                                <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Location of well</FormLabel><FormControl><Textarea {...field} value={field.value || ""} className="min-h-[40px]" /></FormControl><FormMessage /></FormItem>} />
-                                                <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem className="md:col-span-3"><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Recommended measurements remarks..." /></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Location of well</FormLabel><FormControl><Textarea {...field} value={field.value || ""} className="min-h-[40px]" readOnly={isReadOnly}/></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem className="md:col-span-3"><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Recommended measurements remarks..." readOnly={isReadOnly}/></FormControl><FormMessage /></FormItem>} />
                                             </div>
                                         </div>
                                     )}
@@ -711,20 +719,27 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
   const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment } = useFieldArray({ control, name: "paymentDetails" });
 
+  const watchedRemittanceDetails = watch("remittanceDetails");
+  const watchedPaymentDetails = watch("paymentDetails");
+
   useEffect(() => {
-    const totalRemittance = watch("remittanceDetails")?.reduce((sum, item) => {
-        if(item.remittedAccount !== 'Revenue Head') {
+    const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
+        return sum + (Number(item.amountRemitted) || 0);
+    }, 0) || 0;
+    setValue("totalRemittance", totalRemittance);
+    
+    const spendableRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
+        if (item.remittedAccount !== 'Revenue Head') {
             return sum + (Number(item.amountRemitted) || 0);
         }
         return sum;
     }, 0) || 0;
-    setValue("totalRemittance", totalRemittance);
     
-    const totalPayment = watch("paymentDetails")?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
+    const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
-    setValue("overallBalance", totalRemittance - totalPayment);
+    setValue("overallBalance", spendableRemittance - totalPayment);
     
-  }, [watch("remittanceDetails"), watch("paymentDetails"), setValue]);
+  }, [watchedRemittanceDetails, watchedPaymentDetails, setValue]);
 
   const onInvalid = (errors: FieldErrors<DataEntryFormData>) => {
     const messages = getFormattedErrorMessages(errors);

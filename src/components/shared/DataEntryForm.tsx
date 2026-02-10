@@ -287,7 +287,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
         if (isDeferredFunding) {
             return remittedAccountOptions.filter(o => o === "Plan Fund");
         }
-        return remittedAccountOptions.filter(o => o !== "Plan Fund");
+        return remittedAccountOptions.filter(o => o !== 'Plan Fund');
     }, [isDeferredFunding]);
 
     return (
@@ -358,7 +358,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                 <div className="flex-1 min-h-0">
                   <ScrollArea className="h-full px-6 py-4">
                       <div className="space-y-4">
-                          <div className={cn("grid grid-cols-1 gap-4", !isDeferredFunding && "md:grid-cols-2")}>
+                          <div className={cn("grid grid-cols-1 gap-4", isDeferredFunding && "md:grid-cols-1")}>
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
                               {!isDeferredFunding && (
                                 <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
@@ -790,22 +790,23 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const watchedSiteDetails = watch("siteDetails");
 
   useEffect(() => {
-    // Calculate the total spendable remittance, excluding direct-to-government funds
+    const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
+        return sum + (Number(item.amountRemitted) || 0);
+    }, 0) || 0;
+    setValue("totalRemittance", totalRemittance);
+
     const spendableRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
         if (item.remittedAccount !== 'Revenue Head') {
             return sum + (Number(item.amountRemitted) || 0);
         }
         return sum;
     }, 0) || 0;
-    setValue("totalRemittance", spendableRemittance);
 
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
     
-    // The balance is calculated from the spendable remittance
     setValue("overallBalance", spendableRemittance - totalPayment);
     
-    // Update file-level assignedSupervisorUids
     const supervisorUids = new Set<string>();
     watchedSiteDetails?.forEach(site => {
         if (site.supervisorUid) {
@@ -1156,23 +1157,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
         <Card>
             <CardHeader><CardTitle className="text-xl">5. Final Details</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-4 border rounded-lg space-y-4 bg-secondary/30">
-                     <h3 className="font-semibold text-lg text-primary">Financial Summary</h3>
-                     <dl className="space-y-2">
-                        <div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                        <Separator />
-                        <div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                        <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                        <Separator />
-                        <div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                     </dl>
-                </div>
-                 <div className="p-4 border rounded-lg space-y-4 bg-secondary/30">
-                    <FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                    <FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} />
-                </div>
-            </CardContent>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent>
         </Card>
 
         {!(isViewer || isFormDisabled) && (
