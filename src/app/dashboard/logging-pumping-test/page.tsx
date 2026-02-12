@@ -14,7 +14,7 @@ import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { LOGGING_PUMPING_TEST_TYPES } from '@/lib/schemas';
+import { LOGGING_PUMPING_TEST_TYPES, type SitePurpose } from '@/lib/schemas';
 import PaginationControls from '@/components/shared/PaginationControls';
 
 export const dynamic = 'force-dynamic';
@@ -30,51 +30,57 @@ const safeParseDate = (dateValue: any): Date | null => {
 };
 
 const ITEMS_PER_PAGE = 50;
-
+const LOGGING_PURPOSES: SitePurpose[] = ["Geological logging", "Geophysical Logging"];
+const PUMPING_TEST_PURPOSES: SitePurpose[] = ["Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others"];
 
 export default function LoggingPumpingTestPage() {
   const { setHeader } = usePageHeader();
   const { user } = useAuth();
   const { fileEntries, isLoading } = useFileEntries();
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("Logging");
   const router = useRouter();
   const { setIsNavigating } = usePageNavigation();
   const [currentPage, setCurrentPage] = useState(1);
   
   useEffect(() => { setHeader('Logging & Pumping Test', 'List of all Logging & Pumping Test files.'); }, [setHeader]);
 
-  const allLoggingEntries = useMemo(() => {
-    let entries = fileEntries.filter(entry => 
+  const { loggingEntries, pumpingTestEntries, lastCreatedDate } = useMemo(() => {
+    const allLoggingEntries = fileEntries.filter(entry => 
         entry.applicationType && LOGGING_PUMPING_TEST_TYPES.includes(entry.applicationType as any)
     );
-    entries.sort((a, b) => (safeParseDate(b.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0) - (safeParseDate(a.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0));
-    return entries;
-  }, [fileEntries]);
-
-  const { filteredEntries, lastCreatedDate, totalSites } = useMemo(() => {
-    let filtered = allLoggingEntries;
-    if (searchTerm) {
-        const lowerSearchTerm = searchTerm.toLowerCase();
-        filtered = allLoggingEntries.filter(entry => [entry.fileNo, entry.applicantName].some(v => v?.toLowerCase().includes(lowerSearchTerm)));
-    }
+    allLoggingEntries.sort((a, b) => (safeParseDate(b.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0) - (safeParseDate(a.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0));
     
-    const lastCreated = filtered.reduce((latest, entry) => {
+    const logging = allLoggingEntries.filter(entry => 
+        entry.siteDetails?.some(site => site.purpose && LOGGING_PURPOSES.includes(site.purpose as any))
+    );
+    const pumping = allLoggingEntries.filter(entry =>
+        entry.siteDetails?.some(site => site.purpose && PUMPING_TEST_PURPOSES.includes(site.purpose as any))
+    );
+
+    const lastCreated = allLoggingEntries.reduce((latest, entry) => {
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
         return (createdAt && (!latest || createdAt > latest)) ? createdAt : latest;
     }, null as Date | null);
-    
-    const sitesCount = filtered.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
 
-    return { 
-        filteredEntries: filtered, 
-        lastCreatedDate: lastCreated,
-        totalSites: sitesCount
-    };
-  }, [allLoggingEntries, searchTerm]);
+    return { loggingEntries: logging, pumpingTestEntries: pumping, lastCreatedDate };
+  }, [fileEntries]);
+
+  const { filteredEntries, totalSites } = useMemo(() => {
+    const sourceEntries = activeTab === 'Logging' ? loggingEntries : pumpingTestEntries;
+    if (!searchTerm) {
+        const sites = sourceEntries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
+        return { filteredEntries: sourceEntries, totalSites: sites };
+    }
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const filtered = sourceEntries.filter(entry => [entry.fileNo, entry.applicantName].some(v => v?.toLowerCase().includes(lowerSearchTerm)));
+    const sites = filtered.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
+    return { filteredEntries: filtered, totalSites: sites };
+  }, [activeTab, loggingEntries, pumpingTestEntries, searchTerm]);
   
   useEffect(() => {
     setCurrentPage(1);
-  }, [filteredEntries]);
+  }, [filteredEntries, activeTab]);
 
   const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
 
@@ -121,6 +127,13 @@ export default function LoggingPumpingTestPage() {
                 )}
                </div>
             </div>
+           
+           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full pt-4 border-t">
+             <TabsList className="grid w-full grid-cols-2 sm:w-[300px]">
+               <TabsTrigger value="Logging">Logging <Badge variant="secondary" className="ml-2">{loggingEntries.length}</Badge></TabsTrigger>
+               <TabsTrigger value="PumpingTest">Pumping Test <Badge variant="secondary" className="ml-2">{pumpingTestEntries.length}</Badge></TabsTrigger>
+             </TabsList>
+           </Tabs>
            
            <div className="flex justify-between items-center gap-4 mt-4 pt-4 border-t">
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
