@@ -212,7 +212,7 @@ export default function DataEntryPage() {
                 else if (workTypeContext === 'collector') title = "New Collector's Deposit Work";
                 else if (workTypeContext === 'planFund') title = "New Plan Fund Work";
                 else if (workTypeContext === 'gwInvestigation') title = "New GW Investigation";
-                else if (workTypeContext === 'loggingPumpingTest') title = "New Logging &amp; Pumping Test";
+                else if (workTypeContext === 'loggingPumpingTest') title = "New Logging & Pumping Test";
                 else title = "New Deposit Work";
             } else if (approveUpdateId) title = "Approve Pending Updates";
             else if (fileNoForHeader) title = `Edit File: ${fileNoForHeader}`;
