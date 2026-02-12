@@ -84,7 +84,7 @@ const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameO
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
   if (!payment) return 0;
-  return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
+  return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0);
 };
 
 const PURPOSES_REQUIRING_DIAMETER: SitePurpose[] = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev"];
@@ -174,7 +174,7 @@ interface DataEntryFormProps {
     supervisorList: (StaffMember & { uid: string; name: string })[];
     userRole?: UserRole;
     workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | null;
-    returnPath: string; // Add this prop
+    returnPath: string; 
     pageToReturnTo: string | null;
     isFormDisabled?: boolean;
 }
@@ -182,20 +182,6 @@ interface DataEntryFormProps {
 const formatDateForInput = (date: Date | string | null | undefined): string => {
     if (!date) return "";
     try { return format(new Date(date), 'yyyy-MM-dd'); } catch { return ""; }
-};
-
-const toDateOrNull = (value: any): Date | null => {
-    if (!value) return null;
-    if (value instanceof Date && isValid(value)) return value;
-    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
-        const d = new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
-        if (isValid(d)) return d;
-    }
-    if (typeof value === 'string') {
-        let d = new Date(value);
-        if (isValid(d)) return d;
-    }
-    return null;
 };
 
 // Dialog Content Components
@@ -351,7 +337,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                 <div className="flex-1 min-h-0">
                   <ScrollArea className="h-full px-6 py-4">
                       <div className="space-y-4">
-                          <div className={cn("grid grid-cols-1 gap-4", isDeferredFunding && "md:grid-cols-1")}>
+                          <div className={cn("grid grid-cols-1 gap-4", !isDeferredFunding && "md:grid-cols-2")}>
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
                               {!isDeferredFunding && (
                                 <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
@@ -738,7 +724,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const isViewer = userRole === 'viewer';
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
-  const { control, handleSubmit, setValue, getValues, watch, trigger } = form;
+  const { control, handleSubmit, setValue, getValues, watch } = form;
 
   const isDeferredFunding = useMemo(() => {
     const appType = getValues('applicationType');
