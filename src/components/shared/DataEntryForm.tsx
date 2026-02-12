@@ -77,6 +77,22 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/comp
 
 const db = getFirestore(app);
 
+const toDateOrNull = (value: any): Date | null => {
+    if (value === null || value === undefined || value === '') return null;
+    if (value instanceof Date && isValid(value)) return value;
+    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
+        const d = new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+        if (isValid(d)) return d;
+    }
+    if (typeof value === 'string') {
+        let d = parseISO(value); 
+        if (isValid(d)) return d;
+        d = new Date(value);
+        if (isValid(d)) return d;
+    }
+    return null;
+};
+
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "SBI", remittanceRemarks: "" });
 const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "SBI", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
 const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: undefined, estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "" });
@@ -337,7 +353,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                 <div className="flex-1 min-h-0">
                   <ScrollArea className="h-full px-6 py-4">
                       <div className="space-y-4">
-                          <div className={cn("grid grid-cols-1 gap-4", !isDeferredFunding && "md:grid-cols-2")}>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
                               {!isDeferredFunding && (
                                 <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
@@ -825,25 +841,27 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     const onSubmit = async (data: DataEntryFormData) => {
       setIsSubmitting(true);
       try {
-          if (!user) throw new Error("Authentication error. Please log in again.");
+          const sanitizedData = {
+            ...data,
+            siteDetails: data.siteDetails?.map(site => ({
+                ...site,
+                constituency: site.constituency === undefined ? null : site.constituency
+            }))
+          };
 
+          if (!user) throw new Error("Authentication error.");
           if (isSupervisor) {
-              await createPendingUpdate(data.fileNo, data.siteDetails!, user, {});
-              toast({ title: "Update Submitted", description: "Your changes have been submitted for approval." });
+              await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
+              toast({ title: "Update Submitted" });
           } else if (fileIdToEdit) {
-              await updateFileEntry(fileIdToEdit, data, approveUpdateId || undefined);
-              toast({ title: "File Updated", description: `File No. ${data.fileNo} has been successfully updated.` });
+              await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
+              toast({ title: "File Updated" });
           } else {
-              await addFileEntry(data);
-              toast({ title: "File Created", description: `File No. ${data.fileNo} has been successfully created.` });
+              await addFileEntry(sanitizedData);
+              toast({ title: "File Created" });
           }
           router.push(returnPath);
-      } catch (error: any) {
-          console.error("Form submission error:", error);
-          toast({ title: "Submission Failed", description: error.message || "An unknown error occurred.", variant: "destructive" });
-      } finally {
-          setIsSubmitting(false);
-      }
+      } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
     };
 
 
