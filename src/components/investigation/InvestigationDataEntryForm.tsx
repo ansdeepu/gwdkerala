@@ -54,6 +54,7 @@ import {
   INVESTIGATION_COMPLAINT_TYPES,
   LOGGING_PUMPING_TEST_TYPES,
   GW_INVESTIGATION_TYPES,
+  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
   type Bidder,
   typeOfWellOptions,
   type Designation,
@@ -92,6 +93,8 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
 
 const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
 const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
+const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
+
 const investigationFileStatusOptions = [
     "File Under Process",
     "Completed Except Disputed",
@@ -198,18 +201,18 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
         ...initialData,
         category: initialData?.category || undefined
     });
-    const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; }>({});
+    const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; category?: string; }>({});
 
-    const isGW = workTypeContext === 'gwInvestigation';
+    const isInvestigationContext = workTypeContext === 'gwInvestigation' || workTypeContext === 'loggingPumpingTest';
     const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
 
     const filteredAppTypeOptions = useMemo(() => {
-        if (!isGW) return formOptions;
+        if (!isInvestigationContext) return formOptions;
         if (data.category === 'Govt') return INVESTIGATION_GOVT_TYPES;
         if (data.category === 'Private') return INVESTIGATION_PRIVATE_TYPES;
         if (data.category === 'Complaints') return INVESTIGATION_COMPLAINT_TYPES;
         return [];
-    }, [isGW, data.category, formOptions]);
+    }, [isInvestigationContext, data.category, formOptions]);
 
     const handleChange = (key: string, value: any) => {
         setData((prev: any) => ({ ...prev, [key]: value }));
@@ -222,7 +225,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
     };
     
     const handleSave = () => {
-        const newErrors: { fileNo?: string; applicantName?: string; applicationType?: string; } = {};
+        const newErrors: { fileNo?: string; applicantName?: string; applicationType?: string; category?: string; } = {};
         if (!data.fileNo?.trim()) {
             newErrors.fileNo = "File No is required.";
         }
@@ -231,6 +234,9 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
         }
         if (!data.applicationType) {
             newErrors.applicationType = "Type of Application is required.";
+        }
+        if (isInvestigationContext && !data.category) {
+            newErrors.category = "Category is required.";
         }
         
         if (Object.keys(newErrors).length > 0) {
@@ -263,7 +269,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo || ''} onChange={(e) => handleChange('phoneNo', e.target.value)} /></div>
                 <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo || ''} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} /></div>
                 
-                {isGW && (
+                {isInvestigationContext && (
                     <div className="space-y-2">
                         <Label>Category *</Label>
                         <Select onValueChange={(value) => handleChange('category', value)} value={data.category}>
@@ -274,13 +280,14 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                                 <SelectItem value="Complaints">Complaints</SelectItem>
                             </SelectContent>
                         </Select>
+                        {errors.category && <p className="text-xs text-destructive mt-1">{errors.category}</p>}
                     </div>
                 )}
 
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={isGW && !data.category}>
-                        <SelectTrigger><SelectValue placeholder={isGW && !data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
+                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={isInvestigationContext && !data.category}>
+                        <SelectTrigger><SelectValue placeholder={isInvestigationContext && !data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
                         <SelectContent className="max-h-80">
                             {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
                         </SelectContent>
@@ -417,6 +424,10 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
 
     const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
 
+    const workStatusOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS : INVESTIGATION_WORK_STATUS_OPTIONS;
+    
+    const purposeOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_PURPOSE_OPTIONS : ['GW Investigation'];
+
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
         onConfirm(data);
@@ -479,13 +490,30 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="purpose" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Purpose</FormLabel>
-                                                <FormControl><Input value="GW Investigation" readOnly className="bg-muted" /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
+                                        
+                                        {workTypeContext === 'loggingPumpingTest' ? (
+                                            <FormField name="purpose" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            {purposeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        ) : (
+                                            <FormField name="purpose" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Purpose</FormLabel>
+                                                    <FormControl><Input value="GW Investigation" readOnly className="bg-muted" /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        )}
+                                        
                                         <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Local Self Govt.</FormLabel>
@@ -645,7 +673,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                                 <Select onValueChange={field.onChange} value={field.value}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
                                                     <SelectContent>
-                                                        {INVESTIGATION_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                        {workStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -694,8 +722,8 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const isSupervisor = userRole === 'supervisor';
   const isViewer = userRole === 'viewer';
 
-  const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
   const remittanceTitle = "2. Remittance Details";
+  const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
   const { control, handleSubmit, setValue, getValues, watch } = form;
@@ -847,29 +875,3 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     </FormProvider>
   );
 }
-
-const ReorderSiteDialog = ({ fromIndex, siteCount, onConfirm, onCancel }: { fromIndex: number, siteCount: number, onConfirm: (data: any) => void, onCancel: () => void }) => {
-    const [toPosition, setToPosition] = useState(fromIndex + 1);
-
-    const handleConfirm = () => {
-        const toIndex = toPosition - 1;
-        if (toIndex >= 0 && toIndex < siteCount) {
-            onConfirm({ from: fromIndex, to: toIndex });
-        } else {
-            alert("Invalid position.");
-        }
-    };
-    return (
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()}>
-            <DialogHeader className="p-6 pb-4"><DialogTitle>Move Site</DialogTitle></DialogHeader>
-            <div className="p-6 pt-0 space-y-4">
-                <Label>New Position (1 to {siteCount})</Label>
-                <Input type="number" min={1} max={siteCount} value={toPosition} onChange={(e) => setToPosition(parseInt(e.target.value))} />
-            </div>
-            <DialogFooter className="p-6 pt-4">
-                <Button variant="outline" onClick={onCancel}>Cancel</Button>
-                <Button onClick={handleConfirm}>Move</Button>
-            </DialogFooter>
-        </DialogContent>
-    );
-};

@@ -70,6 +70,7 @@ export const applicationTypeOptions = [
   ...COLLECTOR_APPLICATION_TYPES,
   ...PLAN_FUND_APPLICATION_TYPES,
   ...GW_INVESTIGATION_TYPES,
+  ...LOGGING_PUMPING_TEST_TYPES,
   ...INVESTIGATION_GOVT_TYPES,
   ...INVESTIGATION_PRIVATE_TYPES,
   ...INVESTIGATION_COMPLAINT_TYPES,
@@ -206,6 +207,15 @@ export const fileStatusOptions = [
 export type FileStatus = typeof fileStatusOptions[number];
 
 
+export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = [
+  "Geological logging",
+  "Geophysical Logging",
+  "Pumping test",
+  "Industry Pumping test",
+  "MWSS Pumping test",
+  "Others",
+] as const;
+
 export const sitePurposeOptions = [
   "BWC",
   "TWC",
@@ -268,7 +278,7 @@ export const SiteDetailSchema = z.object({
   constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
   latitude: optionalNumber("Latitude must be a valid number."),
   longitude: optionalNumber("Longitude must be a valid number."),
-  purpose: z.enum(sitePurposeOptions, { required_error: "Purpose is required." }).optional(),
+  purpose: z.string().min(1, "Purpose is required.").optional(),
   estimateAmount: optionalNumber("Estimate Amount must be a valid number."),
   remittedAmount: optionalNumber("Remitted Amount must be a valid number."),
   siteConditions: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(siteConditionsOptions).optional()),
@@ -300,7 +310,7 @@ export const SiteDetailSchema = z.object({
   supervisorName: z.string().optional().nullable(),
   supervisorDesignation: z.string().optional().nullable(),
   totalExpenditure: optionalNumber("Total Expenditure must be a valid number."),
-  workStatus: z.enum(siteWorkStatusOptions, { required_error: "Status is required." }).optional(),
+  workStatus: z.string().optional(),
   implementationRemarks: z.string().optional().nullable().default(""),
   workRemarks: z.string().optional().nullable().default(""),
 
@@ -390,7 +400,7 @@ export const DataEntrySchema = z.object({
   totalPaymentAllEntries: z.coerce.number().optional(),
   overallBalance: z.coerce.number().optional(),
 
-  fileStatus: z.enum(fileStatusOptions).optional(),
+  fileStatus: z.string().optional(),
   remarks: z.string().optional(),
 }).superRefine((data, ctx) => {
     if (!data.fileStatus) {

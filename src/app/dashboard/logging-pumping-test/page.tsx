@@ -127,7 +127,6 @@ export default function LoggingPumpingTestPage() {
                     <span className="font-semibold">Site Name Color Legend:</span>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-600"></div><span>Completed</span></div>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-yellow-600"></div><span>Pending</span></div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-orange-600"></div><span>VES Pending</span></div>
                 </div>
                 {totalPages > 1 && (
                     <PaginationControls
