@@ -23,8 +23,8 @@ import {
     PLAN_FUND_APPLICATION_TYPES, 
     GW_INVESTIGATION_TYPES,
     LOGGING_PUMPING_TEST_TYPES,
-    INVESTIGATION_GOVT_TYPES,
-    INVESTIGATION_PRIVATE_TYPES,
+    INVESTIGATION_GOVT_TYPES, 
+    INVESTIGATION_PRIVATE_TYPES, 
     INVESTIGATION_COMPLAINT_TYPES
 } from '@/lib/schemas';
 
@@ -144,8 +144,10 @@ export default function DataEntryPage() {
             base = '/dashboard/plan-fund-works';
         } else if (PRIVATE_APPLICATION_TYPES.includes(appType as any)) {
             base = '/dashboard/private-deposit-works';
-        } else if (allInvestigationTypes.includes(appType as any)) {
+        } else if (GW_INVESTIGATION_TYPES.includes(appType as any)) {
             base = '/dashboard/gw-investigation';
+        } else if (LOGGING_PUMPING_TEST_TYPES.includes(appType as any)) {
+            base = '/dashboard/logging-pumping-test';
         }
     } else if (workTypeContext) { // Creating new
         if (workTypeContext === 'collector') {
@@ -154,8 +156,10 @@ export default function DataEntryPage() {
             base = '/dashboard/plan-fund-works';
         } else if (workTypeContext === 'private') {
             base = '/dashboard/private-deposit-works';
-        } else if (workTypeContext === 'gwInvestigation' || workTypeContext === 'loggingPumpingTest') {
+        } else if (workTypeContext === 'gwInvestigation') {
             base = '/dashboard/gw-investigation';
+        } else if (workTypeContext === 'loggingPumpingTest') {
+            base = '/dashboard/logging-pumping-test';
         }
     }
     return pageToReturnTo ? `${base}?page=${pageToReturnTo}` : base;
@@ -208,6 +212,7 @@ export default function DataEntryPage() {
                 else if (workTypeContext === 'collector') title = "New Collector's Deposit Work";
                 else if (workTypeContext === 'planFund') title = "New Plan Fund Work";
                 else if (workTypeContext === 'gwInvestigation') title = "New GW Investigation";
+                else if (workTypeContext === 'loggingPumpingTest') title = "New Logging &amp; Pumping Test";
                 else title = "New Deposit Work";
             } else if (approveUpdateId) title = "Approve Pending Updates";
             else if (fileNoForHeader) title = `Edit File: ${fileNoForHeader}`;
@@ -230,7 +235,7 @@ export default function DataEntryPage() {
   if (errorState) return <div className="flex h-screen items-center justify-center text-center p-6"><Card><CardContent className="pt-6"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-xl font-bold">{errorState}</h1><Button className="mt-4" variant="outline" onClick={() => router.back()}>Go Back</Button></CardContent></Card></div>;
 
   const investigationTypes = [...GW_INVESTIGATION_TYPES, ...LOGGING_PUMPING_TEST_TYPES, ...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES];
-  const isInvestigationType = workTypeContext === 'gwInvestigation' || (pageData?.initialData.applicationType && investigationTypes.includes(pageData.initialData.applicationType as any));
+  const isInvestigationType = workTypeContext === 'gwInvestigation' || workTypeContext === 'loggingPumpingTest' || (pageData?.initialData.applicationType && investigationTypes.includes(pageData.initialData.applicationType as any));
 
   return (
     <div className="space-y-6">
