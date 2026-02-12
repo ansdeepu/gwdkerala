@@ -30,7 +30,6 @@ export interface NavItem {
 export const regularNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/gw-investigation', label: 'GW Investigation', icon: TestTube2 },
-  { href: '/dashboard/logging-pumping-test', label: 'Logging & Pumping Test', icon: Droplets },
   { href: '/dashboard/file-room', label: 'Deposit Works', icon: FolderOpen },
   { href: '/dashboard/collectors-deposit-works', label: "Collector's Deposit Works", icon: Landmark },
   { href: '/dashboard/private-deposit-works', label: 'Private Deposit Works', icon: Building },
