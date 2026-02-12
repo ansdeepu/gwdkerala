@@ -63,7 +63,7 @@ export default function LoggingPumpingTestPage() {
         return (createdAt && (!latest || createdAt > latest)) ? createdAt : latest;
     }, null as Date | null);
 
-    return { loggingEntries: logging, pumpingTestEntries: pumping, lastCreatedDate };
+    return { loggingEntries: logging, pumpingTestEntries: pumping, lastCreatedDate: lastCreated };
   }, [fileEntries]);
 
   const { filteredEntries, totalSites } = useMemo(() => {
