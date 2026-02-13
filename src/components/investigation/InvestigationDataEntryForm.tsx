@@ -661,8 +661,8 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                        
-                                        {watchedFeasibility === "Yes" && (
+
+                                        {watchedFeasibility === "Yes" && watchedTypeOfWell && (
                                             <div className="space-y-4 pt-4 border-t">
                                                 <h4 className="font-semibold text-sm">Recommended measurements</h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
