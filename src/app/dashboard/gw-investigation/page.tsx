@@ -14,7 +14,7 @@ import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { INVESTIGATION_GOVT_TYPES, INVESTIGATION_PRIVATE_TYPES, INVESTIGATION_COMPLAINT_TYPES } from '@/lib/schemas';
+import { INVESTIGATION_GOVT_TYPES, INVESTIGATION_PRIVATE_TYPES, INVESTIGATION_COMPLAINT_TYPES, GW_INVESTIGATION_TYPES } from '@/lib/schemas';
 import PaginationControls from '@/components/shared/PaginationControls';
 
 export const dynamic = 'force-dynamic';
@@ -50,10 +50,15 @@ export default function GWInvestigationPage() {
   useEffect(() => { setHeader('GW Investigation', 'List of all Ground Water Investigation files.'); }, [setHeader]);
 
   const allInvestigationEntries = useMemo(() => {
-    // Filter strictly for entries that have a category (new logic) or the legacy GW_Investigation type
+    const allGwInvestigationTypes = [
+        ...GW_INVESTIGATION_TYPES, 
+        ...INVESTIGATION_GOVT_TYPES, 
+        ...INVESTIGATION_PRIVATE_TYPES, 
+        ...INVESTIGATION_COMPLAINT_TYPES
+    ];
+    // Filter for entries whose applicationType is one of the investigation types.
     let entries = fileEntries.filter(entry => 
-        (entry as any).category || 
-        entry.applicationType === 'GW_Investigation'
+        entry.applicationType && allGwInvestigationTypes.includes(entry.applicationType as any)
     );
     entries.sort((a, b) => {
         const dateA = safeParseDate(a.createdAt);
@@ -155,6 +160,15 @@ export default function GWInvestigationPage() {
                         <TabsTrigger value="Complaints">Complaints <Badge variant="secondary" className="ml-2">{counts.Complaints}</Badge></TabsTrigger>
                     </TabsList>
                 </Tabs>
+                 <div className="flex-grow flex justify-end">
+                  {totalPages > 1 && (
+                      <PaginationControls
+                          currentPage={currentPage}
+                          totalPages={totalPages}
+                          onPageChange={handlePageChange}
+                      />
+                  )}
+                </div>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="font-semibold">Site Name Color Legend:</span>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-600"></div><span>Completed</span></div>
@@ -165,7 +179,7 @@ export default function GWInvestigationPage() {
          </CardContent>
        </Card>
        
-       <Card>
+      <Card>
         <CardContent className="p-0">
           <div className="max-h-[70vh] overflow-auto">
             <InvestigationTable fileEntries={paginatedEntries} isLoading={isLoading} searchActive={!!searchTerm} totalEntries={filteredEntries.length} />
