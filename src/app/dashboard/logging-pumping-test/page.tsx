@@ -14,7 +14,7 @@ import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { LOGGING_PUMPING_TEST_TYPES, type SitePurpose } from '@/lib/schemas';
+import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS, type SitePurpose } from '@/lib/schemas';
 import PaginationControls from '@/components/shared/PaginationControls';
 
 export const dynamic = 'force-dynamic';
@@ -50,19 +50,22 @@ export default function LoggingPumpingTestPage() {
   useEffect(() => { setHeader('Logging & Pumping Test', 'List of all Logging & Pumping Test files.'); }, [setHeader]);
 
   const { loggingEntries, pumpingTestEntries, lastCreatedDate } = useMemo(() => {
-    const allLoggingEntries = fileEntries.filter(entry => 
-        entry.applicationType && LOGGING_PUMPING_TEST_TYPES.includes(entry.applicationType as any)
-    );
-    allLoggingEntries.sort((a, b) => (safeParseDate(b.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0) - (safeParseDate(a.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0));
+    const allLoggingAndPumpingEntries = fileEntries.filter(entry => {
+        const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+        const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
+        return hasLoggingPumpingPurpose && !hasInvestigationPurpose;
+    });
+
+    allLoggingAndPumpingEntries.sort((a, b) => (safeParseDate((b as any).createdAt)?.getTime() ?? 0) - (safeParseDate((a as any).createdAt)?.getTime() ?? 0));
     
-    const logging = allLoggingEntries.filter(entry => 
+    const logging = allLoggingAndPumpingEntries.filter(entry => 
         entry.siteDetails?.some(site => site.purpose && LOGGING_PURPOSES.includes(site.purpose as any))
     );
-    const pumping = allLoggingEntries.filter(entry =>
+    const pumping = allLoggingAndPumpingEntries.filter(entry =>
         entry.siteDetails?.some(site => site.purpose && PUMPING_TEST_PURPOSES.includes(site.purpose as any))
     );
 
-    const lastCreated = allLoggingEntries.reduce((latest, entry) => {
+    const lastCreated = allLoggingAndPumpingEntries.reduce((latest, entry) => {
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
         return (createdAt && (!latest || createdAt > latest)) ? createdAt : latest;
     }, null as Date | null);
@@ -118,12 +121,7 @@ export default function LoggingPumpingTestPage() {
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                     Total Sites: <span className="font-bold text-primary">{totalSites}</span>
                 </div>
-                {lastCreatedDate && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                        <Clock className="h-3.5 w-3.5"/>
-                        Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                    </div>
-                )}
+                
                 {user?.role === 'editor' && (
                     <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=loggingPumpingTest'); }} className="w-full sm:w-auto shrink-0">
                         <FilePlus2 className="mr-2 h-5 w-5" /> New File
@@ -139,10 +137,20 @@ export default function LoggingPumpingTestPage() {
                         <TabsTrigger value="PumpingTest">Pumping Test <Badge variant="secondary" className="ml-2">{pumpingTestEntries.length}</Badge></TabsTrigger>
                     </TabsList>
                 </Tabs>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="font-semibold">Site Name Color Legend:</span>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-600"></div><span>Completed</span></div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-yellow-600"></div><span>Pending</span></div>
+                <div className="flex flex-col items-end gap-2">
+                    {lastCreatedDate && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                            <Clock className="h-3.5 w-3.5"/>
+                            Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                        </div>
+                    )}
+                    {totalPages > 1 && (
+                        <PaginationControls
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
+                    )}
                 </div>
             </div>
          </CardContent>

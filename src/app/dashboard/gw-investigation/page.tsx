@@ -14,7 +14,7 @@ import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { INVESTIGATION_GOVT_TYPES, INVESTIGATION_PRIVATE_TYPES, INVESTIGATION_COMPLAINT_TYPES, GW_INVESTIGATION_TYPES } from '@/lib/schemas';
+import { INVESTIGATION_GOVT_TYPES, INVESTIGATION_PRIVATE_TYPES, INVESTIGATION_COMPLAINT_TYPES, GW_INVESTIGATION_TYPES, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
 import PaginationControls from '@/components/shared/PaginationControls';
 
 export const dynamic = 'force-dynamic';
@@ -50,19 +50,17 @@ export default function GWInvestigationPage() {
   useEffect(() => { setHeader('GW Investigation', 'List of all Ground Water Investigation files.'); }, [setHeader]);
 
   const allInvestigationEntries = useMemo(() => {
-    const allGwInvestigationTypes = [
-        ...GW_INVESTIGATION_TYPES, 
-        ...INVESTIGATION_GOVT_TYPES, 
-        ...INVESTIGATION_PRIVATE_TYPES, 
-        ...INVESTIGATION_COMPLAINT_TYPES
-    ];
-    // Filter for entries whose applicationType is one of the investigation types.
-    let entries = fileEntries.filter(entry => 
-        entry.applicationType && allGwInvestigationTypes.includes(entry.applicationType as any)
-    );
+    // Filter for entries that have at least one site with the purpose "GW Investigation"
+    // AND do NOT have any sites with logging/pumping purposes. This makes it mutually exclusive.
+    let entries = fileEntries.filter(entry => {
+        const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
+        const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+        return hasInvestigationPurpose && !hasLoggingPumpingPurpose;
+    });
+
     entries.sort((a, b) => {
-        const dateA = safeParseDate(a.createdAt);
-        const dateB = safeParseDate(b.createdAt);
+        const dateA = safeParseDate((a as any).createdAt);
+        const dateB = safeParseDate((b as any).createdAt);
         if (!dateA) return 1;
         if (!dateB) return -1;
         return dateB.getTime() - dateA.getTime();
@@ -138,12 +136,7 @@ export default function GWInvestigationPage() {
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                     Total Sites: <span className="font-bold text-primary">{totalSites}</span>
                 </div>
-                {lastCreatedDate && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                        <Clock className="h-3.5 w-3.5"/>
-                        Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                    </div>
-                )}
+                
                 {user?.role === 'editor' && (
                     <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=gwInvestigation'); }} className="w-full sm:w-auto shrink-0">
                         <FilePlus2 className="mr-2 h-5 w-5" /> New File
@@ -160,20 +153,20 @@ export default function GWInvestigationPage() {
                         <TabsTrigger value="Complaints">Complaints <Badge variant="secondary" className="ml-2">{counts.Complaints}</Badge></TabsTrigger>
                     </TabsList>
                 </Tabs>
-                 <div className="flex-grow flex justify-end">
-                  {totalPages > 1 && (
-                      <PaginationControls
-                          currentPage={currentPage}
-                          totalPages={totalPages}
-                          onPageChange={handlePageChange}
-                      />
-                  )}
-                </div>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="font-semibold">Site Name Color Legend:</span>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-600"></div><span>Completed</span></div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-yellow-600"></div><span>Pending</span></div>
-                    <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-orange-600"></div><span>VES Pending</span></div>
+                <div className="flex flex-col items-end gap-2">
+                    {lastCreatedDate && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                            <Clock className="h-3.5 w-3.5"/>
+                            Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                        </div>
+                    )}
+                    {totalPages > 1 && (
+                        <PaginationControls
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
+                    )}
                 </div>
             </div>
          </CardContent>
