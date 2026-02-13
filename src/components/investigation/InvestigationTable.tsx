@@ -56,7 +56,7 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
 
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
-    const queryParams = new URLSearchParams({ id: item.id, workType: item.applicationType === 'Logging_Pumping_Test' ? 'loggingPumpingTest' : 'gwInvestigation' });
+    const queryParams = new URLSearchParams({ id: item.id, workType: 'gwInvestigation' });
     router.push(`/dashboard/data-entry?${queryParams.toString()}`);
   };
 
@@ -79,43 +79,43 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
   }
 
   if (fileEntries.length === 0) {
-    return <Card className="shadow-lg"><CardContent className="flex flex-col items-center justify-center py-10 text-center"><Image src="https://placehold.co/128x128/F0F2F5/3F51B5.png?text=No+Files" width={100} height={100} alt="No files" className="mb-4 opacity-70 rounded-lg"/><h3 className="text-xl font-semibold">No Investigation Files Found</h3></CardContent></Card>;
+    return (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+            <Image src="https://placehold.co/128x128/F0F2F5/3F51B5.png?text=No+Files" width={100} height={100} alt="No files" className="mb-4 opacity-70 rounded-lg"/>
+            <h3 className="text-xl font-semibold">No Investigation Files Found</h3>
+            <p className="text-muted-foreground">{searchActive ? "No files match your search criteria." : "There are no files in this category."}</p>
+        </div>
+    );
   }
 
   return (
     <TooltipProvider>
-      <Card className="shadow-lg">
-        <CardContent className="p-0">
-          <div className="max-h-[70vh] overflow-auto">
-            <Table>
-              <TableHeader className="sticky top-0 bg-secondary z-10">
-                <TableRow>
-                  <TableHead className="w-[50px]">#</TableHead>
-                  <TableHead>File No.</TableHead>
-                  <TableHead>Applicant</TableHead>
-                  <TableHead>Site Name(s)</TableHead>
-                  <TableHead>Remittance</TableHead>
-                  <TableHead>File Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fileEntries.map((entry, index) => (
-                  <TableRow key={entry.id}>
-                    <TableCell className="text-center">{index + 1}</TableCell>
-                    <TableCell className="font-medium">{entry.fileNo}</TableCell>
-                    <TableCell>{entry.applicantName}</TableCell>
-                    <TableCell>{entry.siteDetails?.map((site, idx) => (<span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>{site.nameOfSite}{idx < entry.siteDetails!.length - 1 ? ', ' : ''}</span>))}</TableCell>
-                    <TableCell>{entry.remittanceDetails?.[0]?.dateOfRemittance ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), "dd/MM/yyyy") : "N/A"}</TableCell>
-                    <TableCell className="font-semibold">{entry.fileStatus}</TableCell>
-                    <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}><Eye className="h-4 w-4" /></Button>{canDelete && <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteItem(entry)}><Trash2 className="h-4 w-4" /></Button>}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[50px]">#</TableHead>
+            <TableHead>File No.</TableHead>
+            <TableHead>Applicant</TableHead>
+            <TableHead>Site Name(s)</TableHead>
+            <TableHead>Remittance</TableHead>
+            <TableHead>File Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {fileEntries.map((entry, index) => (
+            <TableRow key={entry.id}>
+              <TableCell className="text-center">{index + 1}</TableCell>
+              <TableCell className="font-medium">{entry.fileNo}</TableCell>
+              <TableCell>{entry.applicantName}</TableCell>
+              <TableCell>{entry.siteDetails?.map((site, idx) => (<span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>{site.nameOfSite}{idx < entry.siteDetails!.length - 1 ? ', ' : ''}</span>))}</TableCell>
+              <TableCell>{entry.remittanceDetails?.[0]?.dateOfRemittance ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), "dd/MM/yyyy") : "N/A"}</TableCell>
+              <TableCell className="font-semibold">{entry.fileStatus}</TableCell>
+              <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}><Eye className="h-4 w-4" /></Button>{canDelete && <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteItem(entry)}><Trash2 className="h-4 w-4" /></Button>}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete this investigation file?</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmDelete} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </TooltipProvider>
   );

@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import InvestigationTable from "@/components/investigation/InvestigationTable";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -133,6 +133,12 @@ export default function GWInvestigationPage() {
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                     Total Sites: <span className="font-bold text-primary">{totalSites}</span>
                 </div>
+                {lastCreatedDate && (
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                        <Clock className="h-3.5 w-3.5"/>
+                        Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                    </div>
+                )}
                 {user?.role === 'editor' && (
                     <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=gwInvestigation'); }} className="w-full sm:w-auto shrink-0">
                         <FilePlus2 className="mr-2 h-5 w-5" /> New File
@@ -140,8 +146,8 @@ export default function GWInvestigationPage() {
                 )}
                </div>
             </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t">
+           
+           <div className="flex justify-between items-center gap-4 pt-4 border-t">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
                     <TabsList className="grid w-full grid-cols-3 sm:w-auto">
                         <TabsTrigger value="Govt">Govt <Badge variant="secondary" className="ml-2">{counts.Govt}</Badge></TabsTrigger>
@@ -149,24 +155,6 @@ export default function GWInvestigationPage() {
                         <TabsTrigger value="Complaints">Complaints <Badge variant="secondary" className="ml-2">{counts.Complaints}</Badge></TabsTrigger>
                     </TabsList>
                 </Tabs>
-                <div className="flex items-center gap-4">
-                    {lastCreatedDate && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                            <Clock className="h-3.5 w-3.5"/>
-                            Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                        </div>
-                    )}
-                    {totalPages > 1 && (
-                        <PaginationControls
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            onPageChange={handlePageChange}
-                        />
-                    )}
-                </div>
-            </div>
-           
-           <div className="flex justify-between items-center gap-4 pt-4 border-t">
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="font-semibold">Site Name Color Legend:</span>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-600"></div><span>Completed</span></div>
@@ -177,8 +165,22 @@ export default function GWInvestigationPage() {
          </CardContent>
        </Card>
        
-      <InvestigationTable fileEntries={paginatedEntries} isLoading={isLoading} searchActive={!!searchTerm} totalEntries={filteredEntries.length} />
-
+       <Card>
+        <CardContent className="p-0">
+          <div className="max-h-[70vh] overflow-auto">
+            <InvestigationTable fileEntries={paginatedEntries} isLoading={isLoading} searchActive={!!searchTerm} totalEntries={filteredEntries.length} />
+          </div>
+        </CardContent>
+        {totalPages > 1 && (
+          <CardFooter className="p-4 flex items-center justify-center border-t">
+            <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+            />
+          </CardFooter>
+        )}
+      </Card>
     </div>
   );
 }
