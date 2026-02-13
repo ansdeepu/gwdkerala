@@ -239,7 +239,7 @@ export default function DataEntryPage() {
 
   return (
     <div className="space-y-6">
-       {fileIdToEdit && <div className="flex justify-end mb-4"><Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button></div>}
+       <div className="flex justify-end mb-4"><Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button></div>
       <Card className="shadow-lg">
         <CardContent className="p-6">
           {pageData && pageData.initialData ? (
