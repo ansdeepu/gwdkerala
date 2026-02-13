@@ -50,8 +50,6 @@ export default function GWInvestigationPage() {
   useEffect(() => { setHeader('GW Investigation', 'List of all Ground Water Investigation files.'); }, [setHeader]);
 
   const allInvestigationEntries = useMemo(() => {
-    // Filter for entries that have at least one site with the purpose "GW Investigation"
-    // AND do NOT have any sites with logging/pumping purposes. This makes it mutually exclusive.
     let entries = fileEntries.filter(entry => {
         const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
         const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
@@ -69,7 +67,6 @@ export default function GWInvestigationPage() {
   }, [fileEntries]);
 
   const { investigationEntries, counts, lastCreatedDate, totalSites } = useMemo(() => {
-    // Categorize entries based on the new 'category' field
     const govt = allInvestigationEntries.filter(e => (e as any).category === 'Govt' || (e.applicationType === 'GW_Investigation' && !(e as any).category));
     const pvt = allInvestigationEntries.filter(e => (e as any).category === 'Private');
     const complaints = allInvestigationEntries.filter(e => (e as any).category === 'Complaints');

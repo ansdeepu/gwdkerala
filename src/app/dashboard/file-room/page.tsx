@@ -16,6 +16,7 @@ import {
     PLAN_FUND_APPLICATION_TYPES, 
     GW_INVESTIGATION_TYPES,
     LOGGING_PUMPING_TEST_TYPES,
+    LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
 } from '@/lib/schemas';
 import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { parseISO, isValid, format } from 'date-fns';
@@ -77,13 +78,11 @@ export default function FileManagerPage() {
   
   const { depositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => {
-        // Exclude all investigation files, which are identified by the 'category' field.
-        if ((entry as any).category) {
-            return false;
-        }
-
-        // Also exclude legacy investigation/logging types
-        if (entry.applicationType && (GW_INVESTIGATION_TYPES.includes(entry.applicationType as any) || LOGGING_PUMPING_TEST_TYPES.includes(entry.applicationType as any))) {
+        // A file is NOT a deposit work if it has any investigation-related purposes.
+        const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
+        const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+        
+        if (hasInvestigationPurpose || hasLoggingPumpingPurpose) {
             return false;
         }
 
@@ -99,7 +98,6 @@ export default function FileManagerPage() {
         }
         
         // If it's none of the above, it belongs in Deposit Works.
-        // This includes entries with no applicationType or a public/government type.
         return true;
     });
     
