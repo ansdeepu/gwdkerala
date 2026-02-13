@@ -129,6 +129,13 @@ export default function GWInvestigationPage() {
                         Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                     </div>
                 )}
+                {totalPages > 1 && (
+                    <PaginationControls
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                    />
+                )}
                 {user?.role === 'editor' && (
                     <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=gwInvestigation'); }} className="w-full sm:w-auto shrink-0">
                         <FilePlus2 className="mr-2 h-5 w-5" /> New File
@@ -152,28 +159,12 @@ export default function GWInvestigationPage() {
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-yellow-600"></div><span>Pending</span></div>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-orange-600"></div><span>VES Pending</span></div>
                 </div>
-                {totalPages > 1 && (
-                    <PaginationControls
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                    />
-                )}
             </div>
          </CardContent>
        </Card>
        
       <InvestigationTable fileEntries={paginatedEntries} isLoading={isLoading} searchActive={!!searchTerm} totalEntries={filteredEntries.length} />
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center pt-4">
-          <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-          />
-        </div>
-      )}
     </div>
   );
 }
