@@ -26,14 +26,13 @@ import PaginationControls from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from 'uuid';
 
-const ITEMS_PER_PAGE = 50;
-
 const getStatusColorClass = (status: SiteWorkStatus | undefined): string => {
     if (!status) return 'text-muted-foreground';
-    const completedOrFailed: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed"];
-    if (completedOrFailed.includes(status)) return 'text-red-600';
-    if (status === 'To be Refunded') return 'text-yellow-600';
-    return 'text-green-600';
+    const completedOrFailed: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed", "Completed"];
+    if (completedOrFailed.includes(status)) return 'text-green-600';
+    if (status === 'VES Pending') return 'text-orange-600';
+    if (status === 'Pending') return 'text-yellow-600';
+    return 'text-muted-foreground';
 };
 
 interface InvestigationTableProps {
@@ -52,25 +51,8 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
 
   const [deleteItem, setDeleteItem] = useState<DataEntryFormData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
 
   const canDelete = user?.role === 'editor';
-
-  useEffect(() => { setCurrentPage(1); }, [fileEntries]);
-
-  const paginatedEntries = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return fileEntries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [fileEntries, currentPage]);
-
-  const totalPages = Math.ceil(fileEntries.length / ITEMS_PER_PAGE);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    const params = new URLSearchParams(searchParams?.toString());
-    params.set('page', String(page));
-    router.push(`?${params.toString()}`);
-  };
 
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
@@ -96,7 +78,7 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
     return <div className="flex items-center justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2 text-muted-foreground">Loading data...</p></div>;
   }
 
-  if (paginatedEntries.length === 0) {
+  if (fileEntries.length === 0) {
     return <Card className="shadow-lg"><CardContent className="flex flex-col items-center justify-center py-10 text-center"><Image src="https://placehold.co/128x128/F0F2F5/3F51B5.png?text=No+Files" width={100} height={100} alt="No files" className="mb-4 opacity-70 rounded-lg"/><h3 className="text-xl font-semibold">No Investigation Files Found</h3></CardContent></Card>;
   }
 
@@ -118,9 +100,9 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedEntries.map((entry, index) => (
+                {fileEntries.map((entry, index) => (
                   <TableRow key={entry.id}>
-                    <TableCell className="text-center">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
+                    <TableCell className="text-center">{index + 1}</TableCell>
                     <TableCell className="font-medium">{entry.fileNo}</TableCell>
                     <TableCell>{entry.applicantName}</TableCell>
                     <TableCell>{entry.siteDetails?.map((site, idx) => (<span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>{site.nameOfSite}{idx < entry.siteDetails!.length - 1 ? ', ' : ''}</span>))}</TableCell>
@@ -133,7 +115,6 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
             </Table>
           </div>
         </CardContent>
-        <CardFooter className="p-4 border-t flex flex-wrap items-center justify-between gap-4">{totalPages > 1 && <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />}</CardFooter>
       </Card>
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete this investigation file?</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmDelete} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </TooltipProvider>

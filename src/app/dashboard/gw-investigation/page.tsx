@@ -27,6 +27,10 @@ const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
   if (dateValue instanceof Date && isValid(dateValue)) return dateValue;
   if (typeof dateValue === 'string') { const parsed = parseISO(dateValue); if (isValid(parsed)) return parsed; }
+   if (typeof dateValue === 'object' && dateValue.toDate) { // For Firestore Timestamps
+    const parsed = dateValue.toDate();
+    if (isValid(parsed)) return parsed;
+  }
   return null;
 };
 
@@ -51,7 +55,13 @@ export default function GWInvestigationPage() {
         (entry as any).category || 
         entry.applicationType === 'GW_Investigation'
     );
-    entries.sort((a, b) => (safeParseDate(b.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0) - (safeParseDate(a.remittanceDetails?.[0]?.dateOfRemittance)?.getTime() ?? 0));
+    entries.sort((a, b) => {
+        const dateA = safeParseDate(a.createdAt);
+        const dateB = safeParseDate(b.createdAt);
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return dateB.getTime() - dateA.getTime();
+    });
     return entries;
   }, [fileEntries]);
 
@@ -123,19 +133,6 @@ export default function GWInvestigationPage() {
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                     Total Sites: <span className="font-bold text-primary">{totalSites}</span>
                 </div>
-                {lastCreatedDate && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                        <Clock className="h-3.5 w-3.5"/>
-                        Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                    </div>
-                )}
-                {totalPages > 1 && (
-                    <PaginationControls
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                    />
-                )}
                 {user?.role === 'editor' && (
                     <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=gwInvestigation'); }} className="w-full sm:w-auto shrink-0">
                         <FilePlus2 className="mr-2 h-5 w-5" /> New File
@@ -143,16 +140,33 @@ export default function GWInvestigationPage() {
                 )}
                </div>
             </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+                    <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+                        <TabsTrigger value="Govt">Govt <Badge variant="secondary" className="ml-2">{counts.Govt}</Badge></TabsTrigger>
+                        <TabsTrigger value="Private">Private <Badge variant="secondary" className="ml-2">{counts.Private}</Badge></TabsTrigger>
+                        <TabsTrigger value="Complaints">Complaints <Badge variant="secondary" className="ml-2">{counts.Complaints}</Badge></TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                <div className="flex items-center gap-4">
+                    {lastCreatedDate && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                            <Clock className="h-3.5 w-3.5"/>
+                            Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                        </div>
+                    )}
+                    {totalPages > 1 && (
+                        <PaginationControls
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
+                    )}
+                </div>
+            </div>
            
-           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full pt-4 border-t">
-             <TabsList className="grid w-full grid-cols-3 sm:w-[450px]">
-               <TabsTrigger value="Govt">Govt <Badge variant="secondary" className="ml-2">{counts.Govt}</Badge></TabsTrigger>
-               <TabsTrigger value="Private">Private <Badge variant="secondary" className="ml-2">{counts.Private}</Badge></TabsTrigger>
-               <TabsTrigger value="Complaints">Complaints <Badge variant="secondary" className="ml-2">{counts.Complaints}</Badge></TabsTrigger>
-             </TabsList>
-           </Tabs>
-           
-           <div className="flex justify-between items-center gap-4 mt-4 pt-4 border-t">
+           <div className="flex justify-between items-center gap-4 pt-4 border-t">
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="font-semibold">Site Name Color Legend:</span>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-600"></div><span>Completed</span></div>
