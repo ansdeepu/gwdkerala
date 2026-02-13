@@ -610,6 +610,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                             )} />
                                         </div>
                                         <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." /></FormControl><FormMessage /></FormItem>} />
+                                        
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             <FormField name="vesRequired" control={control} render={({ field }) => (
                                                 <FormItem>
@@ -624,21 +625,8 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
-                                            <FormField name="feasibility" control={control} render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Feasibility</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value}>
-                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="Yes">Yes</SelectItem>
-                                                            <SelectItem value="No">No</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
                                         </div>
-
+                                        
                                         {watchedVesRequired === "Yes" && (
                                             <div className="space-y-4 p-4 border rounded-md bg-secondary/20">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -656,9 +644,25 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                                     )} />
                                                     <FormField name="vesDate" control={control} render={({ field }) => <FormItem><FormLabel>Date of VES conducted</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
                                                 </div>
-                                                <FormField name="geophysicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the VES..." /></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="geophysicalRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the VES..." /></FormControl><FormMessage /></FormItem>} />
                                             </div>
                                         )}
+
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <FormField name="feasibility" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Feasibility</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="Yes">Yes</SelectItem>
+                                                            <SelectItem value="No">No</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
 
                                         {watchedFeasibility === "Yes" && (
                                             <div className="space-y-4 pt-4 border-t">
