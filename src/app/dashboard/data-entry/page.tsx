@@ -2,6 +2,7 @@
 "use client";
 import DataEntryFormComponent from "@/components/shared/DataEntryForm";
 import InvestigationDataEntryFormComponent from "@/components/investigation/InvestigationDataEntryForm";
+import LoggingPumpingTestDataEntryFormComponent from "@/components/investigation/LoggingPumpingTestDataEntryForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, Loader2, ArrowLeft } from "lucide-react";
@@ -125,15 +126,10 @@ export default function DataEntryPage() {
   
   const returnPath = useMemo(() => {
     let base = '/dashboard/file-room'; 
-    const appType = pageData?.initialData.applicationType;
     
-    const allInvestigationTypes = [
-        ...GW_INVESTIGATION_TYPES, 
-        ...LOGGING_PUMPING_TEST_TYPES,
-        ...INVESTIGATION_GOVT_TYPES, 
-        ...INVESTIGATION_PRIVATE_TYPES, 
-        ...INVESTIGATION_COMPLAINT_TYPES
-    ];
+    const appType = pageData?.initialData.applicationType;
+
+    const allGwInvestigationTypes = [...GW_INVESTIGATION_TYPES, ...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES];
 
     if (approveUpdateId) {
         base = '/dashboard/pending-updates';
@@ -144,7 +140,7 @@ export default function DataEntryPage() {
             base = '/dashboard/plan-fund-works';
         } else if (PRIVATE_APPLICATION_TYPES.includes(appType as any)) {
             base = '/dashboard/private-deposit-works';
-        } else if (GW_INVESTIGATION_TYPES.includes(appType as any)) {
+        } else if (allGwInvestigationTypes.includes(appType as any)) {
             base = '/dashboard/gw-investigation';
         } else if (LOGGING_PUMPING_TEST_TYPES.includes(appType as any)) {
             base = '/dashboard/logging-pumping-test';
@@ -234,8 +230,12 @@ export default function DataEntryPage() {
   if (authIsLoading || dataLoading) return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (errorState) return <div className="flex h-screen items-center justify-center text-center p-6"><Card><CardContent className="pt-6"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-xl font-bold">{errorState}</h1><Button className="mt-4" variant="outline" onClick={() => router.back()}>Go Back</Button></CardContent></Card></div>;
 
-  const investigationTypes = [...GW_INVESTIGATION_TYPES, ...LOGGING_PUMPING_TEST_TYPES, ...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES];
-  const isInvestigationType = workTypeContext === 'gwInvestigation' || workTypeContext === 'loggingPumpingTest' || (pageData?.initialData.applicationType && investigationTypes.includes(pageData.initialData.applicationType as any));
+  const gwInvestigationTypes = [...GW_INVESTIGATION_TYPES, ...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES];
+  const isGwInvestigationType = workTypeContext === 'gwInvestigation' || (pageData?.initialData.applicationType && gwInvestigationTypes.includes(pageData.initialData.applicationType as any));
+
+  const loggingPumpingTestTypes = [...LOGGING_PUMPING_TEST_TYPES];
+  const isLoggingPumpingTestType = workTypeContext === 'loggingPumpingTest' || (pageData?.initialData.applicationType && loggingPumpingTestTypes.includes(pageData.initialData.applicationType as any));
+
 
   return (
     <div className="space-y-6">
@@ -243,8 +243,20 @@ export default function DataEntryPage() {
       <Card className="shadow-lg">
         <CardContent className="p-6">
           {pageData && pageData.initialData ? (
-             isInvestigationType ? (
+             isGwInvestigationType ? (
                 <InvestigationDataEntryFormComponent
+                    fileNoToEdit={fileNoForHeader ?? undefined}
+                    initialData={pageData.initialData}
+                    allStaffMembers={allStaffMembers}
+                    userRole={effectiveUserRole}
+                    workTypeContext={workTypeContext}
+                    returnPath={returnPath}
+                    pageToReturnTo={pageToReturnTo}
+                    isFormDisabled={isFormDisabledForSupervisor}
+                    allLsgConstituencyMaps={allLsgConstituencyMaps}
+                />
+             ) : isLoggingPumpingTestType ? (
+                <LoggingPumpingTestDataEntryFormComponent
                     fileNoToEdit={fileNoForHeader ?? undefined}
                     initialData={pageData.initialData}
                     allStaffMembers={allStaffMembers}
