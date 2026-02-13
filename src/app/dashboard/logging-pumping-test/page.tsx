@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import LoggingPumpingTestTable from "@/components/investigation/LoggingPumpingTestTable";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -26,6 +26,10 @@ const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
   if (dateValue instanceof Date && isValid(dateValue)) return dateValue;
   if (typeof dateValue === 'string') { const parsed = parseISO(dateValue); if (isValid(parsed)) return parsed; }
+  if (typeof dateValue === 'object' && dateValue.toDate) { // For Firestore Timestamps
+    const parsed = dateValue.toDate();
+    if (isValid(parsed)) return parsed;
+  }
   return null;
 };
 
@@ -128,41 +132,38 @@ export default function LoggingPumpingTestPage() {
                </div>
             </div>
            
-           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full pt-4 border-t">
-             <TabsList className="grid w-full grid-cols-2 sm:w-[300px]">
-               <TabsTrigger value="Logging">Logging <Badge variant="secondary" className="ml-2">{loggingEntries.length}</Badge></TabsTrigger>
-               <TabsTrigger value="PumpingTest">Pumping Test <Badge variant="secondary" className="ml-2">{pumpingTestEntries.length}</Badge></TabsTrigger>
-             </TabsList>
-           </Tabs>
-           
-           <div className="flex justify-between items-center gap-4 mt-4 pt-4 border-t">
+           <div className="flex justify-between items-center gap-4 pt-4 border-t">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+                    <TabsList className="grid w-full grid-cols-2 sm:w-auto">
+                        <TabsTrigger value="Logging">Logging <Badge variant="secondary" className="ml-2">{loggingEntries.length}</Badge></TabsTrigger>
+                        <TabsTrigger value="PumpingTest">Pumping Test <Badge variant="secondary" className="ml-2">{pumpingTestEntries.length}</Badge></TabsTrigger>
+                    </TabsList>
+                </Tabs>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="font-semibold">Site Name Color Legend:</span>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-600"></div><span>Completed</span></div>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-yellow-600"></div><span>Pending</span></div>
                 </div>
-                {totalPages > 1 && (
-                    <PaginationControls
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                    />
-                )}
             </div>
          </CardContent>
        </Card>
        
-      <LoggingPumpingTestTable fileEntries={paginatedEntries} isLoading={isLoading} searchActive={!!searchTerm} totalEntries={filteredEntries.length} />
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center pt-4">
-          <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-          />
-        </div>
-      )}
+      <Card>
+        <CardContent className="p-0">
+          <div className="max-h-[70vh] overflow-auto">
+            <LoggingPumpingTestTable fileEntries={paginatedEntries} isLoading={isLoading} searchActive={!!searchTerm} totalEntries={filteredEntries.length} />
+          </div>
+        </CardContent>
+        {totalPages > 1 && (
+          <CardFooter className="p-4 flex items-center justify-center border-t">
+            <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+            />
+          </CardFooter>
+        )}
+      </Card>
     </div>
   );
 }
