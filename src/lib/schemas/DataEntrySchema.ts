@@ -64,6 +64,17 @@ export const INVESTIGATION_COMPLAINT_TYPES = [
   "Complaints Groundwater Pollution", "Complaints Chief Minister’s Grievance Redressal Cell", "Complaints Others"
 ] as const;
 
+export const LOGGING_PUMPING_TEST_GOVT_TYPES = [
+  "Government Institution", "Government Water Authority", "Government Infrastructure", 
+  "Government Industry", "Government Others", "Government PMKSY", "MPLAD", "MLASDF", 
+  "MLA Asset development Fund", "Collector DRW", "Collector SC/ST", 
+  "Collector ARWSS", "Collector PMKSY", "Collector Others", "LSGD", "MGNRES", "Others", "GWBDWS", "ARS"
+] as const;
+
+export const LOGGING_PUMPING_TEST_PRIVATE_TYPES = [
+  "Private Individuals", "Private Institution", "Private Infra structure", "Private Industry"
+] as const;
+
 export const applicationTypeOptions = [
   ...PRIVATE_APPLICATION_TYPES,
   ...PUBLIC_DEPOSIT_APPLICATION_TYPES,
@@ -74,6 +85,8 @@ export const applicationTypeOptions = [
   ...INVESTIGATION_GOVT_TYPES,
   ...INVESTIGATION_PRIVATE_TYPES,
   ...INVESTIGATION_COMPLAINT_TYPES,
+  ...LOGGING_PUMPING_TEST_GOVT_TYPES,
+  ...LOGGING_PUMPING_TEST_PRIVATE_TYPES,
 ] as const;
 export type ApplicationType = typeof applicationTypeOptions[number];
 
