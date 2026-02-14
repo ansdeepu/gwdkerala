@@ -26,7 +26,8 @@ import {
     LOGGING_PUMPING_TEST_TYPES,
     INVESTIGATION_GOVT_TYPES, 
     INVESTIGATION_PRIVATE_TYPES, 
-    INVESTIGATION_COMPLAINT_TYPES
+    INVESTIGATION_COMPLAINT_TYPES,
+    LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
 } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
@@ -127,36 +128,32 @@ export default function DataEntryPage() {
   const returnPath = useMemo(() => {
     let base = '/dashboard/file-room'; 
     
-    const appType = pageData?.initialData.applicationType;
-
-    const allGwInvestigationTypes = [...GW_INVESTIGATION_TYPES, ...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES];
-
     if (approveUpdateId) {
         base = '/dashboard/pending-updates';
-    } else if (fileIdToEdit && appType) { // Editing existing
-        if (COLLECTOR_APPLICATION_TYPES.includes(appType as any)) {
-            base = '/dashboard/collectors-deposit-works';
-        } else if (PLAN_FUND_APPLICATION_TYPES.includes(appType as any)) {
-            base = '/dashboard/plan-fund-works';
-        } else if (PRIVATE_APPLICATION_TYPES.includes(appType as any)) {
-            base = '/dashboard/private-deposit-works';
-        } else if (allGwInvestigationTypes.includes(appType as any)) {
+    } else if (fileIdToEdit && pageData?.initialData) { // Editing existing, determine path from content
+        const hasInvestigationPurpose = pageData.initialData.siteDetails?.some(site => site.purpose === 'GW Investigation');
+        const hasLoggingPumpingPurpose = pageData.initialData.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+
+        if (hasInvestigationPurpose && !hasLoggingPumpingPurpose) {
             base = '/dashboard/gw-investigation';
-        } else if (LOGGING_PUMPING_TEST_TYPES.includes(appType as any)) {
+        } else if (hasLoggingPumpingPurpose && !hasInvestigationPurpose) {
             base = '/dashboard/logging-pumping-test';
+        } else {
+             const appType = pageData?.initialData.applicationType;
+             if (COLLECTOR_APPLICATION_TYPES.includes(appType as any)) {
+                base = '/dashboard/collectors-deposit-works';
+            } else if (PLAN_FUND_APPLICATION_TYPES.includes(appType as any)) {
+                base = '/dashboard/plan-fund-works';
+            } else if (PRIVATE_APPLICATION_TYPES.includes(appType as any)) {
+                base = '/dashboard/private-deposit-works';
+            }
         }
-    } else if (workTypeContext) { // Creating new
-        if (workTypeContext === 'collector') {
-            base = '/dashboard/collectors-deposit-works';
-        } else if (workTypeContext === 'planFund') {
-            base = '/dashboard/plan-fund-works';
-        } else if (workTypeContext === 'private') {
-            base = '/dashboard/private-deposit-works';
-        } else if (workTypeContext === 'gwInvestigation') {
-            base = '/dashboard/gw-investigation';
-        } else if (workTypeContext === 'loggingPumpingTest') {
-            base = '/dashboard/logging-pumping-test';
-        }
+    } else if (workTypeContext) { // Creating new, determine from context
+        if (workTypeContext === 'collector') base = '/dashboard/collectors-deposit-works';
+        else if (workTypeContext === 'planFund') base = '/dashboard/plan-fund-works';
+        else if (workTypeContext === 'private') base = '/dashboard/private-deposit-works';
+        else if (workTypeContext === 'gwInvestigation') base = '/dashboard/gw-investigation';
+        else if (workTypeContext === 'loggingPumpingTest') base = '/dashboard/logging-pumping-test';
     }
     return pageToReturnTo ? `${base}?page=${pageToReturnTo}` : base;
   }, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
@@ -227,16 +224,22 @@ export default function DataEntryPage() {
     }).filter((s): s is (StaffMember & { uid: string; name: string }) => s !== null).sort((a, b) => a.name.localeCompare(b.name));
   }, [pageData, staffMembers, user, staffIsLoading]);
   
+  const hasInvestigationPurpose = useMemo(() => 
+    pageData?.initialData.siteDetails?.some(site => site.purpose === 'GW Investigation'), 
+    [pageData]
+  );
+  
+  const hasLoggingPumpingPurpose = useMemo(() => 
+    pageData?.initialData.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any)),
+    [pageData]
+  );
+
+  const isGwInvestigationType = workTypeContext === 'gwInvestigation' || (!!fileIdToEdit && hasInvestigationPurpose && !hasLoggingPumpingPurpose);
+  const isLoggingPumpingTestType = workTypeContext === 'loggingPumpingTest' || (!!fileIdToEdit && hasLoggingPumpingPurpose && !hasInvestigationPurpose);
+  
   if (authIsLoading || dataLoading) return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (errorState) return <div className="flex h-screen items-center justify-center text-center p-6"><Card><CardContent className="pt-6"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-xl font-bold">{errorState}</h1><Button className="mt-4" variant="outline" onClick={() => router.back()}>Go Back</Button></CardContent></Card></div>;
-
-  const gwInvestigationTypes = [...GW_INVESTIGATION_TYPES, ...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES];
-  const isGwInvestigationType = workTypeContext === 'gwInvestigation' || (pageData?.initialData.applicationType && gwInvestigationTypes.includes(pageData.initialData.applicationType as any));
-
-  const loggingPumpingTestTypes = [...LOGGING_PUMPING_TEST_TYPES];
-  const isLoggingPumpingTestType = workTypeContext === 'loggingPumpingTest' || (pageData?.initialData.applicationType && loggingPumpingTestTypes.includes(pageData.initialData.applicationType as any));
-
-
+  
   return (
     <div className="space-y-6">
        <div className="flex justify-end mb-4"><Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button></div>

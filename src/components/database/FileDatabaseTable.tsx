@@ -1,4 +1,3 @@
-
 // src/components/database/FileDatabaseTable.tsx
 "use client";
 
@@ -15,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Eye, Edit3, Trash2, Loader2, Clock, Copy } from "lucide-react";
 import type { DataEntryFormData, SitePurpose, ApplicationType, SiteWorkStatus, PendingUpdate, SiteDetailFormData } from "@/lib/schemas";
-import { applicationTypeDisplayMap } from "@/lib/schemas";
+import { applicationTypeDisplayMap, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from "@/lib/schemas";
 import { format, isValid, parseISO } from "date-fns";
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -154,11 +153,12 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
 
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
-    const workTypeParam = item.applicationType?.startsWith("Private_") ? "private" : "public";
-    const pageParam = currentPage > 1 ? `&page=${currentPage}` : '';
-    const queryParams = new URLSearchParams({ id: item.id, workType: workTypeParam, ...(pageParam && { page: String(currentPage) }) });
+    const queryParams = new URLSearchParams({ id: item.id });
     if(isReadOnly) {
         queryParams.set('readOnly', 'true');
+    }
+    if (currentPage > 1) {
+        queryParams.set('page', String(currentPage));
     }
     router.push(`/dashboard/data-entry?${queryParams.toString()}`);
   };
@@ -430,7 +430,6 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
                 </AlertDialogAction>
             </AlertDialogFooter>
             </AlertDialogContent>
-        </AlertDialog>
       )}
 
     </TooltipProvider>
