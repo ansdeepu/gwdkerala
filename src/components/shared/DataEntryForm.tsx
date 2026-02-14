@@ -241,13 +241,27 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
         if (!isEditing && user?.officeLocation && data.fileNo) {
             setIsChecking(true);
             try {
-                const fileNoTrimmed = data.fileNo.trim();
+                const fileNoTrimmed = data.fileNo.trim().toUpperCase();
+                const depositWorkTypes: string[] = [
+                    ...PUBLIC_DEPOSIT_APPLICATION_TYPES,
+                    ...PRIVATE_APPLICATION_TYPES,
+                    ...COLLECTOR_APPLICATION_TYPES,
+                    ...PLAN_FUND_APPLICATION_TYPES
+                ];
+                
                 const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
                 const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
+
+                const hasDuplicate = querySnapshot.docs.some(doc => {
+                    const docAppType = doc.data().applicationType;
+                    // Check if the found doc's type is part of the "Deposit Works" group
+                    return docAppType && depositWorkTypes.includes(docAppType);
+                });
+
+                if (hasDuplicate) {
                     toast({
                         title: "Duplicate File Number",
-                        description: `An entry with File No. "${data.fileNo}" already exists. Please use a unique file number.`,
+                        description: `This file number is already used for another Deposit Work.`,
                         variant: "destructive",
                     });
                     setIsChecking(false);
@@ -803,6 +817,12 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     }
   };
   const applicationTypeOptionsForForm = getApplicationTypeOptions();
+
+  useEffect(() => {
+    if (!fileIdToEdit && applicationTypeOptionsForForm.length === 1 && workTypeContext !== 'planFund') {
+        setValue("applicationType", applicationTypeOptionsForForm[0] as any);
+    }
+  }, [fileIdToEdit, applicationTypeOptionsForForm, setValue, workTypeContext]);
 
   const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
   const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
