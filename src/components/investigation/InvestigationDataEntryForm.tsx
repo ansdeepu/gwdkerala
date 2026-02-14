@@ -261,16 +261,20 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
                 const querySnapshot = await getDocs(q);
 
+                const investigationAppTypes: string[] = [
+                    ...GW_INVESTIGATION_TYPES,
+                    ...LOGGING_PUMPING_TEST_TYPES,
+                ];
+
                 const hasDuplicate = querySnapshot.docs.some(doc => {
                     const docAppType = doc.data().applicationType;
-                    // Check if the found doc's type is part of the GW Investigation group
-                    return docAppType && (GW_INVESTIGATION_TYPES as readonly string[]).includes(docAppType);
+                    return docAppType && investigationAppTypes.includes(docAppType);
                 });
                 
                 if (hasDuplicate) {
                     toast({
                         title: "Duplicate File Number",
-                        description: `This file number is already used for another GW Investigation file.`,
+                        description: `This file number is already used for another Investigation file.`,
                         variant: "destructive",
                     });
                     setIsChecking(false);
@@ -606,7 +610,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                             </FormItem>
                                         )} />
                                     </div>
-                                    <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="hydrogeologicalRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." /></FormControl><FormMessage /></FormItem>} />
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField name="vesRequired" control={control} render={({ field }) => (
