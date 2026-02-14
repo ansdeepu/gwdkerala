@@ -201,9 +201,18 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
 };
 
 // Dialog Content Components
-const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOptions }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, formOptions: readonly ApplicationType[] | ApplicationType[] }) => {
+const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOptions, isEditing }: { 
+    initialData: any, 
+    onConfirm: (data: any) => void, 
+    onCancel: () => void, 
+    formOptions: readonly ApplicationType[] | ApplicationType[],
+    isEditing: boolean
+}) => {
+    const { user } = useAuth();
+    const { toast } = useToast();
     const [data, setData] = useState(initialData);
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; }>({});
+    const [isChecking, setIsChecking] = useState(false);
 
     const handleChange = (key: string, value: any) => {
         setData((prev: any) => ({ ...prev, [key]: value }));
@@ -212,7 +221,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
         }
     };
     
-    const handleSave = () => {
+    const handleSave = async () => {
         const newErrors: { fileNo?: string; applicantName?: string; applicationType?: string; } = {};
         if (!data.fileNo?.trim()) {
             newErrors.fileNo = "File No is required.";
@@ -229,6 +238,33 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
             return;
         }
 
+        if (!isEditing && user?.officeLocation && data.fileNo) {
+            setIsChecking(true);
+            try {
+                const fileNoTrimmed = data.fileNo.trim();
+                const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    toast({
+                        title: "Duplicate File Number",
+                        description: `An entry with File No. "${data.fileNo}" already exists. Please use a unique file number.`,
+                        variant: "destructive",
+                    });
+                    setIsChecking(false);
+                    return; 
+                }
+            } catch (error) {
+                toast({
+                    title: "Validation Error",
+                    description: "Could not verify file number. Please try again.",
+                    variant: "destructive",
+                });
+                setIsChecking(false);
+                return;
+            }
+            setIsChecking(false);
+        }
+
         onConfirm(data);
     };
 
@@ -241,21 +277,21 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
              <div className="grid grid-cols-3 gap-4 items-start">
                 <div className="space-y-2 col-span-1">
                     <Label htmlFor="fileNo">File No *</Label>
-                    <Input id="fileNo" value={data.fileNo} onChange={(e) => handleChange('fileNo', e.target.value)} />
+                    <Input id="fileNo" value={data.fileNo} onChange={(e) => handleChange('fileNo', e.target.value)} disabled={isChecking}/>
                     {errors.fileNo && <p className="text-xs text-destructive mt-1">{errors.fileNo}</p>}
                 </div>
                 <div className="space-y-2 col-span-2">
                     <Label htmlFor="applicantName">Name & Address of Institution/Applicant *</Label>
-                    <Textarea id="applicantName" value={data.applicantName} onChange={(e) => handleChange('applicantName', e.target.value)} className="min-h-[40px]"/>
+                    <Textarea id="applicantName" value={data.applicantName} onChange={(e) => handleChange('applicantName', e.target.value)} className="min-h-[40px]" disabled={isChecking}/>
                     {errors.applicantName && <p className="text-xs text-destructive mt-1">{errors.applicantName}</p>}
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo} onChange={(e) => handleChange('phoneNo', e.target.value)} /></div>
-                <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} /></div>
+                <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo} onChange={(e) => handleChange('phoneNo', e.target.value)} disabled={isChecking} /></div>
+                <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} disabled={isChecking}/></div>
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType}>
+                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType} disabled={isChecking}>
                         <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                         <SelectContent className="max-h-80">
                             {formOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
@@ -265,7 +301,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 </div>
             </div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onCancel}>Cancel</Button><Button onClick={handleSave}>Save</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={onCancel} disabled={isChecking}>Cancel</Button><Button onClick={handleSave} disabled={isChecking}>{isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save</Button></DialogFooter>
       </div>
     );
 };
@@ -1169,7 +1205,15 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         )}
         
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}>
-            <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} /></DialogContent>
+            <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl">
+                <ApplicationDialogContent 
+                    initialData={dialogState.data} 
+                    onConfirm={handleDialogConfirm} 
+                    onCancel={closeDialog} 
+                    formOptions={applicationTypeOptionsForForm}
+                    isEditing={!!fileIdToEdit}
+                />
+            </DialogContent>
         </Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}>
             <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl">
