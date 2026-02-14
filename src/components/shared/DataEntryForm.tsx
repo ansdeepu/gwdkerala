@@ -211,7 +211,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
     const { user } = useAuth();
     const { toast } = useToast();
     const [data, setData] = useState(initialData);
-    const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; }>({});
+    const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; }>();
     const [isChecking, setIsChecking] = useState(false);
 
     const handleChange = (key: string, value: any) => {
@@ -278,12 +278,12 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 <div className="space-y-2 col-span-1">
                     <Label htmlFor="fileNo">File No *</Label>
                     <Input id="fileNo" value={data.fileNo} onChange={(e) => handleChange('fileNo', e.target.value)} disabled={isChecking}/>
-                    {errors.fileNo && <p className="text-xs text-destructive mt-1">{errors.fileNo}</p>}
+                    {errors?.fileNo && <p className="text-xs text-destructive mt-1">{errors.fileNo}</p>}
                 </div>
                 <div className="space-y-2 col-span-2">
                     <Label htmlFor="applicantName">Name & Address of Institution/Applicant *</Label>
                     <Textarea id="applicantName" value={data.applicantName} onChange={(e) => handleChange('applicantName', e.target.value)} className="min-h-[40px]" disabled={isChecking}/>
-                    {errors.applicantName && <p className="text-xs text-destructive mt-1">{errors.applicantName}</p>}
+                    {errors?.applicantName && <p className="text-xs text-destructive mt-1">{errors.applicantName}</p>}
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -297,7 +297,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                             {formOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
                         </SelectContent>
                     </Select>
-                     {errors.applicationType && <p className="text-xs text-destructive mt-1">{errors.applicationType}</p>}
+                     {errors?.applicationType && <p className="text-xs text-destructive mt-1">{errors.applicationType}</p>}
                 </div>
             </div>
         </div>
@@ -803,14 +803,6 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     }
   };
   const applicationTypeOptionsForForm = getApplicationTypeOptions();
-  
-    useEffect(() => {
-        if (!fileIdToEdit && applicationTypeOptionsForForm.length === 1) {
-            setValue("applicationType", applicationTypeOptionsForForm[0]);
-        }
-    }, [fileIdToEdit, applicationTypeOptionsForForm, setValue]);
-
-
 
   const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
   const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
