@@ -196,17 +196,16 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
 };
 
 // Dialog Content Components
-const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOptions, workTypeContext, user, isEditing, toast, db }: { 
+const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOptions, workTypeContext, isEditing }: { 
     initialData: any, 
     onConfirm: (data: any) => void, 
     onCancel: () => void, 
     formOptions: readonly ApplicationType[] | ApplicationType[], 
     workTypeContext: string | null,
-    user: UserProfile | null,
-    isEditing: boolean,
-    toast: any,
-    db: any,
+    isEditing: boolean
 }) => {
+    const { user } = useAuth();
+    const { toast } = useToast();
     const [data, setData] = useState({
         ...initialData,
         category: initialData?.category || undefined
@@ -214,17 +213,16 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; category?: string; }>({});
     const [isChecking, setIsChecking] = useState(false);
 
-    const isInvestigationContext = workTypeContext === 'gwInvestigation' || workTypeContext === 'loggingPumpingTest';
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
+    const isInvestigationContext = workTypeContext === 'gwInvestigation';
+    const pageTitle = 'GW Investigation';
 
     const filteredAppTypeOptions = useMemo(() => {
         if (!isInvestigationContext) return formOptions;
         if (data.category === 'Govt') return INVESTIGATION_GOVT_TYPES;
         if (data.category === 'Private') return INVESTIGATION_PRIVATE_TYPES;
         if (data.category === 'Complaints') return INVESTIGATION_COMPLAINT_TYPES;
-        if (workTypeContext === 'loggingPumpingTest') return LOGGING_PUMPING_TEST_TYPES;
         return [];
-    }, [isInvestigationContext, data.category, formOptions, workTypeContext]);
+    }, [isInvestigationContext, data.category, formOptions]);
 
     const handleChange = (key: string, value: any) => {
         setData((prev: any) => ({ ...prev, [key]: value }));
@@ -325,7 +323,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
 
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={isInvestigationContext && !data.category && workTypeContext !== 'loggingPumpingTest'}>
+                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={isInvestigationContext && !data.category}>
                         <SelectTrigger><SelectValue placeholder={isInvestigationContext && !data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
                         <SelectContent className="max-h-80">
                             {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
@@ -395,9 +393,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
     );
 };
 
-const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean, workTypeContext: string | null }) => {
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
-
+const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean }) => {
     const form = useForm<PaymentDetailFormData>({
       resolver: zodResolver(PaymentDetailSchema),
       defaultValues: {
@@ -417,7 +413,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
         <Form {...form}>
              <form onSubmit={form.handleSubmit(handleConfirmSubmit)} className="flex flex-col h-full">
                 <DialogHeader className="p-6 pb-4 shrink-0">
-                    <DialogTitle>{pageTitle} Payment Details</DialogTitle>
+                    <DialogTitle>Payment Details</DialogTitle>
                 </DialogHeader>
                 <div className="flex-1 min-h-0">
                   <ScrollArea className="h-full px-6 py-4">
@@ -467,10 +463,10 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
     const watchedFeasibility = useWatch({ control, name: 'feasibility' });
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
+    const pageTitle = 'GW Investigation';
     
-    const workStatusOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS : INVESTIGATION_WORK_STATUS_OPTIONS;
-    const purposeOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_PURPOSE_OPTIONS : ['GW Investigation'];
+    const workStatusOptions = ["Pending", "VES Pending", "Completed"] as const;
+    const purposeOptions = ['GW Investigation'];
 
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
@@ -534,30 +530,13 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                        
-                                        {workTypeContext === 'loggingPumpingTest' ? (
-                                            <FormField name="purpose" control={control} render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
-                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            {purposeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        ) : (
-                                            <FormField name="purpose" control={control} render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Purpose</FormLabel>
-                                                    <FormControl><Input value="GW Investigation" readOnly className="bg-muted" /></FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        )}
-                                        
+                                        <FormField name="purpose" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Purpose</FormLabel>
+                                                <FormControl><Input value="GW Investigation" readOnly className="bg-muted" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
                                         <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Local Self Govt.</FormLabel>
@@ -590,10 +569,23 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                 </CardContent>
                             </Card>
                             
-                            {workTypeContext === 'loggingPumpingTest' ? (
-                                <Card>
-                                    <CardHeader><CardTitle>Work Details</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4">
+                            <Card>
+                                <CardHeader><CardTitle>Survey Details</CardTitle></CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <FormField name="nameOfInvestigator" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Name of Investigator (Hydrogeological)</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Staff" /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        {hydroStaff.map(staff => <SelectItem key={staff.id} value={staff.name}>{staff.name} ({staff.designation})</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="dateOfInvestigation" control={control} render={({ field }) => <FormItem><FormLabel>Date of Investigation</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
                                         <FormField name="typeOfWell" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Type of Well <span className="text-destructive">*</span></FormLabel>
@@ -606,55 +598,10 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField name="hydrogeologicalRemarks" control={form.control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Description of Work</FormLabel>
-                                                <FormControl><Textarea {...field} value={field.value || ""} placeholder="Add a description of the work performed..." readOnly={isReadOnly} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField name="geophysicalRemarks" control={form.control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Remarks</FormLabel>
-                                                <FormControl><Textarea {...field} value={field.value || ""} placeholder="Add any additional remarks..." readOnly={isReadOnly} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </CardContent>
-                                </Card>
-                            ) : (
-                                <Card>
-                                    <CardHeader><CardTitle>Survey Details</CardTitle></CardHeader>
-                                    <CardContent className="space-y-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <FormField name="nameOfInvestigator" control={control} render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Name of Investigator (Hydrogeological)</FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Staff" /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            {hydroStaff.map(staff => <SelectItem key={staff.id} value={staff.name}>{staff.name} ({staff.designation})</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                            <FormField name="dateOfInvestigation" control={control} render={({ field }) => <FormItem><FormLabel>Date of Investigation</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
-                                            <FormField name="typeOfWell" control={control} render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Type of Well <span className="text-destructive">*</span></FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value}>
-                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Well Type" /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            {typeOfWellOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        </div>
-                                        <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." /></FormControl><FormMessage /></FormItem>} />
-                                        
+                                    </div>
+                                    <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." /></FormControl><FormMessage /></FormItem>} />
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField name="vesRequired" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>VES Required</FormLabel>
@@ -670,75 +617,77 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                         )} />
                                         
                                         {watchedVesRequired === "Yes" && (
-                                            <div className="space-y-4 p-4 border rounded-md bg-secondary/20">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <FormField name="vesInvestigator" control={control} render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Name of Investigator (Geophysical)</FormLabel>
-                                                            <Select onValueChange={field.onChange} value={field.value || ""}>
-                                                                <FormControl><SelectTrigger><SelectValue placeholder="Select Staff" /></SelectTrigger></FormControl>
-                                                                <SelectContent>
-                                                                    {geophysStaff.map(staff => <SelectItem key={staff.id} value={staff.name}>{staff.name} ({staff.designation})</SelectItem>)}
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )} />
-                                                    <FormField name="vesDate" control={control} render={({ field }) => <FormItem><FormLabel>Date of VES conducted</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
-                                                </div>
-                                                <FormField name="geophysicalRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the VES..." /></FormControl><FormMessage /></FormItem>} />
+                                            <div className="space-y-4 p-4 border rounded-md bg-secondary/20 md:col-span-2 grid md:grid-cols-2 gap-4">
+                                                <FormField name="vesInvestigator" control={control} render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Name of Investigator (Geophysical)</FormLabel>
+                                                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                                                            <FormControl><SelectTrigger><SelectValue placeholder="Select Staff" /></SelectTrigger></FormControl>
+                                                            <SelectContent>
+                                                                {geophysStaff.map(staff => <SelectItem key={staff.id} value={staff.name}>{staff.name} ({staff.designation})</SelectItem>)}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+                                                <FormField name="vesDate" control={control} render={({ field }) => <FormItem><FormLabel>Date of VES conducted</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="geophysicalRemarks" control={form.control} render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the VES..." /></FormControl><FormMessage /></FormItem>} />
                                             </div>
                                         )}
-                                        
-                                        <div className="pt-4 border-t">
-                                            <FormField name="feasibility" control={control} render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Feasibility <span className="text-destructive">*</span></FormLabel>
-                                                    <Select onValueChange={field.onChange} value={field.value}>
-                                                        <FormControl><SelectTrigger className="w-[180px]"><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="Yes">Yes</SelectItem>
-                                                            <SelectItem value="No">No</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
-                                        </div>
+                                    </div>
 
-                                        {watchedFeasibility === "Yes" && watchedTypeOfWell && (
-                                            <div className="space-y-4 pt-4 border-t">
-                                                <h4 className="font-semibold text-sm">Recommended measurements</h4>
-                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                    <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Diameter (mm)</FormLabel>
+                                    <div className="pt-4 border-t">
+                                        <FormField name="feasibility" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Feasibility <span className="text-destructive">*</span></FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl><SelectTrigger className="w-[180px]"><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="Yes">Yes</SelectItem>
+                                                        <SelectItem value="No">No</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </div>
+
+                                    {watchedFeasibility === "Yes" && watchedTypeOfWell && (
+                                        <div className="space-y-4 pt-4 border-t">
+                                            <h4 className="font-semibold text-sm">Recommended measurements</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Diameter (mm)</FormLabel>
+                                                        {watchedTypeOfWell === "Open Well" ? (
+                                                            <FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} placeholder="Enter diameter" /></FormControl>
+                                                        ) : (
                                                             <Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}>
                                                                 <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
                                                                 <SelectContent><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
                                                             </Select>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )} />
-                                                    <FormField name="surveyRecommendedTD" control={control} render={({ field }) => <FormItem><FormLabel>TD (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                                    {watchedTypeOfWell === "Bore Well" && <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />}
-                                                    {watchedTypeOfWell === "Bore Well" && <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />}
-                                                    {watchedTypeOfWell === "Filter Point Well" && <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />}
-                                                    {watchedTypeOfWell === "Tube Well" && (
-                                                        <>
-                                                            <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                                            <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                                            <FormField name="surveyRecommendedMsCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                                        </>
-                                                    )}
-                                                    <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Location of well</FormLabel><FormControl><Textarea {...field} value={field.value || ""} className="min-h-[40px]" readOnly={isReadOnly}/></FormControl><FormMessage /></FormItem>} />
-                                                    <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem className="md:col-span-3"><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Recommended measurements remarks..." readOnly={isReadOnly}/></FormControl><FormMessage /></FormItem>} />
-                                                </div>
+                                                        )}
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+                                                <FormField name="surveyRecommendedTD" control={control} render={({ field }) => <FormItem><FormLabel>TD (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                                {watchedTypeOfWell === "Bore Well" && <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />}
+                                                {watchedTypeOfWell === "Bore Well" && <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />}
+                                                {watchedTypeOfWell === "Filter Point Well" && <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />}
+                                                {watchedTypeOfWell === "Tube Well" && (
+                                                    <>
+                                                        <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                                        <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                                        <FormField name="surveyRecommendedMsCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                                    </>
+                                                )}
+                                                <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Location of well</FormLabel><FormControl><Textarea {...field} value={field.value || ""} className="min-h-[40px]" readOnly={isReadOnly}/></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem className="md:col-span-3"><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Recommended measurements remarks..." readOnly={isReadOnly}/></FormControl><FormMessage /></FormItem>} />
                                             </div>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            )}
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
 
                             <Card>
                                 <CardHeader><CardTitle>Work Status</CardTitle></CardHeader>
@@ -785,7 +734,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
     );
 };
 
-export default function InvestigationDataEntryFormComponent({ fileNoToEdit, initialData, allStaffMembers, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps }: DataEntryFormProps) {
+export default function InvestigationDataEntryFormComponent({ fileNoToEdit, initialData, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps, allStaffMembers }: DataEntryFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileIdToEdit = searchParams.get("id");
@@ -952,10 +901,10 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell><TableCell>{item.paymentAccount}</TableCell><TableCell className="text-right">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.paymentRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item })}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN')}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         <Card><CardHeader><CardTitle className="text-xl">5. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN') || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN') || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN') || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
-        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} workTypeContext={workTypeContext} user={user} isEditing={isEditing} toast={toast} db={db} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} category={watch('category')} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} category={watchedCategory} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} workTypeContext={workTypeContext} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>
     </FormProvider>
