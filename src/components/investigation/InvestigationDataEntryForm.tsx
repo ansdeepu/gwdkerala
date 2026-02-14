@@ -686,25 +686,26 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                                     )} />
                                                     <FormField name="vesDate" control={control} render={({ field }) => <FormItem><FormLabel>Date of VES conducted</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
                                                 </div>
-                                                <FormField name="geophysicalRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the VES..." /></FormControl><FormMessage /></FormItem>} />
-
-                                                 <div className="pt-4 border-t">
-                                                      <FormField name="feasibility" control={control} render={({ field }) => (
-                                                        <FormItem>
-                                                            <FormLabel>Feasibility</FormLabel>
-                                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                                <FormControl><SelectTrigger className="w-[180px]"><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
-                                                                <SelectContent>
-                                                                    <SelectItem value="Yes">Yes</SelectItem>
-                                                                    <SelectItem value="No">No</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )} />
-                                                 </div>
                                             </div>
                                         )}
+                                        
+                                        <FormField name="geophysicalRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the VES..." /></FormControl><FormMessage /></FormItem>} />
+
+                                        <div className="pt-4 border-t">
+                                            <FormField name="feasibility" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Feasibility <span className="text-destructive">*</span></FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl><SelectTrigger className="w-[180px]"><SelectValue placeholder="Select..." /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="Yes">Yes</SelectItem>
+                                                            <SelectItem value="No">No</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
 
                                         {watchedFeasibility === "Yes" && watchedTypeOfWell && (
                                             <div className="space-y-4 pt-4 border-t">

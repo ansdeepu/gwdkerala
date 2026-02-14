@@ -1,3 +1,4 @@
+
 // src/components/database/FileDatabaseTable.tsx
 "use client";
 
@@ -18,12 +19,6 @@ import { applicationTypeDisplayMap, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from 
 import { format, isValid, parseISO } from "date-fns";
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,7 +63,7 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined): string => {
     if (!status) return 'text-muted-foreground';
     
     const completedOrFailed: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed"];
-    if (completedOrFailed.includes(status)) {
+    if (completedOrFailed.includes(status as SiteWorkStatus)) {
         return 'text-red-600';
     }
     
@@ -153,7 +148,22 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
 
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
+    
+    // Determine the workType for the URL
+    const hasInvestigationPurpose = item.siteDetails?.some(site => site.purpose === 'GW Investigation');
+    const hasLoggingPumpingPurpose = item.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+
+    let workType = '';
+    if (hasInvestigationPurpose && !hasLoggingPumpingPurpose) {
+        workType = 'gwInvestigation';
+    } else if (hasLoggingPumpingPurpose && !hasInvestigationPurpose) {
+        workType = 'loggingPumpingTest';
+    }
+
     const queryParams = new URLSearchParams({ id: item.id });
+    if (workType) {
+        queryParams.set('workType', workType);
+    }
     if(isReadOnly) {
         queryParams.set('readOnly', 'true');
     }
@@ -264,7 +274,7 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
 
 
   return (
-    <TooltipProvider>
+    <>
       <Card className="shadow-lg">
         <CardContent className="p-0">
           <div className="max-h-[70vh] overflow-auto">
@@ -331,39 +341,21 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
                     </TableCell>
                     <TableCell className="text-right w-[15%] px-2 py-2">
                       <div className="flex items-center justify-end space-x-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}>
-                               <Eye className="h-4 w-4" />
-                               <span className="sr-only">View Details</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{canEdit ? "View / Edit" : "View Details"}</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}>
+                           <Eye className="h-4 w-4" />
+                           <span className="sr-only">View Details</span>
+                        </Button>
                         {canCopy && (
-                          <Tooltip>
-                              <TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" onClick={() => handleCopyClick(entry)} disabled={isCopying}>
-                                      <Copy className="h-4 w-4" />
-                                      <span className="sr-only">Make a Copy</span>
-                                  </Button>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Make a Copy</p></TooltipContent>
-                          </Tooltip>
+                          <Button variant="ghost" size="icon" onClick={() => handleCopyClick(entry)} disabled={isCopying}>
+                              <Copy className="h-4 w-4" />
+                              <span className="sr-only">Make a Copy</span>
+                          </Button>
                         )}
                         {canDelete && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(entry)} disabled={isDeleting && deleteItem?.id === entry.id}>
-                                {isDeleting && deleteItem?.id === entry.id ? <Loader2 className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
-                                <span className="sr-only">Delete Entry</span>
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Delete Entry</p></TooltipContent>
-                          </Tooltip>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(entry)} disabled={isDeleting && deleteItem?.id === entry.id}>
+                            {isDeleting && deleteItem?.id === entry.id ? <Loader2 className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+                            <span className="sr-only">Delete Entry</span>
+                          </Button>
                         )}
                       </div>
                     </TableCell>
@@ -431,7 +423,6 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
             </AlertDialogFooter>
             </AlertDialogContent>
       )}
-
-    </TooltipProvider>
+    </>
   );
 }

@@ -364,7 +364,7 @@ export const SiteDetailSchema = z.object({
   vesRequired: z.enum(["Yes", "No"]).optional(),
   vesInvestigator: z.string().optional().nullable(),
   vesDate: nativeDateSchema,
-  feasibility: z.enum(["Yes", "No"]).optional(),
+  feasibility: z.enum(["Yes", "No"], { required_error: "Feasibility is required." }),
   hydrogeologicalRemarks: z.string().optional().nullable().default(""),
   geophysicalRemarks: z.string().optional().nullable().default(""),
 
