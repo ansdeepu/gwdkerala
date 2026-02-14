@@ -58,6 +58,8 @@ import {
   type Bidder,
   typeOfWellOptions,
   type Designation,
+  LOGGING_PUMPING_TEST_GOVT_TYPES,
+  LOGGING_PUMPING_TEST_PRIVATE_TYPES,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -81,17 +83,6 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/comp
 
 const db = getFirestore(app);
 
-const LOGGING_PUMPING_TEST_GOVT_TYPES = [
-  "Government Institution", "Government Water Authority", "Government Infrastructure", 
-  "Government Industry", "Government Others", "Government PMKSY", "MPLAD", "MLASDF", 
-  "MLA Asset development Fund", "Collector DRW", "Collector SC/ST", 
-  "Collector ARWSS", "Collector PMKSY", "Collector Others", "LSGD", "MGNRES", "Others", "GWBDWS", "ARS"
-] as const;
-
-const LOGGING_PUMPING_TEST_PRIVATE_TYPES = [
-  "Private Individuals", "Private Institution", "Private Infra structure", "Private Industry"
-] as const;
-
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "SBI", remittanceRemarks: "" });
 const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "SBI", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
 const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", vesRequired: "No", feasibility: "No", nameOfInvestigator: undefined, vesInvestigator: undefined, hydrogeologicalRemarks: "", geophysicalRemarks: "" });
@@ -103,6 +94,7 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
 };
 
 const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
+const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
 const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
 
 const investigationFileStatusOptions = [
@@ -264,13 +256,24 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
         if (!isEditing && user?.officeLocation && data.fileNo) {
             setIsChecking(true);
             try {
-                const fileNoTrimmed = data.fileNo.trim();
+                const fileNoTrimmed = data.fileNo.trim().toUpperCase();
                 const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
                 const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
+                
+                const loggingPumpingTestAppTypes: string[] = [
+                    ...LOGGING_PUMPING_TEST_GOVT_TYPES,
+                    ...LOGGING_PUMPING_TEST_PRIVATE_TYPES,
+                ];
+
+                const hasDuplicate = querySnapshot.docs.some(doc => {
+                    const docAppType = doc.data().applicationType;
+                    return docAppType && loggingPumpingTestAppTypes.includes(docAppType);
+                });
+                
+                if (hasDuplicate) {
                     toast({
                         title: "Duplicate File Number",
-                        description: `This file No. is already entered.`,
+                        description: "This file number is already used for another Logging & Pumping Test file.",
                         variant: "destructive",
                     });
                     setIsChecking(false);
