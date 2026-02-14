@@ -28,8 +28,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const getStatusColorClass = (status: SiteWorkStatus | undefined): string => {
     if (!status) return 'text-muted-foreground';
-    const completedOrFailed: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed", "Completed"];
-    if (completedOrFailed.includes(status)) return 'text-green-600';
+    if (status === 'Completed') return 'text-green-600';
     if (status === 'VES Pending') return 'text-orange-600';
     if (status === 'Pending') return 'text-yellow-600';
     return 'text-muted-foreground';
@@ -89,7 +88,6 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
   }
 
   return (
-    <TooltipProvider>
       <Table>
         <TableHeader>
           <TableRow>
@@ -111,12 +109,30 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
               <TableCell>{entry.siteDetails?.map((site, idx) => (<span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>{site.nameOfSite}{idx < entry.siteDetails!.length - 1 ? ', ' : ''}</span>))}</TableCell>
               <TableCell>{entry.remittanceDetails?.[0]?.dateOfRemittance ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), "dd/MM/yyyy") : "N/A"}</TableCell>
               <TableCell className="font-semibold">{entry.fileStatus}</TableCell>
-              <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}><Eye className="h-4 w-4" /></Button>{canDelete && <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteItem(entry)}><Trash2 className="h-4 w-4" /></Button>}</TableCell>
+              <TableCell className="text-right">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>View Details</p></TooltipContent>
+                </Tooltip>
+                {canDelete && 
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteItem(entry)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Delete File</p></TooltipContent>
+                  </Tooltip>
+                }
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete this investigation file?</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmDelete} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-    </TooltipProvider>
   );
 }

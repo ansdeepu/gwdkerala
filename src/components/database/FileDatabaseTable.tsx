@@ -1,4 +1,3 @@
-
 // src/components/database/FileDatabaseTable.tsx
 "use client";
 
@@ -36,6 +35,12 @@ import PaginationControls from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from 'uuid';
 import { usePendingUpdates } from "@/hooks/usePendingUpdates";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 
 const ITEMS_PER_PAGE = 50;
@@ -274,7 +279,7 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
 
 
   return (
-    <>
+    <TooltipProvider>
       <Card className="shadow-lg">
         <CardContent className="p-0">
           <div className="max-h-[70vh] overflow-auto">
@@ -340,24 +345,36 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
                         {entry.fileStatus}
                     </TableCell>
                     <TableCell className="text-right w-[15%] px-2 py-2">
-                      <div className="flex items-center justify-end space-x-1">
-                        <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}>
-                           <Eye className="h-4 w-4" />
-                           <span className="sr-only">View Details</span>
-                        </Button>
-                        {canCopy && (
-                          <Button variant="ghost" size="icon" onClick={() => handleCopyClick(entry)} disabled={isCopying}>
-                              <Copy className="h-4 w-4" />
-                              <span className="sr-only">Make a Copy</span>
-                          </Button>
-                        )}
-                        {canDelete && (
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(entry)} disabled={isDeleting && deleteItem?.id === entry.id}>
-                            {isDeleting && deleteItem?.id === entry.id ? <Loader2 className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
-                            <span className="sr-only">Delete Entry</span>
-                          </Button>
-                        )}
-                      </div>
+                        <div className="flex items-center justify-end space-x-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}>
+                                  <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>View Full File Details</p></TooltipContent>
+                          </Tooltip>
+                          {canCopy && (
+                              <Tooltip>
+                                  <TooltipTrigger asChild>
+                                      <Button variant="ghost" size="icon" onClick={() => handleCopyClick(entry)} disabled={isCopying}>
+                                          <Copy className="h-4 w-4" />
+                                      </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Make a Copy</p></TooltipContent>
+                              </Tooltip>
+                          )}
+                          {canDelete && (
+                               <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(entry)} disabled={isDeleting && deleteItem?.id === entry.id}>
+                                      {isDeleting && deleteItem?.id === entry.id ? <Loader2 className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent><p>Delete File</p></TooltipContent>
+                              </Tooltip>
+                          )}
+                        </div>
                     </TableCell>
                   </TableRow>
                 )})}
@@ -422,6 +439,7 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
                 </AlertDialogAction>
             </AlertDialogFooter>
             </AlertDialogContent>
+      </AlertDialog>
       )}
     </>
   );
