@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Eye, Edit3, Trash2, Loader2, Clock, Copy } from "lucide-react";
 import type { DataEntryFormData, SitePurpose, ApplicationType, SiteWorkStatus, PendingUpdate, SiteDetailFormData } from "@/lib/schemas";
-import { applicationTypeDisplayMap, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from "@/lib/schemas";
+import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from "@/lib/schemas";
 import { format, isValid, parseISO } from "date-fns";
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -439,6 +439,7 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
                 </AlertDialogAction>
             </AlertDialogFooter>
             </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );

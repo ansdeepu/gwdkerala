@@ -1,3 +1,4 @@
+
 // src/components/investigation/InvestigationTable.tsx
 "use client";
 
