@@ -88,6 +88,7 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
   }
 
   return (
+    <>
       <Table>
         <TableHeader>
           <TableRow>
@@ -134,5 +135,6 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
         </TableBody>
       </Table>
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete this investigation file?</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmDelete} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+    </>
   );
 }

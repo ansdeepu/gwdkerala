@@ -10,6 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableCaption,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Eye, Edit3, Trash2, Loader2, Clock, Copy } from "lucide-react";
@@ -154,7 +155,6 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
     
-    // Determine the workType for the URL
     const hasInvestigationPurpose = item.siteDetails?.some(site => site.purpose === 'GW Investigation');
     const hasLoggingPumpingPurpose = item.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
 
@@ -279,7 +279,7 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
 
 
   return (
-    <TooltipProvider>
+    <>
       <Card className="shadow-lg">
         <CardContent className="p-0">
           <div className="max-h-[70vh] overflow-auto">
@@ -296,89 +296,89 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
                   <TableHead className="text-center w-[15%] px-2 py-3 text-sm">Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {paginatedEntries.map((entry, index) => {
-                  let sitesToDisplay: SiteDetailFormData[] = entry.siteDetails || [];
-                  
-                  if (user?.role === 'supervisor') {
-                      sitesToDisplay = sitesToDisplay.filter(site => {
-                          const isAssigned = site.supervisorUid === user.uid;
-                          const isOngoing = site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
-                          const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
-                          
-                          // A site should be displayed if it's assigned to the supervisor AND it's either ongoing OR the file has a pending update from them.
-                          return isAssigned && (isOngoing || hasPendingUpdate);
-                      });
-                  }
-                  
-                  return (
-                  <TableRow key={entry.id}>
-                    <TableCell className="w-[5%] px-2 py-2 text-sm text-center">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
-                    <TableCell className="font-medium w-[10%] px-2 py-2 text-sm">{entry.fileNo}</TableCell>
-                    <TableCell className="w-[15%] px-2 py-2 text-sm">{entry.applicantName}</TableCell>
-                    <TableCell className="w-[25%] px-2 py-2 text-sm">
-                       {sitesToDisplay.length > 0 ? (
-                        sitesToDisplay.map((site, idx) => (
-                            <span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>
-                              {site.nameOfSite}{idx < sitesToDisplay.length - 1 ? ', ' : ''}
-                            </span>
+                <TableBody>
+                  {paginatedEntries.map((entry, index) => {
+                    let sitesToDisplay: SiteDetailFormData[] = entry.siteDetails || [];
+                    
+                    if (user?.role === 'supervisor') {
+                        sitesToDisplay = sitesToDisplay.filter(site => {
+                            const isAssigned = site.supervisorUid === user.uid;
+                            const isOngoing = site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
+                            const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
+                            
+                            // A site should be displayed if it's assigned to the supervisor AND it's either ongoing OR the file has a pending update from them.
+                            return isAssigned && (isOngoing || hasPendingUpdate);
+                        });
+                    }
+                    
+                    return (
+                    <TableRow key={entry.id}>
+                      <TableCell className="w-[5%] px-2 py-2 text-sm text-center">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
+                      <TableCell className="font-medium w-[10%] px-2 py-2 text-sm">{entry.fileNo}</TableCell>
+                      <TableCell className="w-[15%] px-2 py-2 text-sm">{entry.applicantName}</TableCell>
+                      <TableCell className="w-[25%] px-2 py-2 text-sm">
+                        {sitesToDisplay.length > 0 ? (
+                          sitesToDisplay.map((site, idx) => (
+                              <span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>
+                                {site.nameOfSite}{idx < sitesToDisplay.length - 1 ? ', ' : ''}
+                              </span>
+                            ))
+                        ) : (
+                          <span className="text-muted-foreground italic">No active sites for this supervisor</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="w-[10%] px-2 py-2 text-sm">
+                        {sitesToDisplay.length > 0
+                          ? sitesToDisplay.map((site, idx) => (
+                              <span key={idx} className={cn(getStatusColorClass(site.workStatus as SiteWorkStatus))}>
+                                  {site.purpose || 'N/A'}{idx < sitesToDisplay.length - 1 ? ', ' : ''}
+                              </span>
                           ))
-                      ) : (
-                        <span className="text-muted-foreground italic">No active sites for this supervisor</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="w-[10%] px-2 py-2 text-sm">
-                      {sitesToDisplay.length > 0
-                        ? sitesToDisplay.map((site, idx) => (
-                            <span key={idx} className={cn(getStatusColorClass(site.workStatus as SiteWorkStatus))}>
-                                {site.purpose || 'N/A'}{idx < sitesToDisplay.length - 1 ? ', ' : ''}
-                            </span>
-                        ))
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell className="w-[10%] px-2 py-2 text-sm">
-                      {entry.remittanceDetails?.[0]?.dateOfRemittance 
-                        ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), "dd/MM/yyyy") 
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell className="font-semibold w-[10%] px-2 py-2 text-sm">
-                        {entry.fileStatus}
-                    </TableCell>
-                    <TableCell className="text-right w-[15%] px-2 py-2">
-                        <div className="flex items-center justify-end space-x-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}>
-                                  <Eye className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>View Full File Details</p></TooltipContent>
-                          </Tooltip>
-                          {canCopy && (
-                              <Tooltip>
-                                  <TooltipTrigger asChild>
-                                      <Button variant="ghost" size="icon" onClick={() => handleCopyClick(entry)} disabled={isCopying}>
-                                          <Copy className="h-4 w-4" />
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell className="w-[10%] px-2 py-2 text-sm">
+                        {entry.remittanceDetails?.[0]?.dateOfRemittance 
+                          ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), "dd/MM/yyyy") 
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell className="font-semibold w-[10%] px-2 py-2 text-sm">
+                          {entry.fileStatus}
+                      </TableCell>
+                      <TableCell className="text-right w-[15%] px-2 py-2">
+                          <div className="flex items-center justify-end space-x-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}>
+                                    <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent><p>View Full File Details</p></TooltipContent>
+                            </Tooltip>
+                            {canCopy && (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => handleCopyClick(entry)} disabled={isCopying}>
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Make a Copy</p></TooltipContent>
+                                </Tooltip>
+                            )}
+                            {canDelete && (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(entry)} disabled={isDeleting && deleteItem?.id === entry.id}>
+                                        {isDeleting && deleteItem?.id === entry.id ? <Loader2 className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
                                       </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p>Make a Copy</p></TooltipContent>
-                              </Tooltip>
-                          )}
-                          {canDelete && (
-                               <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDeleteClick(entry)} disabled={isDeleting && deleteItem?.id === entry.id}>
-                                      {isDeleting && deleteItem?.id === entry.id ? <Loader2 className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent><p>Delete File</p></TooltipContent>
-                              </Tooltip>
-                          )}
-                        </div>
-                    </TableCell>
-                  </TableRow>
-                )})}
-              </TableBody>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Delete File</p></TooltipContent>
+                                  </Tooltip>
+                            )}
+                          </div>
+                      </TableCell>
+                    </TableRow>
+                  )})}
+                </TableBody>
             </Table>
           </div>
         </CardContent>
@@ -439,7 +439,6 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
                 </AlertDialogAction>
             </AlertDialogFooter>
             </AlertDialogContent>
-      </AlertDialog>
       )}
     </>
   );
