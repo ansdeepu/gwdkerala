@@ -14,7 +14,7 @@ import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { INVESTIGATION_GOVT_TYPES, INVESTIGATION_PRIVATE_TYPES, INVESTIGATION_COMPLAINT_TYPES, GW_INVESTIGATION_TYPES, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
+import { INVESTIGATION_GOVT_TYPES, INVESTIGATION_PRIVATE_TYPES, INVESTIGATION_COMPLAINT_TYPES, GW_INVESTIGATION_TYPES, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS, DataEntryFormData } from '@/lib/schemas';
 import PaginationControls from '@/components/shared/PaginationControls';
 
 export const dynamic = 'force-dynamic';
@@ -57,11 +57,21 @@ export default function GWInvestigationPage() {
     });
 
     entries.sort((a, b) => {
-        const dateA = safeParseDate((a as any).createdAt);
-        const dateB = safeParseDate((b as any).createdAt);
-        if (!dateA) return 1;
-        if (!dateB) return -1;
-        return dateB.getTime() - dateA.getTime();
+        const getSortDate = (entry: DataEntryFormData): Date | null => {
+            const remittanceDate = entry.remittanceDetails?.[0]?.dateOfRemittance;
+            if (remittanceDate) {
+              const parsed = safeParseDate(remittanceDate);
+              if (parsed) return parsed;
+            }
+            return safeParseDate((entry as any).createdAt);
+          };
+    
+          const dateA = getSortDate(a);
+          const dateB = getSortDate(b);
+    
+          if (!dateA) return 1;
+          if (!dateB) return -1;
+          return dateB.getTime() - dateA.getTime();
     });
     return entries;
   }, [fileEntries]);

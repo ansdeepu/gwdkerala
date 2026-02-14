@@ -14,7 +14,7 @@ import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS, type SitePurpose } from '@/lib/schemas';
+import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS, type SitePurpose, DataEntryFormData } from '@/lib/schemas';
 import PaginationControls from '@/components/shared/PaginationControls';
 
 export const dynamic = 'force-dynamic';
@@ -56,7 +56,23 @@ export default function LoggingPumpingTestPage() {
         return hasLoggingPumpingPurpose && !hasInvestigationPurpose;
     });
 
-    allLoggingAndPumpingEntries.sort((a, b) => (safeParseDate((b as any).createdAt)?.getTime() ?? 0) - (safeParseDate((a as any).createdAt)?.getTime() ?? 0));
+    allLoggingAndPumpingEntries.sort((a, b) => {
+        const getSortDate = (entry: DataEntryFormData): Date | null => {
+            const remittanceDate = entry.remittanceDetails?.[0]?.dateOfRemittance;
+            if (remittanceDate) {
+              const parsed = safeParseDate(remittanceDate);
+              if (parsed) return parsed;
+            }
+            return safeParseDate((entry as any).createdAt);
+          };
+    
+          const dateA = getSortDate(a);
+          const dateB = getSortDate(b);
+    
+          if (!dateA) return 1;
+          if (!dateB) return -1;
+          return dateB.getTime() - dateA.getTime();
+    });
     
     const logging = allLoggingAndPumpingEntries.filter(entry => 
         entry.siteDetails?.some(site => site.purpose && LOGGING_PURPOSES.includes(site.purpose as any))
