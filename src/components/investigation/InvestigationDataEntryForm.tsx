@@ -65,7 +65,7 @@ import { useFileEntries } from "@/hooks/useFileEntries";
 import { usePendingUpdates } from "@/hooks/usePendingUpdates";
 import type { StaffMember } from "@/lib/schemas";
 import { z } from "zod";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { getFirestore, doc, updateDoc, serverTimestamp, query, collection, where, getDocs } from "firebase/firestore";
 import { app } from "@/lib/firebase";
@@ -196,12 +196,23 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
 };
 
 // Dialog Content Components
-const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOptions, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, formOptions: readonly ApplicationType[] | ApplicationType[], workTypeContext: string | null }) => {
+const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOptions, workTypeContext, user, isEditing, toast, db }: { 
+    initialData: any, 
+    onConfirm: (data: any) => void, 
+    onCancel: () => void, 
+    formOptions: readonly ApplicationType[] | ApplicationType[], 
+    workTypeContext: string | null,
+    user: UserProfile | null,
+    isEditing: boolean,
+    toast: any,
+    db: any,
+}) => {
     const [data, setData] = useState({
         ...initialData,
         category: initialData?.category || undefined
     });
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; category?: string; }>({});
+    const [isChecking, setIsChecking] = useState(false);
 
     const isInvestigationContext = workTypeContext === 'gwInvestigation' || workTypeContext === 'loggingPumpingTest';
     const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
@@ -225,7 +236,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
         }
     };
     
-    const handleSave = () => {
+    const handleSave = async () => {
         const newErrors: { fileNo?: string; applicantName?: string; applicationType?: string; category?: string; } = {};
         if (!data.fileNo?.trim()) {
             newErrors.fileNo = "File No is required.";
@@ -243,6 +254,33 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             return;
+        }
+
+        if (!isEditing && user?.officeLocation && data.fileNo) {
+            setIsChecking(true);
+            try {
+                const fileNoTrimmed = data.fileNo.trim();
+                const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    toast({
+                        title: "Duplicate File Number",
+                        description: `An entry with File No. "${data.fileNo}" already exists. Please use a unique file number.`,
+                        variant: "destructive",
+                    });
+                    setIsChecking(false);
+                    return; 
+                }
+            } catch (error) {
+                toast({
+                    title: "Validation Error",
+                    description: "Could not verify file number. Please try again.",
+                    variant: "destructive",
+                });
+                setIsChecking(false);
+                return;
+            }
+            setIsChecking(false);
         }
 
         onConfirm(data);
@@ -297,7 +335,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 </div>
             </div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onCancel}>Cancel</Button><Button onClick={handleSave}>Save</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={onCancel} disabled={isChecking}>Cancel</Button><Button onClick={handleSave} disabled={isChecking}>{isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save</Button></DialogFooter>
       </div>
     );
 };
@@ -770,6 +808,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const isEditor = userRole === 'editor';
   const isSupervisor = userRole === 'supervisor';
   const isViewer = userRole === 'viewer';
+  const isEditing = !!fileIdToEdit;
 
   const remittanceTitle = "2. Remittance Details";
   const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
@@ -843,22 +882,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
             await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
             toast({ title: "File Updated" });
         } else {
-            if (!user.officeLocation) {
-                throw new Error("User has no office location.");
-            }
-            const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", data.fileNo.trim()));
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-              toast({
-                title: "Duplicate File Number",
-                description: `An entry with File No. "${data.fileNo}" already exists. Please use a unique file number.`,
-                variant: "destructive",
-              });
-              setIsSubmitting(false);
-              return;
-            }
-            
+            // NOTE: The duplicate check is now inside the ApplicationDialogContent
             await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
         }
@@ -932,8 +956,8 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell><TableCell>{item.paymentAccount}</TableCell><TableCell className="text-right">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.paymentRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item })}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN')}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         <Card><CardHeader><CardTitle className="text-xl">5. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN') || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN') || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN') || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
-        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={[]} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={[]} workTypeContext={workTypeContext} user={user} isEditing={isEditing} toast={toast} db={db} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} category={watchedCategory} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
