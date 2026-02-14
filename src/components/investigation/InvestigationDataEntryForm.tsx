@@ -1,3 +1,4 @@
+
 // src/components/investigation/InvestigationDataEntryForm.tsx
 "use client";
 
@@ -196,12 +197,10 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
 };
 
 // Dialog Content Components
-const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOptions, workTypeContext, isEditing }: { 
+const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, isEditing }: { 
     initialData: any, 
     onConfirm: (data: any) => void, 
-    onCancel: () => void, 
-    formOptions: readonly ApplicationType[] | ApplicationType[], 
-    workTypeContext: string | null,
+    onCancel: () => void,
     isEditing: boolean
 }) => {
     const { user } = useAuth();
@@ -213,16 +212,12 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; category?: string; }>({});
     const [isChecking, setIsChecking] = useState(false);
 
-    const isInvestigationContext = workTypeContext === 'gwInvestigation';
-    const pageTitle = 'GW Investigation';
-
     const filteredAppTypeOptions = useMemo(() => {
-        if (!isInvestigationContext) return formOptions;
         if (data.category === 'Govt') return INVESTIGATION_GOVT_TYPES;
         if (data.category === 'Private') return INVESTIGATION_PRIVATE_TYPES;
         if (data.category === 'Complaints') return INVESTIGATION_COMPLAINT_TYPES;
         return [];
-    }, [isInvestigationContext, data.category, formOptions]);
+    }, [data.category]);
 
     const handleChange = (key: string, value: any) => {
         setData((prev: any) => ({ ...prev, [key]: value }));
@@ -245,7 +240,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
         if (!data.applicationType) {
             newErrors.applicationType = "Type of Application is required.";
         }
-        if (isInvestigationContext && !data.category) {
+        if (!data.category) {
             newErrors.category = "Category is required.";
         }
         
@@ -260,21 +255,22 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 const fileNoTrimmed = data.fileNo.trim().toUpperCase();
                 const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
                 const querySnapshot = await getDocs(q);
-
+                
                 const investigationAppTypes: string[] = [
-                    ...GW_INVESTIGATION_TYPES,
-                    ...LOGGING_PUMPING_TEST_TYPES,
+                    ...INVESTIGATION_GOVT_TYPES,
+                    ...INVESTIGATION_PRIVATE_TYPES,
+                    ...INVESTIGATION_COMPLAINT_TYPES,
                 ];
 
                 const hasDuplicate = querySnapshot.docs.some(doc => {
                     const docAppType = doc.data().applicationType;
                     return docAppType && investigationAppTypes.includes(docAppType);
                 });
-                
+
                 if (hasDuplicate) {
                     toast({
                         title: "Duplicate File Number",
-                        description: `This file number is already used for another Investigation file.`,
+                        description: `This file number is already used for another GW Investigation file.`,
                         variant: "destructive",
                     });
                     setIsChecking(false);
@@ -298,7 +294,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
     return (
       <div className="flex flex-col h-auto">
         <DialogHeader>
-          <DialogTitle>{pageTitle} Application Details</DialogTitle>
+          <DialogTitle>GW Investigation Application Details</DialogTitle>
         </DialogHeader>
         <div className="p-6 pt-0 space-y-4 flex-1">
              <div className="grid grid-cols-3 gap-4 items-start">
@@ -317,25 +313,23 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo || ''} onChange={(e) => handleChange('phoneNo', e.target.value)} /></div>
                 <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo || ''} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} /></div>
                 
-                {isInvestigationContext && (
-                    <div className="space-y-2">
-                        <Label>Category *</Label>
-                        <Select onValueChange={(value) => handleChange('category', value)} value={data.category}>
-                            <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Govt">Govt</SelectItem>
-                                <SelectItem value="Private">Private</SelectItem>
-                                <SelectItem value="Complaints">Complaints</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {errors.category && <p className="text-xs text-destructive mt-1">{errors.category}</p>}
-                    </div>
-                )}
+                <div className="space-y-2">
+                    <Label>Category *</Label>
+                    <Select onValueChange={(value) => handleChange('category', value)} value={data.category}>
+                        <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Govt">Govt</SelectItem>
+                            <SelectItem value="Private">Private</SelectItem>
+                            <SelectItem value="Complaints">Complaints</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    {errors.category && <p className="text-xs text-destructive mt-1">{errors.category}</p>}
+                </div>
 
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={isInvestigationContext && !data.category}>
-                        <SelectTrigger><SelectValue placeholder={isInvestigationContext && !data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
+                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={!data.category}>
+                        <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
                         <SelectContent className="max-h-80">
                             {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
                         </SelectContent>
@@ -551,7 +545,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                         <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Local Self Govt.</FormLabel>
-                                                <Select onValueChange={(value) => handleLsgChange(value)} value={field.value} disabled={isReadOnly}>
+                                                <Select onValueChange={(value) => handleLsgChange(value)} value={field.value}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>
@@ -564,7 +558,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                         <FormField name="constituency" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Constituency (LAC)</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly || constituencyOptionsForLsg.length <= 1}>
+                                                <Select onValueChange={field.onChange} value={field.value} disabled={constituencyOptionsForLsg.length <= 1}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Constituency"/></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>
@@ -767,7 +761,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const isEditing = !!fileIdToEdit;
 
   const remittanceTitle = "2. Remittance Details";
-  const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
+  const pageTitle = 'GW Investigation';
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
   const { control, handleSubmit, setValue, getValues, watch } = form;
@@ -775,16 +769,12 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const watchedCategory = watch('category');
 
   const applicationTypeOptionsForForm = useMemo(() => {
-    switch (workTypeContext) {
-        case 'gwInvestigation': return [...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES];
-        case 'loggingPumpingTest': return Array.from(LOGGING_PUMPING_TEST_TYPES);
-        default: return [...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES, ...LOGGING_PUMPING_TEST_TYPES];
-    }
-  }, [workTypeContext]);
+    return [...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES];
+  }, []);
   
   useEffect(() => { 
-    if (!fileIdToEdit && applicationTypeOptionsForForm.length === 1 && workTypeContext !== 'loggingPumpingTest') { 
-        setValue("applicationType", applicationTypeOptionsForForm[0] as any); 
+    if (!fileIdToEdit) { 
+        setValue("applicationType", "GW_Investigation"); 
     } 
   }, [fileIdToEdit, applicationTypeOptionsForForm, setValue, workTypeContext]);
 
@@ -912,10 +902,10 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell><TableCell>{item.paymentAccount}</TableCell><TableCell className="text-right">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.paymentRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item })}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN')}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         <Card><CardHeader><CardTitle className="text-xl">5. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN') || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN') || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN') || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
-        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isEditing={isEditing} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} category={watch('category')} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>
     </FormProvider>
