@@ -1,7 +1,7 @@
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
@@ -64,7 +64,7 @@ interface ProgressStats {
 }
 
 type DiameterProgress = Record<string, ProgressStats>;
-type ApplicationTypeProgress = Record<ApplicationType, ProgressStats>;
+type ApplicationTypeProgress = Record<ApplicationType, any>; // Loosen this for the nested structure
 type OtherServiceProgress = Record<SitePurpose, ProgressStats>;
 
 interface FinancialSummary {
@@ -81,7 +81,6 @@ type FinancialSummaryReport = Record<string, FinancialSummary>;
 const BWC_DIAMETERS = ['110 mm (4.5”)', '150 mm (6”)'];
 const TWC_DIAMETERS = ['150 mm (6”)', '200 mm (8”)'];
 
-const allServicePurposesForSummary = REPORTING_PURPOSE_ORDER;
 const financialSummaryOrder: string[] = REPORTING_PURPOSE_ORDER;
 
 
@@ -104,13 +103,15 @@ const ReportCategoryTable = ({
   categoryKeys,
   categoryLabels,
   onCountClick,
+  diameter,
 }: {
   accordionId: string;
   title: string;
-  data: Record<string, ProgressStats>;
+  data: Record<string, any>; // More generic to handle nested data
   categoryKeys: readonly string[];
   categoryLabels: Record<string, string>;
   onCountClick: (data: SiteDetailWithFileContext[], title: string) => void;
+  diameter?: string; // Optional: specify which diameter to extract
 }) => {
   const metrics: Array<{ key: keyof ProgressStats; label: string }> = [
     { key: 'previousBalance', label: 'Previous Balance' },
@@ -121,23 +122,31 @@ const ReportCategoryTable = ({
     { key: 'balance', label: 'Balance' },
   ];
 
-  const categoryTotals: ProgressStats = { previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], balanceData: [] };
-  let hasData = false;
-  
-  categoryKeys.forEach(catKey => {
-    const stats = data[catKey];
-    if (stats) {
-      if (Object.values(stats).some(val => (typeof val === 'number' && val > 0) || (Array.isArray(val) && val.length > 0))) {
-        hasData = true;
-      }
-      metrics.forEach(metric => {
-          categoryTotals[metric.key] = (categoryTotals[metric.key] as number) + (stats[metric.key] as number);
-          const dataKey = `${metric.key}Data` as keyof ProgressStats;
-          (categoryTotals[dataKey] as any[]).push(...(stats[dataKey] as any[]));
-      });
-    }
-  });
-  
+  const { categoryTotals, hasData } = useMemo(() => {
+    const totals: ProgressStats = { previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], balanceData: [] };
+    let dataFound = false;
+
+    categoryKeys.forEach(catKey => {
+        const categoryData = data[catKey];
+        if (categoryData) {
+            const stats = diameter ? categoryData[diameter] : categoryData;
+            if (stats) {
+                if (Object.values(stats).some(val => (typeof val === 'number' && val > 0) || (Array.isArray(val) && val.length > 0))) {
+                    dataFound = true;
+                }
+                metrics.forEach(metric => {
+                    const count = (stats[metric.key] as number) || 0;
+                    const metricData = stats[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] || [];
+                    
+                    (totals[metric.key] as number) += count;
+                    (totals[`${metric.key}Data` as keyof ProgressStats]).push(...metricData);
+                });
+            }
+        }
+    });
+    return { categoryTotals: totals, hasData: dataFound };
+  }, [data, categoryKeys, diameter, metrics]);
+
   if (!hasData) return null;
 
   return (
@@ -160,8 +169,11 @@ const ReportCategoryTable = ({
                 </TableHeader>
                 <TableBody>
                   {categoryKeys.map(catKey => {
-                    const stats = data[catKey];
-                    if (!stats) return null;
+                    const categoryData = data[catKey];
+                    const stats = diameter ? categoryData?.[diameter] : categoryData;
+
+                    if (!stats || !Object.values(stats).some(val => (typeof val === 'number' && val > 0))) return null;
+                    
                     return (
                     <TableRow key={catKey}>
                       <TableCell className="border p-2 text-left font-medium">{categoryLabels[catKey] || catKey}</TableCell>
@@ -277,8 +289,8 @@ export default function ProgressReportPage() {
     const progressSummaryData: OtherServiceProgress = {} as OtherServiceProgress;
     REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
     
-    const bwcData: ApplicationTypeProgress = {} as ApplicationTypeProgress;
-    const twcData: ApplicationTypeProgress = {} as ApplicationTypeProgress;
+    const bwcData: ApplicationTypeProgress = {};
+    const twcData: ApplicationTypeProgress = {};
     applicationTypeOptions.forEach(appType => {
       bwcData[appType] = {}; BWC_DIAMETERS.forEach(d => { bwcData[appType][d] = initialStats(); });
       twcData[appType] = {}; TWC_DIAMETERS.forEach(d => { twcData[appType][d] = initialStats(); });
@@ -286,9 +298,9 @@ export default function ProgressReportPage() {
     
     const gwInvestigationData: Record<string, ProgressStats> = {}; typeOfWellOptions.forEach(w => gwInvestigationData[w] = initialStats());
     const vesData: Record<string, ProgressStats> = {}; typeOfWellOptions.forEach(w => vesData[w] = initialStats());
-    const geologicalLoggingData: ApplicationTypeProgress = {} as ApplicationTypeProgress; applicationTypeOptions.forEach(a => geologicalLoggingData[a] = initialStats());
-    const geophysicalLoggingData: ApplicationTypeProgress = {} as ApplicationTypeProgress; applicationTypeOptions.forEach(a => geophysicalLoggingData[a] = initialStats());
-    const pumpingTestData: ApplicationTypeProgress = {} as ApplicationTypeProgress; applicationTypeOptions.forEach(a => pumpingTestData[a] = initialStats());
+    const geologicalLoggingData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => geologicalLoggingData[a] = initialStats());
+    const geophysicalLoggingData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => geophysicalLoggingData[a] = initialStats());
+    const pumpingTestData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => pumpingTestData[a] = initialStats());
 
     const initialFinancialSummary = (): FinancialSummary => ({ totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [] });
     const privateFinancialSummary: FinancialSummaryReport = {};
@@ -458,7 +470,7 @@ export default function ProgressReportPage() {
                             <Table className="min-w-full border-collapse">
                             <TableHeader><TableRow><TableHead className="border p-2 align-middle text-center font-semibold">Service Type</TableHead><TableHead className="border p-2 text-center font-semibold">Previous Balance</TableHead><TableHead className="border p-2 text-center font-semibold">Current Application</TableHead><TableHead className="border p-2 text-center font-semibold">To be refunded</TableHead><TableHead className="border p-2 text-center font-bold">Total Application</TableHead><TableHead className="border p-2 text-center font-semibold">Completed</TableHead><TableHead className="border p-2 text-center font-bold">Balance</TableHead></TableRow></TableHeader>
                             <TableBody>
-                                {allServicePurposesForSummary.map(purpose => {
+                                {REPORTING_PURPOSE_ORDER.map(purpose => {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
                                 return (
                                     <TableRow key={purpose}>
@@ -482,10 +494,10 @@ export default function ProgressReportPage() {
                   <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" data={reportData.bwcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" data={reportData.bwcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" data={reportData.twcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" data={reportData.twcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                 </Accordion>
             </>
             ) : (
