@@ -24,15 +24,16 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAllFileEntriesForReports } from '@/hooks/useAllFileEntriesForReports'; // Import the new hook
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Input } from '@/components/ui/input';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export const dynamic = 'force-dynamic';
 
 const BarChart3 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> );
 const XCircle = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> );
-const Loader2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> );
+const Loader2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> );
 const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="6 3 20 12 6 21 6 3"/></svg> );
-const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
-const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
+const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
+const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
 
 
 // Define the structure for the progress report data
@@ -92,103 +93,103 @@ interface DetailDialogColumn {
   isNumeric?: boolean;
 }
 
-const WellTypeProgressTable = ({ 
-  title, 
-  data, 
-  diameters, 
-  onCountClick 
-}: { 
-  title: string; 
-  data: ApplicationTypeProgress, 
-  diameters: string[],
+const WellTypeProgressTable = ({
+  accordionId,
+  title,
+  data,
+  diameter,
+  onCountClick
+}: {
+  accordionId: string;
+  title: string;
+  data: ApplicationTypeProgress,
+  diameter: string,
   onCountClick: (data: SiteDetailWithFileContext[], title: string) => void;
 }) => {
-    const metrics: Array<{ key: keyof ProgressStats, label: string }> = [
-        { key: 'previousBalance', label: 'Previous Balance' },
-        { key: 'currentApplications', label: 'Current Application' },
-        { key: 'toBeRefunded', label: 'To be refunded' },
-        { key: 'totalApplications', label: 'Total Application' },
-        { key: 'completed', label: 'Completed' },
-        { key: 'balance', label: 'Balance' }
-    ];
+  const metrics: Array<{ key: keyof ProgressStats, label: string }> = [
+      { key: 'previousBalance', label: 'Previous Balance' },
+      { key: 'currentApplications', label: 'Current Application' },
+      { key: 'toBeRefunded', label: 'To be refunded' },
+      { key: 'totalApplications', label: 'Total Application' },
+      { key: 'completed', label: 'Completed' },
+      { key: 'balance', label: 'Balance' }
+  ];
 
-    return (
-    <>
-      {diameters.map(diameter => {
-          const diameterTotals: ProgressStats = { previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], balanceData: [] };
+  const diameterTotals: ProgressStats = { previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], balanceData: [] };
+  
+  applicationTypeOptions.forEach(appType => {
+      const stats = data[appType]?.[diameter];
+      if (stats) {
+          diameterTotals.previousBalance += stats.previousBalance;
+          diameterTotals.currentApplications += stats.currentApplications;
+          diameterTotals.toBeRefunded += stats.toBeRefunded;
+          diameterTotals.totalApplications += stats.totalApplications;
+          diameterTotals.completed += stats.completed;
+          diameterTotals.balance += stats.balance;
           
-          applicationTypeOptions.forEach(appType => {
-              const stats = data[appType]?.[diameter];
-              if (stats) {
-                  diameterTotals.previousBalance += stats.previousBalance;
-                  diameterTotals.currentApplications += stats.currentApplications;
-                  diameterTotals.toBeRefunded += stats.toBeRefunded;
-                  diameterTotals.totalApplications += stats.totalApplications;
-                  diameterTotals.completed += stats.completed;
-                  diameterTotals.balance += stats.balance;
-                  
-                  diameterTotals.previousBalanceData.push(...stats.previousBalanceData);
-                  diameterTotals.currentApplicationsData.push(...stats.currentApplicationsData);
-                  diameterTotals.toBeRefundedData.push(...stats.toBeRefundedData);
-                  diameterTotals.totalApplicationsData.push(...stats.totalApplicationsData);
-                  diameterTotals.completedData.push(...stats.completedData);
-                  diameterTotals.balanceData.push(...stats.balanceData);
-              }
-          });
+          diameterTotals.previousBalanceData.push(...stats.previousBalanceData);
+          diameterTotals.currentApplicationsData.push(...stats.currentApplicationsData);
+          diameterTotals.toBeRefundedData.push(...stats.toBeRefundedData);
+          diameterTotals.totalApplicationsData.push(...stats.totalApplicationsData);
+          diameterTotals.completedData.push(...stats.completedData);
+          diameterTotals.balanceData.push(...stats.balanceData);
+      }
+  });
 
-          return (
-          <Card key={diameter} className="shadow-lg">
-            <CardHeader>
-              <CardTitle>{title} - {diameter}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="relative overflow-x-auto">
-                <Table className="min-w-full border-collapse">
-                <TableHeader>
-                    <TableRow>
-                    <TableHead className="border p-2 align-middle text-left min-w-[200px] font-semibold">Type of Application</TableHead>
-                    {metrics.map(metric => (
-                        <TableHead key={metric.key} className="border p-2 text-center font-semibold min-w-[100px] whitespace-normal break-words">{metric.label}</TableHead>
-                    ))}
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {applicationTypeOptions.map(appType => (
-                        <TableRow key={appType}>
-                            <TableCell className="border p-2 text-left font-medium">{applicationTypeDisplayMap[appType]}</TableCell>
-                            {metrics.map(metric => {
-                              const count = data[appType]?.[diameter]?.[metric.key] as number ?? 0;
-                              const metricData = data[appType]?.[diameter]?.[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] ?? [];
-                              return (
-                                <TableCell key={`${appType}-${metric.key}`} className={cn("border p-2 text-center", (metric.key === 'balance' || metric.key === 'totalApplications') && "font-bold")}>
-                                    <Button variant="link" className="p-0 h-auto font-semibold" disabled={count === 0} onClick={() => onCountClick(metricData, `${applicationTypeDisplayMap[appType]} - ${metric.label}`)}>
-                                      {count}
-                                    </Button>
-                                </TableCell>
-                              )
-                            })}
-                        </TableRow>
-                    ))}
-                </TableBody>
-                <TableFooter>
-                    <TableRow className="bg-muted/50">
-                        <TableCell className="border p-2 text-left font-bold">Total</TableCell>
-                        {metrics.map(metric => (
-                           <TableCell key={`total-${metric.key}`} className={cn("border p-2 text-center font-bold")}>
-                               <Button variant="link" className="p-0 h-auto font-bold" disabled={(diameterTotals[metric.key] as number) === 0} onClick={() => onCountClick(diameterTotals[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[], `Total for ${diameter} - ${metric.label}`)}>
-                                    {diameterTotals[metric.key] as number}
-                               </Button>
-                           </TableCell>
-                        ))}
-                    </TableRow>
-                </TableFooter>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-          )
-      })}
-    </>
+  return (
+    <AccordionItem value={accordionId} className="border-b-0">
+      <Card className="shadow-lg">
+        <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
+          <CardTitle>{title} - {diameter}</CardTitle>
+        </AccordionTrigger>
+        <AccordionContent>
+          <CardContent className="pt-6">
+            <div className="relative overflow-x-auto">
+              <Table className="min-w-full border-collapse">
+              <TableHeader>
+                  <TableRow>
+                  <TableHead className="border p-2 align-middle text-left min-w-[200px] font-semibold">Type of Application</TableHead>
+                  {metrics.map(metric => (
+                      <TableHead key={metric.key} className="border p-2 text-center font-semibold min-w-[100px] whitespace-normal break-words">{metric.label}</TableHead>
+                  ))}
+                  </TableRow>
+              </TableHeader>
+              <TableBody>
+                  {applicationTypeOptions.map(appType => (
+                      <TableRow key={appType}>
+                          <TableCell className="border p-2 text-left font-medium">{applicationTypeDisplayMap[appType]}</TableCell>
+                          {metrics.map(metric => {
+                            const count = data[appType]?.[diameter]?.[metric.key] as number ?? 0;
+                            const metricData = data[appType]?.[diameter]?.[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] ?? [];
+                            return (
+                              <TableCell key={`${appType}-${metric.key}`} className={cn("border p-2 text-center", (metric.key === 'balance' || metric.key === 'totalApplications') && "font-bold")}>
+                                  <Button variant="link" className="p-0 h-auto font-semibold" disabled={count === 0} onClick={() => onCountClick(metricData, `${applicationTypeDisplayMap[appType]} - ${metric.label}`)}>
+                                    {count}
+                                  </Button>
+                              </TableCell>
+                            )
+                          })}
+                      </TableRow>
+                  ))}
+              </TableBody>
+              <TableFooter>
+                  <TableRow className="bg-muted/50">
+                      <TableCell className="border p-2 text-left font-bold">Total</TableCell>
+                      {metrics.map(metric => (
+                         <TableCell key={`total-${metric.key}`} className={cn("border p-2 text-center font-bold")}>
+                             <Button variant="link" className="p-0 h-auto font-bold" disabled={(diameterTotals[metric.key] as number) === 0} onClick={() => onCountClick(diameterTotals[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[], `Total for ${diameter} - ${metric.label}`)}>
+                                  {diameterTotals[metric.key] as number}
+                             </Button>
+                         </TableCell>
+                      ))}
+                  </TableRow>
+              </TableFooter>
+              </Table>
+            </div>
+          </CardContent>
+        </AccordionContent>
+      </Card>
+    </AccordionItem>
   );
 };
 
@@ -897,10 +898,12 @@ export default function ProgressReportPage() {
                     </CardContent>
                     </Card>
 
-                    <WellTypeProgressTable title="BWC" data={reportData.bwcData} diameters={['110 mm (4.5”)']} onCountClick={handleCountClick} />
-                    <WellTypeProgressTable title="BWC" data={reportData.bwcData} diameters={['150 mm (6”)']} onCountClick={handleCountClick} />
-                    <WellTypeProgressTable title="TWC" data={reportData.twcData} diameters={['150 mm (6”)']} onCountClick={handleCountClick} />
-                    <WellTypeProgressTable title="TWC" data={reportData.twcData} diameters={['200 mm (8”)']} onCountClick={handleCountClick} />
+                    <Accordion type="multiple" className="w-full space-y-4" defaultValue={['bwc-110']}>
+                      <WellTypeProgressTable accordionId="bwc-110" title="BWC" data={reportData.bwcData} diameter={'110 mm (4.5”)'} onCountClick={handleCountClick} />
+                      <WellTypeProgressTable accordionId="bwc-150" title="BWC" data={reportData.bwcData} diameter={'150 mm (6”)'} onCountClick={handleCountClick} />
+                      <WellTypeProgressTable accordionId="twc-150" title="TWC" data={reportData.twcData} diameter={'150 mm (6”)'} onCountClick={handleCountClick} />
+                      <WellTypeProgressTable accordionId="twc-200" title="TWC" data={reportData.twcData} diameter={'200 mm (8”)'} onCountClick={handleCountClick} />
+                    </Accordion>
                 </div>
             </>
             ) : (
@@ -920,28 +923,26 @@ export default function ProgressReportPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex-1 min-h-0 px-6 py-4">
-            <ScrollArea className="h-full pr-4">
+            <ScrollArea className="h-full pr-4 -mr-4">
               {detailDialogData.length > 0 ? (
                 <Table>
-                  <TableHeader>
+                  <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
                       {detailDialogColumns.map(col => <TableHead key={col.key} className={cn(col.isNumeric && 'text-right')}>{col.label}</TableHead>)}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {detailDialogData.map((row, index) => (
-                      <TableRow key={index}>
-                        {detailDialogColumns.map(col => (
-                          <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>
-                             {(row as any)[col.key] !== undefined && (row as any)[col.key] !== null ? String((row as any)[col.key]) : 'N/A'}
-                          </TableCell>
-                        ))}
+                    {detailDialogData.map((row, rowIndex) => (
+                      <TableRow key={rowIndex}>
+                        {detailDialogColumns.map(col => 
+                          <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>{row[col.key]}</TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               ) : (
-                <p className="py-4 text-center text-muted-foreground">No details found for this selection.</p>
+                <p className="text-center text-muted-foreground py-8">No details found for this selection.</p>
               )}
             </ScrollArea>
           </div>
