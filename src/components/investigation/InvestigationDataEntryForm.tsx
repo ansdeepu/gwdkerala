@@ -771,12 +771,6 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     return [...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES];
   }, []);
   
-  useEffect(() => { 
-    if (!fileIdToEdit) { 
-        setValue("applicationType", "GW_Investigation"); 
-    } 
-  }, [fileIdToEdit, applicationTypeOptionsForForm, setValue, workTypeContext]);
-
   const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
   const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
   const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment } = useFieldArray({ control, name: "paymentDetails" });
