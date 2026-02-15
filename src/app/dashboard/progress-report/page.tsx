@@ -34,12 +34,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 export const dynamic = 'force-dynamic';
 
-const BarChart3 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> );
-const XCircle = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> );
-const Loader2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> );
-const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="6 3 20 12 6 21 6 3"/></svg> );
-const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
-const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
+const BarChart3 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> );
+const XCircle = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> );
+const Loader2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> );
+const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="6 3 20 12 6 21 6 3"/></svg> );
+const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
+const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
 
 
 // Define the structure for the progress report data
@@ -123,7 +123,8 @@ const ReportCategoryTable = ({
     let dataFound = false;
 
     categoryKeys.forEach(catKey => {
-        const stats = diameter ? data[catKey]?.[diameter] : data[catKey];
+        const statsSource = diameter ? data[catKey]?.[diameter] : data[catKey];
+        const stats = statsSource as ProgressStats | undefined;
         if (stats) {
             if (Object.values(stats).some(val => (typeof val === 'number' && val > 0) || (Array.isArray(val) && val.length > 0))) {
                 dataFound = true;
@@ -165,7 +166,7 @@ const ReportCategoryTable = ({
                 </TableHeader>
                 <TableBody>
                   {categoryKeys.map(catKey => {
-                    const stats = diameter ? data[catKey]?.[diameter] : data[catKey];
+                    const stats = (diameter ? data[catKey]?.[diameter] : data[catKey]) as ProgressStats | undefined;
 
                     if (!stats || !Object.values(stats).some(val => (typeof val === 'number' && val > 0))) return null;
                     
@@ -294,7 +295,10 @@ export default function ProgressReportPage() {
     const geologicalLoggingData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => geologicalLoggingData[a] = initialStats());
     const geophysicalLoggingData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => geophysicalLoggingData[a] = initialStats());
     const pumpingTestData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => pumpingTestData[a] = initialStats());
-    const otherPurposesData: OtherServiceProgress = {} as OtherServiceProgress;
+    
+    // Main Summary Data Structure
+    const progressSummaryData: OtherServiceProgress = {} as OtherServiceProgress;
+    REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
     
     includedSites.forEach(siteWithFileContext => {
         const { fileRemittanceDate, ...site } = siteWithFileContext;
@@ -316,32 +320,34 @@ export default function ProgressReportPage() {
             if (isToBeRefunded && fileRemittanceDate && isBefore(fileRemittanceDate, eDate)) { statsObj.toBeRefunded++; statsObj.toBeRefundedData.push(siteWithFileContext); }
         };
         
-        let processed = false;
+        let summaryPurposeKey: SitePurpose | null = null;
+        if (purpose && PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose)) {
+            summaryPurposeKey = 'Pumping Test';
+        } else if (purpose && REPORTING_PURPOSE_ORDER.includes(purpose)) {
+            summaryPurposeKey = purpose;
+        }
+
+        if (summaryPurposeKey) {
+            updateStats(progressSummaryData[summaryPurposeKey]);
+        }
         
         if (purpose === 'BWC' && diameter && BWC_DIAMETERS.includes(diameter) && applicationType) {
-          if (bwcData[applicationType]?.[diameter]) { updateStats(bwcData[applicationType][diameter]); processed = true; }
+          if (bwcData[applicationType]?.[diameter]) { updateStats(bwcData[applicationType][diameter]); }
         } else if (purpose === 'TWC' && diameter && TWC_DIAMETERS.includes(diameter) && applicationType) {
-          if (twcData[applicationType]?.[diameter]) { updateStats(twcData[applicationType][diameter]); processed = true; }
+          if (twcData[applicationType]?.[diameter]) { updateStats(twcData[applicationType][diameter]); }
         } else if (INVESTIGATION_WELL_TYPE_PURPOSES.includes(purpose)) {
             const wellType = (site as any).typeOfWell;
-            if (wellType) {
+            if (wellType && gwInvestigationData[wellType]) { // Check if wellType exists
                 const targetData = purpose === "GW Investigation" ? gwInvestigationData : vesData;
                 updateStats(targetData[wellType]);
-                processed = true;
             }
         } else if (INVESTIGATION_APP_TYPE_PURPOSES.includes(purpose)) {
             if (applicationType) {
                 const targetData = purpose === "Geological logging" ? geologicalLoggingData : geophysicalLoggingData;
                 updateStats(targetData[applicationType]);
-                processed = true;
             }
         } else if (PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose)) {
-            if (applicationType) { updateStats(pumpingTestData[applicationType]); processed = true; }
-        }
-        
-        if (!processed && REPORTING_PURPOSE_ORDER.includes(purpose)) {
-            if (!otherPurposesData[purpose]) otherPurposesData[purpose] = initialStats();
-            updateStats(otherPurposesData[purpose]);
+            if (applicationType) { updateStats(pumpingTestData[applicationType]); }
         }
     });
 
@@ -357,7 +363,8 @@ export default function ProgressReportPage() {
         stats.balanceData = stats.totalApplicationsData.filter(site => !completedKeys.has(`${site.fileNo}-${site.nameOfSite}`));
     };
     
-    // Calculate final totals for all detailed data structures
+    // Calculate final totals for all structures
+    Object.values(progressSummaryData).forEach(calculateBalanceAndTotal);
     applicationTypeOptions.forEach(appType => {
       BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
       TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
@@ -369,47 +376,7 @@ export default function ProgressReportPage() {
       if(gwInvestigationData[w]) calculateBalanceAndTotal(gwInvestigationData[w]);
       if(vesData[w]) calculateBalanceAndTotal(vesData[w]);
     });
-    Object.values(otherPurposesData).forEach(calculateBalanceAndTotal);
     
-    // Now, build the summary data by aggregating from the detailed data
-    const progressSummaryData: OtherServiceProgress = {} as OtherServiceProgress;
-    REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
-
-    const aggregateStats = (source: ProgressStats, target: ProgressStats) => {
-      if (!source || !target) return;
-      Object.keys(target).forEach(key => {
-        if (key.endsWith('Data')) {
-            if(Array.isArray(source[key as keyof ProgressStats])) {
-              (target[key as keyof ProgressStats] as any[]).push(...(source[key as keyof ProgressStats] as any[]));
-            }
-        } else {
-            (target[key as keyof ProgressStats] as number) += (source[key as keyof ProgressStats] as number);
-        }
-      });
-    };
-
-    // Aggregate BWC/TWC
-    applicationTypeOptions.forEach(appType => {
-      BWC_DIAMETERS.forEach(d => { if (bwcData[appType]?.[d]) aggregateStats(bwcData[appType][d], progressSummaryData['BWC']); });
-      TWC_DIAMETERS.forEach(d => { if (twcData[appType]?.[d]) aggregateStats(twcData[appType][d], progressSummaryData['TWC']); });
-    });
-    // Aggregate Investigation & Logging
-    typeOfWellOptions.forEach(w => {
-      if (gwInvestigationData[w]) aggregateStats(gwInvestigationData[w], progressSummaryData['GW Investigation']);
-      if (vesData[w]) aggregateStats(vesData[w], progressSummaryData['VES']);
-    });
-    applicationTypeOptions.forEach(appType => {
-      if (geologicalLoggingData[appType]) aggregateStats(geologicalLoggingData[appType], progressSummaryData['Geological logging']);
-      if (geophysicalLoggingData[appType]) aggregateStats(geophysicalLoggingData[appType], progressSummaryData['Geophysical Logging']);
-      if (pumpingTestData[appType]) aggregateStats(pumpingTestData[appType], progressSummaryData['Pumping Test' as SitePurpose]);
-    });
-    // Copy over simple purposes
-    Object.keys(otherPurposesData).forEach(purpose => {
-        if (progressSummaryData[purpose as SitePurpose]) {
-            aggregateStats(otherPurposesData[purpose as SitePurpose], progressSummaryData[purpose as SitePurpose]);
-        }
-    });
-
     setReportData({ 
         bwcData, twcData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
         privateFinancialSummaryData: {} as FinancialSummaryReport, // These are not used here, but kept for type consistency
