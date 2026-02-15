@@ -61,7 +61,7 @@ import { useFileEntries } from "@/hooks/useFileEntries";
 import { usePendingUpdates } from "@/hooks/usePendingUpdates";
 import type { StaffMember } from "@/lib/schemas";
 import { z } from "zod";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { getFirestore, doc, updateDoc, serverTimestamp, query, collection, where, getDocs } from "firebase/firestore";
 import { app } from "@/lib/firebase";
@@ -248,27 +248,30 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                     ...COLLECTOR_APPLICATION_TYPES,
                     ...PLAN_FUND_APPLICATION_TYPES
                 ];
+
+                const q = query(
+                    collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), 
+                    where("fileNo", "==", fileNoTrimmed)
+                );
                 
-                const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
                 const querySnapshot = await getDocs(q);
 
                 const hasDuplicate = querySnapshot.docs.some(doc => {
                     const docAppType = doc.data().applicationType;
-                    // Check if the found doc's type is part of the "Deposit Works" group
                     return docAppType && depositWorkTypes.includes(docAppType);
                 });
 
                 if (hasDuplicate) {
                     toast({
                         title: "Duplicate File Number",
-                        description: `This file number is already used for another Deposit Work.`,
+                        description: `This file number is already used for another Deposit Work file.`,
                         variant: "destructive",
                     });
                     setIsChecking(false);
                     return; 
                 }
             } catch (error) {
-                toast({
+                 toast({
                     title: "Validation Error",
                     description: "Could not verify file number. Please try again.",
                     variant: "destructive",
@@ -308,7 +311,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                     <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType} disabled={isChecking}>
                         <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                         <SelectContent className="max-h-80">
-                            {formOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
+                            {formOptions.map(o => <SelectItem key={o as any} value={o as any}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
                         </SelectContent>
                     </Select>
                      {errors?.applicationType && <p className="text-xs text-destructive mt-1">{errors.applicationType}</p>}
@@ -961,8 +964,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 contractorsPayment: undefined,
                 gst: undefined,
                 incomeTax: undefined,
-                kbcwb: undefined,
-                refundToParty: undefined,
+                kbcwb: undefined, refundToParty: undefined,
                 totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
                 paymentRemarks: "Auto-entry for remittance to Revenue Head.",
             };
