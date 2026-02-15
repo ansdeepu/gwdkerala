@@ -242,6 +242,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
             setIsChecking(true);
             try {
                 const fileNoTrimmed = data.fileNo.trim().toUpperCase();
+                
                 const depositWorkTypes: string[] = [
                     ...PUBLIC_DEPOSIT_APPLICATION_TYPES,
                     ...PRIVATE_APPLICATION_TYPES,
@@ -260,7 +261,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                     const docAppType = doc.data().applicationType;
                     return docAppType && depositWorkTypes.includes(docAppType);
                 });
-
+                
                 if (hasDuplicate) {
                     toast({
                         title: "Duplicate File Number",
@@ -821,11 +822,12 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   };
   const applicationTypeOptionsForForm = getApplicationTypeOptions();
 
+  // This effect no longer auto-selects if there's one option.
   useEffect(() => {
-    if (!fileIdToEdit && applicationTypeOptionsForForm.length === 1 && workTypeContext !== 'planFund') {
-        setValue("applicationType", applicationTypeOptionsForForm[0] as any);
+    if (!fileIdToEdit && workTypeContext) {
+      // Intentionally left blank, so user has to select.
     }
-  }, [fileIdToEdit, applicationTypeOptionsForForm, setValue, workTypeContext]);
+  }, [fileIdToEdit, workTypeContext, setValue]);
 
   const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
   const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
@@ -1251,7 +1253,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             </Dialog>
         )}
        
-        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove the selected {itemToDelete?.type} entry from this file.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove the selected {itemToDelete?.type} entry from this file.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
 
         <AlertDialog open={siteToCopy !== null} onOpenChange={() => setSiteToCopy(null)}>
           <AlertDialogContent>
