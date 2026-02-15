@@ -223,6 +223,7 @@ export type FileStatus = typeof fileStatusOptions[number];
 export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = [
   "Geological logging",
   "Geophysical Logging",
+  "VES",
   "Pumping test",
   "Industry Pumping test",
   "MWSS Pumping test",
@@ -244,6 +245,13 @@ export const sitePurposeOptions = [
   "HPR",
   "ARS",
   "GW Investigation",
+  "Geological logging",
+  "Geophysical Logging",
+  "VES",
+  "Pumping test",
+  "Industry Pumping test",
+  "MWSS Pumping test",
+  "Others",
 ] as const;
 export type SitePurpose = typeof sitePurposeOptions[number];
 
