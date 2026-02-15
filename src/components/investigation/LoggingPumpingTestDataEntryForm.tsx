@@ -215,7 +215,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     });
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; category?: string; }>({});
 
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging &amp; Pumping Test' : 'GW Investigation';
+    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
     
     const filteredAppTypeOptions = useMemo(() => {
         if (workTypeContext === 'loggingPumpingTest') {
@@ -406,7 +406,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
 };
 
 const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean, workTypeContext: string | null }) => {
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging &amp; Pumping Test' : 'GW Investigation';
+    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
 
     const form = useForm<PaymentDetailFormData>({
       resolver: zodResolver(PaymentDetailSchema),
@@ -471,10 +471,13 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
     const { control, setValue, trigger, handleSubmit, getValues } = form;
 
     const watchedLsg = useWatch({ control, name: "localSelfGovt" });
+    const watchedTypeOfWell = useWatch({ control, name: 'typeOfWell' });
+    const watchedVesRequired = useWatch({ control, name: 'vesRequired' });
     const watchedWorkStatus = useWatch({ control, name: 'workStatus' });
+    const watchedFeasibility = useWatch({ control, name: 'feasibility' });
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging &amp; Pumping Test' : 'GW Investigation';
+    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
     
     const workStatusOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS : INVESTIGATION_WORK_STATUS_OPTIONS;
     const purposeOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_PURPOSE_OPTIONS : ['GW Investigation'];
@@ -534,7 +537,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                         <FormField name="purpose" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value} disabled={isReadOnly}>
+                                                <Select onValueChange={field.onChange} value={field.value}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         {purposeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
@@ -674,7 +677,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const isEditing = !!fileIdToEdit;
 
   const remittanceTitle = "2. Remittance Details";
-  const pageTitle = 'Logging &amp; Pumping Test';
+  const pageTitle = 'Logging & Pumping Test';
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
   const { control, handleSubmit, setValue, getValues, watch } = form;
