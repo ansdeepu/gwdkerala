@@ -127,21 +127,20 @@ const ReportCategoryTable = ({
     let dataFound = false;
 
     categoryKeys.forEach(catKey => {
-        const categoryData = data[catKey];
-        if (categoryData) {
-            const stats = diameter ? categoryData[diameter] : categoryData;
-            if (stats) {
-                if (Object.values(stats).some(val => (typeof val === 'number' && val > 0) || (Array.isArray(val) && val.length > 0))) {
-                    dataFound = true;
-                }
-                metrics.forEach(metric => {
-                    const count = (stats[metric.key] as number) || 0;
-                    const metricData = stats[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] || [];
-                    
-                    (totals[metric.key] as number) += count;
-                    (totals[`${metric.key}Data` as keyof ProgressStats]).push(...metricData);
-                });
+        const stats = diameter ? data[catKey]?.[diameter] : data[catKey];
+        if (stats) {
+            if (Object.values(stats).some(val => (typeof val === 'number' && val > 0) || (Array.isArray(val) && val.length > 0))) {
+                dataFound = true;
             }
+            metrics.forEach(metric => {
+                const count = (stats[metric.key] as number) || 0;
+                const metricData = stats[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] || [];
+                
+                (totals[metric.key] as number) += count;
+                 if (Array.isArray(totals[`${metric.key}Data` as keyof ProgressStats]) && Array.isArray(metricData)) {
+                    (totals[`${metric.key}Data` as keyof ProgressStats] as any[]).push(...metricData);
+                 }
+            });
         }
     });
     return { categoryTotals: totals, hasData: dataFound };
@@ -169,8 +168,7 @@ const ReportCategoryTable = ({
                 </TableHeader>
                 <TableBody>
                   {categoryKeys.map(catKey => {
-                    const categoryData = data[catKey];
-                    const stats = diameter ? categoryData?.[diameter] : categoryData;
+                    const stats = diameter ? data[catKey]?.[diameter] : data[catKey];
 
                     if (!stats || !Object.values(stats).some(val => (typeof val === 'number' && val > 0))) return null;
                     
@@ -286,9 +284,7 @@ export default function ProgressReportPage() {
 
     const initialStats = (): ProgressStats => ({ previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], balanceData: [] });
 
-    const progressSummaryData: OtherServiceProgress = {} as OtherServiceProgress;
-    REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
-    
+    // Detailed Data Structures
     const bwcData: ApplicationTypeProgress = {};
     const twcData: ApplicationTypeProgress = {};
     applicationTypeOptions.forEach(appType => {
@@ -301,14 +297,7 @@ export default function ProgressReportPage() {
     const geologicalLoggingData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => geologicalLoggingData[a] = initialStats());
     const geophysicalLoggingData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => geophysicalLoggingData[a] = initialStats());
     const pumpingTestData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => pumpingTestData[a] = initialStats());
-
-    const initialFinancialSummary = (): FinancialSummary => ({ totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [] });
-    const privateFinancialSummary: FinancialSummaryReport = {};
-    const governmentFinancialSummary: FinancialSummaryReport = {};
-    financialSummaryOrder.forEach(p => { privateFinancialSummary[p] = initialFinancialSummary(); governmentFinancialSummary[p] = initialFinancialSummary(); });
-    
-    let totalRevenueHeadCredit = 0;
-    const revenueHeadCreditData: any[] = [];
+    const otherPurposesData: OtherServiceProgress = {};
     
     includedSites.forEach(siteWithFileContext => {
         const { fileRemittanceDate, ...site } = siteWithFileContext;
@@ -330,39 +319,27 @@ export default function ProgressReportPage() {
             if (isToBeRefunded && fileRemittanceDate && isBefore(fileRemittanceDate, eDate)) { statsObj.toBeRefunded++; statsObj.toBeRefundedData.push(siteWithFileContext); }
         };
         
-        // Progress Summary Table Logic
-        if (PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose)) {
-             updateStats(progressSummaryData["Pumping Test" as SitePurpose]);
-        } else if (REPORTING_PURPOSE_ORDER.includes(purpose)) {
-             if (!progressSummaryData[purpose]) progressSummaryData[purpose] = initialStats();
-             updateStats(progressSummaryData[purpose]);
-        }
-
-        // Detailed Accordion Logic
-        if (INVESTIGATION_WELL_TYPE_PURPOSES.includes(purpose)) {
+        // This is now a single, mutually exclusive chain.
+        if (purpose === 'BWC' && diameter && BWC_DIAMETERS.includes(diameter) && applicationType) {
+          if (bwcData[applicationType]?.[diameter]) updateStats(bwcData[applicationType][diameter]);
+        } else if (purpose === 'TWC' && diameter && TWC_DIAMETERS.includes(diameter) && applicationType) {
+          if (twcData[applicationType]?.[diameter]) updateStats(twcData[applicationType][diameter]);
+        } else if (INVESTIGATION_WELL_TYPE_PURPOSES.includes(purpose)) {
             const wellType = (site as any).typeOfWell;
-            if(wellType) {
+            if (wellType) {
                 const targetData = purpose === "GW Investigation" ? gwInvestigationData : vesData;
-                if (!targetData[wellType]) targetData[wellType] = initialStats();
                 updateStats(targetData[wellType]);
             }
         } else if (INVESTIGATION_APP_TYPE_PURPOSES.includes(purpose)) {
-            if(applicationType) {
+            if (applicationType) {
                 const targetData = purpose === "Geological logging" ? geologicalLoggingData : geophysicalLoggingData;
-                if (!targetData[applicationType]) targetData[applicationType] = initialStats();
                 updateStats(targetData[applicationType]);
             }
         } else if (PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose)) {
-            if(applicationType) {
-                if (!pumpingTestData[applicationType]) pumpingTestData[applicationType] = initialStats();
-                updateStats(pumpingTestData[applicationType]);
-            }
-        } else if (purpose === 'BWC' && diameter && BWC_DIAMETERS.includes(diameter) && applicationType) {
-          if (!bwcData[applicationType]?.[diameter]) return;
-          updateStats(bwcData[applicationType][diameter]);
-        } else if (purpose === 'TWC' && diameter && TWC_DIAMETERS.includes(diameter) && applicationType) {
-          if (!twcData[applicationType]?.[diameter]) return;
-          updateStats(twcData[applicationType][diameter]);
+            if (applicationType) updateStats(pumpingTestData[applicationType]);
+        } else if (REPORTING_PURPOSE_ORDER.includes(purpose)) {
+            if (!otherPurposesData[purpose]) otherPurposesData[purpose] = initialStats();
+            updateStats(otherPurposesData[purpose]);
         }
     });
 
@@ -378,8 +355,7 @@ export default function ProgressReportPage() {
         stats.balanceData = stats.totalApplicationsData.filter(site => !completedKeys.has(`${site.fileNo}-${site.nameOfSite}`));
     };
     
-    // Calculate totals for all data structures
-    REPORTING_PURPOSE_ORDER.forEach(p => calculateBalanceAndTotal(progressSummaryData[p as SitePurpose]));
+    // Calculate final totals for all detailed data structures
     applicationTypeOptions.forEach(appType => {
       BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
       TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
@@ -391,8 +367,51 @@ export default function ProgressReportPage() {
       if(gwInvestigationData[w]) calculateBalanceAndTotal(gwInvestigationData[w]);
       if(vesData[w]) calculateBalanceAndTotal(vesData[w]);
     });
+    Object.values(otherPurposesData).forEach(calculateBalanceAndTotal);
     
-    setReportData({ bwcData, twcData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, privateFinancialSummaryData: privateFinancialSummary, governmentFinancialSummaryData: governmentFinancialSummary, totalRevenueHeadCredit, revenueHeadCreditData });
+    // Now, build the summary data by aggregating from the detailed data
+    const progressSummaryData: OtherServiceProgress = {} as OtherServiceProgress;
+    REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
+
+    const aggregateStats = (source: ProgressStats, target: ProgressStats) => {
+      Object.keys(target).forEach(key => {
+        if (key.endsWith('Data')) {
+            (target[key as keyof ProgressStats] as any[]).push(...(source[key as keyof ProgressStats] as any[]));
+        } else {
+            (target[key as keyof ProgressStats] as number) += (source[key as keyof ProgressStats] as number);
+        }
+      });
+    };
+
+    // Aggregate BWC/TWC
+    applicationTypeOptions.forEach(appType => {
+      BWC_DIAMETERS.forEach(d => { if (bwcData[appType]?.[d]) aggregateStats(bwcData[appType][d], progressSummaryData['BWC']); });
+      TWC_DIAMETERS.forEach(d => { if (twcData[appType]?.[d]) aggregateStats(twcData[appType][d], progressSummaryData['TWC']); });
+    });
+    // Aggregate Investigation & Logging
+    typeOfWellOptions.forEach(w => {
+      if (gwInvestigationData[w]) aggregateStats(gwInvestigationData[w], progressSummaryData['GW Investigation']);
+      if (vesData[w]) aggregateStats(vesData[w], progressSummaryData['VES']);
+    });
+    applicationTypeOptions.forEach(appType => {
+      if (geologicalLoggingData[appType]) aggregateStats(geologicalLoggingData[appType], progressSummaryData['Geological logging']);
+      if (geophysicalLoggingData[appType]) aggregateStats(geophysicalLoggingData[appType], progressSummaryData['Geophysical Logging']);
+      if (pumpingTestData[appType]) aggregateStats(pumpingTestData[appType], progressSummaryData['Pumping Test' as SitePurpose]);
+    });
+    // Copy over simple purposes
+    Object.keys(otherPurposesData).forEach(purpose => {
+        if (progressSummaryData[purpose as SitePurpose]) {
+            aggregateStats(otherPurposesData[purpose as SitePurpose], progressSummaryData[purpose as SitePurpose]);
+        }
+    });
+
+    setReportData({ 
+        bwcData, twcData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
+        privateFinancialSummaryData: {} as FinancialSummaryReport, // These are not used here, but kept for type consistency
+        governmentFinancialSummaryData: {} as FinancialSummaryReport,
+        totalRevenueHeadCredit: 0,
+        revenueHeadCreditData: []
+    });
     setIsFiltering(false);
   }, [fileEntries, startDate, endDate, toast]);
   
@@ -488,7 +507,7 @@ export default function ProgressReportPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Accordion type="multiple" className="w-full space-y-4">
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
                   <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
