@@ -20,6 +20,8 @@ import {
   INVESTIGATION_APP_TYPE_PURPOSES,
   INVESTIGATION_WELL_TYPE_PURPOSES,
   typeOfWellOptions,
+  PUBLIC_DEPOSIT_APPLICATION_TYPES,
+  PRIVATE_APPLICATION_TYPES,
 } from '@/lib/schemas';
 import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
@@ -81,12 +83,6 @@ type FinancialSummaryReport = Record<string, FinancialSummary>;
 const BWC_DIAMETERS = ['110 mm (4.5”)', '150 mm (6”)'];
 const TWC_DIAMETERS = ['150 mm (6”)', '200 mm (8”)'];
 
-const financialSummaryOrder: string[] = REPORTING_PURPOSE_ORDER;
-
-
-const PRIVATE_APPLICATION_TYPES: ApplicationType[] = [
-  "Private_Domestic", "Private_Irrigation", "Private_Institution", "Private_Industry", "Logging_Pumping_Test"
-];
 
 const REFUNDED_STATUSES: SiteWorkStatus[] = ['To be Refunded'];
 
@@ -134,11 +130,12 @@ const ReportCategoryTable = ({
             }
             metrics.forEach(metric => {
                 const count = (stats[metric.key] as number) || 0;
-                const metricData = stats[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] || [];
+                const metricDataKey = `${metric.key}Data` as keyof ProgressStats;
+                const metricData = stats[metricDataKey] as SiteDetailWithFileContext[] | undefined;
                 
                 (totals[metric.key] as number) += count;
-                 if (Array.isArray(totals[`${metric.key}Data` as keyof ProgressStats]) && Array.isArray(metricData)) {
-                    (totals[`${metric.key}Data` as keyof ProgressStats] as any[]).push(...metricData);
+                 if (Array.isArray(totals[metricDataKey]) && Array.isArray(metricData)) {
+                    (totals[metricDataKey] as any[]).push(...metricData);
                  }
             });
         }
@@ -319,25 +316,30 @@ export default function ProgressReportPage() {
             if (isToBeRefunded && fileRemittanceDate && isBefore(fileRemittanceDate, eDate)) { statsObj.toBeRefunded++; statsObj.toBeRefundedData.push(siteWithFileContext); }
         };
         
-        // This is now a single, mutually exclusive chain.
+        let processed = false;
+        
         if (purpose === 'BWC' && diameter && BWC_DIAMETERS.includes(diameter) && applicationType) {
-          if (bwcData[applicationType]?.[diameter]) updateStats(bwcData[applicationType][diameter]);
+          if (bwcData[applicationType]?.[diameter]) { updateStats(bwcData[applicationType][diameter]); processed = true; }
         } else if (purpose === 'TWC' && diameter && TWC_DIAMETERS.includes(diameter) && applicationType) {
-          if (twcData[applicationType]?.[diameter]) updateStats(twcData[applicationType][diameter]);
+          if (twcData[applicationType]?.[diameter]) { updateStats(twcData[applicationType][diameter]); processed = true; }
         } else if (INVESTIGATION_WELL_TYPE_PURPOSES.includes(purpose)) {
             const wellType = (site as any).typeOfWell;
             if (wellType) {
                 const targetData = purpose === "GW Investigation" ? gwInvestigationData : vesData;
                 updateStats(targetData[wellType]);
+                processed = true;
             }
         } else if (INVESTIGATION_APP_TYPE_PURPOSES.includes(purpose)) {
             if (applicationType) {
                 const targetData = purpose === "Geological logging" ? geologicalLoggingData : geophysicalLoggingData;
                 updateStats(targetData[applicationType]);
+                processed = true;
             }
         } else if (PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose)) {
-            if (applicationType) updateStats(pumpingTestData[applicationType]);
-        } else if (REPORTING_PURPOSE_ORDER.includes(purpose)) {
+            if (applicationType) { updateStats(pumpingTestData[applicationType]); processed = true; }
+        }
+        
+        if (!processed && REPORTING_PURPOSE_ORDER.includes(purpose)) {
             if (!otherPurposesData[purpose]) otherPurposesData[purpose] = initialStats();
             updateStats(otherPurposesData[purpose]);
         }
@@ -396,7 +398,7 @@ export default function ProgressReportPage() {
     applicationTypeOptions.forEach(appType => {
       if (geologicalLoggingData[appType]) aggregateStats(geologicalLoggingData[appType], progressSummaryData['Geological logging']);
       if (geophysicalLoggingData[appType]) aggregateStats(geophysicalLoggingData[appType], progressSummaryData['Geophysical Logging']);
-      if (pumpingTestData[appType]) aggregateStats(pumpingTestData[appType], progressSummaryData['Pumping Test' as SitePurpose]);
+      if (pumpingTestData[appType]) aggregateStats(pumpingTestData[appType], progressSummaryData['Pumping test' as SitePurpose]);
     });
     // Copy over simple purposes
     Object.keys(otherPurposesData).forEach(purpose => {
@@ -458,6 +460,8 @@ export default function ProgressReportPage() {
 
   const FinancialSummaryTable = ({ title, summaryData }: { title: string; summaryData: FinancialSummaryReport }) => { /* ... (existing component logic) ... */ return null };
   
+  const uniqueApplicationTypes = useMemo(() => [...new Set(applicationTypeOptions)], []);
+
   if (entriesLoading) {
     return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
@@ -510,13 +514,13 @@ export default function ProgressReportPage() {
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
                   <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={applicationTypeOptions} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                 </Accordion>
             </>
             ) : (
