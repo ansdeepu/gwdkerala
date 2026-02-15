@@ -34,12 +34,12 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 export const dynamic = 'force-dynamic';
 
-const BarChart3 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> );
-const XCircle = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> );
-const Loader2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> );
-const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="6 3 20 12 6 21 6 3"/></svg> );
-const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
-const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
+const BarChart3 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> );
+const XCircle = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> );
+const Loader2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> );
+const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="6 3 20 12 6 21 6 3"/></svg> );
+const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
+const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
 
 
 // Define the structure for the progress report data
@@ -130,12 +130,12 @@ const ReportCategoryTable = ({
             }
             metrics.forEach(metric => {
                 const count = (stats[metric.key] as number) || 0;
-                const metricDataKey = `${metric.key}Data` as keyof ProgressStats;
-                const metricData = stats[metricDataKey] as SiteDetailWithFileContext[] | undefined;
+                const dataKey = `${metric.key}Data` as keyof ProgressStats;
+                const metricData = stats[dataKey] as SiteDetailWithFileContext[] | undefined;
                 
                 (totals[metric.key] as number) += count;
-                 if (Array.isArray(totals[metricDataKey]) && Array.isArray(metricData)) {
-                    (totals[metricDataKey] as any[]).push(...metricData);
+                 if (Array.isArray(totals[dataKey]) && Array.isArray(metricData)) {
+                    (totals[dataKey] as any[]).push(...metricData);
                  }
             });
         }
@@ -294,7 +294,7 @@ export default function ProgressReportPage() {
     const geologicalLoggingData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => geologicalLoggingData[a] = initialStats());
     const geophysicalLoggingData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => geophysicalLoggingData[a] = initialStats());
     const pumpingTestData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => pumpingTestData[a] = initialStats());
-    const otherPurposesData: OtherServiceProgress = {};
+    const otherPurposesData: OtherServiceProgress = {} as OtherServiceProgress;
     
     includedSites.forEach(siteWithFileContext => {
         const { fileRemittanceDate, ...site } = siteWithFileContext;
@@ -376,9 +376,12 @@ export default function ProgressReportPage() {
     REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
 
     const aggregateStats = (source: ProgressStats, target: ProgressStats) => {
+      if (!source || !target) return;
       Object.keys(target).forEach(key => {
         if (key.endsWith('Data')) {
-            (target[key as keyof ProgressStats] as any[]).push(...(source[key as keyof ProgressStats] as any[]));
+            if(Array.isArray(source[key as keyof ProgressStats])) {
+              (target[key as keyof ProgressStats] as any[]).push(...(source[key as keyof ProgressStats] as any[]));
+            }
         } else {
             (target[key as keyof ProgressStats] as number) += (source[key as keyof ProgressStats] as number);
         }
@@ -398,7 +401,7 @@ export default function ProgressReportPage() {
     applicationTypeOptions.forEach(appType => {
       if (geologicalLoggingData[appType]) aggregateStats(geologicalLoggingData[appType], progressSummaryData['Geological logging']);
       if (geophysicalLoggingData[appType]) aggregateStats(geophysicalLoggingData[appType], progressSummaryData['Geophysical Logging']);
-      if (pumpingTestData[appType]) aggregateStats(pumpingTestData[appType], progressSummaryData['Pumping test' as SitePurpose]);
+      if (pumpingTestData[appType]) aggregateStats(pumpingTestData[appType], progressSummaryData['Pumping Test' as SitePurpose]);
     });
     // Copy over simple purposes
     Object.keys(otherPurposesData).forEach(purpose => {
@@ -460,7 +463,7 @@ export default function ProgressReportPage() {
 
   const FinancialSummaryTable = ({ title, summaryData }: { title: string; summaryData: FinancialSummaryReport }) => { /* ... (existing component logic) ... */ return null };
   
-  const uniqueApplicationTypes = useMemo(() => [...new Set(applicationTypeOptions)], []);
+  const uniqueApplicationTypes = useMemo(() => [...new Set(applicationTypeOptions.filter(type => !['GW_Investigation', 'Logging_Pumping_Test'].some(prefix => type.startsWith(prefix))))], []);
 
   if (entriesLoading) {
     return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -497,7 +500,7 @@ export default function ProgressReportPage() {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
                                 return (
                                     <TableRow key={purpose}>
-                                        <TableCell className="border p-2 font-medium">{purpose === 'Pumping test' ? 'Pumping Test (Agg.)' : purpose}</TableCell>
+                                        <TableCell className="border p-2 font-medium">{purpose === 'Pumping Test' ? 'Pumping Test (Agg.)' : purpose}</TableCell>
                                         <TableCell className="border p-2 text-center"><Button variant="link" className="p-0 h-auto" disabled={stats?.previousBalance === 0} onClick={() => handleCountClick(stats.previousBalanceData, `${purpose} - Previous Balance`)}>{stats?.previousBalance || 0}</Button></TableCell>
                                         <TableCell className="border p-2 text-center"><Button variant="link" className="p-0 h-auto" disabled={stats?.currentApplications === 0} onClick={() => handleCountClick(stats.currentApplicationsData, `${purpose} - Current Applications`)}>{stats?.currentApplications || 0}</Button></TableCell>
                                         <TableCell className="border p-2 text-center"><Button variant="link" className="p-0 h-auto" disabled={stats?.toBeRefunded === 0} onClick={() => handleCountClick(stats.toBeRefundedData, `${purpose} - To be Refunded`)}>{stats?.toBeRefunded || 0}</Button></TableCell>
