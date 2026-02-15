@@ -347,6 +347,22 @@ export const reportableFields: Array<{ id: string; label: string; accessor: (ent
   
 ];
 
+// New constants for reporting
+export const REPORTING_PURPOSE_ORDER: string[] = [
+  "GW Investigation",
+  "VES",
+  "Geological logging",
+  "Geophysical Logging",
+  "Pumping Test", // This will be the aggregate key
+  "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev",
+  "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno",
+  "HPS", "HPR", "ARS",
+];
+
+export const PUMPING_TEST_AGGREGATE_PURPOSES: SitePurpose[] = ["Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others"];
+
+export const INVESTIGATION_WELL_TYPE_PURPOSES: SitePurpose[] = ["GW Investigation", "VES"];
+export const INVESTIGATION_APP_TYPE_PURPOSES: SitePurpose[] = ["Geological logging", "Geophysical Logging"];
 
 export const CustomReportBuilderSchema = z.object({
   selectedHeadingIds: z.array(z.string()).min(1, { message: 'Please select at least one heading to include in the report.' }),
