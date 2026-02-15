@@ -299,7 +299,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                     {errors?.fileNo && <p className="text-xs text-destructive mt-1">{errors.fileNo}</p>}
                 </div>
                 <div className="space-y-2 col-span-2">
-                    <Label htmlFor="applicantName">Name & Address of Institution/Applicant *</Label>
+                    <Label htmlFor="applicantName">Name &amp; Address of Institution/Applicant *</Label>
                     <Textarea id="applicantName" value={data.applicantName} onChange={(e) => handleChange('applicantName', e.target.value)} className="min-h-[40px]" disabled={isChecking}/>
                     {errors?.applicantName && <p className="text-xs text-destructive mt-1">{errors.applicantName}</p>}
                 </div>
@@ -824,8 +824,8 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
   // This effect no longer auto-selects if there's one option.
   useEffect(() => {
-    if (!fileIdToEdit && workTypeContext) {
-      // Intentionally left blank, so user has to select.
+    if (!fileIdToEdit && workTypeContext === 'planFund') {
+      // Intentionally left blank.
     }
   }, [fileIdToEdit, workTypeContext, setValue]);
 
@@ -1044,7 +1044,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <DetailRow label="File No." value={watch('fileNo')} />
-                    <DetailRow label="Applicant Name & Address" value={watch('applicantName')} />
+                    <DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} />
                     <DetailRow label="Phone No." value={watch('phoneNo')} />
                     <DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} />
                     <DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} />
@@ -1159,6 +1159,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                     <div className="border-t pt-6 space-y-4">
                                         <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4">
                                             <DetailRow label="Purpose" value={site.purpose} />
+                                            <DetailRow label="Work Status" value={site.workStatus} />
                                             <DetailRow label="Site Estimate (₹)" value={site.estimateAmount} />
                                             <DetailRow label="Remitted for Site (₹)" value={site.remittedAmount} />
                                             <DetailRow label="Total Expenditure (₹)" value={site.totalExpenditure} />
