@@ -1,12 +1,28 @@
 // src/components/reports/CustomReportBuilder.tsx
 "use client";
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { reportableFields, sitePurposeOptions, applicationTypeOptions, applicationTypeDisplayMap, constituencyOptions, type ApplicationType, type SitePurpose, type DataEntryFormData, type ArsEntryFormData, arsTypeOfSchemeOptions } from '@/lib/schemas';
+import { 
+    reportableFields, 
+    sitePurposeOptions, 
+    applicationTypeOptions, 
+    applicationTypeDisplayMap, 
+    constituencyOptions, 
+    type ApplicationType, 
+    type SitePurpose, 
+    type DataEntryFormData, 
+    type ArsEntryFormData, 
+    arsTypeOfSchemeOptions,
+    PUBLIC_DEPOSIT_APPLICATION_TYPES,
+    PRIVATE_APPLICATION_TYPES,
+    COLLECTOR_APPLICATION_TYPES,
+    PLAN_FUND_APPLICATION_TYPES,
+    LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
+} from '@/lib/schemas';
 import { useDataStore } from '@/hooks/use-data-store';
 import { useToast } from '@/hooks/use-toast';
 import { format, parse, isValid, startOfDay, endOfDay, isWithinInterval, parseISO } from 'date-fns';
@@ -16,14 +32,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 
-const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
-const RotateCcw = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> );
-const Filter = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> );
-const TableIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg> );
-const Database = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg> );
+const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
+const RotateCcw = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> );
+const Filter = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> );
+const TableIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg> );
+const Database = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg> );
 
 
-type ReportSource = 'deposit' | 'private' | 'ars';
+type ReportSource = 'deposit' | 'private' | 'ars' | 'gwInvestigation' | 'loggingPumpingTest' | 'collector' | 'planFund';
 type ReportRow = Record<string, string | number | undefined | null>;
 
 const safeParseDate = (dateValue: any): Date | null => {
@@ -38,8 +54,6 @@ const safeParseDate = (dateValue: any): Date | null => {
   }
   return null;
 };
-
-const PRIVATE_APPLICATION_TYPES: ApplicationType[] = ["Private_Domestic", "Private_Irrigation", "Private_Institution", "Private_Industry"];
 
 export default function CustomReportBuilder() {
   const { allFileEntries, allArsEntries, allLsgConstituencyMaps, officeAddress } = useDataStore();
@@ -74,6 +88,10 @@ export default function CustomReportBuilder() {
     return purposeFiltered;
   }, [selectedPurpose, selectedPage]);
   
+  useEffect(() => {
+    setSelectedFields([]);
+  }, [selectedPage]);
+
   const handleSelectAllFields = () => {
     if (selectedFields.length === availableFields.length) {
       setSelectedFields([]);
@@ -90,9 +108,17 @@ export default function CustomReportBuilder() {
 
     let sourceData: (DataEntryFormData | ArsEntryFormData)[] = [];
     if (selectedPage === 'deposit') {
-        sourceData = allFileEntries.filter(e => !e.applicationType || !PRIVATE_APPLICATION_TYPES.includes(e.applicationType as any));
+        sourceData = allFileEntries.filter(e => e.applicationType && PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(e.applicationType as any));
     } else if (selectedPage === 'private') {
         sourceData = allFileEntries.filter(e => e.applicationType && PRIVATE_APPLICATION_TYPES.includes(e.applicationType as any));
+    } else if (selectedPage === 'collector') {
+        sourceData = allFileEntries.filter(e => e.applicationType && COLLECTOR_APPLICATION_TYPES.includes(e.applicationType as any));
+    } else if (selectedPage === 'planFund') {
+        sourceData = allFileEntries.filter(e => e.applicationType && PLAN_FUND_APPLICATION_TYPES.includes(e.applicationType as any));
+    } else if (selectedPage === 'gwInvestigation') {
+        sourceData = allFileEntries.filter(e => e.siteDetails?.some(s => s.purpose === 'GW Investigation'));
+    } else if (selectedPage === 'loggingPumpingTest') {
+        sourceData = allFileEntries.filter(e => e.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any)));
     } else if (selectedPage === 'ars') {
         sourceData = allArsEntries;
     }
@@ -114,7 +140,7 @@ export default function CustomReportBuilder() {
 
     // Unpack entries with multiple sites into individual rows
     let siteLevelData: ReportableEntry[] = [];
-    if (selectedPage === 'deposit' || selectedPage === 'private') {
+    if (selectedPage === 'deposit' || selectedPage === 'private' || selectedPage === 'collector' || selectedPage === 'planFund' || selectedPage === 'gwInvestigation' || selectedPage === 'loggingPumpingTest') {
         filteredData.forEach(entry => {
             const fileEntry = entry as DataEntryFormData;
             if (fileEntry.siteDetails && fileEntry.siteDetails.length > 0) {
@@ -241,11 +267,33 @@ export default function CustomReportBuilder() {
         <Card>
             <CardContent className="space-y-4 pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="space-y-2"><Label>Data Source</Label><Select value={selectedPage} onValueChange={(v) => setSelectedPage(v as ReportSource)}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent><SelectItem value="deposit">Deposit Works</SelectItem><SelectItem value="private">Private Deposit Works</SelectItem><SelectItem value="ars">ARS</SelectItem></SelectContent></Select></div>
+                    <div className="space-y-2"><Label>Data Source</Label>
+                        <Select value={selectedPage} onValueChange={(v) => {
+                            const newSource = v as ReportSource;
+                            setSelectedPage(newSource);
+                            // Reset filters that may not apply to the new source
+                            setSelectedPurpose('all');
+                            setSelectedAppType('all');
+                            setSelectedSchemeType('all');
+                            setSelectedFields([]);
+                            setReportData(null);
+                        }}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="gwInvestigation">GW Investigation</SelectItem>
+                                <SelectItem value="loggingPumpingTest">Logging & Pumping Test</SelectItem>
+                                <SelectItem value="deposit">Deposit Works</SelectItem>
+                                <SelectItem value="collector">Collector's Deposit Works</SelectItem>
+                                <SelectItem value="private">Private Deposit Works</SelectItem>
+                                <SelectItem value="planFund">Plan Fund Works</SelectItem>
+                                <SelectItem value="ars">ARS</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                     <div className="space-y-2"><Label>From Date</Label><Input type="date" value={startDate ? format(startDate, 'yyyy-MM-dd') : ''} onChange={(e) => setStartDate(e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined)} /></div>
                     <div className="space-y-2"><Label>To Date</Label><Input type="date" value={endDate ? format(endDate, 'yyyy-MM-dd') : ''} onChange={(e) => setEndDate(e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined)} /></div>
-                    <div className="space-y-2"><Label>Type of Application</Label><Select value={selectedAppType} onValueChange={setSelectedAppType} disabled={selectedPage === 'ars'}><SelectTrigger><SelectValue placeholder="Select Type"/></SelectTrigger><SelectContent position="popper"><SelectItem value="all">All Types</SelectItem>{applicationTypeOptions.map(t => <SelectItem key={t} value={t}>{applicationTypeDisplayMap[t]}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label>Purpose</Label><Select value={selectedPurpose} onValueChange={setSelectedPurpose} disabled={selectedPage === 'ars'}><SelectTrigger><SelectValue placeholder="Select Purpose"/></SelectTrigger><SelectContent><SelectItem value="all">All Purposes</SelectItem>{sitePurposeOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label>Type of Application</Label><Select value={selectedAppType} onValueChange={setSelectedAppType} disabled={selectedPage === 'ars' || selectedPage === 'gwInvestigation' || selectedPage === 'loggingPumpingTest'}><SelectTrigger><SelectValue placeholder="Select Type"/></SelectTrigger><SelectContent position="popper"><SelectItem value="all">All Types</SelectItem>{applicationTypeOptions.map(t => <SelectItem key={t} value={t}>{applicationTypeDisplayMap[t]}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label>Purpose</Label><Select value={selectedPurpose} onValueChange={setSelectedPurpose} disabled={selectedPage === 'ars' || selectedPage === 'gwInvestigation' || selectedPage === 'loggingPumpingTest'}><SelectTrigger><SelectValue placeholder="Select Purpose"/></SelectTrigger><SelectContent><SelectItem value="all">All Purposes</SelectItem>{sitePurposeOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
                     <div className="space-y-2"><Label>Type of Scheme (ARS)</Label><Select value={selectedSchemeType} onValueChange={setSelectedSchemeType} disabled={selectedPage !== 'ars'}><SelectTrigger><SelectValue placeholder="Select Scheme"/></SelectTrigger><SelectContent><SelectItem value="all">All Scheme Types</SelectItem>{arsTypeOfSchemeOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
                     <div className="space-y-2"><Label>Local Self Govt.</Label><Select value={selectedLsg} onValueChange={setSelectedLsg}><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger><SelectContent className="max-h-80"><SelectItem value="all">All LSGs</SelectItem>{lsgOptions.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent></Select></div>
                     <div className="space-y-2"><Label>Constituency (LAC)</Label><Select value={selectedConstituency} onValueChange={setSelectedConstituency}><SelectTrigger><SelectValue placeholder="Select Constituency"/></SelectTrigger><SelectContent position="popper"><SelectItem value="all">All Constituencies</SelectItem>{[...constituencyOptions].sort().map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
