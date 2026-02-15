@@ -215,7 +215,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     });
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; category?: string; }>({});
 
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
+    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging &amp; Pumping Test' : 'GW Investigation';
     
     const filteredAppTypeOptions = useMemo(() => {
         if (workTypeContext === 'loggingPumpingTest') {
@@ -265,15 +265,10 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                 const fileNoTrimmed = data.fileNo.trim().toUpperCase();
                 const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
                 const querySnapshot = await getDocs(q);
-                
-                const loggingPumpingTestAppTypes: string[] = [
-                    ...LOGGING_PUMPING_TEST_GOVT_TYPES,
-                    ...LOGGING_PUMPING_TEST_PRIVATE_TYPES
-                ];
 
                 const hasDuplicate = querySnapshot.docs.some(doc => {
-                    const docAppType = doc.data().applicationType;
-                    return docAppType && loggingPumpingTestAppTypes.includes(docAppType);
+                    const siteDetails = doc.data().siteDetails as SiteDetailFormData[] | undefined;
+                    return siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
                 });
                 
                 if (hasDuplicate) {
@@ -411,7 +406,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
 };
 
 const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean, workTypeContext: string | null }) => {
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
+    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging &amp; Pumping Test' : 'GW Investigation';
 
     const form = useForm<PaymentDetailFormData>({
       resolver: zodResolver(PaymentDetailSchema),
@@ -479,7 +474,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
     const watchedWorkStatus = useWatch({ control, name: 'workStatus' });
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
+    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging &amp; Pumping Test' : 'GW Investigation';
     
     const workStatusOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS : INVESTIGATION_WORK_STATUS_OPTIONS;
     const purposeOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_PURPOSE_OPTIONS : ['GW Investigation'];
@@ -679,7 +674,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const isEditing = !!fileIdToEdit;
 
   const remittanceTitle = "2. Remittance Details";
-  const pageTitle = 'Logging & Pumping Test';
+  const pageTitle = 'Logging &amp; Pumping Test';
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
   const { control, handleSubmit, setValue, getValues, watch } = form;
