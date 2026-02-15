@@ -131,8 +131,8 @@ export default function DataEntryPage() {
     if (approveUpdateId) {
         base = '/dashboard/pending-updates';
     } else if (fileIdToEdit && pageData?.initialData) { // Editing existing, determine path from content
-        const hasInvestigationPurpose = pageData.initialData.siteDetails?.some(site => site.purpose === 'GW Investigation');
-        const hasLoggingPumpingPurpose = pageData.initialData.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+        const hasInvestigationPurpose = pageData?.initialData?.siteDetails?.some(site => site.purpose === 'GW Investigation');
+        const hasLoggingPumpingPurpose = pageData?.initialData?.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
 
         if (hasInvestigationPurpose && !hasLoggingPumpingPurpose) {
             base = '/dashboard/gw-investigation';
@@ -168,10 +168,11 @@ export default function DataEntryPage() {
             if (!fileIdToEdit) { 
                 let defaultData = getFormDefaults(workTypeContext);
                 setPageData({ initialData: defaultData, allUsers: allUsersResult }); 
+                setDataLoading(false);
                 return; 
             }
             const originalEntry = await fetchEntryForEditing(fileIdToEdit);
-            if (!originalEntry) { setErrorState("Could not find the requested file."); return; }
+            if (!originalEntry) { setErrorState("Could not find the requested file."); setDataLoading(false); return; }
             if (user.role === 'supervisor' && user.uid) {
                 const hasPending = await hasPendingUpdateForFile(originalEntry.fileNo, user.uid);
                 if (hasPending) { setIsFormDisabledForSupervisor(true); toast({ title: "Edits Locked", description: "Pending update review required." }); }
@@ -225,12 +226,12 @@ export default function DataEntryPage() {
   }, [pageData, staffMembers, user, staffIsLoading]);
   
   const hasInvestigationPurpose = useMemo(() => 
-    pageData?.initialData.siteDetails?.some(site => site.purpose === 'GW Investigation'), 
+    pageData?.initialData?.siteDetails?.some(site => site.purpose === 'GW Investigation'), 
     [pageData]
   );
   
   const hasLoggingPumpingPurpose = useMemo(() => 
-    pageData?.initialData.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any)),
+    pageData?.initialData?.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any)),
     [pageData]
   );
 
