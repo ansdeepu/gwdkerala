@@ -90,7 +90,7 @@ export default function AppSidebar() {
           <div className="flex flex-col items-start -space-y-1 group-data-[collapsible=icon]:hidden">
              {user?.officeLocation ? (
                 <span className="font-bold text-lg text-sidebar-foreground">
-                  GWD {user.officeLocation}
+                  GWD {user.officeLocation.charAt(0).toUpperCase() + user.officeLocation.slice(1).toLowerCase()}
                 </span>
               ) : (
                 <>

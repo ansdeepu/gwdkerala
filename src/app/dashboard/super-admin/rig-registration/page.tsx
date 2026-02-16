@@ -71,7 +71,9 @@ const RegistrationTable = ({
                       <TableRow key={app.id}>
                           <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
                           <TableCell>{app.fileNo || 'N/A'}</TableCell>
-                           <TableCell className="capitalize">{(app as any).officeLocation || 'N/A'}</TableCell>
+                           <TableCell className="font-medium">
+                                {((app as any).officeLocation || 'N/A').charAt(0).toUpperCase() + ((app as any).officeLocation || '').slice(1).toLowerCase()}
+                            </TableCell>
                           <TableCell className="font-medium">{app.agencyName}</TableCell>
                           <TableCell>{app.owner.name}</TableCell>
                           <TableCell>{(app.rigs || []).filter(r => r.status === 'Active').length} / {(app.rigs || []).length}</TableCell>

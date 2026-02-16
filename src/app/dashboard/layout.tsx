@@ -60,7 +60,7 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
             ) : user?.officeLocation ? (
                 <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
                     <Building className="h-4 w-4 text-primary" />
-                    <span>{user.officeLocation}</span>
+                    <span>{user.officeLocation.charAt(0).toUpperCase() + user.officeLocation.slice(1).toLowerCase()}</span>
                 </div>
             ) : null}
           <div className={cn("flex items-center gap-2 text-sm font-medium text-primary")}>

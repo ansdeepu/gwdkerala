@@ -179,7 +179,7 @@ export default function OfficeManagementPage() {
             offices.map(([officeLocation, officeUsers]) => (
                 <Card key={officeLocation} className="bg-secondary/50">
                     <CardHeader>
-                        <CardTitle className="text-lg capitalize">{officeLocation}</CardTitle>
+                        <CardTitle className="text-lg">{officeLocation.charAt(0).toUpperCase() + officeLocation.slice(1).toLowerCase()}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <UserManagementTable

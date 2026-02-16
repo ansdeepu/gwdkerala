@@ -421,7 +421,9 @@ export default function ArsPlanPage() {
                                         <TableRow key={site.id} className={getStatusRowClass(site.arsStatus as SiteWorkStatus)}>
                                             <TableCell className="w-[80px]">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
                                             <TableCell className="w-[150px] font-medium">{site.fileNo}</TableCell>
-                                            <TableCell className="w-[120px] font-medium capitalize">{(site as any).officeLocation || 'N/A'}</TableCell>
+                                            <TableCell className="w-[120px] font-medium">
+                                                {((site as any).officeLocation || 'N/A').charAt(0).toUpperCase() + ((site as any).officeLocation || '').slice(1).toLowerCase()}
+                                            </TableCell>
                                             <TableCell className="font-semibold whitespace-normal break-words">
                                               {site.nameOfSite}
                                             </TableCell>
