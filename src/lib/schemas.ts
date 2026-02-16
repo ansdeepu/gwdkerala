@@ -87,6 +87,7 @@ export const designationOptions = [
     "Pump Operator",
     "Driver, HDV",
     "Driver, LDV",
+    "Clerk",
     "Senior Clerk",
     "L D Typist",
     "U D Typist",
