@@ -1,3 +1,4 @@
+
 // src/lib/schemas.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -119,6 +120,7 @@ export const designationMalayalamOptions = [
     "പമ്പ് ഓപ്പറേറ്റർ",
     "ഡ്രൈവർ, എച്ച്ഡിവി",
     "ഡ്രൈവർ, എൽഡിവി",
+    "ക്ലർക്ക്",
     "സീനിയർ ക്ലർക്ക്",
     "എൽ.ഡി ടൈപ്പിസ്റ്റ്",
     "യു.ഡി ടൈപ്പിസ്റ്റ്",
