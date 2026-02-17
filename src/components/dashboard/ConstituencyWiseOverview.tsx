@@ -29,6 +29,7 @@ interface ConstituencyWiseOverviewProps {
   depositWorksCount: number;
   collectorWorksCount: number;
   planFundWorksCount: number;
+  privateWorksCount: number;
   arsWorksCount: number;
   totalCompletedCount: number;
   onOpenDialog: (data: any[], title: string, columns: any[], type: 'detail') => void;
@@ -87,7 +88,7 @@ const getColorClass = (name: string): string => {
     return colorClasses[index];
 };
 
-export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, collectorWorksCount, planFundWorksCount, arsWorksCount, totalCompletedCount, onOpenDialog, dates, onSetDates }: ConstituencyWiseOverviewProps) {
+export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, collectorWorksCount, planFundWorksCount, privateWorksCount, arsWorksCount, totalCompletedCount, onOpenDialog, dates, onSetDates }: ConstituencyWiseOverviewProps) {
 
   const { summaryData, totalCategorizedWorks } = React.useMemo(() => {
     const sDate = dates.start ? startOfDay(dates.start) : null;
@@ -164,7 +165,7 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
     const columns = [
         { key: 'slNo', label: 'Sl. No.' },
         { key: 'fileNo', label: 'File No.' },
-        { key: 'applicantName', label: 'Applicant' },
+        { key: 'applicantName', label: 'Applicant Name' },
         { key: 'siteName', label: 'Site Name' },
         { key: 'purpose', label: 'Purpose' },
         { key: 'workStatus', label: 'Work Status' },
@@ -196,7 +197,7 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
           Constituency-wise Works ({allWorks.length})
         </CardTitle>
          <CardDescription>
-            Summary of all public works. Deposit: {depositWorksCount}, Collector's: {collectorWorksCount}, Plan Fund: {planFundWorksCount}, ARS: {arsWorksCount}. Total Completed: <span className="font-semibold text-green-600">{totalCompletedCount}</span>. Filter by completion date.
+            Summary of all works. Deposit: {depositWorksCount}, Collector's: {collectorWorksCount}, Plan Fund: {planFundWorksCount}, Private: {privateWorksCount}, ARS: {arsWorksCount}. Total Completed: <span className="font-semibold text-green-600">{totalCompletedCount}</span>. Filter by completion date.
         </CardDescription>
         <div className="flex flex-wrap items-center gap-2 pt-4 border-t mt-4">
             <Input

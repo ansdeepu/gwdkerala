@@ -62,12 +62,12 @@ const scrollTo = (id: string) => {
 };
 
 const DashboardNav = () => (
-    <div className="dashboard-nav-sticky sticky top-0 z-20 bg-background/95 backdrop-blur-sm print:hidden">
+    <div className="dashboard-nav-sticky sticky top-0 z-20 bg-background/95 backdrop-blur-sm print:hidden -mt-6">
         <div className="flex items-center overflow-x-auto no-scrollbar border-b px-2">
             {navLinks.map(link => (
                 <button
                     key={link.id}
-                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors px-4 py-3 shrink-0"
+                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors px-3 py-2 shrink-0"
                     onClick={() => scrollTo(link.id)}
                 >
                     {link.label}
@@ -173,14 +173,11 @@ export default function DashboardPage() {
       depositWorksCount,
       collectorWorksCount,
       planFundWorksCount,
+      privateWorksCount,
       arsWorksCount,
       totalCompletedCount
   } = useMemo(() => {
-      const publicFileEntries = (allFileEntries || []).filter(entry => 
-          !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)
-      );
-
-      const allWorksFromFiles = publicFileEntries.flatMap(entry => 
+      const allWorksFromFiles = (allFileEntries || []).flatMap(entry => 
           (entry.siteDetails || []).map(site => ({
               ...site,
               fileNo: entry.fileNo,
@@ -205,12 +202,12 @@ export default function DashboardPage() {
           totalExpenditure: entry.totalExpenditure || 0,
       }));
       
-      const allPublicWorks = [...allWorksFromFiles, ...arsWorks];
+      const allConstituencyWorks = [...allWorksFromFiles, ...arsWorks];
       
-      const completedCount = allPublicWorks.filter(w => w.workStatus && COMPLETED_WORK_STATUSES.includes(w.workStatus as SiteWorkStatus)).length;
+      const completedCount = allConstituencyWorks.filter(w => w.workStatus && COMPLETED_WORK_STATUSES.includes(w.workStatus as SiteWorkStatus)).length;
       
       const countSitesInCategory = (types: readonly ApplicationType[]) => {
-        return publicFileEntries.reduce((acc, entry) => {
+        return allFileEntries.reduce((acc, entry) => {
             if (entry.applicationType && (types as any).includes(entry.applicationType)) {
                 return acc + (entry.siteDetails?.length || 0);
             }
@@ -221,12 +218,14 @@ export default function DashboardPage() {
       const depositCount = countSitesInCategory(PUBLIC_DEPOSIT_APPLICATION_TYPES);
       const collectorCount = countSitesInCategory(COLLECTOR_APPLICATION_TYPES);
       const planFundCount = countSitesInCategory(PLAN_FUND_APPLICATION_TYPES);
+      const privateCount = countSitesInCategory(PRIVATE_APPLICATION_TYPES);
 
       return {
-          constituencyWorks: allPublicWorks,
+          constituencyWorks: allConstituencyWorks,
           depositWorksCount: depositCount,
           collectorWorksCount: collectorCount,
           planFundWorksCount: planFundCount,
+          privateWorksCount: privateCount,
           arsWorksCount: arsWorks.length,
           totalCompletedCount: completedCount
       };
@@ -254,7 +253,7 @@ export default function DashboardPage() {
   }
   
   return (
-    <>
+    <div className="-m-6">
       <DashboardNav />
       <div className="p-6 space-y-6">
         <div id="updates" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -284,6 +283,7 @@ export default function DashboardPage() {
             depositWorksCount={depositWorksCount}
             collectorWorksCount={collectorWorksCount}
             planFundWorksCount={planFundWorksCount}
+            privateWorksCount={privateWorksCount}
             arsWorksCount={arsWorksCount}
             totalCompletedCount={totalCompletedCount}
             onOpenDialog={handleOpenDialog}
@@ -363,6 +363,6 @@ export default function DashboardPage() {
           </Button>
         )}
       </div>
-    </>
+    </div>
   );
 }
