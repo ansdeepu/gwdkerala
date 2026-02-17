@@ -86,6 +86,8 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const { isNavigating, setIsNavigating } = usePageNavigation();
 
+  const isDashboardPage = pathname === '/dashboard';
+
   useEffect(() => {
     if (isLoading) return;
 
@@ -184,7 +186,10 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
             <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background/95 backdrop-blur-sm">
                   <HeaderContent user={user} />
               </header>
-            <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background p-6">
+            <main className={cn(
+              "flex-1 overflow-x-hidden overflow-y-auto bg-background",
+              !isDashboardPage && "p-6" // Apply padding only if it's NOT the dashboard page
+            )}>
               {children}
             </main>
           </SidebarInset>

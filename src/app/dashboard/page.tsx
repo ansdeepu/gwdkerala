@@ -67,7 +67,7 @@ const DashboardNav = () => (
             {navLinks.map(link => (
                 <button
                     key={link.id}
-                    className="text-xs font-semibold text-primary/90 hover:text-primary transition-colors px-4 py-3 shrink-0"
+                    className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors px-4 py-3 shrink-0"
                     onClick={() => scrollTo(link.id)}
                 >
                     {link.label}
@@ -254,7 +254,7 @@ export default function DashboardPage() {
   }
   
   return (
-    <div className="-m-6">
+    <>
       <DashboardNav />
       <div className="p-6 space-y-6">
         <div id="updates" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -363,6 +363,6 @@ export default function DashboardPage() {
           </Button>
         )}
       </div>
-    </div>
+    </>
   );
 }
