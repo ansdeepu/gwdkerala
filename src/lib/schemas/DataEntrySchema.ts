@@ -255,6 +255,23 @@ export const sitePurposeOptions = [
 ] as const;
 export type SitePurpose = typeof sitePurposeOptions[number];
 
+export const REPORTING_PURPOSE_ORDER: SitePurpose[] = [
+  "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev",
+  "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR",
+  "GW Investigation", "VES", "Geological logging", "Geophysical Logging",
+  "Pumping test", "Industry Pumping test", "MWSS Pumping test",
+  "ARS",
+  "Others"
+];
+
+export const PUMPING_TEST_AGGREGATE_PURPOSES: SitePurpose[] = [
+    "Pumping test", "Industry Pumping test", "MWSS Pumping test"
+];
+
+export const INVESTIGATION_APP_TYPE_PURPOSES: SitePurpose[] = ["Geological logging", "Geophysical Logging"];
+
+export const INVESTIGATION_WELL_TYPE_PURPOSES: SitePurpose[] = ["GW Investigation", "VES"];
+
 export const siteDiameterOptions = [
   "110 mm (4.5”)",
   "150 mm (6”)",

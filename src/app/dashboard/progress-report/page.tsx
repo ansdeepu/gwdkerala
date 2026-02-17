@@ -22,7 +22,7 @@ import {
   typeOfWellOptions,
   PUBLIC_DEPOSIT_APPLICATION_TYPES,
   PRIVATE_APPLICATION_TYPES,
-} from '@/lib/schemas';
+} from '@/lib/schemas/DataEntrySchema';
 import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
@@ -335,18 +335,18 @@ export default function ProgressReportPage() {
           if (bwcData[applicationType]?.[diameter]) { updateStats(bwcData[applicationType][diameter]); }
         } else if (purpose === 'TWC' && diameter && TWC_DIAMETERS.includes(diameter) && applicationType) {
           if (twcData[applicationType]?.[diameter]) { updateStats(twcData[applicationType][diameter]); }
-        } else if (INVESTIGATION_WELL_TYPE_PURPOSES.includes(purpose)) {
+        } else if (INVESTIGATION_WELL_TYPE_PURPOSES.includes(purpose as SitePurpose)) {
             const wellType = (site as any).typeOfWell;
             if (wellType && gwInvestigationData[wellType]) { // Check if wellType exists
                 const targetData = purpose === "GW Investigation" ? gwInvestigationData : vesData;
                 updateStats(targetData[wellType]);
             }
-        } else if (INVESTIGATION_APP_TYPE_PURPOSES.includes(purpose)) {
+        } else if (INVESTIGATION_APP_TYPE_PURPOSES.includes(purpose as SitePurpose)) {
             if (applicationType) {
                 const targetData = purpose === "Geological logging" ? geologicalLoggingData : geophysicalLoggingData;
                 updateStats(targetData[applicationType]);
             }
-        } else if (PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose)) {
+        } else if (PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose as SitePurpose)) {
             if (applicationType) { updateStats(pumpingTestData[applicationType]); }
         }
     });
