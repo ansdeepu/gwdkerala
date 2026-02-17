@@ -45,14 +45,18 @@ const navLinks = [
 ];
 
 const scrollTo = (id: string) => {
+    // Find the main scrollable container within the layout, which is the <main> tag.
+    const scrollContainer = document.querySelector('main.overflow-y-auto');
     const element = document.getElementById(id);
-    if (element) {
-        // Adjust for sticky header height if needed
-        const headerOffset = 80; // Approximate height of your header
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+    
+    if (scrollContainer && element) {
+        // The header is sticky, so we get the element's position relative to the scroll container's top.
+        // We subtract a small offset to account for padding and provide some space.
+        const headerOffset = 24; // Corresponds to p-6 padding on the main element
+        const elementPosition = element.offsetTop;
+        const offsetPosition = elementPosition - headerOffset;
 
-        window.scrollTo({
+        scrollContainer.scrollTo({
             top: offsetPosition,
             behavior: 'smooth'
         });
@@ -119,19 +123,23 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 300) {
+      const mainElement = document.querySelector('main.overflow-y-auto');
+      if (mainElement && mainElement.scrollTop > 300) {
         setShowScrollTop(true);
       } else {
         setShowScrollTop(false);
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const mainElement = document.querySelector('main.overflow-y-auto');
+    mainElement?.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => mainElement?.removeEventListener('scroll', handleScroll);
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+     const mainElement = document.querySelector('main.overflow-y-auto');
+     mainElement?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   useEffect(() => {
