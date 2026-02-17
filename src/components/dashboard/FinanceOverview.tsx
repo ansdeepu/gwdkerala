@@ -68,15 +68,20 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
         let planFundDeferredAmount = 0;
         let collectorFundDeferredAmount = 0;
 
-        const operationalAccountEntries = allFileEntries.filter(e => {
+        const operationalAccountEntries: DataEntryFormData[] = [];
+        const adminSanctionEntries: DataEntryFormData[] = [];
+
+        allFileEntries.forEach(e => {
             const appType = e.applicationType as ApplicationType;
-            return (PUBLIC_DEPOSIT_APPLICATION_TYPES as any).includes(appType) || (PRIVATE_APPLICATION_TYPES as any).includes(appType) || !appType;
+            const isAdminSanctioned = appType && ((COLLECTOR_APPLICATION_TYPES as any).includes(appType) || (PLAN_FUND_APPLICATION_TYPES as any).includes(appType));
+
+            if (isAdminSanctioned) {
+                adminSanctionEntries.push(e);
+            } else {
+                operationalAccountEntries.push(e);
+            }
         });
 
-        const adminSanctionEntries = allFileEntries.filter(e => {
-            const appType = e.applicationType as ApplicationType;
-            return appType && ((COLLECTOR_APPLICATION_TYPES as any).includes(appType) || (PLAN_FUND_APPLICATION_TYPES as any).includes(appType));
-        });
 
         // Operational Accounts
         operationalAccountEntries.forEach(entry => {
