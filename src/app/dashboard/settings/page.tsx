@@ -14,10 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc } from "firebase/firestore";
 import { app } from "@/lib/firebase";
-import NewBidderForm from '@/components/e-tender/NewBidderForm';
-import type { Bidder as BidderType, NewBidderFormData } from '@/lib/schemas/eTenderSchema';
 import { useDataStore, type OfficeAddress } from '@/hooks/use-data-store';
-import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,14 +28,12 @@ import type { LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { Loader2, UserPlus, Users, Edit, Trash2, ArrowLeft, Move, Eye, Building, FileUp, Download, ShieldAlert, MapPin, PlusCircle, Save, X } from 'lucide-react';
+import { Loader2, Edit, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { getInitials } from '@/lib/utils';
 
-
 const db = getFirestore(app);
 
-// Schemas
 const OfficeAddressSchema = z.object({
   officeName: z.string().min(1, "Office Name is required."),
   officeLocation: z.string().min(1, "Office Location is required."),
@@ -67,23 +62,11 @@ const officerDesignations: Designation[] = [
     "Executive Engineer", "Senior Hydrogeologist", "Assistant Executive Engineer", "Hydrogeologist"
 ];
 
+const DetailRow = ({ label, value }: { label: string, value?: string | null }) => (
+    value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
+);
 
-// Office Address Form Dialog
-const OfficeAddressDialog = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  isSubmitting,
-  initialData,
-  staffMembers,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: OfficeAddressFormData) => void;
-  isSubmitting: boolean;
-  initialData?: OfficeAddress | null;
-  staffMembers: StaffMember[];
-}) => {
+const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialData, staffMembers }: { isOpen: boolean; onClose: () => void; onSubmit: (data: OfficeAddressFormData) => void; isSubmitting: boolean; initialData?: OfficeAddress | null; staffMembers: StaffMember[]; }) => {
     const { user } = useAuth();
     const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
     const officerList = staffMembers.filter(s => 
@@ -122,416 +105,410 @@ const OfficeAddressDialog = ({
         onSubmit(finalData);
     };
 
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-3xl flex flex-col p-0 h-[90vh]">
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
+                    <DialogHeader className="p-6 pb-4">
+                        <DialogTitle>{initialData ? 'Edit Office Details' : 'Add New Office Details'}</DialogTitle>
+                        <DialogDescription>Fill in the contact and official details for the office.</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 min-h-0">
+                        <ScrollArea className="h-full px-6 py-4">
+                            <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {isSuperAdmin && (
+                                        <FormField name="officeLocation" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Location</FormLabel><FormControl><Input {...field} placeholder="e.g., Kollam" /></FormControl><FormMessage /></FormItem> )}/>
+                                    )}
+                                <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="districtOfficerStaffId" control={form.control} render={({ field }) => (<FormItem><FormLabel>Name of District Officer</FormLabel><Select onValueChange={(value) => handleOfficerChange(value)} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an Officer" /></SelectTrigger></FormControl><SelectContent position="popper"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); handleOfficerChange(''); }}>-- Clear Selection --</SelectItem>{officerList.map(officer => <SelectItem key={officer.id} value={officer.id}>{officer.name} ({officer.designation})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                                <FormField name="phoneNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Phone No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <FormField name="email" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="gstNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>GST No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="panNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>PAN No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                            </div>
+                            <Card className="mt-4"><CardHeader className="p-4"><CardTitle className="text-base">Special Treasury Savings Account</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4"><FormField name="stsbAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/><FormField name="nameOfTreasury" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Treasury</FormLabel><FormControl><Input {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem> )}/></CardContent></Card>
+                            <Card className="mt-4"><CardHeader className="p-4"><CardTitle className="text-base">Bank Account</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4"><FormField name="bankAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/><FormField name="nameOfBank" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Bank</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/><FormField name="bankBranch" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Branch</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/><FormField name="bankIfsc" control={form.control} render={({ field }) => ( <FormItem><FormLabel>IFSC</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/></CardContent></Card>
+                            <FormField name="otherDetails" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Other Details</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                            </div>
+                        </ScrollArea>
+                    </div>
+                    <DialogFooter className="p-6 pt-4">
+                        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+                        <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        Save
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </Form>
+        </DialogContent>
+        </Dialog>
+    );
+};
 
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-3xl flex flex-col p-0 h-[90vh]">
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
-                <DialogHeader className="p-6 pb-4">
-                  <DialogTitle>{initialData ? 'Edit Office Details' : 'Add New Office Details'}</DialogTitle>
-                  <DialogDescription>Fill in the contact and official details for the office.</DialogDescription>
+export default function SettingsPage() {
+    const { setHeader } = usePageHeader();
+    const { user, isLoading: authLoading } = useAuth();
+    const { toast } = useToast();
+    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, selectedOffice } = useDataStore();
+    const canManage = user?.role === 'editor';
+    const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isOfficeDialogOpen, setIsOfficeDialogOpen] = useState(false);
+    const [isClearingData, setIsClearingData] = useState(false);
+    const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const router = useRouter();
+
+    const [isListDialogOpen, setIsListDialogOpen] = useState(false);
+    const [listDialogContent, setListDialogContent] = useState<{ title: string; items: string[] }>({ title: '', items: [] });
+
+    useEffect(() => {
+        setHeader('General Settings', 'Manage dropdown options and other application-wide settings.');
+    }, [setHeader]);
+
+    const handleOfficeSubmit = async (data: OfficeAddressFormData) => {
+        if (!canManage) return;
+        const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
+        if (!officeLocation) {
+            toast({ title: "Error", description: "No office location selected.", variant: "destructive" });
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            const payload: { [key: string]: any } = { ...data };
+            Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });
+            const officeDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, 'details');
+            await setDoc(officeDocRef, payload, { merge: true });
+            toast({ title: 'Office Address Saved', description: 'The office details have been updated.' });
+            setIsOfficeDialogOpen(false);
+        } catch (error: any) {
+            toast({ title: 'Error Saving Office', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
+        if (!officeLocation) {
+            toast({ title: "No Office Selected", description: "Please select an office before importing data.", variant: "destructive" });
+            return;
+        }
+        const file = event.target.files?.[0];
+        if (!file) return;
+        setIsSubmitting(true);
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const buffer = e.target?.result;
+                if (!buffer) throw new Error("Failed to read file.");
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(buffer as ArrayBuffer);
+                const worksheet = workbook.getWorksheet(1);
+                if (!worksheet) throw new Error("No worksheet found in the Excel file.");
+                const lsgDataMap = new Map<string, Set<string>>();
+                const maxConstituencyColumns = 5;
+                worksheet.eachRow((row, rowNumber) => {
+                    if (rowNumber > 1) {
+                        const lsgValue = row.getCell(1).value?.toString().trim();
+                        if (lsgValue) {
+                            if (!lsgDataMap.has(lsgValue)) lsgDataMap.set(lsgValue, new Set());
+                            for (let i = 2; i <= 1 + maxConstituencyColumns; i++) {
+                                const constituencyValue = row.getCell(i).value?.toString().trim();
+                                if (constituencyValue) lsgDataMap.get(lsgValue)!.add(constituencyValue);
+                            }
+                        }
+                    }
+                });
+                if (lsgDataMap.size === 0) throw new Error("No valid data found.");
+                const collectionPath = `offices/${officeLocation.toLowerCase()}/localSelfGovernments`;
+                const batch = writeBatch(db);
+                const existingLsgDocs = await getDocs(query(collection(db, collectionPath)));
+                const existingLsgMap = new Map(existingLsgDocs.docs.map(d => [d.data().name, d.id]));
+                lsgDataMap.forEach((constituenciesSet, lsgName) => {
+                    const data = { name: lsgName, constituencies: Array.from(constituenciesSet) };
+                    const existingId = existingLsgMap.get(lsgName);
+                    const docRef = existingId ? doc(db, collectionPath, existingId) : doc(collection(db, collectionPath));
+                    batch.set(docRef, data, { merge: !!existingId });
+                });
+                await batch.commit();
+                toast({ title: 'Import Successful', description: `${lsgDataMap.size} LSGs imported/updated for ${officeLocation}.` });
+            } catch (error: any) {
+                toast({ title: 'Import Failed', description: error.message, variant: 'destructive' });
+            } finally {
+                setIsSubmitting(false);
+                if(fileInputRef.current) fileInputRef.current.value = "";
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const handleDownloadTemplate = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("LSG_Constituency_Template");
+        const headers = ['Local Self Government'];
+        for (let i = 1; i <= 5; i++) { headers.push('Constituency (LAC)'); }
+        worksheet.getRow(1).values = headers;
+        worksheet.getRow(1).font = { bold: true };
+        worksheet.addRow(["Chavara Grama Panchayath", "Chavara"]);
+        worksheet.addRow(["Neendakara Grama Panchayath", "Chavara"]);
+        worksheet.addRow(["Kollam Corporation", "Chavara", "Kollam", "Eravipuram"]);
+        worksheet.columns = [ { header: headers[0], key: 'lsg', width: 40 }, { header: headers[1], key: 'c1', width: 30 }, { header: headers[2], key: 'c2', width: 30 }, { header: headers[3], key: 'c3', width: 30 }, { header: headers[4], key: 'c4', width: 30 }, { header: headers[5], key: 'c5', width: 30 }, ];
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "GWD_LSG_Constituency_Template.xlsx";
+        a.click();
+        URL.revokeObjectURL(url);
+        toast({ title: "Template Downloaded" });
+    };
+
+    const handleClearAllData = async () => {
+        const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
+        if (!officeLocation) {
+            toast({ title: "No Office Selected", description: "Please select an office to clear its data.", variant: "destructive" });
+            return;
+        }
+        setIsClearingData(true);
+        try {
+            const collectionPath = `offices/${officeLocation.toLowerCase()}/localSelfGovernments`;
+            const q = query(collection(db, collectionPath));
+            const snapshot = await getDocs(q);
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            toast({ title: 'Data Cleared', description: `LSG data for ${officeLocation} has been deleted.` });
+        } catch (error: any) {
+            toast({ title: 'Error Clearing Data', description: error.message, variant: 'destructive' });
+        } finally {
+            setIsClearingData(false);
+            setIsClearConfirmOpen(false);
+        }
+    };
+
+    const allConstituencies = useMemo(() => {
+        const constituencySet = new Set<string>();
+        allLsgConstituencyMaps.forEach(map => { map.constituencies.forEach(con => constituencySet.add(con)); });
+        return Array.from(constituencySet).sort();
+    }, [allLsgConstituencyMaps]);
+  
+    const handleCountClick = (type: 'lsg' | 'constituency') => {
+        if (type === 'lsg') {
+            setListDialogContent({ title: 'Local Self Governments', items: allLsgConstituencyMaps.map(m => m.name).sort() });
+        } else {
+            setListDialogContent({ title: 'Constituencies (LAC)', items: allConstituencies });
+        }
+        setIsListDialogOpen(true);
+    };
+  
+    const handleDeleteOffice = async () => {
+        if (!officeAddress || !canManage) return;
+        setIsDeleting(true);
+        try {
+            const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
+            if (!officeLocation) throw new Error("Office location is required.");
+            await deleteDoc(doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, 'details'));
+            toast({ title: 'Office Address Deleted' });
+        } catch (error: any) {
+            toast({ title: "Error", description: `Could not delete office address: ${error.message}`, variant: "destructive" });
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteConfirmOpen(false);
+        }
+    };
+
+    if (authLoading) {
+        return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+    }
+
+    if (user?.role !== 'editor' && user?.role !== 'viewer') {
+        return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><div className="space-y-6 p-6 text-center"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-2xl font-bold">Access Denied</h1><p className="text-muted-foreground">You do not have permission to view this page.</p></div></div>;
+    }
+
+    return (
+        <>
+            {isSuperAdmin && (
+                <Card className="mb-6">
+                    <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><MapPin className="h-5 w-5"/>Current Office Location</CardTitle></CardHeader>
+                    <CardContent><p className="text-3xl font-bold">{selectedOffice || 'All Offices'}</p><p className="text-sm text-muted-foreground">This is the office you are currently viewing data for.</p></CardContent>
+                </Card>
+            )}
+      
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" />Office Details</CardTitle>
+                                <CardDescription>Manage contact and official details for the <span className="font-semibold text-primary">{isSuperAdmin && officeAddress ? officeAddress.officeLocation : user?.officeLocation || 'department'}</span> office.</CardDescription>
+                            </div>
+                            {canManage && (
+                                <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }} disabled={isSuperAdmin && !selectedOffice}><Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}</Button>
+                                    {officeAddress && <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isDeleting}>{isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete</Button>}
+                                </div>
+                            )}
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {officeAddress ? (
+                            <div className="space-y-3 p-4 border rounded-lg bg-secondary/30">
+                                <div className="flex flex-col md:flex-row md:items-start gap-4">
+                                    <div className="flex-1">
+                                        <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName}, <span className="text-primary">{officeAddress.officeLocation}</span></h3>
+                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.address}</p>
+                                        {officeAddress.officeNameMalayalam && <p className="text-md text-muted-foreground mt-2 whitespace-pre-wrap">{officeAddress.officeNameMalayalam}</p>}
+                                        {officeAddress.addressMalayalam && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.addressMalayalam}</p>}
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        {officeAddress.districtOfficerPhotoUrl && (
+                                            <Avatar><AvatarImage src={officeAddress.districtOfficerPhotoUrl} alt={officeAddress.districtOfficer || 'District Officer'} data-ai-hint="person face" /><AvatarFallback>{getInitials(officeAddress.districtOfficer)}</AvatarFallback></Avatar>
+                                        )}
+                                        <DetailRow label="District Officer" value={officeAddress.districtOfficer} />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 pt-3 border-t">
+                                    <DetailRow label="Office Code" value={officeAddress.officeCode} />
+                                    <DetailRow label="Phone No." value={officeAddress.phoneNo} />
+                                    <DetailRow label="Email" value={officeAddress.email} />
+                                    <DetailRow label="GST No." value={officeAddress.gstNo} />
+                                    <DetailRow label="PAN No." value={officeAddress.panNo} />
+                                </div>
+                                <Separator className="my-4"/>
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Special Treasury Savings Account</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                                    <DetailRow label="STSB Account No." value={officeAddress.stsbAccountNo} />
+                                    <DetailRow label="Name of Treasury" value={officeAddress.nameOfTreasury} />
+                                </div>
+                                <Separator className="my-4"/>
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Bank Account</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                                    <DetailRow label="Bank Account No." value={officeAddress.bankAccountNo} />
+                                    <DetailRow label="Name of Bank" value={officeAddress.nameOfBank} />
+                                    <DetailRow label="Branch" value={officeAddress.bankBranch} />
+                                    <DetailRow label="IFSC" value={officeAddress.bankIfsc} />
+                                </div>
+                                {officeAddress.otherDetails && <div className="pt-3 border-t"><p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.otherDetails}</p></div>}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-muted-foreground">
+                                {isSuperAdmin && !selectedOffice ? (
+                                    <p>Select a specific office to view or edit its details.</p>
+                                ) : (
+                                    <><p>No office details have been configured for {user?.officeLocation || 'your location'} yet.</p>{canManage && <p className="text-sm mt-1">Click "Add Details" to set them up.</p>}</>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+        
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="flex items-center gap-2"><FileUp className="h-5 w-5 text-primary" />Bulk Data Management</CardTitle>
+                            {canManage && (
+                                <div className="flex items-center gap-2">
+                                <input type="file" ref={fileInputRef} onChange={handleExcelImport} className="hidden" accept=".xlsx, .xls" />
+                                <Button onClick={() => fileInputRef.current?.click()} disabled={isSubmitting || (isSuperAdmin && !selectedOffice)}>
+                                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileUp className="mr-2 h-4 w-4" />}Import Excel</Button>
+                                <Button variant="outline" onClick={handleDownloadTemplate}><Download className="mr-2 h-4 w-4"/>Template</Button>
+                                <Button variant="destructive" onClick={() => setIsClearConfirmOpen(true)} disabled={isClearingData || (isSuperAdmin && !selectedOffice)}><Trash2 className="mr-2 h-4 w-4"/>{isClearingData ? "Clearing..." : "Clear All Data"}</Button>
+                                </div>
+                            )}
+                        </div>
+                        <CardDescription>Import or clear Local Self Governments and their associated Constituencies for the selected office.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button onClick={() => handleCountClick('lsg')} disabled={allLsgConstituencyMaps.length === 0} className="p-4 border rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><h4 className="text-sm font-medium text-muted-foreground">Local Self Governments</h4><p className="text-4xl font-bold text-blue-600">{allLsgConstituencyMaps.length}</p></button>
+                        <button onClick={() => handleCountClick('constituency')} disabled={allConstituencies.length === 0} className="p-4 border rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><h4 className="text-sm font-medium text-muted-foreground">Constituencies (LAC)</h4><p className="text-4xl font-bold text-purple-600">{allConstituencies.length}</p></button>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <OfficeAddressDialog
+                isOpen={isOfficeDialogOpen}
+                onClose={() => setIsOfficeDialogOpen(false)}
+                onSubmit={handleOfficeSubmit}
+                isSubmitting={isSubmitting}
+                initialData={officeAddress}
+                staffMembers={allStaffMembers}
+            />
+            <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                        This will permanently delete ALL Local Self Governments from the <strong>{isSuperAdmin ? selectedOffice : user?.officeLocation}</strong> office. This cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isClearingData}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearAllData} disabled={isClearingData} className="bg-destructive hover:bg-destructive/90">
+                        {isClearingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Delete All"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the office address details. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteOffice} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                            {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <Dialog open={isListDialogOpen} onOpenChange={setIsListDialogOpen}>
+                <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-md p-0 flex flex-col h-[70vh]">
+                <DialogHeader className="p-6 pb-4 border-b">
+                    <DialogTitle>{listDialogContent.title}</DialogTitle>
+                    <DialogDescription>Total count: {listDialogContent.items.length}</DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 min-h-0">
                     <ScrollArea className="h-full px-6 py-4">
-                        <div className="space-y-4">
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {isSuperAdmin && (
-                                    <FormField name="officeLocation" control={form.control} render={({ field }) => ( 
-                                        <FormItem><FormLabel>Office Location</FormLabel><FormControl><Input {...field} placeholder="e.g., Kollam" /></FormControl><FormMessage /></FormItem> 
-                                    )}/>
-                                )}
-                              <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                              <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                              <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
-                              <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
-                          </div>
-                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" /></FormControl><FormMessage /></FormItem> )}/>
-                              <FormField
-                                  name="districtOfficerStaffId"
-                                  control={form.control}
-                                  render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>Name of District Officer</FormLabel>
-                                      <Select onValueChange={(value) => handleOfficerChange(value)} value={field.value}>
-                                          <FormControl><SelectTrigger><SelectValue placeholder="Select an Officer" /></SelectTrigger></FormControl>
-                                          <SelectContent position="popper">
-                                              <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); handleOfficerChange(''); }}>-- Clear Selection --</SelectItem>
-                                              {officerList.map(officer => <SelectItem key={officer.id} value={officer.id}>{officer.name} ({officer.designation})</SelectItem>)}
-                                          </SelectContent>
-                                      </Select>
-                                      <FormMessage />
-                                  </FormItem>
-                                  )}
-                              />
-                               <FormField name="phoneNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Phone No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <FormField name="email" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                              <FormField name="gstNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>GST No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                              <FormField name="panNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>PAN No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                          </div>
-
-                           <Card className="mt-4">
-                              <CardHeader className="p-4">
-                                  <CardTitle className="text-base">Special Treasury Savings Account</CardTitle>
-                              </CardHeader>
-                              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-                                  <FormField name="stsbAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                  <FormField name="nameOfTreasury" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Treasury</FormLabel><FormControl><Input {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem> )}/>
-                              </CardContent>
-                          </Card>
-
-                          <Card className="mt-4">
-                              <CardHeader className="p-4">
-                                  <CardTitle className="text-base">Bank Account</CardTitle>
-                              </CardHeader>
-                              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-                                  <FormField name="bankAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                  <FormField name="nameOfBank" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Bank</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                  <FormField name="bankBranch" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Branch</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                  <FormField name="bankIfsc" control={form.control} render={({ field }) => ( <FormItem><FormLabel>IFSC</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                              </CardContent>
-                          </Card>
-
-                          <FormField name="otherDetails" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Other Details</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                        </div>
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-[80px]">Sl. No.</TableHead>
+                            <TableHead>{listDialogContent.title}</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {listDialogContent.items.map((item, index) => (
+                            <TableRow key={index}>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>{item}</TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
                     </ScrollArea>
                 </div>
-                <DialogFooter className="p-6 pt-4">
-                    <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Save
-                    </Button>
-                </DialogFooter>
-            </form>
-          </Form>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-const DetailRow = ({ label, value }: { label: string, value?: string | null }) => (
-    value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
-);
-
-// Main Page Component
-export default function SettingsPage() {
-  const { setHeader } = usePageHeader();
-  const { user, isLoading: authLoading } = useAuth();
-  const { toast } = useToast();
-  const { allLsgConstituencyMaps, allStaffMembers, officeAddress, selectedOffice } = useDataStore();
-  const canManage = user?.role === 'editor';
-  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isOfficeDialogOpen, setIsOfficeDialogOpen] = useState(false);
-  const [isClearingData, setIsClearingData] = useState(false);
-  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const router = useRouter();
-
-  const [isListDialogOpen, setIsListDialogOpen] = useState(false);
-  const [listDialogContent, setListDialogContent] = useState<{ title: string; items: string[] }>({ title: '', items: [] });
-
-  useEffect(() => {
-    setHeader('General Settings', 'Manage dropdown options and other application-wide settings.');
-  }, [setHeader]);
-
-  const handleOfficeSubmit = async (data: OfficeAddressFormData) => {
-    if (!canManage) return;
-
-    const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
-    if (!officeLocation) {
-        toast({ title: "Error", description: "No office location selected.", variant: "destructive" });
-        return;
-    }
-    
-    setIsSubmitting(true);
-    try {
-        const payload: { [key: string]: any } = { ...data };
-        
-        Object.keys(payload).forEach(key => {
-            if (payload[key] === undefined) {
-                delete payload[key];
-            }
-        });
-
-      const officeDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, 'details');
-      await setDoc(officeDocRef, payload, { merge: true });
-      toast({ title: 'Office Address Saved', description: 'The office details have been updated.' });
-      setIsOfficeDialogOpen(false);
-    } catch (error: any) {
-      toast({ title: 'Error Saving Office', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
-    if (!officeLocation) {
-        toast({ title: "No Office Selected", description: "Please select an office before importing data.", variant: "destructive" });
-        return;
-    }
-
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsSubmitting(true);
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const buffer = e.target?.result;
-            if (!buffer) throw new Error("Failed to read file.");
-            const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(buffer as ArrayBuffer);
-            
-            const worksheet = workbook.getWorksheet(1);
-            if (!worksheet) throw new Error("No worksheet found in the Excel file.");
-
-            const lsgDataMap = new Map<string, Set<string>>();
-            const maxConstituencyColumns = 5;
-
-            worksheet.eachRow((row, rowNumber) => {
-                if (rowNumber > 1) {
-                    const lsgValue = row.getCell(1).value?.toString().trim();
-                    if (lsgValue) {
-                        if (!lsgDataMap.has(lsgValue)) lsgDataMap.set(lsgValue, new Set());
-                        for (let i = 2; i <= 1 + maxConstituencyColumns; i++) {
-                            const constituencyValue = row.getCell(i).value?.toString().trim();
-                            if (constituencyValue) lsgDataMap.get(lsgValue)!.add(constituencyValue);
-                        }
-                    }
-                }
-            });
-
-            if (lsgDataMap.size === 0) throw new Error("No valid data found.");
-            
-            const collectionPath = `offices/${officeLocation.toLowerCase()}/localSelfGovernments`;
-            const batch = writeBatch(db);
-            const existingLsgDocs = await getDocs(query(collection(db, collectionPath)));
-            const existingLsgMap = new Map(existingLsgDocs.docs.map(d => [d.data().name, d.id]));
-
-            lsgDataMap.forEach((constituenciesSet, lsgName) => {
-              const data = { name: lsgName, constituencies: Array.from(constituenciesSet) };
-              const existingId = existingLsgMap.get(lsgName);
-              const docRef = existingId ? doc(db, collectionPath, existingId) : doc(collection(db, collectionPath));
-              batch.set(docRef, data, { merge: !!existingId });
-            });
-
-            await batch.commit();
-            toast({ title: 'Import Successful', description: `${lsgDataMap.size} LSGs imported/updated for ${officeLocation}.` });
-
-        } catch (error: any) {
-            toast({ title: 'Import Failed', description: error.message, variant: 'destructive' });
-        } finally {
-            setIsSubmitting(false);
-            if(fileInputRef.current) fileInputRef.current.value = "";
-        }
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
-  const handleDownloadTemplate = async () => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("LSG_Constituency_Template");
-
-    const headers = ['Local Self Government'];
-    for (let i = 1; i <= 5; i++) { headers.push('Constituency (LAC)'); }
-    worksheet.getRow(1).values = headers;
-    worksheet.getRow(1).font = { bold: true };
-    
-    worksheet.addRow(["Chavara Grama Panchayath", "Chavara"]);
-    worksheet.addRow(["Neendakara Grama Panchayath", "Chavara"]);
-    worksheet.addRow(["Kollam Corporation", "Chavara", "Kollam", "Eravipuram"]);
-
-    worksheet.columns = [ { header: headers[0], key: 'lsg', width: 40 }, { header: headers[1], key: 'c1', width: 30 }, { header: headers[2], key: 'c2', width: 30 }, { header: headers[3], key: 'c3', width: 30 }, { header: headers[4], key: 'c4', width: 30 }, { header: headers[5], key: 'c5', width: 30 }, ];
-    
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "GWD_LSG_Constituency_Template.xlsx";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast({ title: "Template Downloaded" });
-  };
-  
-  const handleClearAllData = async () => {
-    const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
-    if (!officeLocation) {
-        toast({ title: "No Office Selected", description: "Please select an office to clear its data.", variant: "destructive" });
-        return;
-    }
-
-    setIsClearingData(true);
-    try {
-        const collectionPath = `offices/${officeLocation.toLowerCase()}/localSelfGovernments`;
-        const q = query(collection(db, collectionPath));
-        const snapshot = await getDocs(q);
-        const batch = writeBatch(db);
-        snapshot.docs.forEach(doc => batch.delete(doc.ref));
-        await batch.commit();
-        toast({ title: 'Data Cleared', description: `LSG data for ${officeLocation} has been deleted.` });
-    } catch (error: any) {
-        toast({ title: 'Error Clearing Data', description: error.message, variant: 'destructive' });
-    } finally {
-        setIsClearingData(false);
-        setIsClearConfirmOpen(false);
-    }
-  };
-
-  const allConstituencies = useMemo(() => {
-    const constituencySet = new Set<string>();
-    allLsgConstituencyMaps.forEach(map => {
-        map.constituencies.forEach(con => constituencySet.add(con));
-    });
-    return Array.from(constituencySet).sort();
-  }, [allLsgConstituencyMaps]);
-  
-  const handleCountClick = (type: 'lsg' | 'constituency') => {
-    if (type === 'lsg') {
-        setListDialogContent({ title: 'Local Self Governments', items: allLsgConstituencyMaps.map(m => m.name).sort() });
-    } else {
-        setListDialogContent({ title: 'Constituencies (LAC)', items: allConstituencies });
-    }
-    setIsListDialogOpen(true);
-  };
-  
-  const handleDeleteOffice = async () => {
-    if (!officeAddress || !canManage) return;
-
-    setIsDeleting(true);
-    try {
-        const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
-        if (!officeLocation) throw new Error("Office location is required.");
-        await deleteDoc(doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, 'details'));
-        toast({ title: 'Office Address Deleted' });
-    } catch (error: any) {
-        toast({ title: "Error", description: `Could not delete office address: ${error.message}`, variant: "destructive" });
-    } finally {
-        setIsDeleting(false);
-        setIsDeleteConfirmOpen(false);
-    }
-  };
-
-  if (authLoading) {
-    return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
-  }
-
-  if (user?.role !== 'editor' && user?.role !== 'viewer') {
-    return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><div className="space-y-6 p-6 text-center"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-2xl font-bold">Access Denied</h1><p className="text-muted-foreground">You do not have permission to view this page.</p></div></div>;
-  }
-
-  return (
-    <>
-      {isSuperAdmin && (
-          <Card className="mb-6">
-              <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><MapPin className="h-5 w-5"/>Current Office Location</CardTitle></CardHeader>
-              <CardContent><p className="text-3xl font-bold">{selectedOffice || 'All Offices'}</p><p className="text-sm text-muted-foreground">This is the office you are currently viewing data for.</p></CardContent>
-          </Card>
-      )}
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="lg:col-span-2">
-              <CardHeader>
-                  <div className="flex justify-between items-start">
-                      <div>
-                          <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" />Office Details</CardTitle>
-                          <CardDescription>Manage contact and official details for the <span className="font-semibold text-primary">{isSuperAdmin && officeAddress ? officeAddress.officeLocation : user?.officeLocation || 'department'}</span> office.</CardDescription>
-                      </div>
-                      {canManage && (
-                          <div className="flex items-center gap-2">
-                             <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }} disabled={isSuperAdmin && !selectedOffice}><Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}</Button>
-                              {officeAddress && <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isDeleting}>{isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete</Button>}
-                          </div>
-                      )}
-                  </div>
-              </CardHeader>
-              <CardContent>
-                  {officeAddress ? (
-                      <div className="space-y-3 p-4 border rounded-lg bg-secondary/30">
-                          <div className="flex flex-col md:flex-row md:items-start gap-4">
-                              <div className="flex-1">
-                                  <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName}, <span className="text-primary">{officeAddress.officeLocation}</span></h3>
-                                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.address}</p>
-                                  {officeAddress.officeNameMalayalam && <p className="text-md text-muted-foreground mt-2 whitespace-pre-wrap">{officeAddress.officeNameMalayalam}</p>}
-                                  {officeAddress.addressMalayalam && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.addressMalayalam}</p>}
-                              </div>
-                              <div className="flex items-center gap-3">
-                                  {officeAddress.districtOfficerPhotoUrl && (
-                                      <Avatar><AvatarImage src={officeAddress.districtOfficerPhotoUrl} alt={officeAddress.districtOfficer || 'District Officer'} data-ai-hint="person face" /><AvatarFallback>{getInitials(officeAddress.districtOfficer)}</AvatarFallback></Avatar>
-                                  )}
-                                  <DetailRow label="District Officer" value={officeAddress.districtOfficer} />
-                              </div>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 pt-3 border-t">
-                              <DetailRow label="Office Code" value={officeAddress.officeCode} />
-                              <DetailRow label="Phone No." value={officeAddress.phoneNo} />
-                              <DetailRow label="Email" value={officeAddress.email} />
-                              <DetailRow label="GST No." value={officeAddress.gstNo} />
-                              <DetailRow label="PAN No." value={officeAddress.panNo} />
-                          </div>
-                          <Separator className="my-4"/>
-                          <h4 className="text-sm font-semibold text-muted-foreground mb-2">Special Treasury Savings Account</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                              <DetailRow label="STSB Account No." value={officeAddress.stsbAccountNo} />
-                              <DetailRow label="Name of Treasury" value={officeAddress.nameOfTreasury} />
-                          </div>
-                          <Separator className="my-4"/>
-                          <h4 className="text-sm font-semibold text-muted-foreground mb-2">Bank Account</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                              <DetailRow label="Bank Account No." value={officeAddress.bankAccountNo} />
-                              <DetailRow label="Name of Bank" value={officeAddress.nameOfBank} />
-                              <DetailRow label="Branch" value={officeAddress.bankBranch} />
-                              <DetailRow label="IFSC" value={officeAddress.bankIfsc} />
-                          </div>
-                          {officeAddress.otherDetails && <div className="pt-3 border-t"><p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.otherDetails}</p></div>}
-                      </div>
-                  ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                          {isSuperAdmin && !selectedOffice ? (
-                               <p>Select a specific office to view or edit its details.</p>
-                          ) : (
-                              <><p>No office details have been configured for {user?.officeLocation || 'your location'} yet.</p>{canManage && <p className="text-sm mt-1">Click "Add Details" to set them up.</p>}</>
-                          )}
-                      </div>
-                  )}
-              </CardContent>
-          </Card>
-  
-          <Card className="lg:col-span-2">
-              <CardHeader>
-                  <div className="flex justify-between items-center">
-                      <CardTitle className="flex items-center gap-2"><FileUp className="h-5 w-5 text-primary" />Bulk Data Management</CardTitle>
-                      {canManage && (
-                          <div className="flex items-center gap-2">
-                             <input type="file" ref={fileInputRef} onChange={handleExcelImport} className="hidden" accept=".xlsx, .xls" />
-                             <Button onClick={() => fileInputRef.current?.click()} disabled={isSubmitting || (isSuperAdmin && !selectedOffice)}><{isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileUp className="mr-2 h-4 w-4" />}Import Excel</Button>
-                             <Button variant="outline" onClick={handleDownloadTemplate}><Download className="mr-2 h-4 w-4"/>Template</Button>
-                             <Button variant="destructive" onClick={() => setIsClearConfirmOpen(true)} disabled={isClearingData || (isSuperAdmin && !selectedOffice)}><Trash2 className="mr-2 h-4 w-4"/>{isClearingData ? "Clearing..." : "Clear All Data"}</Button>
-                          </div>
-                      )}
-                  </div>
-                  <CardDescription>Import or clear Local Self Governments and their associated Constituencies for the selected office.</CardDescription>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button onClick={() => handleCountClick('lsg')} disabled={allLsgConstituencyMaps.length === 0} className="p-4 border rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><h4 className="text-sm font-medium text-muted-foreground">Local Self Governments</h4><p className="text-4xl font-bold text-blue-600">{allLsgConstituencyMaps.length}</p></button>
-                  <button onClick={() => handleCountClick('constituency')} disabled={allConstituencies.length === 0} className="p-4 border rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><h4 className="text-sm font-medium text-muted-foreground">Constituencies (LAC)</h4><p className="text-4xl font-bold text-purple-600">{allConstituencies.length}</p></button>
-              </CardContent>
-          </Card>
-        </div>
-
-        <OfficeAddressDialog isOpen={isOfficeDialogOpen} onClose={() => setIsOfficeDialogOpen(false)} onSubmit={handleOfficeSubmit} isSubmitting={isSubmitting} initialData={officeAddress} staffMembers={allStaffMembers}/>
-        <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete ALL Local Self Governments from the <strong>{isSuperAdmin ? selectedOffice : user?.officeLocation}</strong> office. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={isClearingData}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleClearAllData} disabled={isClearingData} className="bg-destructive hover:bg-destructive/90">{isClearingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Delete All"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the office address details. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteOffice} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Delete"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-        <Dialog open={isListDialogOpen} onOpenChange={setIsListDialogOpen}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-md p-0 flex flex-col h-[70vh]"><DialogHeader className="p-6 pb-4 border-b"><DialogTitle>{listDialogContent.title}</DialogTitle><DialogDescription>Total count: {listDialogContent.items.length}</DialogDescription></DialogHeader><div className="flex-1 min-h-0"><ScrollArea className="h-full px-6 py-4"><Table><TableHeader><TableRow><TableHead className="w-[80px]">Sl. No.</TableHead><TableHead>{listDialogContent.title}</TableHead></TableRow></TableHeader><TableBody>{listDialogContent.items.map((item, index) => (<TableRow key={index}><TableCell>{index + 1}</TableCell><TableCell>{item}</TableCell></TableRow>))}</TableBody></Table></ScrollArea></div></DialogContent></Dialog>
-    </>
-  );
+                </DialogContent>
+            </Dialog>
+        </>
+    );
 }
