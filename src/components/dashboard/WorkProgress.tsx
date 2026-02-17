@@ -13,11 +13,14 @@ import {
     type DataEntryFormData, 
     type ApplicationType, 
     sitePurposeOptions,
-    PRIVATE_APPLICATION_TYPES
+    PRIVATE_APPLICATION_TYPES,
+    LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
 } from '@/lib/schemas/DataEntrySchema';
 import { Input } from '@/components/ui/input';
 import type { UserProfile } from '@/hooks/useAuth';
 import { CalendarCheck, Hourglass, TrendingUp } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 interface WorkProgressProps {
   allFileEntries: DataEntryFormData[];
@@ -25,19 +28,15 @@ interface WorkProgressProps {
   currentUser?: UserProfile | null;
 }
 
-interface WorkSummary {
-  totalCount: number;
-  byPurpose: Record<SitePurpose, number>;
-  data: Array<SiteDetailFormData & { fileNo: string; applicantName: string; }>;
-}
-
-interface DetailedWorkSummary extends WorkSummary {
+interface DetailedWorkSummary {
+    totalCount: number;
+    byPurpose: Record<SitePurpose, number>;
+    data: Array<SiteDetailFormData & { fileNo: string; applicantName: string; }>;
     byPurposePrivate: Record<SitePurpose, number>;
     byPurposeDeposit: Record<SitePurpose, number>;
     privateData: Array<SiteDetailFormData & { fileNo: string; applicantName: string; }>;
     depositData: Array<SiteDetailFormData & { fileNo: string; applicantName: string; }>;
 }
-
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -52,82 +51,181 @@ const safeParseDate = (dateValue: any): Date | null => {
   return null;
 };
 
+const ProgressCategory = ({
+  title,
+  summary,
+  onTotalClick,
+  onPurposeClick,
+}: {
+  title: string;
+  summary: DetailedWorkSummary;
+  onTotalClick: () => void;
+  onPurposeClick: (purpose: SitePurpose) => void;
+}) => {
+  const isCompleted = title.includes('Completed');
+  const Icon = isCompleted ? TrendingUp : Hourglass;
+  const colorClass = isCompleted ? "text-green-600" : "text-orange-600";
+
+  return (
+    <div className="space-y-3 p-4 border rounded-lg bg-secondary/20">
+      <div className="flex justify-between items-center">
+        <h3 className={`text-base font-semibold flex items-center gap-2 ${colorClass}`}>
+          <Icon className="h-5 w-5" />
+          {title}
+        </h3>
+        <Button variant="link" className="text-sm p-0 h-auto" onClick={onTotalClick} disabled={summary.totalCount === 0}>
+          View All ({summary.totalCount})
+        </Button>
+      </div>
+      <div className="space-y-2">
+        {summary.totalCount > 0 ? (
+          <div className="grid grid-cols-2 gap-2">
+            {sitePurposeOptions.filter(p => summary.byPurpose[p] > 0).map(p => (
+              <button key={`${p}-${title}`} className="flex justify-between items-center text-sm p-2 rounded-md hover:bg-orange-100/50" onClick={() => onPurposeClick(p)}>
+                <span className="font-medium">{p}</span>
+                <span className={`font-bold ${colorClass}`}>{summary.byPurpose[p]}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground italic text-center py-4">No works in this category.</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const WorkProgressCategoryView = ({
+    entries,
+    workReportMonth,
+    currentUser,
+    handleMonthStatClick,
+    handleMonthPurposeClick
+}: {
+    entries: DataEntryFormData[];
+    workReportMonth: Date;
+    currentUser?: UserProfile | null;
+    handleMonthStatClick: (type: 'ongoing' | 'completed', dataSource: DetailedWorkSummary) => void;
+    handleMonthPurposeClick: (dataSource: DetailedWorkSummary, purpose: SitePurpose, type: 'Ongoing' | 'Completed') => void;
+}) => {
+    const categoryStats = useMemo(() => {
+        const startOfMonthDate = startOfMonth(workReportMonth);
+        const endOfMonthDate = endOfMonth(workReportMonth);
+
+        const ongoingWorkStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig", "Pending", "VES Pending"];
+        const completedWorkStatuses: SiteWorkStatus[] = ["Work Failed", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued"];
+        
+        const isSupervisor = currentUser?.role === 'supervisor';
+        const uniqueCompletedSites = new Map<string, SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; }>();
+        const ongoingSites: Array<SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; }> = [];
+
+        for (const entry of entries) {
+            if (!entry.siteDetails) continue;
+            for (const site of entry.siteDetails) {
+                if (isSupervisor && site.supervisorUid !== currentUser.uid) continue;
+
+                if (site.workStatus && completedWorkStatuses.includes(site.workStatus as SiteWorkStatus) && site.dateOfCompletion) {
+                    const completionDate = safeParseDate(site.dateOfCompletion);
+                    if (completionDate && isValid(completionDate) && isWithinInterval(completionDate, { start: startOfMonthDate, end: endOfMonthDate })) {
+                        const siteKey = `${entry.fileNo}-${site.nameOfSite}-${site.purpose}`;
+                        if (!uniqueCompletedSites.has(siteKey)) {
+                            uniqueCompletedSites.set(siteKey, { ...site, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType });
+                        }
+                    }
+                }
+                
+                if (site.workStatus && ongoingWorkStatuses.includes(site.workStatus as SiteWorkStatus)) {
+                    ongoingSites.push({ ...site, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType });
+                }
+            }
+        }
+        
+        const createDetailedSummary = (sites: (SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; })[]): DetailedWorkSummary => {
+            const byPurpose = sitePurposeOptions.reduce((acc, p) => ({ ...acc, [p]: 0 }), {} as Record<SitePurpose, number>);
+            const byPurposePrivate = { ...byPurpose };
+            const byPurposeDeposit = { ...byPurpose };
+            
+            const privateData: typeof sites = [];
+            const depositData: typeof sites = [];
+
+            sites.forEach(site => {
+                if (site.purpose && sitePurposeOptions.includes(site.purpose as SitePurpose)) {
+                    const purpose = site.purpose as SitePurpose;
+                    byPurpose[purpose]++;
+                    
+                    if(site.applicationType && PRIVATE_APPLICATION_TYPES.includes(site.applicationType)) {
+                        byPurposePrivate[purpose]++;
+                        privateData.push(site);
+                    } else {
+                        byPurposeDeposit[purpose]++;
+                        depositData.push(site);
+                    }
+                }
+            });
+            return { 
+                totalCount: sites.length, 
+                byPurpose, 
+                data: sites,
+                byPurposePrivate,
+                byPurposeDeposit,
+                privateData,
+                depositData,
+            };
+        };
+
+        return {
+            completedSummary: createDetailedSummary(Array.from(uniqueCompletedSites.values())),
+            ongoingSummary: createDetailedSummary(ongoingSites),
+        };
+    }, [entries, workReportMonth, currentUser]);
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ProgressCategory
+                title={`Completed in ${format(workReportMonth, 'MMMM')}`}
+                summary={categoryStats.completedSummary}
+                onTotalClick={() => handleMonthStatClick('completed', categoryStats.completedSummary)}
+                onPurposeClick={(p) => handleMonthPurposeClick(categoryStats.completedSummary, p, 'Completed')}
+            />
+            <ProgressCategory
+                title="Total Ongoing Works"
+                summary={categoryStats.ongoingSummary}
+                onTotalClick={() => handleMonthStatClick('ongoing', categoryStats.ongoingSummary)}
+                onPurposeClick={(p) => handleMonthPurposeClick(categoryStats.ongoingSummary, p, 'Ongoing')}
+            />
+        </div>
+    );
+};
+
+
 export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser }: WorkProgressProps) {
   const [workReportMonth, setWorkReportMonth] = useState<Date>(new Date());
-
-  const currentMonthStats = useMemo(() => {
-    const startOfMonthDate = startOfMonth(workReportMonth);
-    const endOfMonthDate = endOfMonth(workReportMonth);
-
-    const ongoingWorkStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig", "Pending", "VES Pending"];
-    const completedWorkStatuses: SiteWorkStatus[] = ["Work Failed", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued"];
-    
-    const isSupervisor = currentUser?.role === 'supervisor';
-    const uniqueCompletedSites = new Map<string, SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; }>();
-    const ongoingSites: Array<SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; }> = [];
+  
+  const { 
+    depositWorkEntries,
+    gwInvestigationEntries, 
+    loggingPumpingTestEntries 
+  } = useMemo(() => {
+    const gwInvestigationEntries: DataEntryFormData[] = [];
+    const loggingPumpingTestEntries: DataEntryFormData[] = [];
+    const depositWorkEntries: DataEntryFormData[] = [];
 
     for (const entry of allFileEntries) {
-      if (!entry.siteDetails) continue;
-      for (const site of entry.siteDetails) {
-        if (isSupervisor && site.supervisorUid !== currentUser.uid) continue;
+        const hasGwPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
+        const hasLpPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
 
-        if (site.workStatus && completedWorkStatuses.includes(site.workStatus as SiteWorkStatus) && site.dateOfCompletion) {
-          const completionDate = safeParseDate(site.dateOfCompletion);
-          if (completionDate && isValid(completionDate) && isWithinInterval(completionDate, { start: startOfMonthDate, end: endOfMonthDate })) {
-            const siteKey = `${entry.fileNo}-${site.nameOfSite}-${site.purpose}`;
-            if (!uniqueCompletedSites.has(siteKey)) {
-              uniqueCompletedSites.set(siteKey, { ...site, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType });
-            }
-          }
+        if (hasGwPurpose && !hasLpPurpose) {
+            gwInvestigationEntries.push(entry);
+        } else if (hasLpPurpose && !hasGwPurpose) {
+            loggingPumpingTestEntries.push(entry);
+        } else if (!hasGwPurpose && !hasLpPurpose) {
+            depositWorkEntries.push(entry);
         }
-        
-        if (site.workStatus && ongoingWorkStatuses.includes(site.workStatus as SiteWorkStatus)) {
-          ongoingSites.push({ ...site, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType });
-        }
-      }
     }
-    
-    const createDetailedSummary = (sites: (SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; })[]): DetailedWorkSummary => {
-        const byPurpose = sitePurposeOptions.reduce((acc, p) => ({ ...acc, [p]: 0 }), {} as Record<SitePurpose, number>);
-        const byPurposePrivate = { ...byPurpose };
-        const byPurposeDeposit = { ...byPurpose };
-        
-        const privateData: typeof sites = [];
-        const depositData: typeof sites = [];
+    return { depositWorkEntries, gwInvestigationEntries, loggingPumpingTestEntries };
+  }, [allFileEntries]);
 
-        sites.forEach(site => {
-          if (site.purpose && sitePurposeOptions.includes(site.purpose as SitePurpose)) {
-            const purpose = site.purpose as SitePurpose;
-            byPurpose[purpose]++;
-            
-            if(site.applicationType && PRIVATE_APPLICATION_TYPES.includes(site.applicationType as any)) {
-                byPurposePrivate[purpose]++;
-                privateData.push(site);
-            } else {
-                byPurposeDeposit[purpose]++;
-                depositData.push(site);
-            }
-          }
-        });
-        return { 
-            totalCount: sites.length, 
-            byPurpose, 
-            data: sites,
-            byPurposePrivate,
-            byPurposeDeposit,
-            privateData,
-            depositData,
-        };
-    };
-
-    return {
-        completedSummary: createDetailedSummary(Array.from(uniqueCompletedSites.values())),
-        ongoingSummary: createDetailedSummary(ongoingSites),
-    };
-  }, [allFileEntries, workReportMonth, currentUser]);
-
-  const handleMonthStatClick = (type: 'ongoing' | 'completed') => {
-    const summary = type === 'ongoing' ? currentMonthStats.ongoingSummary : currentMonthStats.completedSummary;
+  const handleMonthStatClick = (type: 'ongoing' | 'completed', summary: DetailedWorkSummary) => {
     if (summary.totalCount === 0) return;
 
     const columns = [
@@ -165,7 +263,6 @@ export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser
 
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dateString = e.target.value;
-    // Expects "yyyy-MM" format
     const parsedDate = parse(dateString, 'yyyy-MM', new Date());
     if (isValid(parsedDate)) {
       setWorkReportMonth(parsedDate);
@@ -179,60 +276,48 @@ export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex-grow">
             <CardTitle className="flex items-center gap-2"><CalendarCheck className="h-5 w-5 text-primary" />Work Progress for {format(workReportMonth, 'MMMM yyyy')}</CardTitle>
-            <CardDescription>Summary of completed and ongoing work.</CardDescription>
+            <CardDescription>Summary of completed and ongoing work by category.</CardDescription>
           </div>
           <div className="shrink-0">
              <Input type="month" className="w-full sm:w-[200px]" value={format(workReportMonth, 'yyyy-MM')} onChange={handleMonthChange} />
           </div>
         </div>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-3 p-4 border rounded-lg bg-secondary/20">
-          <div className="flex justify-between items-center">
-            <h3 className="text-base font-semibold flex items-center gap-2"><TrendingUp className="h-5 w-5 text-green-600"/>Completed in {format(workReportMonth, 'MMMM')}</h3>
-            <Button variant="link" className="text-sm p-0 h-auto" onClick={() => handleMonthStatClick('completed')} disabled={currentMonthStats.completedSummary.totalCount === 0}>View All ({currentMonthStats.completedSummary.totalCount})</Button>
-          </div>
-          <div className="space-y-2">
-            {currentMonthStats.completedSummary.totalCount > 0 ? (
-              <div className="grid grid-cols-2 gap-2">
-                {sitePurposeOptions.filter(p => currentMonthStats.completedSummary.byPurpose[p] > 0).map(p => (
-                  <button key={`${p}-completed`} className="flex justify-between items-center text-sm p-2 rounded-md hover:bg-green-100/50" onClick={() => handleMonthPurposeClick(currentMonthStats.completedSummary, p, 'Completed')}>
-                    <span className="font-medium">{p}</span><span className="font-bold text-green-700">{currentMonthStats.completedSummary.byPurpose[p]}</span>
-                  </button>
-                ))}
-              </div>
-            ) : (<p className="text-sm text-muted-foreground italic text-center py-4">No works completed this month.</p>)}
-          </div>
-        </div>
-        <div className="space-y-3 p-4 border rounded-lg bg-secondary/20">
-          <div className="flex justify-between items-center">
-            <h3 className="text-base font-semibold flex items-center gap-2"><Hourglass className="h-5 w-5 text-orange-600"/>Total Ongoing Works</h3>
-            <Button variant="link" className="text-sm p-0 h-auto" onClick={() => handleMonthStatClick('ongoing')} disabled={currentMonthStats.ongoingSummary.totalCount === 0}>View All ({currentMonthStats.ongoingSummary.totalCount})</Button>
-          </div>
-          <div className="space-y-2">
-            {currentMonthStats.ongoingSummary.totalCount > 0 ? (
-              <div className="grid grid-cols-2 gap-2">
-                 {(['BWC', 'TWC'] as const).map(purpose => (
-                  <React.Fragment key={purpose}>
-                    <button className="flex justify-between items-center text-sm p-2 rounded-md hover:bg-orange-100/50" onClick={() => handleMonthPurposeClick(currentMonthStats.ongoingSummary, purpose, 'Ongoing')}>
-                        <span className="font-medium">{purpose}</span>
-                        <span className="font-bold text-orange-700">{currentMonthStats.ongoingSummary.byPurpose[purpose]}</span>
-                    </button>
-                    <div>
-                         <p className="text-xs text-muted-foreground pl-3">Private: <span className="font-semibold text-orange-700">{currentMonthStats.ongoingSummary.byPurposePrivate[purpose]}</span></p>
-                        <p className="text-xs text-muted-foreground pl-3">Deposit: <span className="font-semibold text-orange-700">{currentMonthStats.ongoingSummary.byPurposeDeposit[purpose]}</span></p>
-                    </div>
-                  </React.Fragment>
-                ))}
-                {sitePurposeOptions.filter(p => !['BWC', 'TWC'].includes(p) && currentMonthStats.ongoingSummary.byPurpose[p] > 0).map(p => (
-                  <button key={`${p}-ongoing`} className="flex justify-between items-center text-sm p-2 rounded-md hover:bg-orange-100/50 col-span-1" onClick={() => handleMonthPurposeClick(currentMonthStats.ongoingSummary, p, 'Ongoing')}>
-                    <span className="font-medium">{p}</span><span className="font-bold text-orange-700">{currentMonthStats.ongoingSummary.byPurpose[p]}</span>
-                  </button>
-                ))}
-              </div>
-            ) : (<p className="text-sm text-muted-foreground italic text-center py-4">No ongoing works found.</p>)}
-          </div>
-        </div>
+      <CardContent>
+        <Tabs defaultValue="deposit">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="deposit">Deposit Works <Badge variant="secondary" className="ml-2">{depositWorkEntries.length}</Badge></TabsTrigger>
+            <TabsTrigger value="gwInvestigation">GW Investigation <Badge variant="secondary" className="ml-2">{gwInvestigationEntries.length}</Badge></TabsTrigger>
+            <TabsTrigger value="loggingPumpingTest">Logging &amp; Pumping <Badge variant="secondary" className="ml-2">{loggingPumpingTestEntries.length}</Badge></TabsTrigger>
+          </TabsList>
+          <TabsContent value="deposit" className="mt-4">
+            <WorkProgressCategoryView 
+                entries={depositWorkEntries}
+                workReportMonth={workReportMonth}
+                currentUser={currentUser}
+                handleMonthStatClick={handleMonthStatClick}
+                handleMonthPurposeClick={handleMonthPurposeClick}
+            />
+          </TabsContent>
+          <TabsContent value="gwInvestigation" className="mt-4">
+             <WorkProgressCategoryView 
+                entries={gwInvestigationEntries}
+                workReportMonth={workReportMonth}
+                currentUser={currentUser}
+                handleMonthStatClick={handleMonthStatClick}
+                handleMonthPurposeClick={handleMonthPurposeClick}
+            />
+          </TabsContent>
+          <TabsContent value="loggingPumpingTest" className="mt-4">
+             <WorkProgressCategoryView 
+                entries={loggingPumpingTestEntries}
+                workReportMonth={workReportMonth}
+                currentUser={currentUser}
+                handleMonthStatClick={handleMonthStatClick}
+                handleMonthPurposeClick={handleMonthPurposeClick}
+            />
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
