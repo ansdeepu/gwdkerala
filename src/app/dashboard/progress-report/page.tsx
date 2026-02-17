@@ -1,3 +1,4 @@
+
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -314,6 +315,7 @@ export default function ProgressReportPage() {
         const wasActiveBeforePeriod = fileRemittanceDate && isBefore(fileRemittanceDate, sDate) && (!completionDate || !isBefore(completionDate, sDate));
 
         const updateStats = (statsObj: ProgressStats) => {
+            if (!statsObj) return;
             if (isCurrentApplicationInPeriod) { statsObj.currentApplications++; statsObj.currentApplicationsData.push(siteWithFileContext); }
             if (wasActiveBeforePeriod) { statsObj.previousBalance++; statsObj.previousBalanceData.push(siteWithFileContext); }
             if (isCompletedInPeriod) { statsObj.completed++; statsObj.completedData.push(siteWithFileContext); }
