@@ -20,23 +20,19 @@ const toDateOrNull = (value: any): Date | null => {
     if (typeof value === 'string') {
         const trimmed = value.trim();
         if (trimmed === '') return null;
-        // Attempt to parse various common date formats
         const formats = [
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", // ISO with milliseconds
-            "yyyy-MM-dd'T'HH:mm:ss'Z'",     // ISO without milliseconds
-            "yyyy-MM-dd'T'HH:mm",           // Datetime-local input
-            "yyyy-MM-dd",                   // Date input
-            'dd/MM/yyyy',                   // Common display format
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm",
+            "yyyy-MM-dd",
+            'dd/MM/yyyy',
         ];
         for (const fmt of formats) {
             try {
                 const parsedDate = parse(trimmed, fmt, new Date());
                 if (isValid(parsedDate)) return parsedDate;
-            } catch (e) {
-                // continue
-            }
+            } catch (e) {}
         }
-        // Final fallback for other string formats Date constructor might handle
         try {
             const fallback = new Date(trimmed);
             if (!isNaN(fallback.getTime())) return fallback;
@@ -140,13 +136,6 @@ export type NewUserByAdminFormData = z.infer<typeof NewUserByAdminSchema>;
 export const userRoleOptions = ['editor', 'supervisor', 'viewer'] as const;
 export type UserRole = typeof userRoleOptions[number];
 
-// Helper for robust optional numeric fields
-const optionalNumber = (errorMessage: string = "Must be a valid number.") =>
-  z.preprocess((val) => {
-    if (val === null || val === undefined || val === "") return undefined;
-    if (typeof val === 'string' && isNaN(Number(val))) return undefined;
-    return val;
-}, z.coerce.number({ invalid_type_error: errorMessage }).min(0, "Cannot be negative.").optional());
 
 // ARS Schemas
 export const arsStatusOptions = [
@@ -186,22 +175,22 @@ export const ArsEntrySchema = z.object({
   constituency: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(constituencyOptions).optional()),
   arsTypeOfScheme: z.enum(arsTypeOfSchemeOptions).optional(),
   arsBlock: z.string().optional(),
-  latitude: optionalNumber(),
-  longitude: optionalNumber(),
-  arsNumberOfStructures: optionalNumber(),
-  arsStorageCapacity: optionalNumber(),
-  arsNumberOfFillings: optionalNumber(),
-  estimateAmount: optionalNumber(),
+  latitude: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+  longitude: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+  arsNumberOfStructures: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+  arsStorageCapacity: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+  arsNumberOfFillings: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+  estimateAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
   arsAsTsDetails: z.string().optional(),
-  tsAmount: optionalNumber(),
+  tsAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
   arsSanctionedDate: optionalDateSchema,
-  arsTenderedAmount: optionalNumber(),
-  arsAwardedAmount: optionalNumber(),
+  arsTenderedAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+  arsAwardedAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
   arsTenderNo: z.string().optional(),
   arsContractorName: z.string().optional(),
   arsStatus: z.enum(arsStatusOptions, { required_error: "ARS status is required." }),
   dateOfCompletion: optionalDateSchema,
-  totalExpenditure: optionalNumber(),
+  totalExpenditure: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
   noOfBeneficiary: z.string().optional(),
   workRemarks: z.string().optional(),
   supervisorUid: z.string().optional().nullable(),
@@ -358,10 +347,7 @@ export const REPORTING_PURPOSE_ORDER: string[] = [
   "HPS", "HPR", "ARS",
 ];
 
-export const PUMPING_TEST_AGGREGATE_PURPOSES: SitePurpose[] = ["Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others"];
-
-export const INVESTIGATION_WELL_TYPE_PURPOSES: SitePurpose[] = ["GW Investigation", "VES"];
-export const INVESTIGATION_APP_TYPE_PURPOSES: SitePurpose[] = ["Geological logging", "Geophysical Logging"];
+import { PUMPING_TEST_AGGREGATE_PURPOSES, INVESTIGATION_WELL_TYPE_PURPOSES, INVESTIGATION_APP_TYPE_PURPOSES } from './schemas/DataEntrySchema';
 
 export const CustomReportBuilderSchema = z.object({
   selectedHeadingIds: z.array(z.string()).min(1, { message: 'Please select at least one heading to include in the report.' }),
@@ -500,7 +486,7 @@ export type ApplicationFeeType = typeof applicationFeeTypes[number];
 export const ApplicationFeeSchema = z.object({
     id: z.string(),
     applicationFeeType: z.enum(applicationFeeTypes).optional(),
-    applicationFeeAmount: optionalNumber(),
+    applicationFeeAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
     applicationFeePaymentDate: optionalDateSchema,
     applicationFeeChallanNo: z.string().optional(),
 });
@@ -509,7 +495,7 @@ export type ApplicationFee = z.infer<typeof ApplicationFeeSchema>;
 export const RigRenewalSchema = z.object({
     id: z.string(),
     renewalDate: optionalDateSchema,
-    renewalFee: optionalNumber("Renewal fee is required."),
+    renewalFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number({invalid_type_error: 'Renewal fee is required.'}).optional()),
     paymentDate: optionalDateSchema,
     challanNo: z.string().optional(),
     validTill: optionalDateSchema,
@@ -521,10 +507,10 @@ export const RigRegistrationSchema = z.object({
     rigRegistrationNo: z.string().optional(),
     typeOfRig: z.enum(rigTypeOptions).optional(),
     registrationDate: optionalDateSchema,
-    registrationFee: optionalNumber(),
+    registrationFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
     paymentDate: optionalDateSchema,
     challanNo: z.string().optional(),
-    additionalRegistrationFee: optionalNumber(),
+    additionalRegistrationFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
     additionalPaymentDate: optionalDateSchema,
     additionalChallanNo: z.string().optional(),
     rigVehicle: VehicleDetailsSchema,
@@ -558,10 +544,10 @@ export const AgencyApplicationSchema = z.object({
   // Agency Registration
   agencyRegistrationNo: z.string().optional(),
   agencyRegistrationDate: optionalDateSchema,
-  agencyRegistrationFee: optionalNumber(),
+  agencyRegistrationFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
   agencyPaymentDate: optionalDateSchema,
   agencyChallanNo: z.string().optional(),
-  agencyAdditionalRegFee: optionalNumber(),
+  agencyAdditionalRegFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
   agencyAdditionalPaymentDate: optionalDateSchema,
   agencyAdditionalChallanNo: z.string().optional(),
   
@@ -627,7 +613,7 @@ export const HiredVehicleSchema = z.object({
     vehicleClass: z.string().optional(),
     registrationDate: optionalDateSchema,
     rcStatus: z.enum(rcStatusOptions).optional(),
-    hireCharges: optionalNumber(),
+    hireCharges: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
     fitnessExpiry: optionalDateSchema,
     taxExpiry: optionalDateSchema,
     insuranceExpiry: optionalDateSchema,
