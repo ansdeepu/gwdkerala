@@ -1,3 +1,4 @@
+
 // src/components/dashboard/FinanceOverview.tsx
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -84,7 +85,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
                 const isInPeriod = !isDateFilterActive || (remittedDate && isValid(remittedDate) && sDate && eDate && isWithinInterval(remittedDate, { start: sDate, end: eDate }));
                 if (isInPeriod) {
                     const amount = Number(rd.amountRemitted) || 0;
-                    if (rd.remittedAccount === 'SBI') sbiCredit += amount;
+                    if (rd.remittedAccount === 'SBI' || rd.remittedAccount === 'Bank') sbiCredit += amount;
                     else if (rd.remittedAccount === 'STSB') stsbCredit += amount;
                 }
             });
@@ -93,7 +94,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
                 const isInPeriod = !isDateFilterActive || (paymentDate && isValid(paymentDate) && sDate && eDate && isWithinInterval(paymentDate, { start: sDate, end: eDate }));
                 if (isInPeriod) {
                     const currentPaymentDebitAmount = (Number(pd.contractorsPayment) || 0) + (Number(pd.gst) || 0) + (Number(pd.incomeTax) || 0) + (Number(pd.kbcwb) || 0) + (Number(pd.refundToParty) || 0);
-                    if (pd.paymentAccount === 'SBI') sbiDebit += currentPaymentDebitAmount;
+                    if (pd.paymentAccount === 'SBI' || pd.paymentAccount === 'Bank') sbiDebit += currentPaymentDebitAmount;
                     else if (pd.paymentAccount === 'STSB') stsbDebit += currentPaymentDebitAmount;
                 }
             });
@@ -157,7 +158,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
         onSetDates({ start: undefined, end: undefined });
     };
     
-    const handleAmountClick = (account: 'SBI' | 'STSB' | 'RevenueHead' | 'PlanFund' | 'CollectorFund', type: 'credit' | 'debit' | 'expenditure') => {
+    const handleAmountClick = (account: 'Bank' | 'STSB' | 'RevenueHead' | 'PlanFund' | 'CollectorFund', type: 'credit' | 'debit' | 'expenditure') => {
         let title = '';
         const dataForDialog: Array<Record<string, any>> = [];
         let columnsForDialog: Array<{ key: string; label: string; isNumeric?: boolean; }> = [];
@@ -201,7 +202,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
 
           if ((account === 'PlanFund' || account === 'CollectorFund') && type === 'credit') {
             processCredit(account);
-          } else if ((account === 'SBI' || account === 'STSB') && type === 'credit') {
+          } else if ((account === 'Bank' || account === 'STSB') && type === 'credit') {
             title = `${account} - Credit Details`;
             columnsForDialog = [
               { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' }, { key: 'applicantName', label: 'Applicant Name' },
@@ -209,7 +210,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
               { key: 'amount', label: 'Remitted (₹)', isNumeric: true }, { key: 'date', label: 'Remitted Date' },
             ];
             entry.remittanceDetails?.forEach(rd => {
-              if (rd.remittedAccount === account && checkDateInRange(rd.dateOfRemittance)) {
+              if ((rd.remittedAccount === account || (account === 'Bank' && rd.remittedAccount === 'SBI')) && checkDateInRange(rd.dateOfRemittance)) {
                 dataForDialog.push({
                   fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', siteNames, sitePurposes,
                   amount: Number(rd.amountRemitted || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -217,7 +218,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
                 });
               }
             });
-          } else if ((account === 'SBI' || account === 'STSB') && type === 'debit') {
+          } else if ((account === 'Bank' || account === 'STSB') && type === 'debit') {
             title = `${account} - Withdrawal Details`;
             columnsForDialog = [
               { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' }, { key: 'applicantName', label: 'Applicant Name' },
@@ -225,7 +226,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
               { key: 'amount', label: 'Paid (₹)', isNumeric: true }, { key: 'date', label: 'Payment Date' },
             ];
             entry.paymentDetails?.forEach(pd => {
-              if (pd.paymentAccount === account && checkDateInRange(pd.dateOfPayment)) {
+              if ((pd.paymentAccount === account || (account === 'Bank' && pd.paymentAccount === 'SBI')) && checkDateInRange(pd.dateOfPayment)) {
                 const paymentAmount = (Number(pd.contractorsPayment) || 0) + (Number(pd.gst) || 0) + (Number(pd.incomeTax) || 0) + (Number(pd.kbcwb) || 0) + (Number(pd.refundToParty) || 0);
                 if (paymentAmount > 0) {
                   dataForDialog.push({
@@ -326,9 +327,9 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
                                     </TableHeader>
                                     <TableBody>
                                         <TableRow>
-                                            <TableCell className="font-medium">SBI</TableCell>
-                                            <TableCell className="text-right font-mono font-bold"><Button variant="link" className="text-green-600 p-0 h-auto font-bold" onClick={() => handleAmountClick('SBI', 'credit')} disabled={!transformedFinanceMetrics.sbiCredit}>{transformedFinanceMetrics.sbiCredit.toLocaleString('en-IN')}</Button></TableCell>
-                                            <TableCell className="text-right font-mono font-bold"><Button variant="link" className="text-red-600 p-0 h-auto font-bold" onClick={() => handleAmountClick('SBI', 'debit')} disabled={!transformedFinanceMetrics.sbiDebit}>{transformedFinanceMetrics.sbiDebit.toLocaleString('en-IN')}</Button></TableCell>
+                                            <TableCell className="font-medium">Bank</TableCell>
+                                            <TableCell className="text-right font-mono font-bold"><Button variant="link" className="text-green-600 p-0 h-auto font-bold" onClick={() => handleAmountClick('Bank', 'credit')} disabled={!transformedFinanceMetrics.sbiCredit}>{transformedFinanceMetrics.sbiCredit.toLocaleString('en-IN')}</Button></TableCell>
+                                            <TableCell className="text-right font-mono font-bold"><Button variant="link" className="text-red-600 p-0 h-auto font-bold" onClick={() => handleAmountClick('Bank', 'debit')} disabled={!transformedFinanceMetrics.sbiDebit}>{transformedFinanceMetrics.sbiDebit.toLocaleString('en-IN')}</Button></TableCell>
                                             <TableCell className="text-right font-mono font-bold">{transformedFinanceMetrics.sbiBalance.toLocaleString('en-IN')}</TableCell>
                                         </TableRow>
                                         <TableRow>
@@ -413,3 +414,4 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
         </Card>
     );
 }
+
