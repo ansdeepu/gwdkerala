@@ -38,10 +38,6 @@ import { getInitials } from '@/lib/utils';
 
 const db = getFirestore(app);
 
-const DetailRow = ({ label, value }: { label: string, value?: string | null }) => (
-    value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
-);
-
 // Schemas
 const OfficeAddressSchema = z.object({
   officeName: z.string().min(1, "Office Name is required."),
@@ -217,6 +213,9 @@ const OfficeAddressDialog = ({
   );
 };
 
+const DetailRow = ({ label, value }: { label: string, value?: string | null }) => (
+    value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
+);
 
 // Main Page Component
 export default function SettingsPage() {
