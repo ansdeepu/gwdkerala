@@ -45,16 +45,16 @@ const navLinks = [
 ];
 
 const scrollTo = (id: string) => {
-    // Find the main scrollable container within the layout, which is the <main> tag.
     const scrollContainer = document.querySelector('main.overflow-y-auto');
     const element = document.getElementById(id);
-    
-    if (scrollContainer && element) {
-        // The header is sticky, so we get the element's position relative to the scroll container's top.
-        // We subtract a small offset to account for padding and provide some space.
-        const headerOffset = 24; // Corresponds to p-6 padding on the main element
+    const dashboardNav = document.querySelector('.dashboard-nav-sticky') as HTMLElement;
+
+    if (scrollContainer && element && dashboardNav) {
+        // Offset is the height of the sticky nav bar + some extra padding
+        const offset = dashboardNav.offsetHeight + 24; 
+        
         const elementPosition = element.offsetTop;
-        const offsetPosition = elementPosition - headerOffset;
+        const offsetPosition = elementPosition - offset;
 
         scrollContainer.scrollTo({
             top: offsetPosition,
@@ -64,16 +64,18 @@ const scrollTo = (id: string) => {
 };
 
 const DashboardNav = () => (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-2 mb-6 rounded-lg bg-card border shadow-sm print:hidden">
-      {navLinks.map(link => (
-        <button
-          key={link.id}
-          className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-2 py-1"
-          onClick={() => scrollTo(link.id)}
-        >
-          {link.label}
-        </button>
-      ))}
+    <div className="dashboard-nav-sticky sticky top-0 z-20 bg-background/95 backdrop-blur-sm -mx-6 mb-6 print:hidden">
+        <div className="flex items-center overflow-x-auto no-scrollbar border-b px-2">
+            {navLinks.map(link => (
+                <button
+                    key={link.id}
+                    className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors px-4 py-3 shrink-0"
+                    onClick={() => scrollTo(link.id)}
+                >
+                    {link.label}
+                </button>
+            ))}
+        </div>
     </div>
 );
 
@@ -255,9 +257,8 @@ export default function DashboardPage() {
   
   return (
     <>
+      <DashboardNav />
       <div className="space-y-6">
-        <DashboardNav />
-        
         <div id="updates" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <ETenderNoticeBoard />
           <ImportantUpdates allFileEntries={dashboardData.allFileEntries} />
