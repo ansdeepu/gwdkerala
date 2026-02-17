@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { DataEntryFormData, SitePurpose, StaffMember } from '@/lib/schemas';
+import type { DataEntryFormData, SitePurpose, StaffMember, Designation, SiteWorkStatus } from '@/lib/schemas';
 import { sitePurposeOptions } from '@/lib/schemas';
 import type { UserProfile } from '@/hooks/useAuth';
 import { Users } from 'lucide-react';
@@ -23,29 +23,51 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
   const [selectedSupervisorId, setSelectedSupervisorId] = useState<string | undefined>(undefined);
 
   const supervisorList = useMemo(() => {
-    return allUsers
-        .filter(u => u.role === 'supervisor' && u.isApproved && u.staffId)
-        .map(u => {
-            const staffInfo = staffMembers.find(s => s.id === u.staffId);
-            return { uid: u.uid, name: staffInfo?.name || u.name || u.email || "" };
+    const investigatorDesignations: Designation[] = [
+        "Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant", 
+        "Geophysicist", "Junior Geophysicist", "Geophysical Assistant"
+    ];
+
+    const staffMap = new Map(staffMembers.map(s => [s.id, s]));
+
+    const potentialSupervisors = allUsers
+        .filter(u => u.isApproved && u.staffId)
+        .filter(u => {
+            const staff = staffMap.get(u.staffId!);
+            return u.role === 'supervisor' || (staff && staff.designation && investigatorDesignations.includes(staff.designation as Designation));
         })
-        .sort((a,b) => a.name.localeCompare(b.name));
+        .map(u => {
+            const staffInfo = staffMap.get(u.staffId!);
+            return { uid: u.uid, name: staffInfo?.name || u.name || u.email || "" };
+        });
+
+    // Remove duplicates by UID
+    const uniqueSupervisors = Array.from(new Map(potentialSupervisors.map(item => [item.uid, item])).values());
+    
+    return uniqueSupervisors.sort((a, b) => a.name.localeCompare(b.name));
   }, [allUsers, staffMembers]);
 
   const supervisorOngoingWorks = useMemo(() => {
     const byPurpose = sitePurposeOptions.reduce((acc, p) => ({ ...acc, [p]: 0 }), {} as Record<SitePurpose, number>);
     if (!selectedSupervisorId) return { works: [], byPurpose, totalCount: 0 };
+
+    const selectedStaffName = supervisorList.find(s => s.uid === selectedSupervisorId)?.name;
     
-    const ongoingWorkStatuses = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig"];
+    const ongoingWorkStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated", "Pending", "VES Pending"];
     let works: Array<{ fileNo: string; applicantName: string; siteName: string; workStatus: string; purpose?: SitePurpose; supervisorName?: string | null }> = [];
 
     for (const entry of allFileEntries) {
         entry.siteDetails?.forEach(site => {
-            if (site.supervisorUid === selectedSupervisorId && site.workStatus && ongoingWorkStatuses.includes(site.workStatus)) {
+            const isAssignedSupervisor = site.supervisorUid === selectedSupervisorId;
+            const isAssignedInvestigator = selectedStaffName && (site.nameOfInvestigator === selectedStaffName || site.vesInvestigator === selectedStaffName);
+            
+            const isOngoing = site.workStatus && ongoingWorkStatuses.includes(site.workStatus as SiteWorkStatus);
+
+            if ((isAssignedSupervisor || isAssignedInvestigator) && isOngoing) {
                 works.push({
                     fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A',
-                    siteName: site.nameOfSite || 'Unnamed Site', workStatus: site.workStatus,
-                    purpose: site.purpose, supervisorName: site.supervisorName,
+                    siteName: site.nameOfSite || 'Unnamed Site', workStatus: site.workStatus!,
+                    purpose: site.purpose, supervisorName: site.supervisorName || site.nameOfInvestigator || site.vesInvestigator,
                 });
                 if(site.purpose && (sitePurposeOptions.includes(site.purpose as SitePurpose))) {
                     byPurpose[site.purpose as SitePurpose]++;
@@ -54,7 +76,7 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
         });
     }
     return { works, byPurpose, totalCount: works.length };
-  }, [selectedSupervisorId, allFileEntries]);
+  }, [selectedSupervisorId, allFileEntries, supervisorList]);
 
   const handleSupervisorWorkClick = (purpose: string) => {
     if (!supervisorOngoingWorks || supervisorOngoingWorks.totalCount === 0) return;
@@ -75,16 +97,16 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" />Supervisor's Ongoing Work</CardTitle>
-        <CardDescription>Select a Supervisor to view their assigned ongoing projects by category.</CardDescription>
+        <CardDescription>Select a staff member to view their assigned ongoing projects by category.</CardDescription>
       </CardHeader>
       <CardContent className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
           <Select onValueChange={setSelectedSupervisorId} value={selectedSupervisorId}>
-            <SelectTrigger><SelectValue placeholder="Select a Supervisor" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Select a Staff Member" /></SelectTrigger>
             <SelectContent>
               {supervisorList.length > 0 ? (
                 supervisorList.map(s => <SelectItem key={s.uid} value={s.uid}>{s.name}</SelectItem>)
-              ) : (<p className="p-2 text-sm text-muted-foreground">No Supervisors available</p>)}
+              ) : (<p className="p-2 text-sm text-muted-foreground">No Supervisors or Investigators found</p>)}
             </SelectContent>
           </Select>
         </div>
@@ -102,8 +124,8 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
                   ))}
                 </TableBody>
               </Table>
-            ) : (<p className="text-muted-foreground italic mt-2">No ongoing works found for this supervisor.</p>)
-          ) : (<p className="text-muted-foreground italic mt-2">Please select a Supervisor to see their work.</p>)}
+            ) : (<p className="text-muted-foreground italic mt-2">No ongoing works found for this staff member.</p>)
+          ) : (<p className="text-muted-foreground italic mt-2">Please select a staff member to see their work.</p>)}
         </div>
       </CardContent>
     </Card>
