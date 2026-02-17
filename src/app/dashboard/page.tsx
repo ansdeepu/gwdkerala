@@ -50,9 +50,7 @@ const scrollTo = (id: string) => {
     const dashboardNav = document.querySelector('.dashboard-nav-sticky') as HTMLElement;
 
     if (scrollContainer && element && dashboardNav) {
-        // Offset is the height of the sticky nav bar + some extra padding
-        const offset = dashboardNav.offsetHeight + 24; 
-        
+        const offset = dashboardNav.offsetHeight; 
         const elementPosition = element.offsetTop;
         const offsetPosition = elementPosition - offset;
 
@@ -64,7 +62,7 @@ const scrollTo = (id: string) => {
 };
 
 const DashboardNav = () => (
-    <div className="dashboard-nav-sticky sticky top-0 z-20 bg-background/95 backdrop-blur-sm -mx-6 -mt-6 mb-6 print:hidden">
+    <div className="dashboard-nav-sticky sticky top-0 z-20 bg-background/95 backdrop-blur-sm print:hidden">
         <div className="flex items-center overflow-x-auto no-scrollbar border-b px-2">
             {navLinks.map(link => (
                 <button
@@ -256,9 +254,9 @@ export default function DashboardPage() {
   }
   
   return (
-    <>
+    <div className="-m-6">
       <DashboardNav />
-      <div className="space-y-6">
+      <div className="p-6 space-y-6">
         <div id="updates" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <ETenderNoticeBoard />
           <ImportantUpdates allFileEntries={dashboardData.allFileEntries} />
@@ -365,6 +363,6 @@ export default function DashboardPage() {
           </Button>
         )}
       </div>
-    </>
+    </div>
   );
 }
