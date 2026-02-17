@@ -5,8 +5,15 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { format, isWithinInterval, startOfMonth, endOfMonth, isValid, parse } from 'date-fns';
-import type { DataEntryFormData, SiteDetailFormData, SitePurpose, SiteWorkStatus, ApplicationType } from '@/lib/schemas';
-import { sitePurposeOptions } from '@/lib/schemas';
+import {
+  sitePurposeOptions,
+  type DataEntryFormData,
+  type SiteDetailFormData,
+  type SitePurpose,
+  type SiteWorkStatus,
+  type ApplicationType,
+  privateApplicationTypes,
+} from '@/lib/schemas';
 import { Input } from '@/components/ui/input';
 import type { UserProfile } from '@/hooks/useAuth';
 import { CalendarCheck, Hourglass, TrendingUp } from 'lucide-react';
@@ -22,8 +29,6 @@ interface WorkSummary {
   byPurpose: Record<SitePurpose, number>;
   data: Array<SiteDetailFormData & { fileNo: string; applicantName: string; }>;
 }
-
-const privateApplicationTypes: ApplicationType[] = ["Private_Domestic", "Private_Irrigation", "Private_Institution", "Private_Industry"];
 
 interface DetailedWorkSummary extends WorkSummary {
     byPurposePrivate: Record<SitePurpose, number>;
@@ -53,7 +58,7 @@ export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser
     const startOfMonthDate = startOfMonth(workReportMonth);
     const endOfMonthDate = endOfMonth(workReportMonth);
 
-    const ongoingWorkStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig"];
+    const ongoingWorkStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig", "Pending", "VES Pending"];
     const completedWorkStatuses: SiteWorkStatus[] = ["Work Failed", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued"];
     
     const isSupervisor = currentUser?.role === 'supervisor';
