@@ -291,7 +291,20 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 const data = snapshot.docs.map(doc => {
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
-                    if (isSuperAdminUser && !officeToQuery) {
+                    
+                    // This is the fix: Ensure officeLocation is attached to the data object
+                    if (collectionName === 'officeAddresses' || collectionName === 'localSelfGovernments') {
+                        if (isSuperAdminUser && !officeToQuery) { // All offices
+                            const pathSegments = doc.ref.path.split('/');
+                            const officeIdIndex = pathSegments.indexOf('offices');
+                            if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
+                                (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
+                            }
+                        } else if (officeToQuery) { // Single office
+                            (processedData as any).officeLocation = officeToQuery;
+                        }
+                    } else if (isSuperAdminUser && !officeToQuery && !docData.officeLocation) {
+                        // General fallback for other collections in collectionGroup query
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
