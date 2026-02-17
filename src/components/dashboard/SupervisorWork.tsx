@@ -29,22 +29,33 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
     ];
 
     const staffMap = new Map(staffMembers.map(s => [s.id, s]));
-
-    const potentialSupervisors = allUsers
-        .filter(u => u.isApproved && u.staffId)
-        .filter(u => {
-            const staff = staffMap.get(u.staffId!);
-            return u.role === 'supervisor' || (staff && staff.designation && investigatorDesignations.includes(staff.designation as Designation));
-        })
-        .map(u => {
-            const staffInfo = staffMap.get(u.staffId!);
-            return { uid: u.uid, name: staffInfo?.name || u.name || u.email || "" };
-        });
-
-    // Remove duplicates by UID
-    const uniqueSupervisors = Array.from(new Map(potentialSupervisors.map(item => [item.uid, item])).values());
     
-    return uniqueSupervisors.sort((a, b) => a.name.localeCompare(b.name));
+    const potentialSupervisors = new Map<string, { uid: string, name: string }>();
+
+    allUsers.forEach(u => {
+      if (!u.isApproved) return;
+
+      let isAdded = false;
+
+      // Condition 1: User has 'supervisor' role.
+      if (u.role === 'supervisor') {
+          // Use staff name if available, otherwise user name.
+          const staffInfo = u.staffId ? staffMap.get(u.staffId) : null;
+          const name = staffInfo?.name || u.name || u.email || "";
+          potentialSupervisors.set(u.uid, { uid: u.uid, name });
+          isAdded = true;
+      }
+
+      // Condition 2: User is linked to an investigator staff member.
+      if (!isAdded && u.staffId) {
+        const staff = staffMap.get(u.staffId);
+        if (staff && staff.designation && investigatorDesignations.includes(staff.designation as Designation)) {
+          potentialSupervisors.set(u.uid, { uid: u.uid, name: staff.name });
+        }
+      }
+    });
+    
+    return Array.from(potentialSupervisors.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [allUsers, staffMembers]);
 
   const supervisorOngoingWorks = useMemo(() => {
