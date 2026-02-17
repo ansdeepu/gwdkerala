@@ -26,7 +26,7 @@ import RigFinancialSummary from '@/components/dashboard/RigFinancialSummary';
 import ConstituencyWiseOverview from '@/components/dashboard/ConstituencyWiseOverview';
 import { useArsEntries } from '@/hooks/useArsEntries';
 import { Button } from '@/components/ui/button';
-import { PUBLIC_DEPOSIT_APPLICATION_TYPES, COLLECTOR_APPLICATION_TYPES, PLAN_FUND_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES } from '@/lib/schemas';
+import { PUBLIC_DEPOSIT_APPLICATION_TYPES, COLLECTOR_APPLICATION_TYPES, PLAN_FUND_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
 import { Loader2, ArrowUp } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -62,7 +62,7 @@ const scrollTo = (id: string) => {
 };
 
 const DashboardNav = () => (
-    <div className="dashboard-nav-sticky sticky top-0 z-20 bg-background/95 backdrop-blur-sm print:hidden -mt-6">
+    <div className="dashboard-nav-sticky sticky top-0 z-20 bg-background/95 backdrop-blur-sm print:hidden">
         <div className="flex items-center overflow-x-auto no-scrollbar border-b px-2">
             {navLinks.map(link => (
                 <button
@@ -174,6 +174,8 @@ export default function DashboardPage() {
       collectorWorksCount,
       planFundWorksCount,
       privateWorksCount,
+      gwInvestigationCount,
+      loggingPumpingTestCount,
       arsWorksCount,
       totalCompletedCount
   } = useMemo(() => {
@@ -206,26 +208,45 @@ export default function DashboardPage() {
       
       const completedCount = allConstituencyWorks.filter(w => w.workStatus && COMPLETED_WORK_STATUSES.includes(w.workStatus as SiteWorkStatus)).length;
       
-      const countSitesInCategory = (types: readonly ApplicationType[]) => {
-        return allFileEntries.reduce((acc, entry) => {
-            if (entry.applicationType && (types as any).includes(entry.applicationType)) {
-                return acc + (entry.siteDetails?.length || 0);
-            }
-            return acc;
-        }, 0);
-      };
-      
-      const depositCount = countSitesInCategory(PUBLIC_DEPOSIT_APPLICATION_TYPES);
-      const collectorCount = countSitesInCategory(COLLECTOR_APPLICATION_TYPES);
-      const planFundCount = countSitesInCategory(PLAN_FUND_APPLICATION_TYPES);
-      const privateCount = countSitesInCategory(PRIVATE_APPLICATION_TYPES);
+      let depositWorksCount = 0;
+      let collectorWorksCount = 0;
+      let planFundWorksCount = 0;
+      let privateWorksCount = 0;
+      let gwInvestigationCount = 0;
+      let loggingPumpingTestCount = 0;
 
+      allFileEntries.forEach(entry => {
+          const siteCount = entry.siteDetails?.length || 0;
+          if (siteCount === 0) return;
+
+          const hasGwPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
+          const hasLpPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+
+          if (hasGwPurpose && !hasLpPurpose) {
+              gwInvestigationCount += siteCount;
+          } else if (hasLpPurpose && !hasGwPurpose) {
+              loggingPumpingTestCount += siteCount;
+          } else if (!hasGwPurpose && !hasLpPurpose) { // It's a deposit work
+              if (entry.applicationType) {
+                  if (PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(entry.applicationType as any)) depositWorksCount += siteCount;
+                  else if (COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)) collectorWorksCount += siteCount;
+                  else if (PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)) planFundWorksCount += siteCount;
+                  else if (PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)) privateWorksCount += siteCount;
+                  else depositWorksCount += siteCount; // Fallback for other types
+              } else {
+                  depositWorksCount += siteCount; // Fallback for no type
+              }
+          }
+      });
+      
       return {
           constituencyWorks: allConstituencyWorks,
-          depositWorksCount: depositCount,
-          collectorWorksCount: collectorCount,
-          planFundWorksCount: planFundCount,
-          privateWorksCount: privateCount,
+          depositWorksCount,
+          collectorWorksCount,
+          planFundWorksCount,
+          privateWorksCount,
+          gwInvestigationCount,
+          loggingPumpingTestCount,
           arsWorksCount: arsWorks.length,
           totalCompletedCount: completedCount
       };
@@ -253,7 +274,7 @@ export default function DashboardPage() {
   }
   
   return (
-    <div className="-m-6">
+    <div className="-mt-6">
       <DashboardNav />
       <div className="p-6 space-y-6">
         <div id="updates" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -284,6 +305,8 @@ export default function DashboardPage() {
             collectorWorksCount={collectorWorksCount}
             planFundWorksCount={planFundWorksCount}
             privateWorksCount={privateWorksCount}
+            gwInvestigationCount={gwInvestigationCount}
+            loggingPumpingTestCount={loggingPumpingTestCount}
             arsWorksCount={arsWorksCount}
             totalCompletedCount={totalCompletedCount}
             onOpenDialog={handleOpenDialog}
