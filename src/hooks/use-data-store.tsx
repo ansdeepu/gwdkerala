@@ -233,13 +233,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     
         if (isSuperAdminUser) {
             if (selectedOffice) {
-                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
+                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
                  setOfficeAddress(foundOffice);
             } else {
                 setOfficeAddress(null); // 'All Offices' is selected
             }
         } else if (user.officeLocation) {
-            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
+            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
             setOfficeAddress(foundOffice);
         }
     }, [user, selectedOffice, allOfficeAddresses]);
@@ -249,9 +249,10 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     useEffect(() => {
         if (!user) {
             setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
-            setAllLsgConstituencyMaps([]); setAllOfficeAddresses([]);
+            setAllLsgConstituencyMaps([]);
             setAllE_tenders([]); setAllDepartmentVehicles([]); setAllHiredVehicles([]); setAllRigCompressors([]);
-            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, lsg: false, officeAddress: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false }));
+            setAllOfficeAddresses([]);
+            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, lsg: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, officeAddress: false }));
             return;
         }
         
