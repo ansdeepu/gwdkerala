@@ -32,6 +32,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, UserPlus, Users, Edit, Trash2, ArrowLeft, Move, Eye, Building, FileUp, Download, ShieldAlert, MapPin, PlusCircle, Save, X } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 
 const db = getFirestore(app);
 
@@ -50,6 +51,12 @@ const OfficeAddressSchema = z.object({
   districtOfficerPhotoUrl: z.string().url().optional().or(z.literal('')).nullable(),
   gstNo: z.string().optional(),
   panNo: z.string().optional(),
+  stsbAccountNo: z.string().optional(),
+  nameOfTreasury: z.string().optional(),
+  bankAccountNo: z.string().optional(),
+  nameOfBank: z.string().optional(),
+  bankBranch: z.string().optional(),
+  bankIfsc: z.string().optional(),
   otherDetails: z.string().optional(),
 });
 type OfficeAddressFormData = z.infer<typeof OfficeAddressSchema>;
@@ -92,12 +99,12 @@ const OfficeAddressDialog = ({
         defaultValues: initialData || {
             officeName: '', officeLocation: user?.officeLocation || '', officeCode: '', officeNameMalayalam: '', address: '', addressMalayalam: '', 
             phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '',
-            gstNo: '', panNo: '', otherDetails: '',
+            gstNo: '', panNo: '', otherDetails: '', stsbAccountNo: '', nameOfTreasury: '', bankAccountNo: '', nameOfBank: '', bankBranch: '', bankIfsc: ''
         },
     });
 
     useEffect(() => {
-        const defaultValues: Partial<OfficeAddressFormData> = initialData ? { ...initialData } : { officeName: '', officeLocation: '', officeCode: '', officeNameMalayalam: '', address: '', addressMalayalam: '', phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '', gstNo: '', panNo: '', otherDetails: '' };
+        const defaultValues: Partial<OfficeAddressFormData> = initialData ? { ...initialData } : { officeName: '', officeLocation: '', officeCode: '', officeNameMalayalam: '', address: '', addressMalayalam: '', phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '', gstNo: '', panNo: '', otherDetails: '', stsbAccountNo: '', nameOfTreasury: '', bankAccountNo: '', nameOfBank: '', bankBranch: '', bankIfsc: '' };
         if (!isSuperAdmin && user?.officeLocation) {
             defaultValues.officeLocation = user.officeLocation;
         }
@@ -169,6 +176,28 @@ const OfficeAddressDialog = ({
                               <FormField name="gstNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>GST No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                               <FormField name="panNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>PAN No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                           </div>
+
+                           <Card className="mt-4">
+                              <CardHeader className="p-4">
+                                  <CardTitle className="text-base">Special Treasury Savings Account</CardTitle>
+                              </CardHeader>
+                              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                                  <FormField name="stsbAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                  <FormField name="nameOfTreasury" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Treasury</FormLabel><FormControl><Input {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem> )}/>
+                              </CardContent>
+                          </Card>
+
+                          <Card className="mt-4">
+                              <CardHeader className="p-4">
+                                  <CardTitle className="text-base">Bank Account</CardTitle>
+                              </CardHeader>
+                              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                                  <FormField name="bankAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                  <FormField name="nameOfBank" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Bank</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                  <FormField name="bankBranch" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Branch</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                  <FormField name="bankIfsc" control={form.control} render={({ field }) => ( <FormItem><FormLabel>IFSC</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                              </CardContent>
+                          </Card>
 
                           <FormField name="otherDetails" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Other Details</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
                         </div>
@@ -495,6 +524,25 @@ export default function SettingsPage() {
                             <DetailRow label="GST No." value={officeAddress.gstNo} />
                             <DetailRow label="PAN No." value={officeAddress.panNo} />
                         </div>
+                        
+                        <Separator className="my-4"/>
+
+                        <h4 className="text-sm font-semibold text-muted-foreground mb-2">Special Treasury Savings Account</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                            <DetailRow label="STSB Account No." value={officeAddress.stsbAccountNo} />
+                            <DetailRow label="Name of Treasury" value={officeAddress.nameOfTreasury} />
+                        </div>
+
+                        <Separator className="my-4"/>
+
+                        <h4 className="text-sm font-semibold text-muted-foreground mb-2">Bank Account</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                            <DetailRow label="Bank Account No." value={officeAddress.bankAccountNo} />
+                            <DetailRow label="Name of Bank" value={officeAddress.nameOfBank} />
+                            <DetailRow label="Branch" value={officeAddress.bankBranch} />
+                            <DetailRow label="IFSC" value={officeAddress.bankIfsc} />
+                        </div>
+
                         {officeAddress.otherDetails && <div className="pt-3 border-t"><p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.otherDetails}</p></div>}
                     </div>
                 ) : (

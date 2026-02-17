@@ -1,4 +1,3 @@
-
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -87,8 +86,8 @@ const toDateOrNull = (value: any): Date | null => {
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
 
 export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
-    tenderFee: "For Works:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 500\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\n- Over 50 Lakhs up to 1 Crore: Rs 5000\n- Above 1 Crore: Rs 10000\n\nFor Purchase:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 800\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\n- Above 25 Lakhs: Rs 3000",
-    emd: "For Works:\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\n- Above Rs. 10 Crore: Rs. 5 Lakh\n\nFor Purchase:\n- Up to 2 Crore: 1.00% of the project cost\n- Above 2 Crore: No EMD",
+    tenderFee: "For Works:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 500\\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\\n- Over 50 Lakhs up to 1 Crore: Rs 5000\\n- Above 1 Crore: Rs 10000\\n\\nFor Purchase:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 800\\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\\n- Above 25 Lakhs: Rs 3000",
+    emd: "For Works:\\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\\n- Above Rs. 10 Crore: Rs. 5 Lakh\\n\\nFor Purchase:\\n- Up to 2 Crore: 1.00% of the project cost\\n- Above 2 Crore: No EMD",
     performanceGuarantee: "Performance Guarantee , the amount collected at the time of executing contract agreement will be 5% of the contract value(agrecd PAC)and the deposit will be retained till the texpiry of Defect Liability Period. At least fifty percent(50%) of this deposit shall be collected in the form of Treasury Fixed Deposit and the rest in the form of Bank Guarantee or any other forms prescribed in the revised PWD Manual.",
     additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%. This deposit is calculated as 25% of the difference between the estimate cost and the tender amount, but it will not exceed 10% of the estimate cost. This deposit will be released after satisfactory completion of the work.",
     stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
@@ -109,6 +108,12 @@ export interface OfficeAddress {
   districtOfficerPhotoUrl?: string;
   gstNo?: string;
   panNo?: string;
+  stsbAccountNo?: string;
+  nameOfTreasury?: string;
+  bankAccountNo?: string;
+  nameOfBank?: string;
+  bankBranch?: string;
+  bankIfsc?: string;
   otherDetails?: string;
 }
 
@@ -132,8 +137,8 @@ interface DataStoreContextType {
     allDepartmentVehicles: DepartmentVehicle[];
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
-    allOfficeAddresses: OfficeAddress[]; 
-    officeAddress: OfficeAddress | null; 
+    allOfficeAddresses: OfficeAddress[]; // Master list of all offices
+    officeAddress: OfficeAddress | null; // The currently selected/active office
     isLoading: boolean;
     refetchRateDescriptions: () => void;
     deleteArsEntry: (id: string) => Promise<void>;
@@ -186,15 +191,19 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     // Effect for GLOBAL (non-office-specific) data
     useEffect(() => {
         if (!user) {
+            setAllLsgConstituencyMaps([]);
             setAllRateDescriptions(defaultRateDescriptions);
             setAllBidders([]);
-            setLoadingStates(prev => ({ ...prev, rates: false, bidders: false }));
+            setAllOfficeAddresses([]);
+            setLoadingStates(prev => ({ ...prev, lsg: false, rates: false, bidders: false, officeAddress: false }));
             return;
         }
 
         const globalCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, queryFn: () => any }> = {
+            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', queryFn: () => query(collection(db, 'localSelfGovernments')) },
             rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
             bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
+            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) }
         };
 
         const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey, queryFn }]) => {
@@ -228,14 +237,14 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     
         if (isSuperAdminUser) {
             if (selectedOffice) {
-                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
+                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
                  setOfficeAddress(foundOffice);
             } else {
                 setOfficeAddress(null); // 'All Offices' is selected
             }
         } else if (user.officeLocation) {
-            // For sub-office users, we directly fetch from their office sub-collection, so allOfficeAddresses contains ONLY their office's address.
-            setOfficeAddress(allOfficeAddresses[0] || null);
+            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
+            setOfficeAddress(foundOffice);
         }
     }, [user, selectedOffice, allOfficeAddresses]);
     
@@ -245,8 +254,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         if (!user) {
             setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
             setAllE_tenders([]); setAllDepartmentVehicles([]); setAllHiredVehicles([]); setAllRigCompressors([]);
-            setAllLsgConstituencyMaps([]); setAllOfficeAddresses([]);
-            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, officeAddress: false }));
+            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false }));
             return;
         }
         
@@ -261,9 +269,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', needsSpecialSort: true },
             departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
-            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
-            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
-            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress' },
+            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' }
         };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
@@ -275,7 +281,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 q = query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
                 q = query(collectionGroup(db, collectionName));
-            } else { // Should not happen for authenticated users
+            } else { // Should not happen for authenticated users, but as a safeguard
                 setter([]);
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
                 return () => {};
