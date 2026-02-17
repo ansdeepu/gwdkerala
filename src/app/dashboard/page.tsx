@@ -24,7 +24,7 @@ import DashboardDialogs from '@/components/dashboard/DashboardDialogs';
 import FinanceOverview from '@/components/dashboard/FinanceOverview';
 import RigFinancialSummary from '@/components/dashboard/RigFinancialSummary';
 import ConstituencyWiseOverview from '@/components/dashboard/ConstituencyWiseOverview';
-import { useArsEntries } from '@/hooks/useArsEntries';
+import { useDataStore } from '@/hooks/use-data-store';
 import { Button } from '@/components/ui/button';
 import { PUBLIC_DEPOSIT_APPLICATION_TYPES, COLLECTOR_APPLICATION_TYPES, PLAN_FUND_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
 import { Loader2, ArrowUp } from 'lucide-react';
@@ -91,7 +91,7 @@ const safeParseDate = (dateValue: any): Date | null => {
   return null;
 };
 
-const COMPLETED_WORK_STATUSES: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued"];
+const COMPLETED_WORK_STATUSES: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed"];
 
 export default function DashboardPage() {
   const { setHeader } = usePageHeader();
@@ -104,7 +104,7 @@ export default function DashboardPage() {
   const { staffMembers, isLoading: staffLoading } = useStaffMembers();
   const { user: currentUser, isLoading: authLoading, fetchAllUsers } = useAuth();
   const { applications: agencyApplications, isLoading: agenciesLoading } = useAgencyApplications();
-  const { arsEntries, isLoading: arsLoading } = useArsEntries();
+  const { allArsEntries: arsEntries, isLoading: arsLoading } = useDataStore();
   
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState<boolean>(true);
@@ -224,7 +224,6 @@ export default function DashboardPage() {
               if (PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(entry.applicationType as any)) depositWorksCount += siteCount;
               else if (COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)) collectorWorksCount += siteCount;
               else if (PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)) planFundWorksCount += siteCount;
-              else depositWorksCount += siteCount;
           } else {
               depositWorksCount += siteCount;
           }
