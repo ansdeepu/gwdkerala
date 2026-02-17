@@ -64,12 +64,12 @@ const scrollTo = (id: string) => {
 };
 
 const DashboardNav = () => (
-    <div className="dashboard-nav-sticky sticky top-0 z-20 bg-background/95 backdrop-blur-sm -mx-6 mb-6 print:hidden">
+    <div className="dashboard-nav-sticky sticky top-0 z-20 bg-background/95 backdrop-blur-sm -mx-6 -mt-6 mb-6 print:hidden">
         <div className="flex items-center overflow-x-auto no-scrollbar border-b px-2">
             {navLinks.map(link => (
                 <button
                     key={link.id}
-                    className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors px-4 py-3 shrink-0"
+                    className="text-xs font-semibold text-primary/90 hover:text-primary transition-colors px-4 py-3 shrink-0"
                     onClick={() => scrollTo(link.id)}
                 >
                     {link.label}
