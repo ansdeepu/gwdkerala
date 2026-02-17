@@ -36,6 +36,15 @@ import { Separator } from '@/components/ui/separator';
 
 const db = getFirestore(app);
 
+const getInitials = (name?: string) => {
+  if (!name) return 'DO';
+  return name.split(' ').map(n => n[0]).join('').toUpperCase();
+};
+
+const DetailRow = ({ label, value }: { label: string, value?: string | null }) => (
+    value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
+);
+
 // Schemas
 const OfficeAddressSchema = z.object({
   officeName: z.string().min(1, "Office Name is required."),
@@ -60,12 +69,6 @@ const OfficeAddressSchema = z.object({
   otherDetails: z.string().optional(),
 });
 type OfficeAddressFormData = z.infer<typeof OfficeAddressSchema>;
-
-
-const getInitials = (name?: string) => {
-  if (!name) return 'DO';
-  return name.split(' ').map(n => n[0]).join('').toUpperCase();
-};
 
 const officerDesignations: Designation[] = [
     "Executive Engineer", "Senior Hydrogeologist", "Assistant Executive Engineer", "Hydrogeologist"
@@ -217,9 +220,6 @@ const OfficeAddressDialog = ({
   );
 };
 
-const DetailRow = ({ label, value }: { label: string, value?: string | null }) => (
-    value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
-);
 
 // Main Page Component
 export default function SettingsPage() {
@@ -441,6 +441,7 @@ export default function SettingsPage() {
               <CardContent><p className="text-3xl font-bold">{selectedOffice || 'All Offices'}</p><p className="text-sm text-muted-foreground">This is the office you are currently viewing data for.</p></CardContent>
           </Card>
       )}
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="lg:col-span-2">
               <CardHeader>
@@ -533,7 +534,7 @@ export default function SettingsPage() {
 
         <OfficeAddressDialog isOpen={isOfficeDialogOpen} onClose={() => setIsOfficeDialogOpen(false)} onSubmit={handleOfficeSubmit} isSubmitting={isSubmitting} initialData={officeAddress} staffMembers={allStaffMembers}/>
         <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete ALL Local Self Governments from the <strong>{isSuperAdmin ? selectedOffice : user?.officeLocation}</strong> office. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={isClearingData}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleClearAllData} disabled={isClearingData} className="bg-destructive hover:bg-destructive/90">{isClearingData ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Delete All"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the office address details. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteOffice} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting ? <Loader2 className="h-4 w-4 animate-spin"/> : "Yes, Delete"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This will permanently delete the office address details. This action cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteOffice} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Delete"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
         <Dialog open={isListDialogOpen} onOpenChange={setIsListDialogOpen}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-md p-0 flex flex-col h-[70vh]"><DialogHeader className="p-6 pb-4 border-b"><DialogTitle>{listDialogContent.title}</DialogTitle><DialogDescription>Total count: {listDialogContent.items.length}</DialogDescription></DialogHeader><div className="flex-1 min-h-0"><ScrollArea className="h-full px-6 py-4"><Table><TableHeader><TableRow><TableHead className="w-[80px]">Sl. No.</TableHead><TableHead>{listDialogContent.title}</TableHead></TableRow></TableHeader><TableBody>{listDialogContent.items.map((item, index) => (<TableRow key={index}><TableCell>{index + 1}</TableCell><TableCell>{item}</TableCell></TableRow>))}</TableBody></Table></ScrollArea></div></DialogContent></Dialog>
     </>
   );
