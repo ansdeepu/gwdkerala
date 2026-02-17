@@ -33,13 +33,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, UserPlus, Users, Edit, Trash2, ArrowLeft, Move, Eye, Building, FileUp, Download, ShieldAlert, MapPin, PlusCircle, Save, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { getInitials } from '@/lib/utils';
+
 
 const db = getFirestore(app);
-
-const getInitials = (name?: string) => {
-  if (!name) return 'DO';
-  return name.split(' ').map(n => n[0]).join('').toUpperCase();
-};
 
 const DetailRow = ({ label, value }: { label: string, value?: string | null }) => (
     value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
