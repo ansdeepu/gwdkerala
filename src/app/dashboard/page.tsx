@@ -173,13 +173,17 @@ export default function DashboardPage() {
       depositWorksCount,
       collectorWorksCount,
       planFundWorksCount,
-      privateWorksCount,
-      gwInvestigationCount,
-      loggingPumpingTestCount,
       arsWorksCount,
       totalCompletedCount
   } = useMemo(() => {
-      const allWorksFromFiles = (allFileEntries || []).flatMap(entry => 
+      const relevantFileEntries = (allFileEntries || []).filter(entry => {
+          const isPrivate = entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any);
+          const hasGwPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
+          const hasLpPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+          return !isPrivate && !hasGwPurpose && !hasLpPurpose;
+      });
+
+      const allWorksFromFiles = relevantFileEntries.flatMap(entry => 
           (entry.siteDetails || []).map(site => ({
               ...site,
               fileNo: entry.fileNo,
@@ -211,31 +215,18 @@ export default function DashboardPage() {
       let depositWorksCount = 0;
       let collectorWorksCount = 0;
       let planFundWorksCount = 0;
-      let privateWorksCount = 0;
-      let gwInvestigationCount = 0;
-      let loggingPumpingTestCount = 0;
 
-      allFileEntries.forEach(entry => {
+      relevantFileEntries.forEach(entry => {
           const siteCount = entry.siteDetails?.length || 0;
           if (siteCount === 0) return;
 
-          const hasGwPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
-          const hasLpPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
-
-          if (hasGwPurpose && !hasLpPurpose) {
-              gwInvestigationCount += siteCount;
-          } else if (hasLpPurpose && !hasGwPurpose) {
-              loggingPumpingTestCount += siteCount;
-          } else if (!hasGwPurpose && !hasLpPurpose) { // It's a deposit work
-              if (entry.applicationType) {
-                  if (PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(entry.applicationType as any)) depositWorksCount += siteCount;
-                  else if (COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)) collectorWorksCount += siteCount;
-                  else if (PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)) planFundWorksCount += siteCount;
-                  else if (PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)) privateWorksCount += siteCount;
-                  else depositWorksCount += siteCount; // Fallback for other types
-              } else {
-                  depositWorksCount += siteCount; // Fallback for no type
-              }
+          if (entry.applicationType) {
+              if (PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(entry.applicationType as any)) depositWorksCount += siteCount;
+              else if (COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)) collectorWorksCount += siteCount;
+              else if (PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)) planFundWorksCount += siteCount;
+              else depositWorksCount += siteCount;
+          } else {
+              depositWorksCount += siteCount;
           }
       });
       
@@ -244,9 +235,6 @@ export default function DashboardPage() {
           depositWorksCount,
           collectorWorksCount,
           planFundWorksCount,
-          privateWorksCount,
-          gwInvestigationCount,
-          loggingPumpingTestCount,
           arsWorksCount: arsWorks.length,
           totalCompletedCount: completedCount
       };
@@ -304,9 +292,6 @@ export default function DashboardPage() {
             depositWorksCount={depositWorksCount}
             collectorWorksCount={collectorWorksCount}
             planFundWorksCount={planFundWorksCount}
-            privateWorksCount={privateWorksCount}
-            gwInvestigationCount={gwInvestigationCount}
-            loggingPumpingTestCount={loggingPumpingTestCount}
             arsWorksCount={arsWorksCount}
             totalCompletedCount={totalCompletedCount}
             onOpenDialog={handleOpenDialog}
