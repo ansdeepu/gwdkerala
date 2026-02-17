@@ -1,47 +1,16 @@
+
 // src/lib/schemas.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
 
-const toDateOrNull = (value: any): Date | null => {
-    if (value === null || value === undefined || value === '') return null;
-    if (value instanceof Date && !isNaN(value.getTime())) return value;
-    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
-        try {
-            const ms = value.seconds * 1000 + (value.nanoseconds ? Math.round(value.nanoseconds / 1e6) : 0);
-            const d = new Date(ms);
-            if (!isNaN(d.getTime())) return d;
-        } catch { /* fallthrough */ }
-    }
-    if (typeof value === 'number' && isFinite(value)) {
-        const ms = value < 1e12 ? value * 1000 : value;
-        const d = new Date(ms);
-        if (!isNaN(d.getTime())) return d;
-    }
-    if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (trimmed === '') return null;
-        const formats = [
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-            "yyyy-MM-dd'T'HH:mm:ss'Z'",
-            "yyyy-MM-dd'T'HH:mm",
-            "yyyy-MM-dd",
-            'dd/MM/yyyy',
-        ];
-        for (const fmt of formats) {
-            try {
-                const parsedDate = parse(trimmed, fmt, new Date());
-                if (isValid(parsedDate)) return parsedDate;
-            } catch (e) {}
-        }
-        try {
-            const fallback = new Date(trimmed);
-            if (!isNaN(fallback.getTime())) return fallback;
-        } catch { /* ignore */ }
-    }
-    return null;
-};
-
-export const optionalDateSchema = z.preprocess((val) => (val ? toDateOrNull(val) : null), z.date().nullable().optional());
+export const optionalDateSchema = z.preprocess((val) => {
+  if (val instanceof Date) return val;
+  if (typeof val === 'string' && val.trim() !== '') {
+    const d = new Date(val);
+    if (isValid(d)) return d;
+  }
+  return null;
+}, z.date().nullable().optional());
 
 export const LoginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -165,7 +134,15 @@ export const arsTypeOfSchemeOptions = [
 ] as const;
 
 
-import { SiteDetailSchema, fileStatusOptions, constituencyOptions } from './schemas/DataEntrySchema';
+// Re-export everything from specialized schema files
+export * from './schemas/DataEntrySchema';
+export * from './schemas/eTenderSchema';
+
+
+// The schemas below were originally in this file and are kept for compatibility.
+// In the future, they should be moved to their own specialized files.
+
+import { SiteDetailSchema, constituencyOptions } from './schemas/DataEntrySchema';
 import type { SiteDetailFormData } from './schemas/DataEntrySchema';
 
 export const ArsEntrySchema = z.object({
@@ -216,7 +193,7 @@ export const PendingUpdateFormDataSchema = z.object({
   fileNo: z.string(),
   updatedSiteDetails: z.array(z.union([SiteDetailSchema, ArsEntrySchema])),
   fileLevelUpdates: z.object({
-      fileStatus: z.enum(fileStatusOptions).optional(),
+      fileStatus: z.string().optional(),
       remarks: z.string().optional(),
   }).optional(),
   submittedByUid: z.string(),
@@ -236,144 +213,6 @@ export const PendingUpdateSchema = PendingUpdateFormDataSchema.extend({
   reviewedAt: z.date().optional(),
 });
 export type PendingUpdate = z.infer<typeof PendingUpdateSchema>;
-
-
-// Helper function to join values from an array of objects
-const join = (arr: any[] | undefined, key: string, separator: string = '; '): string => {
-  if (!arr || arr.length === 0) return 'N/A';
-  return arr.map(item => item[key] || 'N/A').join(separator);
-};
-
-// Helper function to sum values from an array of objects
-const sum = (arr: any[] | undefined, key: string): number => {
-  if (!arr) return 0;
-  return arr.reduce((acc, item) => acc + (Number(item[key]) || 0), 0);
-};
-
-// Helper function to format dates from an array of objects
-const formatDateHelper = (date: Date | string | null | undefined): string => {
-  if (!date) return 'N/A';
-  try {
-    return format(new Date(date), "dd/MM/yyyy");
-  } catch {
-    return 'Invalid Date';
-  }
-};
-
-import { DataEntryFormData, applicationTypeDisplayMap, SitePurpose } from './schemas/DataEntrySchema';
-type ReportableEntry = (DataEntryFormData | ArsEntryFormData) & { [key: string]: any };
-
-export const reportableFields: Array<{ id: string; label: string; accessor: (entry: ReportableEntry) => any, purpose?: SitePurpose[], arsApplicable?: boolean, arsOnly?: boolean }> = [
-  // === Main File Details ===
-  { id: 'fileNo', label: 'File No.', accessor: (entry) => entry.fileNo, arsApplicable: true },
-  { id: 'applicantName', label: 'Applicant Name', accessor: (entry) => (entry as DataEntryFormData).applicantName, arsApplicable: false },
-  { id: 'phoneNo', label: 'Phone No.', accessor: (entry) => (entry as DataEntryFormData).phoneNo, arsApplicable: false },
-  { id: 'applicationType', label: 'Application Type', accessor: (entry) => (entry as DataEntryFormData).applicationType ? applicationTypeDisplayMap[(entry as DataEntryFormData).applicationType!] : undefined, arsApplicable: false },
-  { id: 'fileStatus', label: 'File Status', accessor: (entry) => (entry as DataEntryFormData).fileStatus, arsApplicable: false },
-  { id: 'fileRemarks', label: 'File Remarks', accessor: (entry) => (entry as DataEntryFormData).remarks, arsApplicable: false },
-  
-  // === Site Details (Individual) ===
-  { id: 'siteName', label: 'Site Name', accessor: (entry) => (entry as any).nameOfSite, arsApplicable: true },
-  { id: 'sitePurpose', label: 'Site Purpose', accessor: (entry) => (entry as any).purpose || (entry as any).arsTypeOfScheme, arsApplicable: true },
-  { id: 'siteLocalSelfGovt', label: 'Local Self Govt.', accessor: (entry) => (entry as any).localSelfGovt, arsApplicable: true },
-  { id: 'siteConstituency', label: 'Constituency', accessor: (entry) => (entry as any).constituency, arsApplicable: true },
-  { id: 'siteLatitude', label: 'Latitude', accessor: (entry) => (entry as any).latitude, arsApplicable: true },
-  { id: 'siteLongitude', label: 'Longitude', accessor: (entry) => (entry as any).longitude, arsApplicable: true },
-
-  // --- ARS Fields ---
-  { id: 'arsSchemeType', label: 'Type of Scheme', accessor: (entry) => (entry as ArsEntryFormData).arsTypeOfScheme, arsApplicable: true, arsOnly: true },
-  { id: 'arsBlock', label: 'Block', accessor: (entry) => (entry as ArsEntryFormData).arsBlock, arsApplicable: true, arsOnly: true },
-  { id: 'arsStructures', label: 'ARS # Structures', accessor: (entry) => (entry as any).arsNumberOfStructures, arsOnly: true },
-  { id: 'arsStorage', label: 'ARS Storage (m³)', accessor: (entry) => (entry as any).arsStorageCapacity, arsOnly: true },
-  { id: 'arsFillings', label: 'ARS # Fillings', accessor: (entry) => (entry as any).arsNumberOfFillings, arsOnly: true },
-  { id: 'arsEstimateAmount', label: 'Estimate Amount (₹)', accessor: (entry) => (entry as ArsEntryFormData).estimateAmount, arsOnly: true },
-  { id: 'arsExpenditure', label: 'Expenditure (₹)', accessor: (entry) => (entry as ArsEntryFormData).totalExpenditure, arsOnly: true },
-
-  // --- Work Implementation Fields ---
-  { id: 'siteEstimateAmount', label: 'Site Estimate (₹)', accessor: (entry) => (entry as any).estimateAmount, arsApplicable: true },
-  { id: 'siteRemittedAmount', label: 'Site Remitted (₹)', accessor: (entry) => (entry as any).remittedAmount, arsApplicable: false },
-  { id: 'siteTsAmount', label: 'TS Amount (₹)', accessor: (entry) => (entry as any).tsAmount, arsApplicable: true },
-  { id: 'siteTenderNo', label: 'Tender No.', accessor: (entry) => (entry as any).tenderNo || (entry as any).arsTenderNo, arsApplicable: true },
-  { id: 'siteContractorName', label: 'Contractor', accessor: (entry) => (entry as any).contractorName || (entry as any).arsContractorName, arsApplicable: true },
-  { id: 'siteSupervisorName', label: 'Supervisor', accessor: (entry) => (entry as any).supervisorName, arsApplicable: true },
-
-  // --- Survey Details ---
-  { id: 'surveyRecommendedDiameter', label: 'Survey Ø (mm)', accessor: (entry) => (entry as any).surveyRecommendedDiameter, purpose: ['BWC', 'TWC', 'FPW'] },
-  { id: 'surveyRecommendedTD', label: 'Survey TD (m)', accessor: (entry) => (entry as any).surveyRecommendedTD, purpose: ['BWC', 'TWC', 'FPW'] },
-  { id: 'surveyRecommendedOB', label: 'Survey OB (m)', accessor: (entry) => (entry as any).surveyRecommendedOB, purpose: ['BWC'] },
-  { id: 'surveyRecommendedCasingPipe', label: 'Survey Casing (m)', accessor: (entry) => (entry as any).surveyRecommendedCasingPipe, purpose: ['BWC', 'FPW'] },
-  { id: 'surveyRecommendedPlainPipe', label: 'Survey Plain Pipe (m)', accessor: (entry) => (entry as any).surveyRecommendedPlainPipe, purpose: ['TWC'] },
-  { id: 'surveyRecommendedSlottedPipe', label: 'Survey Slotted Pipe (m)', accessor: (entry) => (entry as any).surveyRecommendedSlottedPipe, purpose: ['TWC'] },
-  { id: 'surveyRecommendedMsCasingPipe', label: 'Survey MS Casing (m)', accessor: (entry) => (entry as any).surveyRecommendedMsCasingPipe, purpose: ['TWC'] },
-  { id: 'surveyLocation', label: 'Survey Location', accessor: (entry) => (entry as any).surveyLocation, purpose: ['BWC', 'TWC', 'FPW'] },
-  
-  // --- Drilling Details (Actuals) ---
-  { id: 'drillingDiameter', label: 'Actual Ø (mm)', accessor: (entry) => (entry as any).diameter, purpose: ['BWC', 'TWC', 'FPW', 'BW Dev', 'TW Dev', 'FPW Dev'] },
-  { id: 'drillingPilotDepth', label: 'Pilot Drilling (m)', accessor: (entry) => (entry as any).pilotDrillingDepth, purpose: ['TWC'] },
-  { id: 'drillingTotalDepth', label: 'Actual TD (m)', accessor: (entry) => (entry as any).totalDepth, purpose: ['BWC', 'TWC', 'FPW', 'BW Dev', 'TW Dev', 'FPW Dev'] },
-  { id: 'drillingOB', label: 'Actual OB (m)', accessor: (entry) => (entry as any).surveyOB, purpose: ['BWC'] },
-  { id: 'drillingCasingPipe', label: 'Actual Casing (m)', accessor: (entry) => (entry as any).casingPipeUsed, purpose: ['BWC', 'FPW'] },
-  { id: 'drillingOuterCasing', label: 'Outer Casing (m)', accessor: (entry) => (entry as any).outerCasingPipe, purpose: ['BWC', 'TWC'] },
-  { id: 'drillingInnerCasing', label: 'Inner Casing (m)', accessor: (entry) => (entry as any).innerCasingPipe, purpose: ['BWC'] },
-  { id: 'drillingPlainPipe', label: 'Plain Pipe (m)', accessor: (entry) => (entry as any).surveyPlainPipe, purpose: ['TWC'] },
-  { id: 'drillingSlottedPipe', label: 'Slotted Pipe (m)', accessor: (entry) => (entry as any).surveySlottedPipe, purpose: ['TWC'] },
-  { id: 'drillingYield', label: 'Yield (LPH)', accessor: (entry) => (entry as any).yieldDischarge, purpose: ['BWC', 'TWC', 'FPW', 'BW Dev', 'TW Dev', 'FPW Dev', 'MWSS', 'MWSS Ext', 'Pumping Scheme', 'MWSS Pump Reno'] },
-  { id: 'drillingZoneDetails', label: 'Zone Details (m)', accessor: (entry) => (entry as any).zoneDetails, purpose: ['BWC', 'TWC'] },
-  { id: 'drillingWaterLevel', label: 'Static Water Level (m)', accessor: (entry) => (entry as any).waterLevel, purpose: ['BWC', 'TWC', 'FPW', 'BW Dev', 'TW Dev', 'FPW Dev', 'HPS', 'HPR'] },
-  { id: 'drillingRigType', label: 'Type of Rig', accessor: (entry) => (entry as any).typeOfRig, purpose: ['BWC', 'TWC', 'FPW'] },
-
-  // --- Scheme Details ---
-  { id: 'schemePumpDetails', label: 'Pump Details', accessor: (entry) => (entry as any).pumpDetails, purpose: ['MWSS', 'MWSS Ext', 'Pumping Scheme', 'MWSS Pump Reno'] },
-  { id: 'schemeTankCapacity', label: 'Tank Capacity (L)', accessor: (entry) => (entry as any).waterTankCapacity, purpose: ['MWSS', 'MWSS Ext', 'Pumping Scheme', 'MWSS Pump Reno'] },
-  { id: 'schemeTapConnections', label: '# Taps', accessor: (entry) => (entry as any).noOfTapConnections, purpose: ['MWSS', 'MWSS Ext', 'Pumping Scheme', 'MWSS Pump Reno'] },
-  { id: 'schemeBeneficiaries', label: '# Beneficiaries', accessor: (entry) => (entry as any).noOfBeneficiary, arsApplicable: true },
-  
-  // --- Work Status ---
-  { id: 'siteWorkStatus', label: 'Work Status', accessor: (entry) => (entry as any).workStatus || (entry as any).arsStatus, arsApplicable: true },
-  { id: 'siteCompletionDate', label: 'Completion Date', accessor: (entry) => formatDateHelper((entry as any).dateOfCompletion), arsApplicable: true },
-  { id: 'siteTotalExpenditure', label: 'Site Expenditure (₹)', accessor: (entry) => (entry as any).totalExpenditure, arsApplicable: true },
-  
-];
-
-// New constants for reporting
-export const REPORTING_PURPOSE_ORDER: string[] = [
-  "GW Investigation",
-  "VES",
-  "Geological logging",
-  "Geophysical Logging",
-  "Pumping Test", // This will be the aggregate key
-  "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev",
-  "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno",
-  "HPS", "HPR", "ARS",
-];
-
-import { PUMPING_TEST_AGGREGATE_PURPOSES, INVESTIGATION_WELL_TYPE_PURPOSES, INVESTIGATION_APP_TYPE_PURPOSES } from './schemas/DataEntrySchema';
-
-export const CustomReportBuilderSchema = z.object({
-  selectedHeadingIds: z.array(z.string()).min(1, { message: 'Please select at least one heading to include in the report.' }),
-});
-export type CustomReportBuilderData = z.infer<typeof CustomReportBuilderSchema>;
-
-export const ReportFormatSuggestionSchema = z.object({
-  dataDescription: z.string().min(10, { message: 'Data description must be at least 10 characters.' }),
-  reportGoal: z.string().min(10, { message: 'Report goal must be at least 10 characters.' }),
-});
-export type ReportFormatSuggestionData = z.infer<typeof ReportFormatSuggestionSchema>;
-
-// Notice Board Schemas
-export const NoticeFormDataSchema = z.object({
-  title: z.string().min(5, { message: "Title must be at least 5 characters." }).max(100, { message: "Title cannot exceed 100 characters." }),
-  content: z.string().min(10, { message: "Content must be at least 10 characters." }).max(5000, { message: "Content cannot exceed 5000 characters." }),
-});
-export type NoticeFormData = z.infer<typeof NoticeFormDataSchema>;
-
-export const NoticeSchema = NoticeFormDataSchema.extend({
-  id: z.string(),
-  createdAt: z.date(),
-  postedByUid: z.string(),
-  postedByName: z.string(),
-});
-export type Notice = z.infer<typeof NoticeSchema>;
 
 // Establishment / Staff Schemas
 export const staffStatusOptions = ["Active", "Transferred", "Retired"] as const;
@@ -639,6 +478,3 @@ export const RigCompressorSchema = z.object({
     officeLocation: z.string().optional(),
 });
 export type RigCompressor = z.infer<typeof RigCompressorSchema>;
-
-export * from './schemas/DataEntrySchema';
-export * from './schemas/eTenderSchema';

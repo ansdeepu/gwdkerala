@@ -1,3 +1,4 @@
+
 // src/components/dashboard/WorkProgress.tsx
 "use client";
 
@@ -5,15 +6,15 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { format, isWithinInterval, startOfMonth, endOfMonth, isValid, parse } from 'date-fns';
-import {
-  sitePurposeOptions,
-  type DataEntryFormData,
-  type SiteDetailFormData,
-  type SitePurpose,
-  type SiteWorkStatus,
-  type ApplicationType,
-  privateApplicationTypes,
-} from '@/lib/schemas';
+import { 
+    type SiteDetailFormData, 
+    type SiteWorkStatus, 
+    type SitePurpose, 
+    type DataEntryFormData, 
+    type ApplicationType, 
+    sitePurposeOptions,
+    PRIVATE_APPLICATION_TYPES
+} from '@/lib/schemas/DataEntrySchema';
 import { Input } from '@/components/ui/input';
 import type { UserProfile } from '@/hooks/useAuth';
 import { CalendarCheck, Hourglass, TrendingUp } from 'lucide-react';
@@ -99,7 +100,7 @@ export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser
             const purpose = site.purpose as SitePurpose;
             byPurpose[purpose]++;
             
-            if(site.applicationType && privateApplicationTypes.includes(site.applicationType)) {
+            if(site.applicationType && PRIVATE_APPLICATION_TYPES.includes(site.applicationType as any)) {
                 byPurposePrivate[purpose]++;
                 privateData.push(site);
             } else {
