@@ -28,8 +28,15 @@ import { useDataStore } from '@/hooks/use-data-store';
 import { Button } from '@/components/ui/button';
 import { PUBLIC_DEPOSIT_APPLICATION_TYPES, COLLECTOR_APPLICATION_TYPES, PLAN_FUND_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
 import { Loader2, ArrowUp } from 'lucide-react';
+import { getFirestore, collection, query, onSnapshot, Timestamp } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
+
 
 export const dynamic = 'force-dynamic';
+
+const db = getFirestore(app);
 
 const navLinks = [
     { id: 'updates', label: 'Updates' },
@@ -108,6 +115,7 @@ export default function DashboardPage() {
   
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState<boolean>(true);
+  const { toast } = useToast();
   
   const [dialogState, setDialogState] = useState({
     isOpen: false,
@@ -143,20 +151,54 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    if (!authLoading && currentUser) {
-      if (currentUser.role === 'editor' || currentUser.role === 'viewer') {
-        setUsersLoading(true);
-        fetchAllUsers()
-          .then(users => {
-            setAllUsers(users);
-          })
-          .catch(error => console.error("Error fetching users for dashboard:", error))
-          .finally(() => setUsersLoading(false));
-      } else {
+    if (authLoading || !currentUser) return;
+
+    if (currentUser.role !== 'editor' && currentUser.role !== 'viewer' && currentUser.email !== SUPER_ADMIN_EMAIL) {
         setUsersLoading(false);
-      }
+        return;
     }
-  }, [authLoading, currentUser, fetchAllUsers]);
+
+    setUsersLoading(true);
+    let q;
+    const isSuperAdmin = currentUser.email === SUPER_ADMIN_EMAIL;
+
+    if (isSuperAdmin) {
+        q = query(collection(db, 'users'));
+    } else if (currentUser.officeLocation) {
+        q = query(collection(db, `offices/${currentUser.officeLocation.toLowerCase()}/users`));
+    } else {
+        setAllUsers([]);
+        setUsersLoading(false);
+        return;
+    }
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const usersList: UserProfile[] = [];
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            usersList.push({
+                uid: docSnap.id,
+                email: data.email || null,
+                name: data.name || undefined,
+                role: data.role || 'viewer',
+                isApproved: data.isApproved === true,
+                staffId: data.staffId || undefined,
+                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : undefined,
+                lastActiveAt: data.lastActiveAt instanceof Timestamp ? data.lastActiveAt.toDate() : undefined,
+                officeLocation: data.officeLocation || currentUser.officeLocation,
+            });
+        });
+        setAllUsers(usersList);
+        setUsersLoading(false);
+    }, (error) => {
+        console.error("Error fetching users for dashboard:", error);
+        toast({ title: "Error", description: "Could not load users.", variant: "destructive" });
+        setUsersLoading(false);
+    });
+
+    return () => unsubscribe();
+
+  }, [authLoading, currentUser, toast]);
 
   const dashboardData = useMemo(() => {
     if (filteredEntriesLoading || isReportLoading || staffLoading || !currentUser) return null;
@@ -177,10 +219,11 @@ export default function DashboardPage() {
       totalCompletedCount
   } = useMemo(() => {
       const relevantFileEntries = (allFileEntries || []).filter(entry => {
-          const isPrivate = entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any);
           const hasGwPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
           const hasLpPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
-          return !isPrivate && !hasGwPurpose && !hasLpPurpose;
+          if (hasGwPurpose || hasLpPurpose) return false;
+          if (entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)) return false;
+          return true;
       });
 
       const allWorksFromFiles = relevantFileEntries.flatMap(entry => 
