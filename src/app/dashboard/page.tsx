@@ -31,6 +31,49 @@ import { Loader2, ArrowUp } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
+const navLinks = [
+    { id: 'updates', label: 'Updates' },
+    { id: 'file-status', label: 'File Status' },
+    { id: 'work-status', label: 'Work Status' },
+    { id: 'constituency', label: 'Constituency' },
+    { id: 'finance', label: 'Finance' },
+    { id: 'ars', label: 'ARS' },
+    { id: 'rig-registration', label: 'Rig Registration' },
+    { id: 'rig-financials', label: 'Rig Financials' },
+    { id: 'work-progress', label: 'Work Progress' },
+    { id: 'supervisor-work', label: 'Supervisor' },
+];
+
+const scrollTo = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+        // Adjust for sticky header height if needed
+        const headerOffset = 80; // Approximate height of your header
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+        });
+    }
+};
+
+const DashboardNav = () => (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-2 mb-6 rounded-lg bg-card border shadow-sm print:hidden">
+      {navLinks.map(link => (
+        <button
+          key={link.id}
+          className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-2 py-1"
+          onClick={() => scrollTo(link.id)}
+        >
+          {link.label}
+        </button>
+      ))}
+    </div>
+);
+
+
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
   if (dateValue instanceof Date) return dateValue;
@@ -205,6 +248,8 @@ export default function DashboardPage() {
   return (
     <>
       <div className="space-y-6">
+        <DashboardNav />
+        
         <div id="updates" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <ETenderNoticeBoard />
           <ImportantUpdates allFileEntries={dashboardData.allFileEntries} />
