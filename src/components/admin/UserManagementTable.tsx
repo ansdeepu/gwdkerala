@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
+import { getInitials } from "@/lib/utils";
 
 const hashCode = (str: string): number => {
     let hash = 0;
@@ -63,18 +64,6 @@ const getColorClass = (nameOrEmail: string): string => {
     const hash = hashCode(nameOrEmail);
     const index = Math.abs(hash) % colors.length;
     return colors[index];
-};
-
-
-const getInitials = (name?: string) => {
-  if (!name || name.trim() === '') return 'U';
-  return name
-    .trim()
-    .split(/\s+/)
-    .map(n => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 };
 
 interface UserManagementTableProps {

@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDataStore } from '@/hooks/use-data-store';
 import { LogOut, User } from 'lucide-react';
+import { getInitials } from '@/lib/utils';
 
 
 const hashCode = (str: string): number => {
@@ -53,17 +54,6 @@ const getColorClass = (nameOrEmail: string): string => {
     return colors[index];
 };
 
-
-const getInitials = (name?: string) => {
-  if (!name || name.trim() === '') return 'U';
-  return name
-    .trim()
-    .split(/\s+/)
-    .map(n => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-};
 
 export default function AppSidebar() {
   const { user, logout } = useAuth();

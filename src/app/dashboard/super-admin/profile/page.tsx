@@ -24,11 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from '@/components/ui/button';
 import { z } from 'zod';
 import { usePageHeader } from '@/hooks/usePageHeader';
-
-const getInitials = (name?: string) => {
-  if (!name) return 'SA';
-  return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
-};
+import { getInitials } from '@/lib/utils';
 
 function SuperAdminUpdatePasswordForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
