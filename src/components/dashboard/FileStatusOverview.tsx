@@ -1,7 +1,7 @@
 // src/components/dashboard/FileStatusOverview.tsx
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { format, isValid } from 'date-fns';
 import { type DataEntryFormData, fileStatusOptions, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
@@ -11,6 +11,18 @@ import { Badge } from "@/components/ui/badge";
 const ClipboardList = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
 );
+
+const investigationFileStatusOptions = [
+    "File Under Process",
+    "Completed Except Disputed",
+    "Partially Completed Except Disputed",
+    "Fully Disputed",
+    "Fully Completed",
+    "Partially Completed",
+    "File Closed",
+] as const;
+
+const loggingPumpingTestFileStatusOptions = investigationFileStatusOptions;
 
 const AgeStatCard = ({ title, total, closed, balance, onClick, onClosedClick, onBalanceClick }: { title: string; total: number; closed: number; balance: number; onClick: () => void; onClosedClick: () => void; onBalanceClick: () => void; }) => (
   <div
@@ -50,10 +62,10 @@ const OverviewSection = ({ data, onFileStatusClick, onAgeCardClick, categoryTitl
             <div className="mt-6 pt-6 border-t border-border/60">
                 <div className="flex items-center justify-between mb-3"><h4 className="text-sm font-medium text-primary">Files by Age</h4><p className="text-xs text-muted-foreground">Based on last remittance or creation date</p></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <AgeStatCard title="&lt; 1 Year" {...data.filesByAgeStats.lessThan1} 
-                      onClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.total, `${categoryTitle} Files Aged &lt; 1 Year (Total)`)} 
-                      onClosedClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.closed, `${categoryTitle} Files Aged &lt; 1 Year (Closed)`)} 
-                      onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.balance, `${categoryTitle} Files Aged &lt; 1 Year (Balance)`)} 
+                    <AgeStatCard title="< 1 Year" {...data.filesByAgeStats.lessThan1} 
+                      onClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.total, `${categoryTitle} Files Aged < 1 Year (Total)`)} 
+                      onClosedClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.closed, `${categoryTitle} Files Aged < 1 Year (Closed)`)} 
+                      onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.balance, `${categoryTitle} Files Aged < 1 Year (Balance)`)} 
                     />
                     <AgeStatCard title="1-2 Years" {...data.filesByAgeStats.between1And2}
                       onClick={() => onAgeCardClick(data.filesByAgeStats.between1And2.data.total, `${categoryTitle} Files Aged 1-2 Years (Total)`)}
@@ -75,10 +87,10 @@ const OverviewSection = ({ data, onFileStatusClick, onAgeCardClick, categoryTitl
                       onClosedClick={() => onAgeCardClick(data.filesByAgeStats.between4And5.data.closed, `${categoryTitle} Files Aged 4-5 Years (Closed)`)}
                       onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.between4And5.data.balance, `${categoryTitle} Files Aged 4-5 Years (Balance)`)}
                     />
-                    <AgeStatCard title="&gt; 5 Years" {...data.filesByAgeStats.above5}
-                      onClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.total, `${categoryTitle} Files Aged &gt; 5 Years (Total)`)}
-                      onClosedClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.closed, `${categoryTitle} Files Aged &gt; 5 Years (Closed)`)}
-                      onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.balance, `${categoryTitle} Files Aged &gt; 5 Years (Balance)`)}
+                    <AgeStatCard title="> 5 Years" {...data.filesByAgeStats.above5}
+                      onClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.total, `${categoryTitle} Files Aged > 5 Years (Total)`)}
+                      onClosedClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.closed, `${categoryTitle} Files Aged > 5 Years (Closed)`)}
+                      onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.balance, `${categoryTitle} Files Aged > 5 Years (Balance)`)}
                     />
                 </div>
             </div>
@@ -98,6 +110,7 @@ const OverviewSection = ({ data, onFileStatusClick, onAgeCardClick, categoryTitl
 
 
 export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: FileStatusOverviewProps) {
+    const [activeTab, setActiveTab] = useState("deposit");
 
     const { 
         depositWorksData, 
@@ -121,9 +134,9 @@ export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: File
             }
         }
 
-        const processEntriesForOverview = (entries: DataEntryFormData[]) => {
+        const processEntriesForOverview = (entries: DataEntryFormData[], statusOptions: readonly string[]) => {
             const fileStatusCounts = new Map<string, number>();
-            fileStatusOptions.forEach(status => fileStatusCounts.set(status, 0));
+            statusOptions.forEach(status => fileStatusCounts.set(status, 0));
             
             const ageGroups: Record<string, DataEntryFormData[]> = {
                 lessThan1: [], between1And2: [], between2And3: [], between3And4: [], between4And5: [], above5: [],
@@ -165,7 +178,7 @@ export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: File
             };
             
             return {
-                fileStatusCountsData: fileStatusOptions.map(status => ({
+                fileStatusCountsData: statusOptions.map(status => ({
                     status,
                     count: fileStatusCounts.get(status) || 0,
                     data: entries.filter(e => e.fileStatus === status),
@@ -183,9 +196,9 @@ export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: File
         };
 
         return {
-            depositWorksData: processEntriesForOverview(depositWorkEntries),
-            gwInvestigationData: processEntriesForOverview(gwInvestigationEntries),
-            loggingPumpingTestData: processEntriesForOverview(loggingPumpingTestEntries)
+            depositWorksData: processEntriesForOverview(depositWorkEntries, fileStatusOptions),
+            gwInvestigationData: processEntriesForOverview(gwInvestigationEntries, investigationFileStatusOptions),
+            loggingPumpingTestData: processEntriesForOverview(loggingPumpingTestEntries, loggingPumpingTestFileStatusOptions)
         };
     }, [nonArsEntries]);
 
@@ -234,7 +247,7 @@ export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: File
         <CardDescription>Current count of files by status, based on your visible files. Click a status to see details.</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 p-4 pt-0">
-        <Tabs defaultValue="deposit">
+        <Tabs defaultValue="deposit" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="deposit">Deposit Works <Badge variant="secondary" className="ml-2">{depositWorksData.totalFiles}</Badge></TabsTrigger>
             <TabsTrigger value="gwInvestigation">GW Investigation <Badge variant="secondary" className="ml-2">{gwInvestigationData.totalFiles}</Badge></TabsTrigger>
