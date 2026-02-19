@@ -125,7 +125,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                 <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormMessage> )}/>
+                                <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" /></FormControl><FormMessage /></FormItem> )}/>
@@ -345,7 +345,7 @@ export default function SettingsPage() {
     }
   
     return (
-      <>
+      <div className="space-y-6">
         {isSuperAdmin && (
             <Card className="mb-6">
                 <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><MapPin className="h-5 w-5"/>Current Office Location</CardTitle></CardHeader>
@@ -512,6 +512,6 @@ export default function SettingsPage() {
             </div>
             </DialogContent>
         </Dialog>
-    </>
-  );
+      </div>
+    );
 }
