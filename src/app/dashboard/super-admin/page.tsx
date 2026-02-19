@@ -9,18 +9,27 @@ import { Loader2, Users, Briefcase, FileText, Waves, Hammer, Building } from 'lu
 import { useRouter } from 'next/navigation';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
-const KPIStatCard = ({ title, value, icon: Icon }: { title: string, value: string | number, icon: React.ElementType }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-        </CardContent>
-    </Card>
-);
+const KPIStatCard = ({ title, value, icon: Icon, href }: { title: string, value: string | number, icon: React.ElementType, href?: string }) => {
+    const cardContent = (
+        <Card className="hover:bg-muted/50 transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{value}</div>
+            </CardContent>
+        </Card>
+    );
+    
+    if (href) {
+        return <Link href={href}>{cardContent}</Link>
+    }
+
+    return cardContent;
+};
 
 export default function SuperAdminDashboardPage() {
   const { setHeader } = usePageHeader();
@@ -89,12 +98,12 @@ export default function SuperAdminDashboardPage() {
   return (
     <div className="space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            <KPIStatCard title="Total Offices" value={totals.offices} icon={Building} />
-            <KPIStatCard title="Total Staff" value={totals.staff} icon={Users} />
-            <KPIStatCard title="Total File Entries" value={totals.files} icon={FileText} />
-            <KPIStatCard title="Total ARS Entries" value={totals.ars} icon={Waves} />
-            <KPIStatCard title="Agency Registrations" value={totals.agencies} icon={Briefcase} />
-            <KPIStatCard title="e-Tenders" value={totals.tenders} icon={Hammer} />
+            <KPIStatCard title="Total Offices" value={totals.offices} icon={Building} href="/dashboard/super-admin/office-management" />
+            <KPIStatCard title="Total Staff" value={totals.staff} icon={Users} href="/dashboard/super-admin/establishment" />
+            <KPIStatCard title="Total File Entries" value={totals.files} icon={FileText} href="/dashboard/file-database" />
+            <KPIStatCard title="Total ARS Entries" value={totals.ars} icon={Waves} href="/dashboard/super-admin/ars-plan" />
+            <KPIStatCard title="Agency Registrations" value={totals.agencies} icon={Briefcase} href="/dashboard/super-admin/rig-registration" />
+            <KPIStatCard title="e-Tenders" value={totals.tenders} icon={Hammer} href="/dashboard/e-tender" />
         </div>
 
         <Card>
