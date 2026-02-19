@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/office-management/page.tsx
 "use client";
 
@@ -276,39 +275,44 @@ export default function OfficeManagementPage() {
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Edit User: {userToEdit.name}</DialogTitle>
+                    <DialogDescription>
+                        Modify the user's name or reassign their office location.
+                    </DialogDescription>
                 </DialogHeader>
                 <Form {...editUserForm}>
-                    <form onSubmit={editUserForm.handleSubmit(handleUpdateUser)} className="space-y-4 pt-4">
-                        <FormField name="name" control={editUserForm.control} render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Name</FormLabel>
-                                <FormControl><Input placeholder="Enter user's full name" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <FormField
-                            name="officeLocation"
-                            control={editUserForm.control}
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Office Location</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value || ""}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Select an office location" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {districts.map(district => (
-                                    <SelectItem key={district} value={district}>{district}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                        <DialogFooter className="pt-4">
+                    <form onSubmit={editUserForm.handleSubmit(handleUpdateUser)}>
+                        <div className="space-y-4 px-6 py-4">
+                            <FormField name="name" control={editUserForm.control} render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl><Input placeholder="Enter user's full name" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField
+                                name="officeLocation"
+                                control={editUserForm.control}
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Office Location</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Select an office location" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {districts.map(district => (
+                                        <SelectItem key={district} value={district}>{district}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+                        <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setUserToEdit(null)} disabled={isSubmitting}>Cancel</Button>
                             <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="h-4 w-4 mr-2" />}
