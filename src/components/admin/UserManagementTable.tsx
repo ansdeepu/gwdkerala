@@ -99,7 +99,7 @@ export default function UserManagementTable({
   const isSuperAdmin = currentUser?.role === 'superAdmin';
 
   const sortedUsers = useMemo(() => {
-    const roleOrder: Record<UserRole, number> = { 'superAdmin': 0, 'admin': 1, 'scientist': 2, 'engineer': 3, 'investigator': 4, 'supervisor': 5, 'viewer': 6, 'editor': 7 };
+    const roleOrder: Record<UserRole, number> = { 'superAdmin': 0, 'admin': 1, 'scientist': 2, 'engineer': 3, 'investigator': 4, 'supervisor': 5, 'viewer': 6 };
     return [...users].sort((a, b) => {
       const roleA = roleOrder[a.role] || 10;
       const roleB = roleOrder[b.role] || 10;

@@ -1,3 +1,4 @@
+
 // src/app/dashboard/settings/page.tsx
 "use client";
 
@@ -124,7 +125,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                 <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormMessage> )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" /></FormControl><FormMessage /></FormItem> )}/>
@@ -162,8 +163,9 @@ export default function SettingsPage() {
     const { user, isLoading: authLoading } = useAuth();
     const { toast } = useToast();
     const { allLsgConstituencyMaps, allStaffMembers, officeAddress, selectedOffice } = useDataStore();
-    const canManage = user?.role === 'editor';
+    const isAdmin = user?.role === 'admin';
     const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
+    const canManage = isAdmin || isSuperAdmin;
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isOfficeDialogOpen, setIsOfficeDialogOpen] = useState(false);
@@ -338,7 +340,7 @@ export default function SettingsPage() {
         return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 
-    if (user?.role !== 'editor' && user?.role !== 'viewer') {
+    if (user?.role === 'viewer') {
         return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><div className="space-y-6 p-6 text-center"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-2xl font-bold">Access Denied</h1><p className="text-muted-foreground">You do not have permission to view this page.</p></div></div>;
     }
   

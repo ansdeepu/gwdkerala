@@ -1,3 +1,4 @@
+
 // src/app/dashboard/agency-registration/page.tsx
 "use client";
 
@@ -514,12 +515,13 @@ export default function AgencyRegistrationPage() {
     }
   }, [pageFromUrl, idFromUrl]);
 
-  const isEditor = user?.role === 'editor';
+  const isAdmin = user?.role === 'admin';
+  const isEngineer = user?.role === 'engineer';
   const isSupervisor = user?.role === 'supervisor';
   const isViewer = user?.role === 'viewer';
   
   const isReadOnly = isViewer || isSupervisor || readOnlyParam === 'true';
-  const canEdit = isEditor && !isReadOnly;
+  const canEdit = (isAdmin || isEngineer) && !isReadOnly;
 
   useEffect(() => {
     let title = 'Rig Registration';
@@ -1352,7 +1354,7 @@ export default function AgencyRegistrationPage() {
                                     index={originalIndex}
                                     displayIndex={displayIndex}
                                     isReadOnly={isReadOnly}
-                                    onRemove={isEditor ? removeRig : undefined}
+                                    onRemove={canEdit ? removeRig : undefined}
                                     openDialog={openDialog}
                                     onEditRenewal={handleEditRenewal}
                                     onDeleteRenewal={handleDeleteRenewal}
@@ -1360,7 +1362,7 @@ export default function AgencyRegistrationPage() {
                                 />
                                 ))}
                             </Accordion>
-                            {!isReadOnly && isEditor && activeRigCount >= 3 && <p className="text-sm text-muted-foreground mt-4">A maximum of 3 active rigs are allowed.</p>}
+                            {!isReadOnly && canEdit && activeRigCount >= 3 && <p className="text-sm text-muted-foreground mt-4">A maximum of 3 active rigs are allowed.</p>}
                         </div>
                         
                         {hasCancelledRigs && (
@@ -1375,7 +1377,7 @@ export default function AgencyRegistrationPage() {
                                         index={originalIndex}
                                         displayIndex={displayIndex}
                                         isReadOnly={isReadOnly}
-                                        onRemove={isEditor ? removeRig : undefined}
+                                        onRemove={canEdit ? removeRig : undefined}
                                         openDialog={openDialog}
                                         onEditRenewal={handleEditRenewal}
                                         onDeleteRenewal={handleDeleteRenewal}
@@ -2025,4 +2027,3 @@ function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialDat
         </Form>
     );
 }
-    

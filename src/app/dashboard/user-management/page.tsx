@@ -37,11 +37,11 @@ export default function UserManagementPage() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
 
-  const canManage = user?.role === 'editor';
+  const isAdmin = user?.role === 'admin';
   const isViewer = user?.role === 'viewer';
 
   useEffect(() => {
-    if (!user || !user.isApproved || !['editor', 'viewer'].includes(user.role) || !user.officeLocation) {
+    if (!user || !user.isApproved || !['admin', 'viewer'].includes(user.role) || !user.officeLocation) {
       setUsersLoading(false);
       return;
     }
@@ -85,7 +85,7 @@ export default function UserManagementPage() {
 
 
   useEffect(() => {
-    if (!isLoading && user && !['editor', 'viewer'].includes(user.role)) {
+    if (!isLoading && user && !['admin', 'viewer'].includes(user.role)) {
       router.push('/dashboard');
     }
     if (!isLoading && !user) {
@@ -137,7 +137,7 @@ export default function UserManagementPage() {
     );
   }
 
-  if (!user || !['editor', 'viewer'].includes(user.role)) {
+  if (!user || !['admin', 'viewer'].includes(user.role)) {
     return (
       <div className="space-y-6 p-6 text-center">
         <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
@@ -148,7 +148,7 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      {canManage && (
+      {isAdmin && (
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-4">

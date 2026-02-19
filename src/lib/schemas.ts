@@ -102,7 +102,7 @@ export const NewUserByAdminSchema = z.object({
 });
 export type NewUserByAdminFormData = z.infer<typeof NewUserByAdminSchema>;
 
-export const userRoleOptions = ['superAdmin', 'admin', 'scientist', 'engineer', 'investigator', 'supervisor', 'viewer', 'editor'] as const;
+export const userRoleOptions = ['superAdmin', 'admin', 'scientist', 'engineer', 'investigator', 'supervisor', 'viewer'] as const;
 export type UserRole = typeof userRoleOptions[number];
 
 
