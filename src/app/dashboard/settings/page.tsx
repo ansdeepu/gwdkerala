@@ -25,7 +25,7 @@ import ExcelJS from 'exceljs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import type { LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, Edit, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X } from 'lucide-react';
@@ -351,73 +351,43 @@ export default function SettingsPage() {
         setIsListDialogOpen(true);
     };
     
-    const deleteCollectionInBatches = async (collectionPath: string) => {
-        const q = query(collection(db, collectionPath));
-        const snapshot = await getDocs(q);
-    
-        if (snapshot.size === 0) {
-            return;
-        }
-    
-        const batchSize = 499; // Firestore batch limit is 500 operations
-        let batch = writeBatch(db);
-        let count = 0;
-    
-        for (const doc of snapshot.docs) {
-            batch.delete(doc.ref);
-            count++;
-            if (count === batchSize) {
-                await batch.commit();
-                batch = writeBatch(db);
-                count = 0;
-            }
-        }
-        
-        if (count > 0) {
-            await batch.commit();
-        }
-    };
-  
     const handleDeleteOffice = async () => {
         if (!officeAddress || !canManage) return;
         setIsDeleting(true);
         const officeLocation = officeAddress.officeLocation.toLowerCase();
 
         try {
-            const subcollections = [
-                'users', 'fileEntries', 'arsEntries', 'pendingUpdates', 'staffMembers',
-                'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles',
-                'rigCompressors', 'localSelfGovernments'
-            ];
-
-            // Delete all documents in all subcollections
-            for (const subcollection of subcollections) {
-                const collectionPath = `offices/${officeLocation}/${subcollection}`;
-                await deleteCollectionInBatches(collectionPath);
-            }
+            const batch = writeBatch(db);
             
-            const finalBatch = writeBatch(db);
-            
-            // Delete the office address document from /officeAddresses
-            finalBatch.delete(doc(db, 'officeAddresses', officeAddress.id));
+            // Delete the office address document. This removes it from the UI.
+            batch.delete(doc(db, 'officeAddresses', officeAddress.id));
 
             // Find and delete all users for this office from the top-level /users collection
             const usersQuery = query(collection(db, "users"), where("officeLocation", "==", officeLocation));
             const usersSnapshot = await getDocs(usersQuery);
             usersSnapshot.forEach(userDoc => {
-                finalBatch.delete(doc(db, "users", userDoc.id));
+                batch.delete(userDoc.ref);
+            });
+            
+            // Find and delete all users from the office's sub-collection.
+            const officeUsersCollectionPath = `offices/${officeLocation}/users`;
+            const officeUsersQuery = query(collection(db, officeUsersCollectionPath));
+            const officeUsersSnapshot = await getDocs(officeUsersQuery);
+            officeUsersSnapshot.forEach(userDoc => {
+                batch.delete(userDoc.ref);
             });
 
-            await finalBatch.commit();
+            await batch.commit();
 
-            toast({ title: 'Office Data Cleared', description: `Successfully cleared users and data for office '${officeAddress.officeLocation}'. The core office record is preserved.` });
+            toast({ title: 'Office Deactivated', description: `Successfully deactivated office '${officeAddress.officeLocation}'. All user accounts have been removed, but the data is preserved.` });
         } catch (error: any) {
-            toast({ title: "Error", description: `Could not clear office data: ${error.message}`, variant: "destructive" });
+            toast({ title: "Error", description: `Could not deactivate office: ${error.message}`, variant: "destructive" });
         } finally {
             setIsDeleting(false);
             setIsDeleteConfirmOpen(false);
         }
     };
+
 
     if (authLoading) {
         return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -558,13 +528,13 @@ export default function SettingsPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently clear all users and data for <strong>{officeAddress?.officeLocation}</strong>. The core office record will remain, but all associated data will be deleted. This action cannot be undone.
+                        This will permanently deactivate the office <strong>{officeAddress?.officeLocation}</strong> by removing all of its users and hiding it from the list. The office's data will be preserved but inaccessible. This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDeleteOffice} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Clear Office Data"}
+                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Deactivate Office"}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
