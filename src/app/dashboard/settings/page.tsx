@@ -162,7 +162,8 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                 </CardHeader>
                                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
                                     <FormField name="bankAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                    <FormField name="nameOfBank" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Bank</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/><FormField name="bankBranch" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Branch</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                    <FormField name="nameOfBank" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Bank</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                    <FormField name="bankBranch" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Branch</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
                                     <FormField name="bankIfsc" control={form.control} render={({ field }) => ( <FormItem><FormLabel>IFSC</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
                                 </CardContent>
                             </Card>
@@ -222,10 +223,13 @@ export default function SettingsPage() {
             const payload: { [key: string]: any } = { ...data };
             Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });
 
-            // Use the office location as the document ID for predictability
-            const docId = officeLocation.toLowerCase();
+            const existingOfficeDoc = allOfficeAddresses.find(addr => addr.officeLocation === officeLocation);
+            const docId = existingOfficeDoc?.id;
+            
+            const officeDocRef = docId 
+                ? doc(db, 'officeAddresses', docId) 
+                : doc(collection(db, 'officeAddresses'));
 
-            const officeDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, docId);
             await setDoc(officeDocRef, payload, { merge: true });
             
             toast({ title: 'Office Address Saved', description: 'The office details have been updated.' });
@@ -351,25 +355,20 @@ export default function SettingsPage() {
         try {
             const batch = writeBatch(db);
             
-            const usersQuery = query(collection(db, "users"), where("officeLocation", "==", officeLocation));
-            const usersSnapshot = await getDocs(usersQuery);
-            usersSnapshot.forEach(userDoc => {
-                batch.delete(userDoc.ref);
-            });
-            
-            const officeUsersCollectionPath = `offices/${officeLocation}/users`;
-            const officeUsersQuery = query(collection(db, officeUsersCollectionPath));
+            // Delete Users from global and sub-collection
+            const officeUsersQuery = query(collection(db, `offices/${officeLocation}/users`));
             const officeUsersSnapshot = await getDocs(officeUsersQuery);
             officeUsersSnapshot.forEach(userDoc => {
                 batch.delete(userDoc.ref);
+                batch.delete(doc(db, "users", userDoc.id));
             });
 
-            const officeAddressDocRef = doc(db, `offices/${officeLocation}/officeAddresses`, officeLocation);
-            batch.delete(officeAddressDocRef);
+            // Delete the office address document from the top-level collection
+            batch.delete(doc(db, "officeAddresses", officeAddress.id));
             
             await batch.commit();
 
-            toast({ title: 'Office Deactivated', description: `Successfully deactivated office '${officeAddress.officeLocation}'. All data is preserved, but user accounts are removed.` });
+            toast({ title: 'Office Deactivated', description: `Successfully deactivated office '${officeAddress.officeLocation}'. User accounts are removed.` });
         } catch (error: any) {
             toast({ title: "Error", description: `Could not deactivate office: ${error.message}`, variant: "destructive" });
         } finally {
@@ -436,7 +435,7 @@ export default function SettingsPage() {
                                 <DetailRow label="GST No." value={officeAddress.gstNo} />
                                 <DetailRow label="PAN No." value={officeAddress.panNo} />
                             </div>
-                             {(officeAddress.stsbAccountNo || officeAddress.nameOfTreasury) && (
+                            {(officeAddress.stsbAccountNo || officeAddress.nameOfTreasury) && (
                                 <>
                                     <Separator className="my-4"/>
                                     <h4 className="text-sm font-semibold text-muted-foreground mb-2">Special Treasury Savings Account</h4>
