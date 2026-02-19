@@ -133,13 +133,13 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                         </FormItem> 
                                     )}/>
                                 )}
+                                <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" /></FormControl><FormMessage /></FormItem> )}/>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField name="districtOfficerStaffId" control={form.control} render={({ field }) => (<FormItem><FormLabel>Name of District Officer</FormLabel><Select onValueChange={(value) => handleOfficerChange(value)} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an Officer" /></SelectTrigger></FormControl><SelectContent position="popper"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); handleOfficerChange(''); }}>-- Clear Selection --</SelectItem>{officerList.map(officer => <SelectItem key={officer.id} value={officer.id}>{officer.name} ({officer.designation})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                                 <FormField name="phoneNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Phone No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                             </div>
@@ -222,8 +222,12 @@ export default function SettingsPage() {
         try {
             const payload: { [key: string]: any } = { ...data };
             Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });
-            const officeDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, 'details');
+
+            const docId = officeAddress?.id || officeLocation.toLowerCase();
+
+            const officeDocRef = doc(db, 'officeAddresses', docId);
             await setDoc(officeDocRef, payload, { merge: true });
+            
             toast({ title: 'Office Address Saved', description: 'The office details have been updated.' });
             setIsOfficeDialogOpen(false);
         } catch (error: any) {
@@ -352,9 +356,10 @@ export default function SettingsPage() {
         if (!officeAddress || !canManage) return;
         setIsDeleting(true);
         try {
-            const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
-            if (!officeLocation) throw new Error("Office location is required.");
-            await deleteDoc(doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, 'details'));
+            if (!officeAddress.id) {
+                throw new Error("The office address record does not have an ID.");
+            }
+            await deleteDoc(doc(db, 'officeAddresses', officeAddress.id));
             toast({ title: 'Office Address Deleted' });
         } catch (error: any) {
             toast({ title: "Error", description: `Could not delete office address: ${error.message}`, variant: "destructive" });
