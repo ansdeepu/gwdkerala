@@ -127,7 +127,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                     <FormField name="officeLocation" control={form.control} render={({ field }) => ( 
                                         <FormItem>
                                             <FormLabel>Office Location</FormLabel>
-                                            <FormControl><Input {...field} placeholder="e.g., Kollam" /></FormControl>
+                                            <FormControl><Input {...field} value={field.value ?? ''} placeholder="e.g., Kollam" /></FormControl>
                                             <FormMessage />
                                         </FormItem> 
                                     )}/>
@@ -141,7 +141,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                       <FormControl>
                                         <Input
                                           {...field}
-                                          value={field.value || ''}
+                                          value={field.value ?? ''}
                                           placeholder="e.g., KLM"
                                           readOnly
                                         />
@@ -150,19 +150,19 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                     </FormItem>
                                   )}
                                 />
-                                <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]" value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]" value={field.value ?? ''}/></FormControl><FormMessage /></FormItem> )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField name="districtOfficerStaffId" control={form.control} render={({ field }) => (<FormItem><FormLabel>Name of District Officer</FormLabel><Select onValueChange={(value) => handleOfficerChange(value)} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select an Officer" /></SelectTrigger></FormControl><SelectContent position="popper"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); handleOfficerChange(''); }}>-- Clear Selection --</SelectItem>{officerList.map(officer => <SelectItem key={officer.id} value={officer.id}>{officer.name} ({officer.designation})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
-                                <FormField name="phoneNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Phone No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="districtOfficerStaffId" control={form.control} render={({ field }) => (<FormItem><FormLabel>Name of District Officer</FormLabel><Select onValueChange={(value) => handleOfficerChange(value)} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select an Officer" /></SelectTrigger></FormControl><SelectContent position="popper"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); handleOfficerChange(''); }}>-- Clear Selection --</SelectItem>{officerList.map(officer => <SelectItem key={officer.id} value={officer.id}>{officer.name} ({officer.designation})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                                <FormField name="phoneNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Phone No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <FormField name="email" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="gstNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>GST No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="panNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>PAN No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="email" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="gstNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>GST No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="panNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>PAN No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
                             </div>
                             <Card className="mt-4">
                                 <CardHeader className="p-4">
@@ -184,7 +184,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                     <FormField name="bankIfsc" control={form.control} render={({ field }) => ( <FormItem><FormLabel>IFSC</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
                                 </CardContent>
                             </Card>
-                            <FormField name="otherDetails" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Other Details</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                            <FormField name="otherDetails" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Other Details</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
                             </div>
                         </ScrollArea>
                     </div>
@@ -395,6 +395,8 @@ export default function SettingsPage() {
             if(officeAddress.id) {
                 batch.delete(doc(db, `offices/${officeLocation}/officeAddresses`, officeAddress.id));
             }
+
+            // DO NOT delete the main office document or sub-collections
             
             await batch.commit();
             
@@ -555,7 +557,7 @@ export default function SettingsPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will deactivate the office <strong>{officeAddress?.officeLocation}</strong> by removing all of its users. The office's data will be preserved but inaccessible until new users are created for it.
+                        This action will deactivate the office <strong>{officeAddress?.officeLocation}</strong> by removing all its user accounts. All historical data will be preserved but the office will be hidden from management lists.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
