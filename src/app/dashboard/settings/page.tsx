@@ -132,7 +132,24 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                         </FormItem> 
                                     )}/>
                                 )}
-                                <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem className={cn(!isSuperAdmin && 'md:col-span-2')}><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" readOnly /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField
+                                  name="officeCode"
+                                  control={form.control}
+                                  render={({ field }) => (
+                                    <FormItem className={cn(!isSuperAdmin && 'md:col-span-2')}>
+                                      <FormLabel>Office Code</FormLabel>
+                                      <FormControl>
+                                        <Input
+                                          {...field}
+                                          value={field.value || ''}
+                                          placeholder="e.g., KLM"
+                                          readOnly
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                                 <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
@@ -362,23 +379,25 @@ export default function SettingsPage() {
         if (!officeAddress || !canManage) return;
         setIsDeleting(true);
         const officeLocation = officeAddress.officeLocation.toLowerCase();
-
+        
         try {
+            const batch = writeBatch(db);
+    
             // Delete Users
             const officeUsersQuery = query(collection(db, `offices/${officeLocation}/users`));
             const officeUsersSnapshot = await getDocs(officeUsersQuery);
-            const deleteUsersBatch = writeBatch(db);
             officeUsersSnapshot.forEach(userDoc => {
-                deleteUsersBatch.delete(userDoc.ref); // Delete from subcollection
-                deleteUsersBatch.delete(doc(db, "users", userDoc.id)); // Delete from global collection
+                batch.delete(userDoc.ref); // Delete from subcollection
+                batch.delete(doc(db, "users", userDoc.id)); // Delete from global collection
             });
-            await deleteUsersBatch.commit();
             
             // Delete Office Address
             if(officeAddress.id) {
-                await deleteDoc(doc(db, `offices/${officeLocation}/officeAddresses`, officeAddress.id));
+                batch.delete(doc(db, `offices/${officeLocation}/officeAddresses`, officeAddress.id));
             }
-
+            
+            await batch.commit();
+            
             toast({ title: 'Office Deactivated', description: `Successfully deactivated office '${officeAddress.officeLocation}'. User accounts are removed.` });
         } catch (error: any) {
             toast({ title: "Error", description: `Could not deactivate office: ${error.message}`, variant: "destructive" });
