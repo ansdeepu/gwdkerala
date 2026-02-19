@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc, where } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useDataStore, type OfficeAddress } from '@/hooks/use-data-store';
 import { useAuth } from '@/hooks/useAuth';
@@ -355,14 +355,37 @@ export default function SettingsPage() {
     const handleDeleteOffice = async () => {
         if (!officeAddress || !canManage) return;
         setIsDeleting(true);
+        const officeLocation = officeAddress.officeLocation.toLowerCase();
+
         try {
-            if (!officeAddress.id) {
-                throw new Error("The office address record does not have an ID.");
+            const batch = writeBatch(db);
+
+            // 1. Find all users in this office to delete them
+            const usersQuery = query(collection(db, "users"), where("officeLocation", "==", officeLocation));
+            const usersSnapshot = await getDocs(usersQuery);
+
+            if (!usersSnapshot.empty) {
+                usersSnapshot.forEach(userDoc => {
+                    // Delete from top-level /users
+                    batch.delete(doc(db, "users", userDoc.id));
+                    // Delete from sub-collection /offices/{officeId}/users
+                    const officeUserDocRef = doc(db, `offices/${officeLocation}/users`, userDoc.id);
+                    batch.delete(officeUserDocRef);
+                });
             }
-            await deleteDoc(doc(db, 'officeAddresses', officeAddress.id));
-            toast({ title: 'Office Address Deleted' });
+
+            // 2. Delete the main office document in /offices
+            batch.delete(doc(db, "offices", officeLocation));
+            
+            // 3. Delete the office address document from /officeAddresses
+            batch.delete(doc(db, 'officeAddresses', officeAddress.id));
+
+            await batch.commit();
+
+            toast({ title: 'Office Deleted', description: `Successfully deleted office '${officeAddress.officeLocation}' and all its users.` });
+            // The UI will update automatically due to onSnapshot listeners
         } catch (error: any) {
-            toast({ title: "Error", description: `Could not delete office address: ${error.message}`, variant: "destructive" });
+            toast({ title: "Error", description: `Could not delete office: ${error.message}`, variant: "destructive" });
         } finally {
             setIsDeleting(false);
             setIsDeleteConfirmOpen(false);
@@ -508,7 +531,7 @@ export default function SettingsPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently delete the office address details. This action cannot be undone.
+                        This will permanently delete the office address details and all associated users for <strong>{officeAddress?.officeLocation}</strong>. This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
