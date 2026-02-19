@@ -132,7 +132,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                         </FormItem> 
                                     )}/>
                                 )}
-                                <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem className={cn(!isSuperAdmin && 'md:col-span-2')}><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" readOnly={!isSuperAdmin} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem className={cn(!isSuperAdmin && 'md:col-span-2')}><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" readOnly={true} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
@@ -225,7 +225,7 @@ export default function SettingsPage() {
             // Use the office location as the document ID for predictability
             const docId = officeLocation.toLowerCase();
 
-            const officeDocRef = doc(db, `officeAddresses`, docId);
+            const officeDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, docId);
             await setDoc(officeDocRef, payload, { merge: true });
             
             toast({ title: 'Office Address Saved', description: 'The office details have been updated.' });
@@ -239,7 +239,7 @@ export default function SettingsPage() {
 
     const handleExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file) return;
+        if (!file || !user?.officeLocation) return;
         setIsSubmitting(true);
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -265,7 +265,7 @@ export default function SettingsPage() {
                     }
                 });
                 if (lsgDataMap.size === 0) throw new Error("No valid data found.");
-                const collectionPath = `localSelfGovernments`;
+                const collectionPath = `offices/${user.officeLocation!.toLowerCase()}/localSelfGovernments`;
                 const batch = writeBatch(db);
                 const existingLsgDocs = await getDocs(query(collection(db, collectionPath)));
                 const existingLsgMap = new Map(existingLsgDocs.docs.map(d => [d.data().name, d.id]));
@@ -312,7 +312,8 @@ export default function SettingsPage() {
     const handleClearAllData = async () => {
         setIsClearingData(true);
         try {
-            const collectionPath = `localSelfGovernments`;
+            if (!user?.officeLocation) throw new Error("Office location not found.");
+            const collectionPath = `offices/${user.officeLocation.toLowerCase()}/localSelfGovernments`;
             const q = query(collection(db, collectionPath));
             const snapshot = await getDocs(q);
             const batch = writeBatch(db);
@@ -350,14 +351,12 @@ export default function SettingsPage() {
         try {
             const batch = writeBatch(db);
             
-            // Find and delete all users for this office from the top-level /users collection
             const usersQuery = query(collection(db, "users"), where("officeLocation", "==", officeLocation));
             const usersSnapshot = await getDocs(usersQuery);
             usersSnapshot.forEach(userDoc => {
                 batch.delete(userDoc.ref);
             });
             
-            // Find and delete all users from the office's sub-collection.
             const officeUsersCollectionPath = `offices/${officeLocation}/users`;
             const officeUsersQuery = query(collection(db, officeUsersCollectionPath));
             const officeUsersSnapshot = await getDocs(officeUsersQuery);
@@ -365,10 +364,9 @@ export default function SettingsPage() {
                 batch.delete(userDoc.ref);
             });
 
-            // Delete the office address document. This removes it from the UI.
-            const officeAddressDocRef = doc(db, `officeAddresses`, officeAddress.id);
+            const officeAddressDocRef = doc(db, `offices/${officeLocation}/officeAddresses`, officeLocation);
             batch.delete(officeAddressDocRef);
-
+            
             await batch.commit();
 
             toast({ title: 'Office Deactivated', description: `Successfully deactivated office '${officeAddress.officeLocation}'. All data is preserved, but user accounts are removed.` });
@@ -409,7 +407,7 @@ export default function SettingsPage() {
                         {canManage && (
                             <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }} disabled={isSuperAdmin && !selectedOffice}><Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}</Button>
-                                {officeAddress && <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isDeleting}>{isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete</Button>}
+                                {isSuperAdmin && officeAddress && <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isDeleting}>{isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete</Button>}
                             </div>
                         )}
                     </div>
@@ -570,5 +568,3 @@ export default function SettingsPage() {
       </div>
     );
 }
-
-    
