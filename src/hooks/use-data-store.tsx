@@ -1,3 +1,4 @@
+
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -126,6 +127,7 @@ const COLLECTIONS = {
 interface DataStoreContextType {
     selectedOffice: string | null;
     setSelectedOffice: (office: string | null) => void;
+    allUsers: UserProfile[];
     allFileEntries: DataEntryFormData[];
     allArsEntries: ArsEntry[];
     allStaffMembers: StaffMember[];
@@ -138,7 +140,6 @@ interface DataStoreContextType {
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
     allOfficeAddresses: OfficeAddress[];
-    allUsers: UserProfile[];
     officeAddress: OfficeAddress | null;
     isLoading: boolean;
     refetchRateDescriptions: () => void;
@@ -158,6 +159,7 @@ const DataStoreContext = createContext<DataStoreContextType | undefined>(undefin
 
 export function DataStoreProvider({ children, user }: { children: ReactNode, user: UserProfile | null }) {
     const [selectedOffice, setSelectedOffice] = useState<string | null>(null);
+    const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
     const [allFileEntries, setAllFileEntries] = useState<DataEntryFormData[]>([]);
     const [allArsEntries, setAllArsEntries] = useState<ArsEntry[]>([]);
     const [allStaffMembers, setAllStaffMembers] = useState<StaffMember[]>([]);
@@ -170,12 +172,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allHiredVehicles, setAllHiredVehicles] = useState<HiredVehicle[]>([]);
     const [allRigCompressors, setAllRigCompressors] = useState<RigCompressor[]>([]);
     const [allOfficeAddresses, setAllOfficeAddresses] = useState<OfficeAddress[]>([]);
-    const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
     const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null);
 
     const [loadingStates, setLoadingStates] = useState({
-        files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
-        departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true, users: true,
+        users: true, files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
+        departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true,
     });
     
     const refetchRateDescriptions = useCallback(() => setLoadingStates(prev => ({...prev, rates: true})), []);
@@ -195,15 +196,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         if (!user) {
             setAllRateDescriptions(defaultRateDescriptions);
             setAllBidders([]);
-            setAllOfficeAddresses([]); // Reset global office addresses
-            setLoadingStates(prev => ({ ...prev, rates: false, bidders: false, officeAddress: false }));
+            setLoadingStates(prev => ({ ...prev, rates: false, bidders: false }));
             return;
         }
         
         const globalCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, queryFn: () => any }> = {
             rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
             bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
-            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) }
         };
 
         const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey, queryFn }]) => {
@@ -252,10 +251,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     // Effect for OFFICE-SCOPED data
     useEffect(() => {
         if (!user) {
-            setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
-            setAllE_tenders([]); setAllDepartmentVehicles([]); setAllHiredVehicles([]); setAllRigCompressors([]);
-            setAllLsgConstituencyMaps([]); setAllUsers([]);
-            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, users: false }));
+            setAllUsers([]); setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); 
+            setAllAgencyApplications([]); setAllE_tenders([]); setAllDepartmentVehicles([]); 
+            setAllHiredVehicles([]); setAllRigCompressors([]); setAllLsgConstituencyMaps([]);
+            setAllOfficeAddresses([]);
+            setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, officeAddress: false }));
             return;
         }
         
@@ -263,6 +263,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         const officeToQuery = isSuperAdminUser ? selectedOffice : user.officeLocation;
 
         const officeScopedCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, needsSpecialSort?: boolean }> = {
+            users: { setter: setAllUsers, loaderKey: 'users' },
             fileEntries: { setter: setAllFileEntries, loaderKey: 'files' },
             arsEntries: { setter: setAllArsEntries, loaderKey: 'ars' },
             staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff', needsSpecialSort: true },
@@ -272,7 +273,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
             rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
             localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
-            users: { setter: setAllUsers, loaderKey: 'users' },
+            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress' },
         };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
@@ -294,13 +295,18 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 const data = snapshot.docs.map(doc => {
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
-                    if (isSuperAdminUser && !officeToQuery) {
+                    
+                    let officeLocation = officeToQuery; // Default to the queried office
+
+                    if (isSuperAdminUser && !officeToQuery) { // For collectionGroup queries, derive from path
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
+                            officeLocation = pathSegments[officeIdIndex + 1];
                         }
                     }
+                    
+                    (processedData as any).officeLocation = officeLocation;
                     return processedData;
                 });
                 
@@ -401,10 +407,10 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     return (
         <DataStoreContext.Provider value={{
             selectedOffice, setSelectedOffice,
+            allUsers,
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
             allOfficeAddresses,
-            allUsers,
             officeAddress, 
             isLoading,
             refetchRateDescriptions,

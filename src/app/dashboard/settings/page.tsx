@@ -1,3 +1,4 @@
+
 // src/app/dashboard/settings/page.tsx
 "use client";
 
@@ -80,20 +81,25 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
     
     const form = useForm<OfficeAddressFormData>({
         resolver: zodResolver(OfficeAddressSchema),
-        defaultValues: initialData || {
-            officeName: '', officeLocation: user?.officeLocation || '', officeCode: '', officeNameMalayalam: '', address: '', addressMalayalam: '', 
-            phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '',
-            gstNo: '', panNo: '', otherDetails: '', stsbAccountNo: '', nameOfTreasury: '', bankAccountNo: '', nameOfBank: '', bankBranch: '', bankIfsc: ''
-        },
     });
 
     useEffect(() => {
-        const defaultValues: Partial<OfficeAddressFormData> = initialData ? { ...initialData } : { officeName: '', officeLocation: '', officeCode: '', officeNameMalayalam: '', address: '', addressMalayalam: '', phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '', gstNo: '', panNo: '', otherDetails: '', stsbAccountNo: '', nameOfTreasury: '', bankAccountNo: '', nameOfBank: '', bankBranch: '', bankIfsc: '' };
-        if (!isSuperAdmin && user?.officeLocation) {
-            defaultValues.officeLocation = user.officeLocation;
+        if (initialData) {
+            const dataToReset: Partial<OfficeAddressFormData> = { ...initialData };
+            
+            // Explicitly derive officeCode from officeLocation, as it's not in the DB doc.
+            if (dataToReset.officeLocation && !dataToReset.officeCode) {
+                dataToReset.officeCode = dataToReset.officeLocation.substring(0, 3).toUpperCase();
+            }
+            form.reset(dataToReset);
+        } else {
+             form.reset({
+                officeName: '', officeLocation: user?.officeLocation || '', officeCode: user?.officeLocation?.substring(0,3).toUpperCase() || '', officeNameMalayalam: '', address: '', addressMalayalam: '', 
+                phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '',
+                gstNo: '', panNo: '', otherDetails: '', stsbAccountNo: '', nameOfTreasury: '', bankAccountNo: '', nameOfBank: '', bankBranch: '', bankIfsc: ''
+            });
         }
-        form.reset(defaultValues);
-    }, [initialData, form, isSuperAdmin, user]);
+    }, [initialData, form, user]);
 
     const handleOfficerChange = (staffId: string) => {
         const selectedStaff = officerList.find(s => s.id === staffId);
@@ -383,20 +389,19 @@ export default function SettingsPage() {
         try {
             const batch = writeBatch(db);
     
-            // Delete Users
-            const officeUsersQuery = query(collection(db, `offices/${officeLocation}/users`));
+            // Delete Users associated with the office
+            const officeUsersQuery = query(collection(db, "users"), where("officeLocation", "==", officeLocation));
             const officeUsersSnapshot = await getDocs(officeUsersQuery);
             officeUsersSnapshot.forEach(userDoc => {
-                batch.delete(userDoc.ref); // Delete from subcollection
-                batch.delete(doc(db, "users", userDoc.id)); // Delete from global collection
+                batch.delete(userDoc.ref); // Delete from global users collection
+                // Also delete from subcollection if it exists
+                batch.delete(doc(db, `offices/${officeLocation}/users`, userDoc.id));
             });
             
             // Delete Office Address
             if(officeAddress.id) {
                 batch.delete(doc(db, `offices/${officeLocation}/officeAddresses`, officeAddress.id));
             }
-
-            // DO NOT delete the main office document or sub-collections
             
             await batch.commit();
             
