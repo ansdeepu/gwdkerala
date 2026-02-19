@@ -1,3 +1,4 @@
+
 // src/hooks/useAuth.ts
 "use client";
 
@@ -83,7 +84,7 @@ export function useAuth() {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email,
                 name: userData.name ? String(userData.name) : undefined,
-                role: isAdminByEmail ? 'editor' : (userData.role || 'viewer'),
+                role: isAdminByEmail ? 'superAdmin' : (userData.role || 'viewer'),
                 isApproved: isApproved,
                 staffId: userData.staffId || undefined,
                 officeLocation: userData.officeLocation,
@@ -93,11 +94,11 @@ export function useAuth() {
         } else if (isAdminByEmail) {
             userProfile = {
                 uid: firebaseUser.uid, email: firebaseUser.email, name: firebaseUser.email?.split('@')[0],
-                role: 'editor', isApproved: true,
+                role: 'superAdmin', isApproved: true,
                 createdAt: new Date(),
             };
             await setDoc(doc(db, "users", firebaseUser.uid), {
-                email: firebaseUser.email, name: userProfile.name, role: 'editor', isApproved: true, createdAt: Timestamp.now(),
+                email: firebaseUser.email, name: userProfile.name, role: 'superAdmin', isApproved: true, createdAt: Timestamp.now(),
             });
         }
         
@@ -141,8 +142,8 @@ export function useAuth() {
     }
   }, []);
 
-  const createUserByAdmin = useCallback(async (email: string, password: string, name: string, staffId: string, officeLocation: string): Promise<{ success: boolean; error?: any }> => {
-    if (!authState.user || authState.user.role !== 'editor') {
+  const createUserByAdmin = useCallback(async (email: string, password: string, name: string, staffId: string, officeLocation: string, role: UserRole = 'viewer'): Promise<{ success: boolean; error?: any }> => {
+    if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
       return { success: false, error: { message: "Permission denied." } };
     }
   
@@ -159,18 +160,14 @@ export function useAuth() {
         name: name,
         staffId: staffId,
         officeLocation: officeLocation.toLowerCase(),
-        role: 'viewer' as UserRole,
+        role: role,
         isApproved: false,
         createdAt: Timestamp.now(),
         lastActiveAt: Timestamp.now(),
       };
       
       const batch = writeBatch(db);
-      
-      // Source of truth for Auth and Security Rules
       batch.set(doc(db, "users", newFirebaseUser.uid), userProfileData);
-      
-      // Office-specific list for the sub-office admin
       batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, newFirebaseUser.uid), userProfileData);
   
       await batch.commit();
@@ -184,32 +181,41 @@ export function useAuth() {
     }
   }, [authState.user]);
   
-  const createOfficeAdmin = useCallback(async (email: string, password: string, name: string, officeLocation: string): Promise<{ success: boolean; error?: any }> => {
-    if (!authState.user || authState.user.email !== SUPER_ADMIN_EMAIL) {
+  const createOfficeAdmin = useCallback(async (email: string, name: string, officeLocation: string): Promise<{ success: boolean; error?: any }> => {
+    if (!authState.user || authState.user.role !== 'superAdmin') {
       return { success: false, error: { message: "Permission denied." } };
     }
 
-    const tempAppName = `temp-office-admin-${Date.now()}`;
+    const tempAppName = `temp-office-setup-${Date.now()}`;
     const tempApp = initializeApp(app.options, tempAppName);
     const tempAuth = getAuth(tempApp);
+    const defaultPassword = "123456";
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
-      const newFirebaseUser = userCredential.user;
+      const emailPrefix = email.split('@')[0];
+      const accounts = [
+        { email, name, role: 'admin' as UserRole },
+        { email: `${emailPrefix}001@gmail.com`, name: `Scientist - ${officeLocation}`, role: 'scientist' as UserRole },
+        { email: `${emailPrefix}002@gmail.com`, name: `Engineer - ${officeLocation}`, role: 'engineer' as UserRole },
+      ];
 
-      const userProfileData = {
-        email: newFirebaseUser.email,
-        name: name,
-        officeLocation: officeLocation.toLowerCase(),
-        role: 'editor' as UserRole,
-        isApproved: true,
-        createdAt: Timestamp.now(),
-        lastActiveAt: Timestamp.now(),
-      };
-      
       const batch = writeBatch(db);
-      batch.set(doc(db, "users", newFirebaseUser.uid), userProfileData);
-      batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, newFirebaseUser.uid), userProfileData);
+
+      for (const acc of accounts) {
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, acc.email, defaultPassword);
+        const uid = userCredential.user.uid;
+        const profile = {
+          email: acc.email,
+          name: acc.name,
+          officeLocation: officeLocation.toLowerCase(),
+          role: acc.role,
+          isApproved: true,
+          createdAt: Timestamp.now(),
+          lastActiveAt: Timestamp.now(),
+        };
+        batch.set(doc(db, "users", uid), profile);
+        batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, uid), profile);
+      }
       
       await batch.commit();
       await signOut(tempAuth);
@@ -222,39 +228,6 @@ export function useAuth() {
     }
   }, [authState.user]);
 
-  const createDirectorateUser = useCallback(async (email: string, password: string, name: string): Promise<{ success: boolean; error?: any }> => {
-    if (!authState.user || authState.user.email !== SUPER_ADMIN_EMAIL) {
-      return { success: false, error: { message: "Permission denied." } };
-    }
-
-    const tempAppName = `temp-dir-user-${Date.now()}`;
-    const tempApp = initializeApp(app.options, tempAppName);
-    const tempAuth = getAuth(tempApp);
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
-      const newFirebaseUser = userCredential.user;
-
-      const userProfileData = {
-        email: newFirebaseUser.email,
-        name: name,
-        role: 'viewer' as UserRole,
-        isApproved: true,
-        createdAt: Timestamp.now(),
-        lastActiveAt: Timestamp.now(),
-      };
-      await setDoc(doc(db, "users", newFirebaseUser.uid), userProfileData);
-
-      await signOut(tempAuth);
-      await deleteApp(tempApp);
-
-      return { success: true };
-    } catch (error: any) {
-      await deleteApp(tempApp).catch(() => {});
-      return { success: false, error };
-    }
-  }, [authState.user]);
-  
   const logout = useCallback(async () => {
     try {
       await signOut(auth);
@@ -265,7 +238,7 @@ export function useAuth() {
   }, [router]);
 
   const fetchAllUsers = useCallback(async (): Promise<UserProfile[]> => {
-    if (!authState.user || (authState.user.role !== 'editor' && authState.user.role !== 'viewer')) {
+    if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
       return [];
     }
     
@@ -288,7 +261,7 @@ export function useAuth() {
   }, [authState.user]); 
 
   const updateUserApproval = useCallback(async (targetUserUid: string, isApproved: boolean, officeLocation?: string): Promise<void> => {
-    if (!authState.user || authState.user.role !== 'editor') {
+    if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
       throw new Error("Permission denied.");
     }
     const batch = writeBatch(db);
@@ -299,25 +272,91 @@ export function useAuth() {
     await batch.commit();
   }, [authState.user]);
 
+  const handleSupervisorCleanup = async (uid: string, officeId: string) => {
+    const batch = writeBatch(db);
+    const officePath = `offices/${officeId.toLowerCase()}`;
+    
+    // Cleanup File Entries
+    const filesQuery = query(collection(db, `${officePath}/fileEntries`));
+    const filesSnap = await getDocs(filesQuery);
+    filesSnap.forEach(fDoc => {
+        const data = fDoc.data();
+        let changed = false;
+        const newSites = data.siteDetails?.map((s: any) => {
+            if (s.supervisorUid === uid && ["Work Order Issued", "Work in Progress"].includes(s.workStatus)) {
+                changed = true;
+                return { ...s, supervisorUid: null, supervisorName: null };
+            }
+            return s;
+        });
+        if (changed) {
+            batch.update(fDoc.ref, { siteDetails: newSites });
+            // Create system notification
+            const notifRef = doc(collection(db, `${officePath}/pendingUpdates`));
+            batch.set(notifRef, {
+                fileNo: data.fileNo,
+                status: 'supervisor-unassigned',
+                notes: 'Work status file has no assigned Supervisor (Supervisor role removed).',
+                submittedAt: serverTimestamp(),
+                submittedByName: 'System',
+                isArsUpdate: false,
+                updatedSiteDetails: newSites.filter((s:any) => s.supervisorUid === null)
+            });
+        }
+    });
+
+    // Cleanup ARS Entries
+    const arsQuery = query(collection(db, `${officePath}/arsEntries`), where('supervisorUid', '==', uid));
+    const arsSnap = await getDocs(arsQuery);
+    arsSnap.forEach(aDoc => {
+        const data = aDoc.data();
+        if (["Work Order Issued", "Work in Progress"].includes(data.arsStatus)) {
+            batch.update(aDoc.ref, { supervisorUid: null, supervisorName: null });
+            const notifRef = doc(collection(db, `${officePath}/pendingUpdates`));
+            batch.set(notifRef, {
+                arsId: aDoc.id,
+                fileNo: data.fileNo,
+                status: 'supervisor-unassigned',
+                notes: 'ARS Work status file has no assigned Supervisor (Supervisor role removed).',
+                submittedAt: serverTimestamp(),
+                submittedByName: 'System',
+                isArsUpdate: true,
+                updatedSiteDetails: [{ ...data, supervisorUid: null, supervisorName: null }]
+            });
+        }
+    });
+
+    await batch.commit();
+  };
+
   const updateUserRole = useCallback(async (targetUserUid: string, newRole: UserRole, staffId?: string, officeLocation?: string): Promise<void> => {
-    if (!authState.user || authState.user.role !== 'editor') {
+    if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
         throw new Error("Permission denied.");
     }
     
+    const userRef = doc(db, "users", targetUserUid);
+    const oldSnap = await getDoc(userRef);
+    const oldRole = oldSnap.data()?.role;
+
     const batch = writeBatch(db);
     const updates: any = { role: newRole };
     if (staffId) updates.staffId = staffId;
     else if (newRole === 'viewer') updates.staffId = null;
 
-    batch.update(doc(db, "users", targetUserUid), updates);
+    batch.update(userRef, updates);
     if (officeLocation) {
         batch.update(doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid), updates);
     }
     await batch.commit();
+
+    // Role specific cleanup
+    if ((oldRole === 'supervisor' || oldRole === 'investigator') && newRole !== 'supervisor' && newRole !== 'investigator' && officeLocation) {
+        await handleSupervisorCleanup(targetUserUid, officeLocation);
+    }
   }, [authState.user]);
 
   const deleteUserDocument = useCallback(async (targetUserUid: string, officeLocation?: string): Promise<void> => {
-    if (!authState.user || (authState.user.role !== 'editor' && authState.user.email !== SUPER_ADMIN_EMAIL)) {
+    if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
       throw new Error("Permission denied.");
     }
     if (authState.user.uid === targetUserUid) {
@@ -349,7 +388,7 @@ export function useAuth() {
   }, []);
   
   const updateUserProfileByAdmin = useCallback(async (targetUserUid: string, data: { name?: string; officeLocation?: string; role?: UserRole; isApproved?: boolean }): Promise<{ success: boolean; error?: any }> => {
-    if (authState.user?.email !== SUPER_ADMIN_EMAIL) {
+    if (authState.user?.role !== 'superAdmin') {
         return { success: false, error: { message: "Permission denied." } };
     }
     try {
@@ -370,7 +409,7 @@ export function useAuth() {
   }, [authState.user]);
 
   const updateSuperAdminProfile = useCallback(async (newName: string): Promise<{ success: boolean; error?: any }> => {
-    if (!auth.currentUser || authState.user?.email !== SUPER_ADMIN_EMAIL) {
+    if (!auth.currentUser || authState.user?.role !== 'superAdmin') {
       return { success: false, error: { message: "Permission denied." } };
     }
 
@@ -384,7 +423,7 @@ export function useAuth() {
     }
   }, [authState.user]);
 
-  return { ...authState, login, logout, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, createUserByAdmin, createOfficeAdmin, createDirectorateUser, updatePassword, updateSuperAdminProfile, updateUserProfileByAdmin };
+  return { ...authState, login, logout, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, createUserByAdmin, createOfficeAdmin, updatePassword, updateSuperAdminProfile, updateUserProfileByAdmin };
 }
 
 interface AuthState {

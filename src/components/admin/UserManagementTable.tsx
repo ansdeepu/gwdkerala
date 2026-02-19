@@ -1,7 +1,8 @@
+
 // src/components/admin/UserManagementTable.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -14,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ShieldCheck, ShieldAlert, Trash2, Edit, UserCog, CheckSquare, Square } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldAlert, Trash2, Edit, UserCog } from "lucide-react";
 import type { UserProfile } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { userRoleOptions, type UserRole, type StaffMember } from "@/lib/schemas";
@@ -39,7 +40,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { getInitials } from "@/lib/utils";
 
 const hashCode = (str: string): number => {
@@ -96,15 +96,14 @@ export default function UserManagementTable({
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
 
-  const isSuperAdmin = currentUser?.email === SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = currentUser?.role === 'superAdmin';
 
   const sortedUsers = useMemo(() => {
-    const roleOrder: Record<UserRole, number> = { 'editor': 1, 'viewer': 2, 'supervisor': 3 };
-    return [...users].filter(u => u.email !== SUPER_ADMIN_EMAIL).sort((a, b) => {
-      const roleA = roleOrder[a.role] || 4;
-      const roleB = roleOrder[b.role] || 4;
+    const roleOrder: Record<UserRole, number> = { 'superAdmin': 0, 'admin': 1, 'scientist': 2, 'engineer': 3, 'investigator': 4, 'supervisor': 5, 'viewer': 6, 'editor': 7 };
+    return [...users].sort((a, b) => {
+      const roleA = roleOrder[a.role] || 10;
+      const roleB = roleOrder[b.role] || 10;
       if (roleA !== roleB) return roleA - roleB;
-      
       const timeA = a.createdAt?.getTime() ?? 0;
       const timeB = b.createdAt?.getTime() ?? 0;
       return timeB - timeA;
@@ -113,7 +112,7 @@ export default function UserManagementTable({
 
 
   const handleApprovalChange = async (userRow: UserProfile) => {
-    if (currentUser?.uid === userRow.uid || (!isSuperAdmin && userRow.role === 'editor')) {
+    if (currentUser?.uid === userRow.uid || (!isSuperAdmin && userRow.role === 'admin')) {
       toast({ title: "Action Restricted", description: "This account status can only be modified by Super Admin.", variant: "default" });
       return;
     }
@@ -130,23 +129,16 @@ export default function UserManagementTable({
   };
 
   const handleRoleChange = async (userRow: UserProfile, newRole: UserRole) => {
-    if (currentUser?.uid === userRow.uid || (!isSuperAdmin && userRow.role === 'editor')) {
+    if (currentUser?.uid === userRow.uid || (!isSuperAdmin && userRow.role === 'admin')) {
       toast({ title: "Action Restricted", description: "Administrator roles can only be changed by Super Admin.", variant: "default" });
       return;
     }
 
     let staffIdToLink: string | undefined = undefined;
-    if (!userRow.staffId && (newRole === 'supervisor' || newRole === 'editor')) {
+    if (!userRow.staffId && (newRole === 'supervisor' || newRole === 'investigator' || newRole === 'admin')) {
         const matchingStaffMember = (staffMembers || []).find(staff => staff.name === userRow.name);
         if (matchingStaffMember) {
             staffIdToLink = matchingStaffMember.id;
-        } else {
-            toast({
-                title: "Staff Linking Failed",
-                description: `Could not find a matching staff profile for ${userRow.name}. The user can still be a Supervisor, but won't be assignable to sites. Please ensure staff and user names match exactly.`,
-                variant: "destructive",
-                duration: 9000
-            });
         }
     }
 
@@ -154,9 +146,6 @@ export default function UserManagementTable({
     try {
       await updateUserRole(userRow.uid, newRole, staffIdToLink, userRow.officeLocation);
       toast({ title: "Role Updated", description: `User role for ${userRow?.name || 'user'} changed to ${newRole}.` });
-      if (staffIdToLink) {
-        toast({ title: "Staff Profile Linked", description: `User ${userRow?.name} successfully linked to their staff profile.` });
-      }
       onDataChange();
     } catch (error: any) {
       toast({ title: "Update Failed", description: error.message || "Could not update role.", variant: "destructive" });
@@ -166,7 +155,7 @@ export default function UserManagementTable({
   };
 
   const handleDeleteUserClick = (user: UserProfile) => {
-    if (currentUser?.uid === user.uid || (!isSuperAdmin && user.role === 'editor')) {
+    if (currentUser?.uid === user.uid || (!isSuperAdmin && user.role === 'admin')) {
       toast({ title: "Action Restricted", description: "Administrator accounts can only be removed by Super Admin.", variant: "default" });
       return;
     }
@@ -202,7 +191,6 @@ export default function UserManagementTable({
       <div className="py-10 text-center text-muted-foreground border rounded-lg bg-secondary/30">
          <UserCog className="mx-auto h-16 w-16 text-muted-foreground/70 mb-4" />
         <p className="text-lg font-medium">No Users Found</p>
-        <p className="text-sm">There are no registered users in this office yet.</p>
       </div>
     );
   }
@@ -226,8 +214,7 @@ export default function UserManagementTable({
           <TableBody>
             {sortedUsers.map((userRow, index) => {
               const isCurrentUserTheUserInRow = currentUser?.uid === userRow.uid;
-              // Restriction: User cannot edit themselves, and sub-office admins cannot edit other admins.
-              const isEditingRestricted = isCurrentUserTheUserInRow || (!isSuperAdmin && userRow.role === 'editor');
+              const isEditingRestricted = isCurrentUserTheUserInRow || (!isSuperAdmin && userRow.role === 'admin');
               
               const disableActions = updatingUsers[userRow.uid]?.approval || updatingUsers[userRow.uid]?.role || isEditingRestricted;
               const staffInfo = (staffMembers || []).find(s => s.id === userRow.staffId);
@@ -264,9 +251,9 @@ export default function UserManagementTable({
                          {updatingUsers[userRow.uid]?.role ? <Loader2 className="h-3 w-3 animate-spin" /> : <SelectValue />}
                       </SelectTrigger>
                       <SelectContent>
-                        {userRoleOptions.map(roleOption => (
+                        {userRoleOptions.filter(r => r !== 'superAdmin').map(roleOption => (
                           <SelectItem key={roleOption} value={roleOption} className="text-xs">
-                            {roleOption === 'supervisor' ? 'Supervisor' : roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
+                            {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -278,10 +265,8 @@ export default function UserManagementTable({
                       checked={userRow.isApproved}
                       onCheckedChange={() => handleApprovalChange(userRow)}
                       disabled={isViewer || disableActions || updatingUsers[userRow.uid]?.approval}
-                      aria-label={`Toggle approval for ${userRow.name}`}
                       className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-destructive/30"
                     />
-                     {updatingUsers[userRow.uid]?.approval && !isDeletingUser && <Loader2 className="h-4 w-4 animate-spin" />}
                     <Badge variant={userRow.isApproved ? "secondary" : "outline"} className={cn("text-xs", userRow.isApproved ? "border-green-600/50 text-green-700 bg-green-500/10" : "border-destructive/50 text-destructive bg-destructive/10")}>
                       {userRow.isApproved ? "Approved" : "Pending"}
                     </Badge>
@@ -322,9 +307,8 @@ export default function UserManagementTable({
                                         className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 h-8 w-8"
                                         onClick={() => handleDeleteUserClick(userRow)}
                                         disabled={disableActions || isDeletingUser}
-                                        aria-label={`Remove user profile ${userRow.name}`}
                                         >
-                                        {isDeletingUser && userToDelete?.uid === userRow.uid ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                        <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TooltipTrigger>
                                     <TooltipContent><p>Remove User Profile</p></TooltipContent>
@@ -337,14 +321,6 @@ export default function UserManagementTable({
               </TableRow>
             )})}
           </TableBody>
-           {sortedUsers.length === 0 && (
-            <TableCaption className="py-10 text-lg">
-                <div className="flex flex-col items-center justify-center gap-2">
-                    <Image src="https://placehold.co/100x100/F0F2F5/3F51B5.png?text=No+Users" width={80} height={80} alt="No users" data-ai-hint="empty illustration" className="opacity-60 rounded-md"/>
-                    No users found.
-                </div>
-            </TableCaption>
-           )}
         </Table>
       </div>
 

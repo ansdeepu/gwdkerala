@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/office-management/page.tsx
 "use client";
 
@@ -7,14 +8,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, PlusCircle, Trash2, Edit, Save, X } from 'lucide-react';
+import { Loader2, PlusCircle, Trash2, Edit, Save, X, Info } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import UserManagementTable from '@/components/admin/UserManagementTable';
 import { useDataStore } from '@/hooks/use-data-store';
 import { getFirestore, doc, setDoc, serverTimestamp, getDocs, query, where, collection } from 'firebase/firestore';
@@ -25,17 +25,12 @@ const db = getFirestore(app);
 
 const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate"];
 
-const NewOfficeUserSchema = z.object({
+const NewOfficeAdminSchema = z.object({
   name: z.string().min(2, "Name is required."),
   officeLocation: z.string().min(2, "Office Location is required."),
   email: z.string().email("Invalid email address."),
-  password: z.string().min(6, "Password must be at least 6 characters."),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match.",
-  path: ["confirmPassword"],
 });
-type NewOfficeUserFormData = z.infer<typeof NewOfficeUserSchema>;
+type NewOfficeAdminFormData = z.infer<typeof NewOfficeAdminSchema>;
 
 const EditUserSchema = z.object({
   name: z.string().min(2, "Name is required."),
@@ -55,12 +50,12 @@ export default function OfficeManagementPage() {
   const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    setHeader("Office Management", "Create and manage administrator accounts for each office location.");
+    setHeader("Office Management", "Create and manage accounts for each office location.");
   }, [setHeader]);
 
-  const officeUserForm = useForm<NewOfficeUserFormData>({
-    resolver: zodResolver(NewOfficeUserSchema),
-    defaultValues: { name: "", officeLocation: "", email: "", password: "", confirmPassword: "" },
+  const officeAdminForm = useForm<NewOfficeAdminFormData>({
+    resolver: zodResolver(NewOfficeAdminSchema),
+    defaultValues: { name: "", officeLocation: "", email: "" },
   });
 
   const editUserForm = useForm<EditUserFormData>({
@@ -81,8 +76,8 @@ export default function OfficeManagementPage() {
     setIsLoading(true);
     try {
       const allUsers = await fetchAllUsers();
-      const officeAdmins = allUsers.filter(u => u.email !== SUPER_ADMIN_EMAIL && u.officeLocation);
-      setUsers(officeAdmins);
+      const officeUsers = allUsers.filter(u => u.role !== 'superAdmin' && u.officeLocation);
+      setUsers(officeUsers);
     } catch (error: any) {
       toast({ title: "Error", description: `Could not load users: ${error.message}`, variant: "destructive" });
     } finally {
@@ -98,55 +93,54 @@ export default function OfficeManagementPage() {
     const officeMap = new Map<string, UserProfile[]>();
     users.forEach(user => {
         if(user.officeLocation) {
-            if (!officeMap.has(user.officeLocation)) {
-                officeMap.set(user.officeLocation, []);
+            const loc = user.officeLocation.toLowerCase();
+            if (!officeMap.has(loc)) {
+                officeMap.set(loc, []);
             }
-            officeMap.get(user.officeLocation)!.push(user);
+            officeMap.get(loc)!.push(user);
         }
     });
     return Array.from(officeMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   }, [users]);
 
-  const handleCreateOfficeUser = async (data: NewOfficeUserFormData) => {
+  const handleCreateOfficeSetup = async (data: NewOfficeAdminFormData) => {
     setIsSubmitting(true);
     const lowerCaseOfficeLocation = data.officeLocation.toLowerCase();
     try {
-      const result = await createOfficeAdmin(data.email, data.password, data.name, data.officeLocation);
+      const result = await createOfficeAdmin(data.email, data.name, data.officeLocation);
       if (result.success) {
         
-        // Check if an officeAddress document already exists for this location
+        // Ensure officeAddress document exists
         const officeAddressesRef = collection(db, "officeAddresses");
         const q = query(officeAddressesRef, where("officeLocation", "==", lowerCaseOfficeLocation));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            // If it doesn't exist, create a new one.
-            const newOfficeAddressDocRef = doc(officeAddressesRef); // Auto-generates ID
+            const newOfficeAddressDocRef = doc(officeAddressesRef); 
             await setDoc(newOfficeAddressDocRef, {
                 officeName: `Ground Water Department, ${data.officeLocation}`,
                 officeLocation: lowerCaseOfficeLocation,
-                officeCode: data.officeLocation.substring(0, 3).toUpperCase(), // A sensible default
+                officeCode: data.officeLocation.substring(0, 3).toUpperCase(),
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
         }
         
-        // Create the office document for subcollections.
         const officeDocRef = doc(db, "offices", lowerCaseOfficeLocation);
         await setDoc(officeDocRef, {
             name: `Ground Water Department, ${data.officeLocation}`,
             createdAt: serverTimestamp(),
         }, { merge: true });
         
-        toast({ title: "User and Office Created", description: `Account for ${data.name} and office for ${data.officeLocation} created.` });
+        toast({ title: "Office Accounts Created", description: `Admin, Scientist, and Engineer accounts for ${data.officeLocation} created successfully.` });
         setIsOfficeUserDialogOpen(false);
-        officeUserForm.reset();
+        officeAdminForm.reset();
         loadUsers();
       } else {
-        throw new Error(result.error?.message || "Failed to create user.");
+        throw new Error(result.error?.message || "Failed to create users.");
       }
     } catch (error: any) {
-      toast({ title: "Error", description: `Could not create user or office: ${error.message}`, variant: "destructive" });
+      toast({ title: "Error", description: `Could not create office setup: ${error.message}`, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -170,7 +164,7 @@ export default function OfficeManagementPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <Button onClick={() => setIsOfficeUserDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Create New Office User</Button>
+        <Button onClick={() => setIsOfficeUserDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Setup New Office Accounts</Button>
       </div>
       <div className="space-y-4">
         {isLoading ? (
@@ -179,7 +173,7 @@ export default function OfficeManagementPage() {
             offices.map(([officeLocation, officeUsers]) => (
                 <Card key={officeLocation} className="bg-secondary/50">
                     <CardHeader>
-                        <CardTitle className="text-lg">{officeLocation.charAt(0).toUpperCase() + officeLocation.slice(1).toLowerCase()}</CardTitle>
+                        <CardTitle className="text-lg capitalize">{officeLocation}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <UserManagementTable
@@ -187,7 +181,7 @@ export default function OfficeManagementPage() {
                             isLoading={isLoading}
                             onDataChange={loadUsers}
                             currentUser={currentUser}
-                            isViewer={false} // Super admin is never a viewer
+                            isViewer={false}
                             updateUserApproval={updateUserApproval}
                             updateUserRole={updateUserRole}
                             deleteUserDocument={deleteUserDocument}
@@ -198,38 +192,42 @@ export default function OfficeManagementPage() {
                 </Card>
             ))
         ) : (
-              <p className="text-center text-muted-foreground py-10">No offices with assigned admins found.</p>
+              <p className="text-center text-muted-foreground py-10">No offices found.</p>
         )}
       </div>
       
       <Dialog open={isOfficeUserDialogOpen} onOpenChange={setIsOfficeUserDialogOpen}>
         <DialogContent>
           <DialogHeader className="p-6 pb-4">
-            <DialogTitle>Create New Office User</DialogTitle>
+            <DialogTitle>Setup New Office Accounts</DialogTitle>
             <DialogDescription>
-              This will create an administrator account for a specific office location.
+              This will automatically create 3 accounts for the office: Admin, Scientist, and Engineer.
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 py-4">
-            <Form {...officeUserForm}>
-              <form onSubmit={officeUserForm.handleSubmit(handleCreateOfficeUser)} className="space-y-4">
-                <FormField name="name" control={officeUserForm.control} render={({ field }) => (
+            <div className="mb-4 flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-md text-sm text-blue-800">
+                <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                <p>Default password for all auto-created accounts: <strong>123456</strong></p>
+            </div>
+            <Form {...officeAdminForm}>
+              <form onSubmit={officeAdminForm.handleSubmit(handleCreateOfficeSetup)} className="space-y-4">
+                <FormField name="name" control={officeAdminForm.control} render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl><Input placeholder="Enter user's full name" {...field} /></FormControl>
+                        <FormLabel>Admin Name</FormLabel>
+                        <FormControl><Input placeholder="Full name of the Office Admin" {...field} /></FormControl>
                         <FormMessage />
                     </FormItem>
                 )} />
                 <FormField
                   name="officeLocation"
-                  control={officeUserForm.control}
+                  control={officeAdminForm.control}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Office Location</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select an office location" />
+                            <SelectValue placeholder="Select location" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -242,20 +240,19 @@ export default function OfficeManagementPage() {
                     </FormItem>
                   )}
                 />
-                 <FormField name="email" control={officeUserForm.control} render={({ field }) => (
-                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="user@example.com" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                 <FormField name="password" control={officeUserForm.control} render={({ field }) => (
-                  <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField name="confirmPassword" control={officeUserForm.control} render={({ field }) => (
-                  <FormItem><FormLabel>Confirm Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
+                 <FormField name="email" control={officeAdminForm.control} render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Admin Email</FormLabel>
+                    <FormControl><Input type="email" placeholder="e.g. gwdklm@gmail.com" {...field} /></FormControl>
+                    <FormDescription>Scientist & Engineer emails will be generated from this prefix.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
                 )}/>
                 <DialogFooter className="pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsOfficeUserDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
                   <Button type="submit" disabled={isSubmitting}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                    Create User
+                    Create Office Accounts
                   </Button>
                 </DialogFooter>
               </form>

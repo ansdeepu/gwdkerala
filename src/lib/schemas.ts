@@ -1,7 +1,7 @@
 
 // src/lib/schemas.ts
 import { z } from 'zod';
-import { format, parse, isValid } from 'date-fns';
+import { isValid } from 'date-fns';
 
 export const optionalDateSchema = z.preprocess((val) => {
   if (val instanceof Date) return val;
@@ -102,7 +102,7 @@ export const NewUserByAdminSchema = z.object({
 });
 export type NewUserByAdminFormData = z.infer<typeof NewUserByAdminSchema>;
 
-export const userRoleOptions = ['editor', 'supervisor', 'viewer'] as const;
+export const userRoleOptions = ['superAdmin', 'admin', 'scientist', 'engineer', 'investigator', 'supervisor', 'viewer', 'editor'] as const;
 export type UserRole = typeof userRoleOptions[number];
 
 

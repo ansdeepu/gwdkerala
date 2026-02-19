@@ -18,23 +18,40 @@ service cloud.firestore {
     }
 
     function isApproved() {
-      return getUserData() != null && getUserData().isApproved == true;
+      let data = getUserData();
+      return data != null && data.isApproved == true;
     }
 
-    function isEditor() {
-      return isApproved() && getUserData().role == 'editor';
-    }
-
-    function isSupervisor() {
-      return isApproved() && getUserData().role == 'supervisor';
-    }
-
-    function isViewer() {
-      return isApproved() && getUserData().role == 'viewer';
+    function getRole() {
+      return getUserData().role;
     }
 
     function isSuperAdmin() {
-      return request.auth.token.email == "keralagwd@gmail.com";
+      return isSignedIn() && (request.auth.token.email == "keralagwd@gmail.com" || getRole() == "superAdmin");
+    }
+
+    function isSubOfficeAdmin() {
+      return isApproved() && getRole() == 'admin';
+    }
+
+    function isScientist() {
+      return isApproved() && getRole() == 'scientist';
+    }
+
+    function isEngineer() {
+      return isApproved() && getRole() == 'engineer';
+    }
+
+    function isInvestigator() {
+      return isApproved() && getRole() == 'investigator';
+    }
+
+    function isSupervisor() {
+      return isApproved() && (getRole() == 'supervisor' || getRole() == 'investigator');
+    }
+
+    function isViewer() {
+      return isApproved() && getRole() == 'viewer';
     }
 
     function isOfficeUser() {
@@ -49,35 +66,45 @@ service cloud.firestore {
 
     match /users/{userId} {
       function isManagingOwnOfficeUser() {
-        return isEditor() && request.resource.data.officeLocation.lower() == getUserData().officeLocation.lower();
+        return isSubOfficeAdmin() && request.resource.data.officeLocation.lower() == getUserData().officeLocation.lower();
       }
       
       function isReadingOwnOfficeUser() {
-          return isEditor() && resource.data.officeLocation.lower() == getUserData().officeLocation.lower();
+          return isSubOfficeAdmin() && resource.data.officeLocation.lower() == getUserData().officeLocation.lower();
       }
 
       allow get: if isSuperAdmin() || (isApproved() && request.auth.uid == userId) || isReadingOwnOfficeUser();
-      allow list: if isSuperAdmin() || isEditor();
+      allow list: if isSuperAdmin() || isSubOfficeAdmin();
       allow create: if isSuperAdmin() || isManagingOwnOfficeUser();
       allow update: if isSuperAdmin() || isManagingOwnOfficeUser() || (isApproved() && request.auth.uid == userId);
-      allow delete: if isSuperAdmin() || (isEditor() && getUserData().officeLocation.lower() == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation.lower());
+      allow delete: if isSuperAdmin() || (isSubOfficeAdmin() && getUserData().officeLocation.lower() == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation.lower());
     }
     
     match /gwdRates/{docId} {
-      allow read: if isSignedIn();
+      allow read: if isApproved();
       allow write: if isSuperAdmin();
     }
 
     match /bidders/{docId} {
-      allow read: if isSignedIn();
-      allow write: if isEditor();
+      allow read: if isApproved();
+      allow write: if isSuperAdmin() || isSubOfficeAdmin() || isEngineer();
     }
 
     match /rateDescriptions/{docId} {
-      allow read: if isSignedIn();
+      allow read: if isApproved();
       allow write: if isSuperAdmin();
     }
     
+    match /localSelfGovernments/{docId} {
+      allow read: if isApproved();
+      allow write: if isSuperAdmin();
+    }
+
+    match /officeAddresses/{docId} {
+      allow read: if isApproved();
+      allow write: if isSuperAdmin();
+    }
+
     /* ================= OFFICE SUBCOLLECTIONS ================= */
 
     match /offices/{officeId} {
@@ -87,71 +114,88 @@ service cloud.firestore {
         return isSuperAdmin() || sameOffice(officeId);
       }
       
-      function officeWrite() {
-        return isEditor() && sameOffice(officeId);
+      function canManageAll() {
+        return isSuperAdmin() || (isSubOfficeAdmin() && sameOffice(officeId));
+      }
+
+      function canEditEngineering() {
+        return canManageAll() || (isEngineer() && sameOffice(officeId));
+      }
+
+      function canEditScience() {
+        return canManageAll() || ((isScientist() || isInvestigator()) && sameOffice(officeId));
       }
 
       match /users/{userId} {
-        allow read: if isSuperAdmin() || sameOffice(officeId);
-        allow write: if isSuperAdmin() || (isEditor() && sameOffice(officeId));
+        allow read: if officeRead();
+        allow write: if canManageAll();
       }
 
       match /fileEntries/{docId} {
         allow get: if officeRead() || (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids);
         allow list: if officeRead();
-        allow write: if officeWrite();
+        // Delete restricted to admins
+        allow delete: if canManageAll();
+        // Create/Update for engineer or admin
+        allow create, update: if canEditEngineering() || canEditScience();
       }
 
       match /arsEntries/{docId} {
         allow get: if officeRead() || (isSupervisor() && resource.data.supervisorUid == request.auth.uid);
         allow list: if officeRead();
-        allow write: if officeWrite();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
       }
       
       match /pendingUpdates/{docId} {
-        allow create: if isSupervisor() || isEditor();
-        allow read, list: if isEditor() || (isSupervisor() && resource.data.submittedByUid == request.auth.uid);
-        allow update, delete: if isEditor();
+        allow create: if isSupervisor() && sameOffice(officeId);
+        allow read, list: if canManageAll() || (isSupervisor() && resource.data.submittedByUid == request.auth.uid);
+        allow update, delete: if canManageAll();
       }
       
       match /staffMembers/{docId} {
         allow read: if officeRead();
-        allow write: if officeWrite();
+        allow write: if canManageAll();
       }
 
       match /agencyApplications/{docId} {
         allow read: if officeRead();
-        allow write: if officeWrite();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
       }
 
       match /eTenders/{docId} {
         allow read: if officeRead();
-        allow write: if officeWrite();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
       }
 
       match /departmentVehicles/{docId} {
         allow read: if officeRead();
-        allow write: if officeWrite();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
       }
 
       match /hiredVehicles/{docId} {
         allow read: if officeRead();
-        allow write: if officeWrite();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
       }
 
       match /rigCompressors/{docId} {
         allow read: if officeRead();
-        allow write: if officeWrite();
+        allow delete: if canManageAll();
+        allow write: if canEditEngineering();
       }
       
       match /localSelfGovernments/{docId} {
           allow read: if officeRead();
-          allow write: if officeWrite();
+          allow write: if canManageAll();
       }
       
        match /officeAddresses/{docId} {
           allow read: if officeRead();
-          allow write: if officeWrite();
+          allow write: if canManageAll();
       }
     }
     

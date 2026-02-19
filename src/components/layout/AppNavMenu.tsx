@@ -1,3 +1,4 @@
+
 // src/components/layout/AppNavMenu.tsx
 "use client";
 
@@ -14,9 +15,8 @@ import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { Badge } from '@/components/ui/badge'; 
 import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useEffect, useState, useMemo } from 'react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { LayoutDashboard, Users, LogOut, User, Menu, KeyRound, ShieldCheck, FileText, BarChart3, Briefcase, Truck, ClipboardList, Waves, Landmark, HelpCircle, Settings, FolderOpen, Building, DollarSign, Hammer, Hourglass, ArrowUpRight, TestTube2, Droplets } from 'lucide-react';
-import { SUPER_ADMIN_EMAIL } from '@/lib/config';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { LayoutDashboard, Users, FileText, BarChart3, Briefcase, Truck, ClipboardList, Waves, Landmark, HelpCircle, Settings, FolderOpen, Building, DollarSign, Hammer, Hourglass, ArrowUpRight, TestTube2, Droplets } from 'lucide-react';
 
 
 export interface NavItem {
@@ -29,24 +29,24 @@ export interface NavItem {
 
 export const regularNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/gw-investigation', label: 'GW Investigation', icon: TestTube2 },
-  { href: '/dashboard/logging-pumping-test', label: 'Logging & Pumping Test', icon: Droplets },
-  { href: '/dashboard/file-room', label: 'Deposit Works', icon: FolderOpen },
-  { href: '/dashboard/collectors-deposit-works', label: "Collector's Deposit Works", icon: Landmark },
-  { href: '/dashboard/private-deposit-works', label: 'Private Deposit Works', icon: Building },
-  { href: '/dashboard/plan-fund-works', label: 'Plan Fund Works', icon: Landmark },
-  { href: '/dashboard/ars', label: 'ARS', icon: Waves },
-  { href: '/dashboard/agency-registration', label: 'Rig Registration', icon: ClipboardList },
-  { href: '/dashboard/e-tender', label: 'e-Tender', icon: Hammer },
-  { href: '/dashboard/vehicles', label: 'Vehicle & Rig', icon: Truck },
-  { href: '/dashboard/pending-updates', label: 'Pending Actions', icon: Hourglass, roles: ['editor'] },
-  { href: '/dashboard/reports', label: 'Reports', icon: FileText, roles: ['editor', 'viewer'] },
-  { href: '/dashboard/progress-report', label: 'Progress Reports', icon: BarChart3, roles: ['editor', 'viewer'] },
-  { href: '/dashboard/report-format-suggestion', label: 'Report Builders', icon: ClipboardList, roles: ['editor', 'viewer'] },
-  { href: '/dashboard/gwd-rates', label: 'GWD Rates', icon: DollarSign, roles: ['editor', 'viewer'] },
-  { href: '/dashboard/establishment', label: 'Establishment', icon: Briefcase, roles: ['editor', 'viewer'] },
-  { href: '/dashboard/user-management', label: 'User Management', icon: Users, roles: ['editor'] },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings, roles: ['editor', 'viewer'] },
+  { href: '/dashboard/gw-investigation', label: 'GW Investigation', icon: TestTube2, roles: ['superAdmin', 'admin', 'scientist', 'investigator', 'viewer'] },
+  { href: '/dashboard/logging-pumping-test', label: 'Logging & Pumping Test', icon: Droplets, roles: ['superAdmin', 'admin', 'scientist', 'investigator', 'viewer'] },
+  { href: '/dashboard/file-room', label: 'Deposit Works', icon: FolderOpen, roles: ['superAdmin', 'admin', 'engineer', 'supervisor', 'investigator', 'viewer'] },
+  { href: '/dashboard/collectors-deposit-works', label: "Collector's Deposit Works", icon: Landmark, roles: ['superAdmin', 'admin', 'engineer', 'viewer'] },
+  { href: '/dashboard/private-deposit-works', label: 'Private Deposit Works', icon: Building, roles: ['superAdmin', 'admin', 'engineer', 'viewer'] },
+  { href: '/dashboard/plan-fund-works', label: 'Plan Fund Works', icon: Landmark, roles: ['superAdmin', 'admin', 'engineer', 'viewer'] },
+  { href: '/dashboard/ars', label: 'ARS', icon: Waves, roles: ['superAdmin', 'admin', 'engineer', 'supervisor', 'investigator', 'viewer'] },
+  { href: '/dashboard/agency-registration', label: 'Rig Registration', icon: ClipboardList, roles: ['superAdmin', 'admin', 'engineer', 'viewer', 'supervisor', 'investigator'] },
+  { href: '/dashboard/e-tender', label: 'e-Tender', icon: Hammer, roles: ['superAdmin', 'admin', 'engineer', 'viewer'] },
+  { href: '/dashboard/vehicles', label: 'Vehicle & Rig', icon: Truck, roles: ['superAdmin', 'admin', 'engineer', 'viewer'] },
+  { href: '/dashboard/pending-updates', label: 'Pending Actions', icon: Hourglass, roles: ['superAdmin', 'admin'] },
+  { href: '/dashboard/reports', label: 'Reports', icon: FileText, roles: ['superAdmin', 'admin', 'viewer'] },
+  { href: '/dashboard/progress-report', label: 'Progress Reports', icon: BarChart3, roles: ['superAdmin', 'admin', 'viewer'] },
+  { href: '/dashboard/report-format-suggestion', label: 'Report Builders', icon: ClipboardList, roles: ['superAdmin', 'admin', 'viewer'] },
+  { href: '/dashboard/gwd-rates', label: 'GWD Rates', icon: DollarSign, roles: ['superAdmin', 'admin', 'viewer'] },
+  { href: '/dashboard/establishment', label: 'Establishment', icon: Briefcase, roles: ['superAdmin', 'admin', 'viewer'] },
+  { href: '/dashboard/user-management', label: 'User Management', icon: Users, roles: ['superAdmin', 'admin'] },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings, roles: ['superAdmin', 'admin', 'viewer'] },
   { href: '/dashboard/help', label: 'Help & About', icon: HelpCircle },
 ];
 
@@ -81,10 +81,10 @@ export default function AppNavMenu() {
   const { setIsNavigating } = usePageNavigation();
   const [pendingCount, setPendingCount] = useState(0);
 
-  const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
+  const isSuperAdmin = user?.role === 'superAdmin';
 
   useEffect(() => {
-    if (user?.role !== 'editor' || isSuperAdmin) {
+    if (!user || (user.role !== 'admin' && !isSuperAdmin)) {
         setPendingCount(0);
         return;
     }
