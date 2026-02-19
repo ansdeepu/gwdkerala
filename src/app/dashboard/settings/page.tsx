@@ -85,17 +85,41 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
 
     useEffect(() => {
         if (initialData) {
-            const dataToReset: Partial<OfficeAddressFormData> = { ...initialData };
-            
-            // Explicitly derive officeCode from officeLocation, as it's not in the DB doc.
-            if (dataToReset.officeLocation && !dataToReset.officeCode) {
-                dataToReset.officeCode = dataToReset.officeLocation.substring(0, 3).toUpperCase();
-            }
-            form.reset(dataToReset);
+            form.reset({
+                officeName: initialData.officeName ?? '',
+                officeLocation: initialData.officeLocation ?? '',
+                officeCode: initialData.officeCode ?? '',
+                officeNameMalayalam: initialData.officeNameMalayalam ?? '',
+                address: initialData.address ?? '',
+                addressMalayalam: initialData.addressMalayalam ?? '',
+                phoneNo: initialData.phoneNo ?? '',
+                email: initialData.email ?? '',
+                districtOfficerStaffId: initialData.districtOfficerStaffId ?? '',
+                districtOfficer: initialData.districtOfficer ?? '',
+                districtOfficerPhotoUrl: initialData.districtOfficerPhotoUrl ?? '',
+                gstNo: initialData.gstNo ?? '',
+                panNo: initialData.panNo ?? '',
+                stsbAccountNo: initialData.stsbAccountNo ?? '',
+                nameOfTreasury: initialData.nameOfTreasury ?? '',
+                bankAccountNo: initialData.bankAccountNo ?? '',
+                nameOfBank: initialData.nameOfBank ?? '',
+                bankBranch: initialData.bankBranch ?? '',
+                bankIfsc: initialData.bankIfsc ?? '',
+                otherDetails: initialData.otherDetails ?? '',
+            });
         } else {
              form.reset({
-                officeName: '', officeLocation: user?.officeLocation || '', officeCode: user?.officeLocation?.substring(0,3).toUpperCase() || '', officeNameMalayalam: '', address: '', addressMalayalam: '', 
-                phoneNo: '', email: '', districtOfficerStaffId: '', districtOfficer: '', districtOfficerPhotoUrl: '',
+                officeName: '', 
+                officeLocation: user?.officeLocation || '', 
+                officeCode: '',
+                officeNameMalayalam: '', 
+                address: '', 
+                addressMalayalam: '', 
+                phoneNo: '', 
+                email: '', 
+                districtOfficerStaffId: '', 
+                districtOfficer: '', 
+                districtOfficerPhotoUrl: '',
                 gstNo: '', panNo: '', otherDetails: '', stsbAccountNo: '', nameOfTreasury: '', bankAccountNo: '', nameOfBank: '', bankBranch: '', bankIfsc: ''
             });
         }
