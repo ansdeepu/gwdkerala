@@ -1,4 +1,3 @@
-
 // src/app/dashboard/settings/page.tsx
 "use client";
 
@@ -351,6 +350,33 @@ export default function SettingsPage() {
         }
         setIsListDialogOpen(true);
     };
+    
+    const deleteCollectionInBatches = async (collectionPath: string) => {
+        const q = query(collection(db, collectionPath));
+        const snapshot = await getDocs(q);
+    
+        if (snapshot.size === 0) {
+            return;
+        }
+    
+        const batchSize = 499; // Firestore batch limit is 500 operations
+        let batch = writeBatch(db);
+        let count = 0;
+    
+        for (const doc of snapshot.docs) {
+            batch.delete(doc.ref);
+            count++;
+            if (count === batchSize) {
+                await batch.commit();
+                batch = writeBatch(db);
+                count = 0;
+            }
+        }
+        
+        if (count > 0) {
+            await batch.commit();
+        }
+    };
   
     const handleDeleteOffice = async () => {
         if (!officeAddress || !canManage) return;
@@ -358,32 +384,37 @@ export default function SettingsPage() {
         const officeLocation = officeAddress.officeLocation.toLowerCase();
 
         try {
-            const batch = writeBatch(db);
+            const subcollections = [
+                'users', 'fileEntries', 'arsEntries', 'pendingUpdates', 'staffMembers',
+                'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles',
+                'rigCompressors', 'localSelfGovernments', 'officeAddresses'
+            ];
 
-            // 1. Find all users in this office to delete them
+            // Delete all documents in all subcollections
+            for (const subcollection of subcollections) {
+                const collectionPath = `offices/${officeLocation}/${subcollection}`;
+                await deleteCollectionInBatches(collectionPath);
+            }
+            
+            // Now that subcollections are empty, we can delete the main documents in a single batch
+            const finalBatch = writeBatch(db);
+            
+            // 1. Delete the main office document in /offices
+            finalBatch.delete(doc(db, "offices", officeLocation));
+            
+            // 2. Delete the office address document from /officeAddresses
+            finalBatch.delete(doc(db, 'officeAddresses', officeAddress.id));
+
+            // 3. Find and delete all users for this office from the top-level /users collection
             const usersQuery = query(collection(db, "users"), where("officeLocation", "==", officeLocation));
             const usersSnapshot = await getDocs(usersQuery);
+            usersSnapshot.forEach(userDoc => {
+                finalBatch.delete(doc(db, "users", userDoc.id));
+            });
 
-            if (!usersSnapshot.empty) {
-                usersSnapshot.forEach(userDoc => {
-                    // Delete from top-level /users
-                    batch.delete(doc(db, "users", userDoc.id));
-                    // Delete from sub-collection /offices/{officeId}/users
-                    const officeUserDocRef = doc(db, `offices/${officeLocation}/users`, userDoc.id);
-                    batch.delete(officeUserDocRef);
-                });
-            }
+            await finalBatch.commit();
 
-            // 2. Delete the main office document in /offices
-            batch.delete(doc(db, "offices", officeLocation));
-            
-            // 3. Delete the office address document from /officeAddresses
-            batch.delete(doc(db, 'officeAddresses', officeAddress.id));
-
-            await batch.commit();
-
-            toast({ title: 'Office Deleted', description: `Successfully deleted office '${officeAddress.officeLocation}' and all its users.` });
-            // The UI will update automatically due to onSnapshot listeners
+            toast({ title: 'Office Deleted', description: `Successfully deleted office '${officeAddress.officeLocation}' and all associated data.` });
         } catch (error: any) {
             toast({ title: "Error", description: `Could not delete office: ${error.message}`, variant: "destructive" });
         } finally {
