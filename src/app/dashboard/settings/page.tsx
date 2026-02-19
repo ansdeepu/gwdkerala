@@ -63,7 +63,7 @@ const officerDesignations: Designation[] = [
 ];
 
 const DetailRow = ({ label, value }: { label: string, value?: string | null }) => (
-    value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
+    (value || value === '') ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
 );
 
 const capitalize = (str?: string | null) => {
@@ -132,7 +132,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                         </FormItem> 
                                     )}/>
                                 )}
-                                <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem className={cn(!isSuperAdmin && 'md:col-span-2')}><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" readOnly={!isSuperAdmin} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
@@ -189,7 +189,7 @@ export default function SettingsPage() {
     const { setHeader } = usePageHeader();
     const { user, isLoading: authLoading } = useAuth();
     const { toast } = useToast();
-    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, selectedOffice } = useDataStore();
+    const { allLsgConstituencyMaps, allStaffMembers, allOfficeAddresses, officeAddress, selectedOffice } = useDataStore();
     const isAdmin = user?.role === 'admin';
     const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
     const canManage = isAdmin || isSuperAdmin;
@@ -225,7 +225,7 @@ export default function SettingsPage() {
             // Use the office location as the document ID for predictability
             const docId = officeLocation.toLowerCase();
 
-            const officeDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, docId);
+            const officeDocRef = doc(db, `officeAddresses`, docId);
             await setDoc(officeDocRef, payload, { merge: true });
             
             toast({ title: 'Office Address Saved', description: 'The office details have been updated.' });
@@ -238,11 +238,6 @@ export default function SettingsPage() {
     };
 
     const handleExcelImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
-        if (!officeLocation) {
-            toast({ title: "No Office Selected", description: "Please select an office before importing data.", variant: "destructive" });
-            return;
-        }
         const file = event.target.files?.[0];
         if (!file) return;
         setIsSubmitting(true);
@@ -270,7 +265,7 @@ export default function SettingsPage() {
                     }
                 });
                 if (lsgDataMap.size === 0) throw new Error("No valid data found.");
-                const collectionPath = `offices/${officeLocation.toLowerCase()}/localSelfGovernments`;
+                const collectionPath = `localSelfGovernments`;
                 const batch = writeBatch(db);
                 const existingLsgDocs = await getDocs(query(collection(db, collectionPath)));
                 const existingLsgMap = new Map(existingLsgDocs.docs.map(d => [d.data().name, d.id]));
@@ -281,7 +276,7 @@ export default function SettingsPage() {
                     batch.set(docRef, data, { merge: !!existingId });
                 });
                 await batch.commit();
-                toast({ title: 'Import Successful', description: `${lsgDataMap.size} LSGs imported/updated for ${officeLocation}.` });
+                toast({ title: 'Import Successful', description: `${lsgDataMap.size} LSGs imported/updated.` });
             } catch (error: any) {
                 toast({ title: 'Import Failed', description: error.message, variant: 'destructive' });
             } finally {
@@ -315,20 +310,15 @@ export default function SettingsPage() {
     };
 
     const handleClearAllData = async () => {
-        const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
-        if (!officeLocation) {
-            toast({ title: "No Office Selected", description: "Please select an office to clear its data.", variant: "destructive" });
-            return;
-        }
         setIsClearingData(true);
         try {
-            const collectionPath = `offices/${officeLocation.toLowerCase()}/localSelfGovernments`;
+            const collectionPath = `localSelfGovernments`;
             const q = query(collection(db, collectionPath));
             const snapshot = await getDocs(q);
             const batch = writeBatch(db);
             snapshot.docs.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
-            toast({ title: 'Data Cleared', description: `LSG data for ${officeLocation} has been deleted.` });
+            toast({ title: 'Data Cleared', description: `All LSG data has been deleted.` });
         } catch (error: any) {
             toast({ title: 'Error Clearing Data', description: error.message, variant: 'destructive' });
         } finally {
@@ -376,7 +366,7 @@ export default function SettingsPage() {
             });
 
             // Delete the office address document. This removes it from the UI.
-            const officeAddressDocRef = doc(db, `offices/${officeLocation}/officeAddresses`, officeAddress.id);
+            const officeAddressDocRef = doc(db, `officeAddresses`, officeAddress.id);
             batch.delete(officeAddressDocRef);
 
             await batch.commit();
@@ -489,15 +479,15 @@ export default function SettingsPage() {
                     <div className="flex justify-between items-center">
                         <div>
                             <CardTitle className="flex items-center gap-2"><FileUp className="h-5 w-5 text-primary" />Bulk Data Management</CardTitle>
-                            <CardDescription>Import or clear Local Self Governments and their associated Constituencies for the selected office.</CardDescription>
+                            <CardDescription>Import or clear Local Self Governments and their associated Constituencies.</CardDescription>
                         </div>
                         {canManage && (
                             <div className="flex items-center gap-2">
                             <input type="file" ref={fileInputRef} onChange={handleExcelImport} className="hidden" accept=".xlsx, .xls" />
-                            <Button onClick={() => fileInputRef.current?.click()} disabled={isSubmitting || (isSuperAdmin && !selectedOffice)}>
+                            <Button onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}>
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileUp className="mr-2 h-4 w-4" />}Import Excel</Button>
                             <Button variant="outline" onClick={handleDownloadTemplate}><Download className="mr-2 h-4 w-4"/>Template</Button>
-                            <Button variant="destructive" onClick={() => setIsClearConfirmOpen(true)} disabled={isClearingData || (isSuperAdmin && !selectedOffice)}><Trash2 className="mr-2 h-4 w-4"/>{isClearingData ? "Clearing..." : "Clear All Data"}</Button>
+                            <Button variant="destructive" onClick={() => setIsClearConfirmOpen(true)} disabled={isClearingData}><Trash2 className="mr-2 h-4 w-4"/>{isClearingData ? "Clearing..." : "Clear All Data"}</Button>
                             </div>
                         )}
                     </div>
@@ -522,7 +512,7 @@ export default function SettingsPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                    This will permanently delete ALL Local Self Governments from the <strong>{capitalize(isSuperAdmin ? selectedOffice : user?.officeLocation)}</strong> office. This cannot be undone.
+                    This will permanently delete ALL Local Self Governments. This cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -580,3 +570,5 @@ export default function SettingsPage() {
       </div>
     );
 }
+
+    
