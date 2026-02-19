@@ -111,7 +111,6 @@ export default function OfficeManagementPage() {
       const result = await createOfficeAdmin(data.email, data.name, data.officeLocation);
       if (result.success) {
         
-        // Ensure officeAddress document exists
         const officeAddressesRef = collection(db, "officeAddresses");
         const q = query(officeAddressesRef, where("officeLocation", "==", lowerCaseOfficeLocation));
         const querySnapshot = await getDocs(q);
@@ -206,10 +205,6 @@ export default function OfficeManagementPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 py-4">
-            <div className="mb-4 flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-md text-sm text-blue-800">
-                <Info className="h-4 w-4 mt-0.5 shrink-0" />
-                <p>Default password for all auto-created accounts: <strong>123456</strong></p>
-            </div>
             <Form {...officeAdminForm}>
               <form onSubmit={officeAdminForm.handleSubmit(handleCreateOfficeSetup)} className="space-y-4">
                 <FormField name="name" control={officeAdminForm.control} render={({ field }) => (
@@ -256,6 +251,10 @@ export default function OfficeManagementPage() {
                     <FormLabel>Admin Email</FormLabel>
                     <FormControl><Input type="email" placeholder="e.g. gwdklm@gmail.com" {...field} /></FormControl>
                     <FormDescription>Scientist & Engineer emails will be generated from this prefix.</FormDescription>
+                     <div className="!mt-2 flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-md text-sm text-blue-800">
+                        <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                        <p>Default password for all auto-created accounts: <strong>123456</strong></p>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}/>
