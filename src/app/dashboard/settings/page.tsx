@@ -222,9 +222,10 @@ export default function SettingsPage() {
             const payload: { [key: string]: any } = { ...data };
             Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });
 
-            const docId = officeAddress?.id || officeLocation.toLowerCase();
+            // Use the office location as the document ID for predictability
+            const docId = officeLocation.toLowerCase();
 
-            const officeDocRef = doc(db, 'officeAddresses', docId);
+            const officeDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, docId);
             await setDoc(officeDocRef, payload, { merge: true });
             
             toast({ title: 'Office Address Saved', description: 'The office details have been updated.' });
@@ -359,9 +360,6 @@ export default function SettingsPage() {
         try {
             const batch = writeBatch(db);
             
-            // Delete the office address document. This removes it from the UI.
-            batch.delete(doc(db, 'officeAddresses', officeAddress.id));
-
             // Find and delete all users for this office from the top-level /users collection
             const usersQuery = query(collection(db, "users"), where("officeLocation", "==", officeLocation));
             const usersSnapshot = await getDocs(usersQuery);
@@ -376,6 +374,10 @@ export default function SettingsPage() {
             officeUsersSnapshot.forEach(userDoc => {
                 batch.delete(userDoc.ref);
             });
+
+            // Delete the office address document. This removes it from the UI.
+            const officeAddressDocRef = doc(db, `offices/${officeLocation}/officeAddresses`, officeAddress.id);
+            batch.delete(officeAddressDocRef);
 
             await batch.commit();
 
