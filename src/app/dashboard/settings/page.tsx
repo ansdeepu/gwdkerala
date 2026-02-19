@@ -166,13 +166,12 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                   name="officeCode"
                                   control={form.control}
                                   render={({ field }) => (
-                                    <FormItem className={cn(!isSuperAdmin && 'md:col-span-2')}>
+                                    <FormItem>
                                       <FormLabel>Office Code</FormLabel>
                                       <FormControl>
                                         <Input
                                           {...field}
                                           value={field.value ?? ''}
-                                          placeholder="e.g., KLM"
                                           readOnly
                                         />
                                       </FormControl>
