@@ -28,6 +28,7 @@ const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha"
 const NewOfficeAdminSchema = z.object({
   name: z.string().min(2, "Name is required."),
   officeLocation: z.string().min(2, "Office Location is required."),
+  officeCode: z.string().min(1, "Office Code is required.").max(10, "Code is too long."),
   email: z.string().email("Invalid email address."),
 });
 type NewOfficeAdminFormData = z.infer<typeof NewOfficeAdminSchema>;
@@ -55,7 +56,7 @@ export default function OfficeManagementPage() {
 
   const officeAdminForm = useForm<NewOfficeAdminFormData>({
     resolver: zodResolver(NewOfficeAdminSchema),
-    defaultValues: { name: "", officeLocation: "", email: "" },
+    defaultValues: { name: "", officeLocation: "", officeCode: "", email: "" },
   });
 
   const editUserForm = useForm<EditUserFormData>({
@@ -120,7 +121,7 @@ export default function OfficeManagementPage() {
             await setDoc(newOfficeAddressDocRef, {
                 officeName: `Ground Water Department, ${data.officeLocation}`,
                 officeLocation: lowerCaseOfficeLocation,
-                officeCode: data.officeLocation.substring(0, 3).toUpperCase(),
+                officeCode: data.officeCode.toUpperCase(),
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
@@ -218,28 +219,38 @@ export default function OfficeManagementPage() {
                         <FormMessage />
                     </FormItem>
                 )} />
-                <FormField
-                  name="officeLocation"
-                  control={officeAdminForm.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Office Location</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select location" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {districts.map(district => (
-                            <SelectItem key={district} value={district}>{district}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                    name="officeLocation"
+                    control={officeAdminForm.control}
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Office Location</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select location" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {districts.map(district => (
+                                <SelectItem key={district} value={district}>{district}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField name="officeCode" control={officeAdminForm.control} render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Office Code</FormLabel>
+                            <FormControl><Input placeholder="e.g., KLM" {...field} /></FormControl>
+                            <FormDescription className="text-[10px]">Short code for file numbers.</FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                </div>
                  <FormField name="email" control={officeAdminForm.control} render={({ field }) => (
                   <FormItem>
                     <FormLabel>Admin Email</FormLabel>
