@@ -1,3 +1,4 @@
+
 // src/components/layout/OfficeSwitcher.tsx
 "use client";
 
@@ -7,14 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Building } from 'lucide-react';
 
 export default function OfficeSwitcher() {
-    const { selectedOffice, setSelectedOffice, allOfficeAddresses } = useDataStore();
+    const { selectedOffice, setSelectedOffice, allUsers } = useDataStore();
 
     const officeOptions = React.useMemo(() => {
-        // Use a Set to ensure unique office locations, preserving original casing.
+        // Use a Set to ensure unique office locations, derived from users who have one.
         const locations = new Set<string>();
-        allOfficeAddresses.forEach(oa => {
-            if (oa.officeLocation) {
-                locations.add(oa.officeLocation);
+        allUsers.forEach(user => {
+            if (user.officeLocation) {
+                locations.add(user.officeLocation);
             }
         });
         
@@ -25,7 +26,7 @@ export default function OfficeSwitcher() {
             }))
             .sort((a, b) => a.label.localeCompare(b.label));
             
-    }, [allOfficeAddresses]);
+    }, [allUsers]);
 
     const handleValueChange = (value: string) => {
         const newSelection = value === 'all' ? null : value;

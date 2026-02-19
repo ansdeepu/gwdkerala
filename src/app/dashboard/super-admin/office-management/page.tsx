@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/office-management/page.tsx
 "use client";
 
@@ -40,11 +41,9 @@ type EditUserFormData = z.infer<typeof EditUserSchema>;
 
 export default function OfficeManagementPage() {
   const { setHeader } = usePageHeader();
-  const { user: currentUser, fetchAllUsers, createOfficeAdmin, deleteUserDocument, updateUserApproval, updateUserRole, updateUserProfileByAdmin } = useAuth();
-  const { allStaffMembers } = useDataStore();
+  const { user: currentUser, createOfficeAdmin, deleteUserDocument, updateUserApproval, updateUserRole, updateUserProfileByAdmin } = useAuth();
+  const { allStaffMembers, allUsers, isLoading: isDataLoading } = useDataStore();
   const { toast } = useToast();
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isOfficeUserDialogOpen, setIsOfficeUserDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
@@ -72,26 +71,10 @@ export default function OfficeManagementPage() {
   }, [userToEdit, editUserForm]);
 
 
-  const loadUsers = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const allUsers = await fetchAllUsers();
-      const officeUsers = allUsers.filter(u => u.role !== 'superAdmin' && u.officeLocation);
-      setUsers(officeUsers);
-    } catch (error: any) {
-      toast({ title: "Error", description: `Could not load users: ${error.message}`, variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchAllUsers, toast]);
-
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
-
   const offices = useMemo(() => {
+    const officeUsers = allUsers.filter(u => u.role !== 'superAdmin' && u.officeLocation);
     const officeMap = new Map<string, UserProfile[]>();
-    users.forEach(user => {
+    officeUsers.forEach(user => {
         if(user.officeLocation) {
             const loc = user.officeLocation.toLowerCase();
             if (!officeMap.has(loc)) {
@@ -101,7 +84,7 @@ export default function OfficeManagementPage() {
         }
     });
     return Array.from(officeMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [users]);
+  }, [allUsers]);
 
   const handleCreateOfficeSetup = async (data: NewOfficeAdminFormData) => {
     setIsSubmitting(true);
@@ -134,7 +117,7 @@ export default function OfficeManagementPage() {
         toast({ title: "Office Accounts Created", description: `Admin, Scientist, and Engineer accounts for ${data.officeLocation} created successfully.` });
         setIsOfficeUserDialogOpen(false);
         officeAdminForm.reset();
-        loadUsers();
+        // Data will refresh automatically via onSnapshot in useDataStore
       } else {
         throw new Error(result.error?.message || "Failed to create users.");
       }
@@ -152,7 +135,7 @@ export default function OfficeManagementPage() {
         await updateUserProfileByAdmin(userToEdit.uid, { name: data.name, officeLocation: data.officeLocation });
         toast({ title: "User Updated", description: `Profile for ${data.name} has been updated.` });
         setUserToEdit(null);
-        loadUsers();
+        // Data will refresh automatically via onSnapshot
     } catch (error: any) {
         toast({ title: "Update Failed", description: error.message, variant: "destructive" });
     } finally {
@@ -166,7 +149,7 @@ export default function OfficeManagementPage() {
         <Button onClick={() => setIsOfficeUserDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Setup New Office Accounts</Button>
       </div>
       <div className="space-y-4">
-        {isLoading ? (
+        {isDataLoading ? (
               <div className="flex items-center justify-center py-10"><Loader2 className="h-8 w-8 animate-spin"/></div>
         ) : offices.length > 0 ? (
             offices.map(([officeLocation, officeUsers]) => (
@@ -177,8 +160,8 @@ export default function OfficeManagementPage() {
                     <CardContent>
                         <UserManagementTable
                             users={officeUsers}
-                            isLoading={isLoading}
-                            onDataChange={loadUsers}
+                            isLoading={isDataLoading}
+                            onDataChange={() => {}} // No need to manually reload
                             currentUser={currentUser}
                             isViewer={false}
                             updateUserApproval={updateUserApproval}

@@ -109,13 +109,13 @@ export interface OfficeAddress {
   districtOfficerPhotoUrl?: string;
   gstNo?: string;
   panNo?: string;
+  otherDetails?: string;
   stsbAccountNo?: string;
   nameOfTreasury?: string;
   bankAccountNo?: string;
   nameOfBank?: string;
   bankBranch?: string;
   bankIfsc?: string;
-  otherDetails?: string;
 }
 
 const COLLECTIONS = {
@@ -138,8 +138,9 @@ interface DataStoreContextType {
     allDepartmentVehicles: DepartmentVehicle[];
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
-    allOfficeAddresses: OfficeAddress[]; // Master list of all offices
-    officeAddress: OfficeAddress | null; // The currently selected/active office
+    allOfficeAddresses: OfficeAddress[];
+    allUsers: UserProfile[];
+    officeAddress: OfficeAddress | null;
     isLoading: boolean;
     refetchRateDescriptions: () => void;
     deleteArsEntry: (id: string) => Promise<void>;
@@ -170,17 +171,18 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allHiredVehicles, setAllHiredVehicles] = useState<HiredVehicle[]>([]);
     const [allRigCompressors, setAllRigCompressors] = useState<RigCompressor[]>([]);
     const [allOfficeAddresses, setAllOfficeAddresses] = useState<OfficeAddress[]>([]);
+    const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
     const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null);
 
     const [loadingStates, setLoadingStates] = useState({
         files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
-        departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true,
+        departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true, users: true,
     });
     
     const refetchRateDescriptions = useCallback(() => setLoadingStates(prev => ({...prev, rates: true})), []);
 
      const deleteArsEntry = useCallback(async (id: string) => {
-        if (!user || user.role !== 'admin') {
+        if (!user || user.role !== 'editor') {
             toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
             return;
         }
@@ -195,14 +197,19 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setAllLsgConstituencyMaps([]);
             setAllRateDescriptions(defaultRateDescriptions);
             setAllBidders([]);
-            setLoadingStates(prev => ({ ...prev, lsg: false, rates: false, bidders: false }));
+            setAllOfficeAddresses([]);
+            setAllUsers([]);
+            setLoadingStates(prev => ({ ...prev, lsg: false, rates: false, bidders: false, officeAddress: false, users: false }));
             return;
         }
+        
+        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
 
         const globalCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, queryFn: () => any }> = {
             localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', queryFn: () => query(collection(db, 'localSelfGovernments')) },
             rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
             bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
+            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) }
         };
 
         const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey, queryFn }]) => {
@@ -222,6 +229,24 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
             });
         });
+        
+        if (isSuperAdminUser) {
+            setLoadingStates(prev => ({...prev, users: true}));
+            const usersQuery = query(collection(db, 'users'));
+            const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
+                const usersData = snapshot.docs.map(doc => processFirestoreDoc(doc) as UserProfile);
+                setAllUsers(usersData);
+                setLoadingStates(prev => ({...prev, users: false}));
+            }, (error) => {
+                console.error("Error fetching all users for DataStore:", error);
+                setLoadingStates(prev => ({...prev, users: false}));
+            });
+            unsubscribes.push(unsubscribeUsers);
+        } else {
+             setAllUsers([]);
+             setLoadingStates(prev => ({...prev, users: false}));
+        }
+
 
         return () => unsubscribes.forEach(unsub => unsub());
     }, [user]);
@@ -236,13 +261,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     
         if (isSuperAdminUser) {
             if (selectedOffice) {
-                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
+                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
                  setOfficeAddress(foundOffice);
             } else {
                 setOfficeAddress(null); // 'All Offices' is selected
             }
         } else if (user.officeLocation) {
-            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation && oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
+            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
             setOfficeAddress(foundOffice);
         }
     }, [user, selectedOffice, allOfficeAddresses]);
@@ -253,8 +278,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         if (!user) {
             setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
             setAllE_tenders([]); setAllDepartmentVehicles([]); setAllHiredVehicles([]); setAllRigCompressors([]);
-            setAllOfficeAddresses([]);
-            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, officeAddress: false }));
+            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false }));
             return;
         }
         
@@ -269,8 +293,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', needsSpecialSort: true },
             departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
-            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
-            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress' },
+            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' }
         };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
@@ -292,7 +315,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 const data = snapshot.docs.map(doc => {
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
-                    
                     if (isSuperAdminUser && !officeToQuery) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
@@ -403,6 +425,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
             allOfficeAddresses,
+            allUsers,
             officeAddress, 
             isLoading,
             refetchRateDescriptions,
