@@ -37,7 +37,7 @@ const db = getFirestore(app);
 const OfficeAddressSchema = z.object({
   officeName: z.string().min(1, "Office Name is required."),
   officeLocation: z.string().min(1, "Office Location is required."),
-  officeCode: z.string().min(1, "Office Code is required."),
+  officeCode: z.string().min(1, "Office Code is required.").max(10, "Code is too long."),
   officeNameMalayalam: z.string().optional(),
   address: z.string().optional(),
   addressMalayalam: z.string().optional(),
@@ -387,7 +387,7 @@ export default function SettingsPage() {
             const subcollections = [
                 'users', 'fileEntries', 'arsEntries', 'pendingUpdates', 'staffMembers',
                 'agencyApplications', 'eTenders', 'departmentVehicles', 'hiredVehicles',
-                'rigCompressors', 'localSelfGovernments', 'officeAddresses'
+                'rigCompressors', 'localSelfGovernments'
             ];
 
             // Delete all documents in all subcollections
@@ -396,16 +396,12 @@ export default function SettingsPage() {
                 await deleteCollectionInBatches(collectionPath);
             }
             
-            // Now that subcollections are empty, we can delete the main documents in a single batch
             const finalBatch = writeBatch(db);
             
-            // 1. Delete the main office document in /offices
-            finalBatch.delete(doc(db, "offices", officeLocation));
-            
-            // 2. Delete the office address document from /officeAddresses
+            // Delete the office address document from /officeAddresses
             finalBatch.delete(doc(db, 'officeAddresses', officeAddress.id));
 
-            // 3. Find and delete all users for this office from the top-level /users collection
+            // Find and delete all users for this office from the top-level /users collection
             const usersQuery = query(collection(db, "users"), where("officeLocation", "==", officeLocation));
             const usersSnapshot = await getDocs(usersQuery);
             usersSnapshot.forEach(userDoc => {
@@ -414,9 +410,9 @@ export default function SettingsPage() {
 
             await finalBatch.commit();
 
-            toast({ title: 'Office Deleted', description: `Successfully deleted office '${officeAddress.officeLocation}' and all associated data.` });
+            toast({ title: 'Office Data Cleared', description: `Successfully cleared users and data for office '${officeAddress.officeLocation}'. The core office record is preserved.` });
         } catch (error: any) {
-            toast({ title: "Error", description: `Could not delete office: ${error.message}`, variant: "destructive" });
+            toast({ title: "Error", description: `Could not clear office data: ${error.message}`, variant: "destructive" });
         } finally {
             setIsDeleting(false);
             setIsDeleteConfirmOpen(false);
@@ -562,13 +558,13 @@ export default function SettingsPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently delete the office address details and all associated users for <strong>{officeAddress?.officeLocation}</strong>. This action cannot be undone.
+                        This will permanently clear all users and data for <strong>{officeAddress?.officeLocation}</strong>. The core office record will remain, but all associated data will be deleted. This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDeleteOffice} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Delete"}
+                        {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Clear Office Data"}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
