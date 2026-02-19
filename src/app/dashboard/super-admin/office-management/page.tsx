@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -93,12 +94,12 @@ export default function OfficeManagementPage() {
       const result = await createOfficeAdmin(data.email, data.name, data.officeLocation);
       if (result.success) {
         
-        const officeAddressesRef = collection(db, "officeAddresses");
-        const q = query(officeAddressesRef, where("officeLocation", "==", lowerCaseOfficeLocation));
+        const officeCollectionPath = `offices/${lowerCaseOfficeLocation}/officeAddresses`;
+        const q = query(collection(db, officeCollectionPath));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            const newOfficeAddressDocRef = doc(officeAddressesRef); 
+            const newOfficeAddressDocRef = doc(collection(db, officeCollectionPath)); 
             await setDoc(newOfficeAddressDocRef, {
                 officeName: `Ground Water Department, ${data.officeLocation}`,
                 officeLocation: lowerCaseOfficeLocation,
@@ -264,7 +265,7 @@ export default function OfficeManagementPage() {
                 </DialogHeader>
                 <Form {...editUserForm}>
                     <form onSubmit={editUserForm.handleSubmit(handleUpdateUser)}>
-                        <div className="space-y-4 px-6 py-4">
+                        <div className="space-y-6 px-6 py-4">
                             <FormField name="name" control={editUserForm.control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Name</FormLabel>
