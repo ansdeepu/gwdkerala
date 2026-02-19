@@ -32,6 +32,7 @@ const LogIn = (props: React.SVGProps<SVGSVGElement>) => (
 export default function LoginForm() {
   const { login, isAuthenticating } = useAuth();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginSchema),
@@ -42,11 +43,15 @@ export default function LoginForm() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
+    if (isSubmitting) return; // Prevent double-clicks
+    setIsSubmitting(true);
+
     const { success, error } = await login(data.email, data.password);
 
     if (success) {
-      // On success, we don't need to do anything.
-      // The redirect from the parent page will unmount this component.
+      // On success, we don't need to do anything else.
+      // The redirect from the parent login page will unmount this component.
+      // The `isAuthenticating` state from useAuth will keep the button disabled.
       return;
     }
     
@@ -60,6 +65,8 @@ export default function LoginForm() {
       description: errorMessage,
       variant: "destructive",
     });
+
+    setIsSubmitting(false); // Re-enable button only on failure
   };
 
   return (
@@ -82,7 +89,7 @@ export default function LoginForm() {
                       type="email"
                       placeholder="user@department.gov.in"
                       {...field}
-                      disabled={isAuthenticating}
+                      disabled={isSubmitting || isAuthenticating}
                     />
                   </FormControl>
                   <FormMessage />
@@ -100,20 +107,20 @@ export default function LoginForm() {
                       type="password"
                       placeholder="••••••••"
                       {...field}
-                      disabled={isAuthenticating}
+                      disabled={isSubmitting || isAuthenticating}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isAuthenticating}>
-              {isAuthenticating ? (
+            <Button type="submit" className="w-full" disabled={isSubmitting || isAuthenticating}>
+              {(isSubmitting || isAuthenticating) ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <LogIn className="mr-2 h-4 w-4" />
               )}
-              {isAuthenticating ? "Verifying Account..." : "Sign In"}
+              {(isSubmitting || isAuthenticating) ? "Verifying Account..." : "Sign In"}
             </Button>
           </form>
         </Form>
