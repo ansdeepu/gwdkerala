@@ -67,6 +67,11 @@ const DetailRow = ({ label, value }: { label: string, value?: string | null }) =
     value ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
 );
 
+const capitalize = (str?: string | null) => {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+
 const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialData, staffMembers }: { isOpen: boolean; onClose: () => void; onSubmit: (data: OfficeAddressFormData) => void; isSubmitting: boolean; initialData?: OfficeAddress | null; staffMembers: StaffMember[]; }) => {
     const { user } = useAuth();
     const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
@@ -119,9 +124,15 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                         <ScrollArea className="h-full px-6 py-4">
                             <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {isSuperAdmin && (
-                                        <FormField name="officeLocation" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Location</FormLabel><FormControl><Input {...field} placeholder="e.g., Kollam" /></FormControl><FormMessage /></FormItem> )}/>
-                                    )}
+                                {isSuperAdmin && (
+                                    <FormField name="officeLocation" control={form.control} render={({ field }) => ( 
+                                        <FormItem>
+                                            <FormLabel>Office Location</FormLabel>
+                                            <FormControl><Input {...field} placeholder="e.g., Kollam" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem> 
+                                    )}/>
+                                )}
                                 <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
@@ -137,8 +148,25 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                 <FormField name="gstNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>GST No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="panNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>PAN No.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                             </div>
-                            <Card className="mt-4"><CardHeader className="p-4"><CardTitle className="text-base">Special Treasury Savings Account</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4"><FormField name="stsbAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/><FormField name="nameOfTreasury" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Treasury</FormLabel><FormControl><Input {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem> )}/></CardContent></Card>
-                            <Card className="mt-4"><CardHeader className="p-4"><CardTitle className="text-base">Bank Account</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4"><FormField name="bankAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/><FormField name="nameOfBank" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Bank</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/><FormField name="bankBranch" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Branch</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/><FormField name="bankIfsc" control={form.control} render={({ field }) => ( <FormItem><FormLabel>IFSC</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/></CardContent></Card>
+                            <Card className="mt-4">
+                                <CardHeader className="p-4">
+                                    <CardTitle className="text-base">Special Treasury Savings Account</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                                    <FormField name="stsbAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                    <FormField name="nameOfTreasury" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Treasury</FormLabel><FormControl><Input {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem> )}/>
+                                </CardContent>
+                            </Card>
+                            <Card className="mt-4">
+                                <CardHeader className="p-4">
+                                    <CardTitle className="text-base">Bank Account</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+                                    <FormField name="bankAccountNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                    <FormField name="nameOfBank" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Name of Bank</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/><FormField name="bankBranch" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Branch</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                    <FormField name="bankIfsc" control={form.control} render={({ field }) => ( <FormItem><FormLabel>IFSC</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                </CardContent>
+                            </Card>
                             <FormField name="otherDetails" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Other Details</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
                             </div>
                         </ScrollArea>
@@ -340,7 +368,7 @@ export default function SettingsPage() {
         return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 
-    if (user?.role === 'viewer') {
+    if (user?.role === 'viewer' || user?.role === 'supervisor' || user?.role === 'investigator') {
         return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><div className="space-y-6 p-6 text-center"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-2xl font-bold">Access Denied</h1><p className="text-muted-foreground">You do not have permission to view this page.</p></div></div>;
     }
   
@@ -349,7 +377,7 @@ export default function SettingsPage() {
         {isSuperAdmin && (
             <Card className="mb-6">
                 <CardHeader><CardTitle className="flex items-center gap-2 text-primary"><MapPin className="h-5 w-5"/>Current Office Location</CardTitle></CardHeader>
-                <CardContent><p className="text-3xl font-bold">{selectedOffice || 'All Offices'}</p><p className="text-sm text-muted-foreground">This is the office you are currently viewing data for.</p></CardContent>
+                <CardContent><p className="text-3xl font-bold">{capitalize(selectedOffice) || 'All Offices'}</p><p className="text-sm text-muted-foreground">This is the office you are currently viewing data for.</p></CardContent>
             </Card>
         )}
         
@@ -359,7 +387,7 @@ export default function SettingsPage() {
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle className="flex items-center gap-2"><Building className="h-5 w-5 text-primary" />Office Details</CardTitle>
-                            <CardDescription>Manage contact and official details for the <span className="font-semibold text-primary">{isSuperAdmin && officeAddress ? officeAddress.officeLocation : user?.officeLocation || 'department'}</span> office.</CardDescription>
+                            <CardDescription>Manage contact and official details for the <span className="font-semibold text-primary">{capitalize(isSuperAdmin && officeAddress ? officeAddress.officeLocation : user?.officeLocation || 'department')}</span> office.</CardDescription>
                         </div>
                         {canManage && (
                             <div className="flex items-center gap-2">
@@ -374,7 +402,7 @@ export default function SettingsPage() {
                         <div className="space-y-3 p-4 border rounded-lg bg-secondary/30">
                             <div className="flex flex-col md:flex-row md:items-start gap-4">
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName}, <span className="text-primary">{officeAddress.officeLocation}</span></h3>
+                                    <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName}, <span className="text-primary">{capitalize(officeAddress.officeLocation)}</span></h3>
                                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.address}</p>
                                     {officeAddress.officeNameMalayalam && <p className="text-md text-muted-foreground mt-2 whitespace-pre-wrap">{officeAddress.officeNameMalayalam}</p>}
                                     {officeAddress.addressMalayalam && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.addressMalayalam}</p>}
@@ -414,7 +442,7 @@ export default function SettingsPage() {
                             {isSuperAdmin && !selectedOffice ? (
                                 <p>Select a specific office to view or edit its details.</p>
                             ) : (
-                                <><p>No office details have been configured for {user?.officeLocation || 'your location'} yet.</p>{canManage && <p className="text-sm mt-1">Click "Add Details" to set them up.</p>}</>
+                                <><p>No office details have been configured for {capitalize(user?.officeLocation || 'your location')} yet.</p>{canManage && <p className="text-sm mt-1">Click "Add Details" to set them up.</p>}</>
                             )}
                         </div>
                     )}
@@ -424,7 +452,10 @@ export default function SettingsPage() {
             <Card className="lg:col-span-2">
                 <CardHeader>
                     <div className="flex justify-between items-center">
-                        <CardTitle className="flex items-center gap-2"><FileUp className="h-5 w-5 text-primary" />Bulk Data Management</CardTitle>
+                        <div>
+                            <CardTitle className="flex items-center gap-2"><FileUp className="h-5 w-5 text-primary" />Bulk Data Management</CardTitle>
+                            <CardDescription>Import or clear Local Self Governments and their associated Constituencies for the selected office.</CardDescription>
+                        </div>
                         {canManage && (
                             <div className="flex items-center gap-2">
                             <input type="file" ref={fileInputRef} onChange={handleExcelImport} className="hidden" accept=".xlsx, .xls" />
@@ -435,7 +466,6 @@ export default function SettingsPage() {
                             </div>
                         )}
                     </div>
-                    <CardDescription>Import or clear Local Self Governments and their associated Constituencies for the selected office.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <button onClick={() => handleCountClick('lsg')} disabled={allLsgConstituencyMaps.length === 0} className="p-4 border rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><h4 className="text-sm font-medium text-muted-foreground">Local Self Governments</h4><p className="text-4xl font-bold text-blue-600">{allLsgConstituencyMaps.length}</p></button>
@@ -457,7 +487,7 @@ export default function SettingsPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                    This will permanently delete ALL Local Self Governments from the <strong>{isSuperAdmin ? selectedOffice : user?.officeLocation}</strong> office. This cannot be undone.
+                    This will permanently delete ALL Local Self Governments from the <strong>{capitalize(isSuperAdmin ? selectedOffice : user?.officeLocation)}</strong> office. This cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
