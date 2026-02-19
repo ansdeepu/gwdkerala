@@ -61,23 +61,19 @@ const toDateOrNull = (value: any): Date | null => {
     if (typeof value === 'string') {
         const trimmed = value.trim();
         if (trimmed === '') return null;
-        // Attempt to parse various common date formats
         const formats = [
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", // ISO with milliseconds
-            "yyyy-MM-dd'T'HH:mm:ss'Z'",     // ISO without milliseconds
-            "yyyy-MM-dd'T'HH:mm",           // Datetime-local input
-            "yyyy-MM-dd",                   // Date input
-            'dd/MM/yyyy',                   // Common display format
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm",
+            "yyyy-MM-dd",
+            'dd/MM/yyyy',
         ];
         for (const fmt of formats) {
             try {
                 const parsedDate = parse(trimmed, fmt, new Date());
                 if (isValid(parsedDate)) return parsedDate;
-            } catch (e) {
-                // continue
-            }
+            } catch (e) {}
         }
-        // Final fallback for other string formats Date constructor might handle
         try {
             const fallback = new Date(trimmed);
             if (!isNaN(fallback.getTime())) return fallback;
@@ -113,6 +109,12 @@ export interface OfficeAddress {
   gstNo?: string;
   panNo?: string;
   otherDetails?: string;
+  stsbAccountNo?: string;
+  nameOfTreasury?: string;
+  bankAccountNo?: string;
+  nameOfBank?: string;
+  bankBranch?: string;
+  bankIfsc?: string;
 }
 
 const COLLECTIONS = {
@@ -124,6 +126,7 @@ const COLLECTIONS = {
 interface DataStoreContextType {
     selectedOffice: string | null;
     setSelectedOffice: (office: string | null) => void;
+    allUsers: UserProfile[];
     allFileEntries: DataEntryFormData[];
     allArsEntries: ArsEntry[];
     allStaffMembers: StaffMember[];
@@ -135,8 +138,8 @@ interface DataStoreContextType {
     allDepartmentVehicles: DepartmentVehicle[];
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
-    allOfficeAddresses: OfficeAddress[]; // Master list of all offices
-    officeAddress: OfficeAddress | null; // The currently selected/active office
+    allOfficeAddresses: OfficeAddress[];
+    officeAddress: OfficeAddress | null;
     isLoading: boolean;
     refetchRateDescriptions: () => void;
     deleteArsEntry: (id: string) => Promise<void>;
@@ -155,6 +158,7 @@ const DataStoreContext = createContext<DataStoreContextType | undefined>(undefin
 
 export function DataStoreProvider({ children, user }: { children: ReactNode, user: UserProfile | null }) {
     const [selectedOffice, setSelectedOffice] = useState<string | null>(null);
+    const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
     const [allFileEntries, setAllFileEntries] = useState<DataEntryFormData[]>([]);
     const [allArsEntries, setAllArsEntries] = useState<ArsEntry[]>([]);
     const [allStaffMembers, setAllStaffMembers] = useState<StaffMember[]>([]);
@@ -170,7 +174,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null);
 
     const [loadingStates, setLoadingStates] = useState({
-        files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
+        users: true, files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
         departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true,
     });
     
@@ -189,19 +193,15 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     // Effect for GLOBAL (non-office-specific) data
     useEffect(() => {
         if (!user) {
-            setAllLsgConstituencyMaps([]);
             setAllRateDescriptions(defaultRateDescriptions);
             setAllBidders([]);
-            setAllOfficeAddresses([]);
-            setLoadingStates(prev => ({ ...prev, lsg: false, rates: false, bidders: false, officeAddress: false }));
+            setLoadingStates(prev => ({ ...prev, rates: false, bidders: false }));
             return;
         }
-
+        
         const globalCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, queryFn: () => any }> = {
-            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', queryFn: () => query(collection(db, 'localSelfGovernments')) },
             rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
             bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
-            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) }
         };
 
         const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey, queryFn }]) => {
@@ -250,9 +250,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     // Effect for OFFICE-SCOPED data
     useEffect(() => {
         if (!user) {
-            setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
-            setAllE_tenders([]); setAllDepartmentVehicles([]); setAllHiredVehicles([]); setAllRigCompressors([]);
-            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false }));
+            setAllUsers([]); setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); 
+            setAllAgencyApplications([]); setAllE_tenders([]); setAllDepartmentVehicles([]); 
+            setAllHiredVehicles([]); setAllRigCompressors([]); setAllLsgConstituencyMaps([]);
+            setAllOfficeAddresses([]);
+            setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, officeAddress: false }));
             return;
         }
         
@@ -260,6 +262,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         const officeToQuery = isSuperAdminUser ? selectedOffice : user.officeLocation;
 
         const officeScopedCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, needsSpecialSort?: boolean }> = {
+            users: { setter: setAllUsers, loaderKey: 'users' },
             fileEntries: { setter: setAllFileEntries, loaderKey: 'files' },
             arsEntries: { setter: setAllArsEntries, loaderKey: 'ars' },
             staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff', needsSpecialSort: true },
@@ -267,7 +270,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             eTenders: { setter: setAllE_tenders, loaderKey: 'eTenders', needsSpecialSort: true },
             departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
-            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' }
+            rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
+            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
+            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress' },
         };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
@@ -396,6 +401,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     return (
         <DataStoreContext.Provider value={{
             selectedOffice, setSelectedOffice,
+            allUsers,
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
             allOfficeAddresses,

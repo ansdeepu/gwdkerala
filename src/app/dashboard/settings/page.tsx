@@ -132,7 +132,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                         </FormItem> 
                                     )}/>
                                 )}
-                                <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem className={cn(!isSuperAdmin && 'md:col-span-2')}><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" readOnly={true} /></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField name="officeCode" control={form.control} render={({ field }) => ( <FormItem className={cn(!isSuperAdmin && 'md:col-span-2')}><FormLabel>Office Code</FormLabel><FormControl><Input {...field} placeholder="e.g., KLM" readOnly /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                                 <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]"/></FormControl><FormMessage /></FormItem> )}/>
@@ -190,7 +190,7 @@ export default function SettingsPage() {
     const { setHeader } = usePageHeader();
     const { user, isLoading: authLoading } = useAuth();
     const { toast } = useToast();
-    const { allLsgConstituencyMaps, allStaffMembers, allOfficeAddresses, officeAddress, selectedOffice } = useDataStore();
+    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, selectedOffice } = useDataStore();
     const isAdmin = user?.role === 'admin';
     const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
     const canManage = isAdmin || isSuperAdmin;
@@ -223,14 +223,25 @@ export default function SettingsPage() {
             const payload: { [key: string]: any } = { ...data };
             Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });
 
-            const existingOfficeDoc = allOfficeAddresses.find(addr => addr.officeLocation === officeLocation);
-            const docId = existingOfficeDoc?.id;
+            const collectionPath = `offices/${officeLocation.toLowerCase()}/officeAddresses`;
             
-            const officeDocRef = docId 
-                ? doc(db, 'officeAddresses', docId) 
-                : doc(collection(db, 'officeAddresses'));
-
-            await setDoc(officeDocRef, payload, { merge: true });
+            // Check if a document already exists
+            const q = query(collection(db, collectionPath));
+            const querySnapshot = await getDocs(q);
+            
+            let docRef;
+            if (querySnapshot.empty) {
+                // No existing doc, create a new one
+                docRef = doc(collection(db, collectionPath));
+                payload.createdAt = serverTimestamp();
+            } else {
+                // Doc exists, get its ref to update
+                docRef = querySnapshot.docs[0].ref;
+            }
+            
+            payload.updatedAt = serverTimestamp();
+            
+            await setDoc(docRef, payload, { merge: true });
             
             toast({ title: 'Office Address Saved', description: 'The office details have been updated.' });
             setIsOfficeDialogOpen(false);
@@ -353,20 +364,20 @@ export default function SettingsPage() {
         const officeLocation = officeAddress.officeLocation.toLowerCase();
 
         try {
-            const batch = writeBatch(db);
-            
-            // Delete Users from global and sub-collection
+            // Delete Users
             const officeUsersQuery = query(collection(db, `offices/${officeLocation}/users`));
             const officeUsersSnapshot = await getDocs(officeUsersQuery);
+            const deleteUsersBatch = writeBatch(db);
             officeUsersSnapshot.forEach(userDoc => {
-                batch.delete(userDoc.ref);
-                batch.delete(doc(db, "users", userDoc.id));
+                deleteUsersBatch.delete(userDoc.ref); // Delete from subcollection
+                deleteUsersBatch.delete(doc(db, "users", userDoc.id)); // Delete from global collection
             });
-
-            // Delete the office address document from the top-level collection
-            batch.delete(doc(db, "officeAddresses", officeAddress.id));
+            await deleteUsersBatch.commit();
             
-            await batch.commit();
+            // Delete Office Address
+            if(officeAddress.id) {
+                await deleteDoc(doc(db, `offices/${officeLocation}/officeAddresses`, officeAddress.id));
+            }
 
             toast({ title: 'Office Deactivated', description: `Successfully deactivated office '${officeAddress.officeLocation}'. User accounts are removed.` });
         } catch (error: any) {
@@ -523,7 +534,7 @@ export default function SettingsPage() {
         <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
                         This will deactivate the office <strong>{officeAddress?.officeLocation}</strong> by removing all of its users. The office's data will be preserved but inaccessible until new users are created for it.
                     </AlertDialogDescription>
