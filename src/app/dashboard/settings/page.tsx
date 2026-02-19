@@ -379,7 +379,7 @@ export default function SettingsPage() {
 
             await batch.commit();
 
-            toast({ title: 'Office Deactivated', description: `Successfully deactivated office '${officeAddress.officeLocation}'. All user accounts have been removed, but the data is preserved.` });
+            toast({ title: 'Office Deactivated', description: `Successfully deactivated office '${officeAddress.officeLocation}'. All data is preserved, but user accounts are removed.` });
         } catch (error: any) {
             toast({ title: "Error", description: `Could not deactivate office: ${error.message}`, variant: "destructive" });
         } finally {
@@ -446,20 +446,28 @@ export default function SettingsPage() {
                                 <DetailRow label="GST No." value={officeAddress.gstNo} />
                                 <DetailRow label="PAN No." value={officeAddress.panNo} />
                             </div>
-                            <Separator className="my-4"/>
-                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Special Treasury Savings Account</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                                <DetailRow label="STSB Account No." value={officeAddress.stsbAccountNo} />
-                                <DetailRow label="Name of Treasury" value={officeAddress.nameOfTreasury} />
-                            </div>
-                            <Separator className="my-4"/>
-                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Bank Account</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                                <DetailRow label="Bank Account No." value={officeAddress.bankAccountNo} />
-                                <DetailRow label="Name of Bank" value={officeAddress.nameOfBank} />
-                                <DetailRow label="Branch" value={officeAddress.bankBranch} />
-                                <DetailRow label="IFSC" value={officeAddress.bankIfsc} />
-                            </div>
+                             {(officeAddress.stsbAccountNo || officeAddress.nameOfTreasury) && (
+                                <>
+                                    <Separator className="my-4"/>
+                                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">Special Treasury Savings Account</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                                        <DetailRow label="STSB Account No." value={officeAddress.stsbAccountNo} />
+                                        <DetailRow label="Name of Treasury" value={officeAddress.nameOfTreasury} />
+                                    </div>
+                                </>
+                            )}
+                            {(officeAddress.bankAccountNo || officeAddress.nameOfBank || officeAddress.bankBranch || officeAddress.bankIfsc) && (
+                                <>
+                                    <Separator className="my-4"/>
+                                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">Bank Account</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                                        <DetailRow label="Bank Account No." value={officeAddress.bankAccountNo} />
+                                        <DetailRow label="Name of Bank" value={officeAddress.nameOfBank} />
+                                        <DetailRow label="Branch" value={officeAddress.bankBranch} />
+                                        <DetailRow label="IFSC" value={officeAddress.bankIfsc} />
+                                    </div>
+                                </>
+                            )}
                             {officeAddress.otherDetails && <div className="pt-3 border-t"><p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.otherDetails}</p></div>}
                         </div>
                     ) : (
@@ -528,7 +536,7 @@ export default function SettingsPage() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently deactivate the office <strong>{officeAddress?.officeLocation}</strong> by removing all of its users and hiding it from the list. The office's data will be preserved but inaccessible. This action cannot be undone.
+                        This will deactivate the office <strong>{officeAddress?.officeLocation}</strong> by removing all of its users. The office's data will be preserved but inaccessible until new users are created for it.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
