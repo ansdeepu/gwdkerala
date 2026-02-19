@@ -1,3 +1,4 @@
+
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -179,7 +180,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const refetchRateDescriptions = useCallback(() => setLoadingStates(prev => ({...prev, rates: true})), []);
 
      const deleteArsEntry = useCallback(async (id: string) => {
-        if (!user || user.role !== 'editor') {
+        if (!user || user.role !== 'admin') {
             toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
             return;
         }
@@ -191,13 +192,15 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     // Effect for GLOBAL (non-office-specific) data
     useEffect(() => {
         if (!user) {
+            setAllLsgConstituencyMaps([]);
             setAllRateDescriptions(defaultRateDescriptions);
             setAllBidders([]);
-            setLoadingStates(prev => ({ ...prev, rates: false, bidders: false }));
+            setLoadingStates(prev => ({ ...prev, lsg: false, rates: false, bidders: false }));
             return;
         }
 
         const globalCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, queryFn: () => any }> = {
+            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg', queryFn: () => query(collection(db, 'localSelfGovernments')) },
             rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
             bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
         };
@@ -249,10 +252,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     useEffect(() => {
         if (!user) {
             setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); setAllAgencyApplications([]);
-            setAllLsgConstituencyMaps([]);
             setAllE_tenders([]); setAllDepartmentVehicles([]); setAllHiredVehicles([]); setAllRigCompressors([]);
             setAllOfficeAddresses([]);
-            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, lsg: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, officeAddress: false }));
+            setLoadingStates(prev => ({ ...prev, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, officeAddress: false }));
             return;
         }
         
@@ -268,7 +270,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             departmentVehicles: { setter: setAllDepartmentVehicles, loaderKey: 'departmentVehicles' },
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
             rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
-            localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
             officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress' },
         };
 
@@ -292,19 +293,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
                     
-                    // This is the fix: Ensure officeLocation is attached to the data object
-                    if (collectionName === 'officeAddresses' || collectionName === 'localSelfGovernments') {
-                        if (isSuperAdminUser && !officeToQuery) { // All offices
-                            const pathSegments = doc.ref.path.split('/');
-                            const officeIdIndex = pathSegments.indexOf('offices');
-                            if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                                (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
-                            }
-                        } else if (officeToQuery) { // Single office
-                            (processedData as any).officeLocation = officeToQuery;
-                        }
-                    } else if (isSuperAdminUser && !officeToQuery && !docData.officeLocation) {
-                        // General fallback for other collections in collectionGroup query
+                    if (isSuperAdminUser && !officeToQuery) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
