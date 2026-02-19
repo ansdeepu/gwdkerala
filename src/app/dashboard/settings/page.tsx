@@ -25,7 +25,7 @@ import ExcelJS from 'exceljs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import type { LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, Edit, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X } from 'lucide-react';
