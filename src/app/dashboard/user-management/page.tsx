@@ -37,11 +37,12 @@ export default function UserManagementPage() {
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
 
+  const isSuperAdmin = user?.role === 'superAdmin';
   const isAdmin = user?.role === 'admin';
   const isViewer = user?.role === 'viewer';
 
   useEffect(() => {
-    if (!user || !user.isApproved || !['admin', 'viewer'].includes(user.role) || !user.officeLocation) {
+    if (!user || !user.isApproved || !['superAdmin', 'admin', 'viewer'].includes(user.role) || !user.officeLocation) {
       setUsersLoading(false);
       return;
     }
@@ -85,7 +86,7 @@ export default function UserManagementPage() {
 
 
   useEffect(() => {
-    if (!isLoading && user && !['admin', 'viewer'].includes(user.role)) {
+    if (!isLoading && user && !['superAdmin', 'admin', 'viewer'].includes(user.role)) {
       router.push('/dashboard');
     }
     if (!isLoading && !user) {
@@ -137,7 +138,7 @@ export default function UserManagementPage() {
     );
   }
 
-  if (!user || !['admin', 'viewer'].includes(user.role)) {
+  if (!user || !['superAdmin', 'admin', 'viewer'].includes(user.role)) {
     return (
       <div className="space-y-6 p-6 text-center">
         <ShieldAlert className="h-16 w-16 text-destructive mx-auto mb-4" />
@@ -148,7 +149,7 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      {isAdmin && (
+      {isSuperAdmin && (
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-4">
@@ -164,7 +165,7 @@ export default function UserManagementPage() {
         <CardHeader>
           <CardTitle className="text-xl">Registered Users ({allUsers.length})</CardTitle>
           <CardDescription>
-            User accounts stored in the {user.officeLocation} sub-office database.
+            User accounts stored in the {user.officeLocation} sub-office database. {isAdmin && "Admin, Scientist, and Engineer accounts can only be modified by Super Admin."}
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -10,7 +10,6 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  TableCaption,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -38,7 +37,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 
@@ -112,7 +110,9 @@ export default function UserManagementTable({
 
 
   const handleApprovalChange = async (userRow: UserProfile) => {
-    if (currentUser?.uid === userRow.uid || (!isSuperAdmin && userRow.role === 'admin')) {
+    const isEditingRestricted = currentUser?.uid === userRow.uid || (!isSuperAdmin && (userRow.role === 'admin' || userRow.role === 'scientist' || userRow.role === 'engineer'));
+    
+    if (isEditingRestricted) {
       toast({ title: "Action Restricted", description: "This account status can only be modified by Super Admin.", variant: "default" });
       return;
     }
@@ -129,8 +129,10 @@ export default function UserManagementTable({
   };
 
   const handleRoleChange = async (userRow: UserProfile, newRole: UserRole) => {
-    if (currentUser?.uid === userRow.uid || (!isSuperAdmin && userRow.role === 'admin')) {
-      toast({ title: "Action Restricted", description: "Administrator roles can only be changed by Super Admin.", variant: "default" });
+    const isEditingRestricted = currentUser?.uid === userRow.uid || (!isSuperAdmin && (userRow.role === 'admin' || userRow.role === 'scientist' || userRow.role === 'engineer'));
+
+    if (isEditingRestricted) {
+      toast({ title: "Action Restricted", description: "This account role can only be modified by Super Admin.", variant: "default" });
       return;
     }
 
@@ -155,8 +157,10 @@ export default function UserManagementTable({
   };
 
   const handleDeleteUserClick = (user: UserProfile) => {
-    if (currentUser?.uid === user.uid || (!isSuperAdmin && user.role === 'admin')) {
-      toast({ title: "Action Restricted", description: "Administrator accounts can only be removed by Super Admin.", variant: "default" });
+    const isEditingRestricted = currentUser?.uid === user.uid || (!isSuperAdmin && (user.role === 'admin' || user.role === 'scientist' || user.role === 'engineer'));
+
+    if (isEditingRestricted) {
+      toast({ title: "Action Restricted", description: "This account can only be removed by Super Admin.", variant: "default" });
       return;
     }
     setUserToDelete(user);
@@ -214,7 +218,7 @@ export default function UserManagementTable({
           <TableBody>
             {sortedUsers.map((userRow, index) => {
               const isCurrentUserTheUserInRow = currentUser?.uid === userRow.uid;
-              const isEditingRestricted = isCurrentUserTheUserInRow || (!isSuperAdmin && userRow.role === 'admin');
+              const isEditingRestricted = isCurrentUserTheUserInRow || (!isSuperAdmin && (userRow.role === 'admin' || userRow.role === 'scientist' || userRow.role === 'engineer'));
               
               const disableActions = updatingUsers[userRow.uid]?.approval || updatingUsers[userRow.uid]?.role || isEditingRestricted;
               const staffInfo = (staffMembers || []).find(s => s.id === userRow.staffId);
@@ -284,7 +288,7 @@ export default function UserManagementTable({
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>{isCurrentUserTheUserInRow ? "You cannot modify your own account." : "Administrators can only be managed by Super Admin."}</p>
+                                        <p>{isCurrentUserTheUserInRow ? "You cannot modify your own account." : "Admin, Scientist, and Engineer accounts can only be managed by Super Admin."}</p>
                                     </TooltipContent>
                                 </Tooltip>
                             ) : (
