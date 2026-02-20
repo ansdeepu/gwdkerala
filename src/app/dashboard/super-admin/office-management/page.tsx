@@ -94,12 +94,12 @@ export default function OfficeManagementPage() {
       const result = await createOfficeAdmin(data.email, data.name, data.officeLocation);
       if (result.success) {
         
-        const officeCollectionPath = `offices/${lowerCaseOfficeLocation}/officeAddresses`;
-        const q = query(collection(db, officeCollectionPath));
+        const officeAddressesCollectionPath = `officeAddresses`;
+        const q = query(collection(db, officeAddressesCollectionPath), where("officeLocation", "==", lowerCaseOfficeLocation));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            const newOfficeAddressDocRef = doc(collection(db, officeCollectionPath)); 
+            const newOfficeAddressDocRef = doc(collection(db, officeAddressesCollectionPath)); 
             await setDoc(newOfficeAddressDocRef, {
                 officeName: `Ground Water Department, ${data.officeLocation}`,
                 officeLocation: lowerCaseOfficeLocation,

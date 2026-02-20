@@ -269,19 +269,16 @@ export default function SettingsPage() {
             const payload: { [key: string]: any } = { ...data };
             Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });
 
-            const collectionPath = `offices/${officeLocation.toLowerCase()}/officeAddresses`;
+            const collectionPath = `officeAddresses`;
             
-            // Check if a document already exists
-            const q = query(collection(db, collectionPath));
+            const q = query(collection(db, collectionPath), where("officeLocation", "==", officeLocation.toLowerCase()));
             const querySnapshot = await getDocs(q);
             
             let docRef;
             if (querySnapshot.empty) {
-                // No existing doc, create a new one
                 docRef = doc(collection(db, collectionPath));
                 payload.createdAt = serverTimestamp();
             } else {
-                // Doc exists, get its ref to update
                 docRef = querySnapshot.docs[0].ref;
             }
             
@@ -423,7 +420,7 @@ export default function SettingsPage() {
             
             // Delete Office Address
             if(officeAddress.id) {
-                batch.delete(doc(db, `offices/${officeLocation}/officeAddresses`, officeAddress.id));
+                batch.delete(doc(db, `officeAddresses`, officeAddress.id));
             }
             
             await batch.commit();

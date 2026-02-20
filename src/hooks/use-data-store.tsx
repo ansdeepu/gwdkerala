@@ -196,13 +196,15 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         if (!user) {
             setAllRateDescriptions(defaultRateDescriptions);
             setAllBidders([]);
-            setLoadingStates(prev => ({ ...prev, rates: false, bidders: false }));
+            setAllOfficeAddresses([]);
+            setLoadingStates(prev => ({ ...prev, rates: false, bidders: false, officeAddress: false }));
             return;
         }
         
         const globalCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, queryFn: () => any }> = {
             rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
             bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
+            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) },
         };
 
         const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey, queryFn }]) => {
@@ -254,8 +256,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setAllUsers([]); setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); 
             setAllAgencyApplications([]); setAllE_tenders([]); setAllDepartmentVehicles([]); 
             setAllHiredVehicles([]); setAllRigCompressors([]); setAllLsgConstituencyMaps([]);
-            setAllOfficeAddresses([]);
-            setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, officeAddress: false }));
+            setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false }));
             return;
         }
         
@@ -273,7 +274,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
             rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
             localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
-            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress' },
         };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
@@ -295,18 +295,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 const data = snapshot.docs.map(doc => {
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
-                    
-                    let officeLocation = officeToQuery; // Default to the queried office
-
-                    if (isSuperAdminUser && !officeToQuery) { // For collectionGroup queries, derive from path
+                    if (isSuperAdminUser && !officeToQuery) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                            officeLocation = pathSegments[officeIdIndex + 1];
+                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
                         }
                     }
-                    
-                    (processedData as any).officeLocation = officeLocation;
                     return processedData;
                 });
                 
