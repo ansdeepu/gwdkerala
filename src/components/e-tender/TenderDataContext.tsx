@@ -17,13 +17,6 @@ export function TenderDataProvider({ initialTender, children }: { initialTender:
     const updateTender = useCallback((updatedData: Partial<E_tender>) => {
         setTender(prevTender => ({ ...prevTender, ...updatedData }));
     }, []);
-    
-    // This effect ensures that if the parent layout provides a new initialTender
-    // (e.g., on navigation), the context's internal state is updated.
-    useEffect(() => {
-        setTender(initialTender);
-    }, [initialTender]);
-
 
     const value = useMemo(() => ({ tender, updateTender }), [tender, updateTender]);
 
