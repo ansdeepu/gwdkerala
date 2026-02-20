@@ -1,3 +1,4 @@
+
 // src/app/dashboard/settings/page.tsx
 "use client";
 
@@ -12,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc, where } from "firebase/firestore";
+import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc, where, serverTimestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useDataStore, type OfficeAddress } from '@/hooks/use-data-store';
 import { useAuth } from '@/hooks/useAuth';
@@ -71,7 +72,7 @@ const capitalize = (str?: string | null) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
 
-const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialData, staffMembers }: { isOpen: boolean; onClose: () => void; onSubmit: (data: OfficeAddressFormData) => void; isSubmitting: boolean; initialData?: OfficeAddress | null; staffMembers: StaffMember[]; }) => {
+const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialData, staffMembers }: { isOpen: boolean; onClose: () => void; onSubmit: (data: OfficeAddressFormData) => void; isSubmitting: boolean; initialData?: Partial<OfficeAddress> | null; staffMembers: StaffMember[]; }) => {
     const { user } = useAuth();
     const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
     const officerList = staffMembers.filter(s => 
@@ -106,23 +107,8 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                 bankIfsc: initialData.bankIfsc ?? '',
                 otherDetails: initialData.otherDetails ?? '',
             });
-        } else {
-             form.reset({
-                officeName: '', 
-                officeLocation: user?.officeLocation || '', 
-                officeCode: '',
-                officeNameMalayalam: '', 
-                address: '', 
-                addressMalayalam: '', 
-                phoneNo: '', 
-                email: '', 
-                districtOfficerStaffId: '', 
-                districtOfficer: '', 
-                districtOfficerPhotoUrl: '',
-                gstNo: '', panNo: '', otherDetails: '', stsbAccountNo: '', nameOfTreasury: '', bankAccountNo: '', nameOfBank: '', bankBranch: '', bankIfsc: ''
-            });
         }
-    }, [initialData, form, user]);
+    }, [initialData, form]);
 
     const handleOfficerChange = (staffId: string) => {
         const selectedStaff = officerList.find(s => s.id === staffId);
@@ -132,11 +118,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
     };
     
     const handleFormSubmit = (data: OfficeAddressFormData) => {
-        const finalData = { ...data };
-        if (!isSuperAdmin && user?.officeLocation) {
-            finalData.officeLocation = user.officeLocation;
-        }
-        onSubmit(finalData);
+        onSubmit(data);
     };
 
     return (
@@ -145,27 +127,20 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
                     <DialogHeader className="p-6 pb-4">
-                        <DialogTitle>{initialData ? 'Edit Office Details' : 'Add New Office Details'}</DialogTitle>
+                        <DialogTitle>{initialData?.officeName ? 'Edit Office Details' : 'Add New Office Details'}</DialogTitle>
                         <DialogDescription>Fill in the contact and official details for the office.</DialogDescription>
                     </DialogHeader>
                     <div className="flex-1 min-h-0">
                         <ScrollArea className="h-full px-6 py-4">
                             <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {isSuperAdmin ? (
-                                    <FormField name="officeLocation" control={form.control} render={({ field }) => ( 
-                                        <FormItem>
-                                            <FormLabel>Office Location</FormLabel>
-                                            <FormControl><Input {...field} value={field.value ?? ''} placeholder="e.g., Kollam" /></FormControl>
-                                            <FormMessage />
-                                        </FormItem> 
-                                    )}/>
-                                ) : (
-                                     <FormItem>
+                                <FormField name="officeLocation" control={form.control} render={({ field }) => (
+                                    <FormItem>
                                         <FormLabel>Office Location</FormLabel>
-                                        <FormControl><Input value={form.getValues('officeLocation') ?? ''} readOnly /></FormControl>
+                                        <FormControl><Input {...field} value={field.value ?? ''} readOnly className="bg-muted/50" /></FormControl>
+                                        <FormMessage />
                                     </FormItem>
-                                )}
+                                )}/>
                                 <FormField
                                   name="officeCode"
                                   control={form.control}
@@ -241,7 +216,7 @@ export default function SettingsPage() {
     const { setHeader } = usePageHeader();
     const { user, isLoading: authLoading } = useAuth();
     const { toast } = useToast();
-    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, selectedOffice, refetchRateDescriptions } = useDataStore();
+    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, allOfficeAddresses, selectedOffice, refetchRateDescriptions } = useDataStore();
     const isAdmin = user?.role === 'admin';
     const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
     const canManage = isAdmin || isSuperAdmin;
@@ -257,31 +232,34 @@ export default function SettingsPage() {
 
     const [isListDialogOpen, setIsListDialogOpen] = useState(false);
     const [listDialogContent, setListDialogContent] = useState<{ title: string; items: string[] }>({ title: '', items: [] });
+    
+    const [mergedOfficeDetails, setMergedOfficeDetails] = useState<Partial<OfficeAddress> | null>(null);
 
     useEffect(() => {
         setHeader('General Settings', 'Manage dropdown options and other application-wide settings.');
     }, [setHeader]);
 
-    const handleOfficeSubmit = async (data: OfficeAddressFormData) => {
-        if (!canManage) return;
-        const officeLocation = isSuperAdmin ? selectedOffice : user?.officeLocation;
-        if (!officeLocation) {
-            toast({ title: "Error", description: "No office location selected.", variant: "destructive" });
-            return;
+    const handleOpenEditDialog = () => {
+        if (officeAddress) {
+            setMergedOfficeDetails(officeAddress);
+            setIsOfficeDialogOpen(true);
+        } else {
+            toast({ title: "No Office Data", description: "Office details are not available to edit.", variant: "destructive" });
         }
-        if (!officeAddress?.id) {
-            toast({ title: "Error", description: "Cannot find the document ID for the current office address.", variant: "destructive" });
-            return;
-        }
+    };
 
+
+    const handleOfficeSubmit = async (data: OfficeAddressFormData) => {
+        if (!canManage || !officeAddress || !officeAddress.id) return;
+        
         setIsSubmitting(true);
         try {
             const payload: { [key: string]: any } = { ...data };
-            // Do not update officeCode
             delete payload.officeCode;
+            delete payload.officeLocation;
             Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });
 
-            const docRef = doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, officeAddress.id);
+            const docRef = doc(db, `offices/${officeAddress.officeLocation.toLowerCase()}/officeAddresses`, officeAddress.id);
             payload.updatedAt = serverTimestamp();
             
             await updateDoc(docRef, payload);
@@ -409,18 +387,18 @@ export default function SettingsPage() {
         try {
             const batch = writeBatch(db);
     
-            // Delete Users associated with the office
             const officeUsersQuery = query(collection(db, "users"), where("officeLocation", "==", officeLocation));
             const officeUsersSnapshot = await getDocs(officeUsersQuery);
             officeUsersSnapshot.forEach(userDoc => {
-                batch.delete(userDoc.ref); // Delete from global users collection
-                // Also delete from subcollection if it exists
+                batch.delete(userDoc.ref);
                 batch.delete(doc(db, `offices/${officeLocation}/users`, userDoc.id));
             });
             
-            // Delete Office Address
             if(officeAddress.id) {
-                batch.delete(doc(db, `officeAddresses`, officeAddress.id));
+                const globalDocRef = allOfficeAddresses.find(g => g.officeLocation.toLowerCase() === officeLocation)?.id;
+                if (globalDocRef) {
+                  batch.delete(doc(db, 'officeAddresses', globalDocRef));
+                }
             }
             
             await batch.commit();
@@ -462,7 +440,7 @@ export default function SettingsPage() {
                         </div>
                         {canManage && (
                             <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={() => { setIsOfficeDialogOpen(true); }} disabled={isSuperAdmin && !selectedOffice}><Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}</Button>
+                            <Button variant="outline" size="sm" onClick={handleOpenEditDialog} disabled={!officeAddress}><Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}</Button>
                                 {isSuperAdmin && officeAddress && <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isDeleting}>{isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete</Button>}
                             </div>
                         )}
@@ -558,7 +536,7 @@ export default function SettingsPage() {
             onClose={() => setIsOfficeDialogOpen(false)}
             onSubmit={handleOfficeSubmit}
             isSubmitting={isSubmitting}
-            initialData={officeAddress}
+            initialData={mergedOfficeDetails}
             staffMembers={allStaffMembers}
         />
         <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>

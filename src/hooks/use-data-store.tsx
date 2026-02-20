@@ -171,7 +171,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allDepartmentVehicles, setAllDepartmentVehicles] = useState<DepartmentVehicle[]>([]);
     const [allHiredVehicles, setAllHiredVehicles] = useState<HiredVehicle[]>([]);
     const [allRigCompressors, setAllRigCompressors] = useState<RigCompressor[]>([]);
-    const [allOfficeAddresses, setAllOfficeAddresses] = useState<OfficeAddress[]>([]);
+    const [globalOfficeAddresses, setGlobalOfficeAddresses] = useState<OfficeAddress[]>([]);
     const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null);
 
     const [loadingStates, setLoadingStates] = useState({
@@ -196,7 +196,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         if (!user) {
             setAllRateDescriptions(defaultRateDescriptions);
             setAllBidders([]);
-            setAllOfficeAddresses([]);
+            setGlobalOfficeAddresses([]);
             setLoadingStates(prev => ({ ...prev, rates: false, bidders: false, officeAddress: false }));
             return;
         }
@@ -204,7 +204,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         const globalCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, queryFn: () => any }> = {
             rateDescriptions: { setter: setAllRateDescriptions, loaderKey: 'rates', queryFn: () => query(collection(db, 'rateDescriptions')) },
             bidders: { setter: setAllBidders, loaderKey: 'bidders', queryFn: () => query(collection(db, 'bidders'), orderBy("order")) },
-            officeAddresses: { setter: setAllOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) },
+            officeAddresses: { setter: setGlobalOfficeAddresses, loaderKey: 'officeAddress', queryFn: () => query(collection(db, 'officeAddresses')) },
         };
 
         const unsubscribes = Object.entries(globalCollections).map(([collectionName, { setter, loaderKey, queryFn }]) => {
@@ -230,26 +230,50 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
     // Effect to set the single active office address based on user role and selection
     useEffect(() => {
-        if (!user) {
-            setOfficeAddress(null);
-            return;
-        }
-        const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
-    
-        if (isSuperAdminUser) {
-            if (selectedOffice) {
-                 const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === selectedOffice.toLowerCase()) || null;
-                 setOfficeAddress(foundOffice);
-            } else {
-                setOfficeAddress(null); // 'All Offices' is selected
-            }
-        } else if (user.officeLocation) {
-            const foundOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === user.officeLocation!.toLowerCase()) || null;
-            setOfficeAddress(foundOffice);
-        }
-    }, [user, selectedOffice, allOfficeAddresses]);
-    
+      if (!user) {
+          setOfficeAddress(null);
+          return;
+      }
+      const isSuperAdminUser = user.email === SUPER_ADMIN_EMAIL;
+      const officeLocation = isSuperAdminUser ? selectedOffice : user.officeLocation;
+  
+      if (!officeLocation) {
+          setOfficeAddress(null);
+          return;
+      }
+      
+      const subOfficeCollectionPath = `offices/${officeLocation.toLowerCase()}/officeAddresses`;
+      const q = query(collection(db, subOfficeCollectionPath));
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+          let mergedOfficeData: OfficeAddress | null = null;
+          const globalOffice = globalOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === officeLocation.toLowerCase());
 
+          if (!snapshot.empty) {
+              const subOfficeDoc = processFirestoreDoc(snapshot.docs[0]);
+              mergedOfficeData = {
+                  ...subOfficeDoc, // Details from sub-collection
+                  officeLocation: officeLocation, // From context
+                  officeCode: globalOffice?.officeCode || '', // From top-level
+              };
+          } else if (globalOffice) {
+              // Fallback if only the global doc exists
+              mergedOfficeData = {
+                  id: globalOffice.id,
+                  officeName: '', // No sub-doc, so no specific name
+                  officeLocation: globalOffice.officeLocation,
+                  officeCode: globalOffice.officeCode,
+              };
+          }
+          setOfficeAddress(mergedOfficeData);
+      }, (error) => {
+          console.error("Error fetching sub-collection officeAddress:", error);
+          setOfficeAddress(null);
+      });
+  
+      return () => unsubscribe();
+    }, [user, selectedOffice, globalOfficeAddresses]);
+    
     // Effect for OFFICE-SCOPED data
     useEffect(() => {
         if (!user) {
@@ -405,7 +429,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             allUsers,
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
-            allOfficeAddresses,
+            allOfficeAddresses: globalOfficeAddresses,
             officeAddress, 
             isLoading,
             refetchRateDescriptions,
