@@ -1,3 +1,4 @@
+
 // src/app/dashboard/data-entry/page.tsx
 "use client";
 import DataEntryFormComponent from "@/components/shared/DataEntryForm";
@@ -122,7 +123,7 @@ export default function DataEntryPage() {
   const [fileNoForHeader, setFileNoForHeader] = useState<string | null>(null);
   const [isFormDisabledForSupervisor, setIsFormDisabledForSupervisor] = useState(false);
   
-  const isApprovingUpdate = !!(user?.role === 'editor' && approveUpdateId);
+  const isApprovingUpdate = !!(user?.role === 'admin' && approveUpdateId);
   const effectiveUserRole = readOnlyParam === 'true' ? 'viewer' : user?.role;
   
   const returnPath = useMemo(() => {
@@ -164,7 +165,7 @@ export default function DataEntryPage() {
         if (authIsLoading) return;
         if (!user) { setErrorState("You must be logged in."); setDataLoading(false); return; }
         try {
-            const allUsersResult = (user.role === 'editor') ? await fetchAllUsers() : [];
+            const allUsersResult = (user.role === 'admin') ? await fetchAllUsers() : [];
             if (!fileIdToEdit) { 
                 let defaultData = getFormDefaults(workTypeContext);
                 setPageData({ initialData: defaultData, allUsers: allUsersResult }); 
@@ -200,7 +201,7 @@ export default function DataEntryPage() {
     const isCreatingNew = !fileIdToEdit;
     if (!dataLoading) {
         if (errorState) { title = "Error"; description = errorState; } 
-        else if (user?.role === 'editor') {
+        else if (user?.role === 'admin') {
             if (isCreatingNew) {
                 if (workTypeContext === 'private') title = "New Private Deposit Work";
                 else if (workTypeContext === 'collector') title = "New Collector's Deposit Work";

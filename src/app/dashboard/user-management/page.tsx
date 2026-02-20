@@ -40,6 +40,7 @@ export default function UserManagementPage() {
   const isSuperAdmin = user?.role === 'superAdmin';
   const isAdmin = user?.role === 'admin';
   const isViewer = user?.role === 'viewer';
+  const canManageUsers = isAdmin || isSuperAdmin;
 
   useEffect(() => {
     if (!user || !user.isApproved || !['superAdmin', 'admin', 'viewer'].includes(user.role) || !user.officeLocation) {
@@ -149,7 +150,7 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      {isSuperAdmin && (
+      {canManageUsers && (
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-4">

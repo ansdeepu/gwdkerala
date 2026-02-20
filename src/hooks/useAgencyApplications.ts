@@ -1,3 +1,4 @@
+
 // src/hooks/useAgencyApplications.ts
 "use client";
 
@@ -64,7 +65,7 @@ export function useAgencyApplications() {
   }, [user]);
   
   const deleteApplication = useCallback(async (id: string) => {
-    if (!user || user.role !== 'editor') {
+    if (!user || user.role !== 'admin') {
         toast({ title: "Permission Denied", description: "You don't have permission to delete applications.", variant: "destructive" });
         return;
     }

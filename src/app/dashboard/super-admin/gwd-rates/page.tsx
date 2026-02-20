@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/gwd-rates/page.tsx
 "use client";
 
@@ -248,7 +249,7 @@ export default function GwdRatesPage() {
   const [itemToDelete, setItemToDelete] = useState<GwdRateItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canManage = user?.role === 'editor';
+  const canManage = user?.role === 'superAdmin';
   
   const [editingRate, setEditingRate] = useState<{id: RateDescriptionId, title: string} | null>(null);
 

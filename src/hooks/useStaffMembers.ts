@@ -1,3 +1,4 @@
+
 // src/hooks/useStaffMembers.ts
 "use client";
 
@@ -51,7 +52,7 @@ export function useStaffMembers(): StaffMembersState {
   const { allStaffMembers, isLoading: dataStoreLoading } = useDataStore();
   
   const addStaffMember = useCallback(async (staffData: StaffMemberFormData): Promise<string | undefined> => {
-    if (!user || user.role !== 'editor') throw new Error("User does not have permission.");
+    if (!user || user.role !== 'admin') throw new Error("User does not have permission.");
     if (!user.officeLocation) throw new Error("User has no office location.");
     const collectionPath = `offices/${user.officeLocation.toLowerCase()}/staffMembers`;
     const payload = { ...sanitizeStaffMemberForFirestore(staffData), officeLocation: user.officeLocation, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
@@ -60,7 +61,7 @@ export function useStaffMembers(): StaffMembersState {
   }, [user]);
 
   const updateStaffMember = useCallback(async (id: string, staffData: Partial<StaffMemberFormData>) => {
-    if (!user || user.role !== 'editor') throw new Error("User does not have permission.");
+    if (!user || user.role !== 'admin') throw new Error("User does not have permission.");
     if (!user.officeLocation) throw new Error("User has no office location.");
     const collectionPath = `offices/${user.officeLocation.toLowerCase()}/staffMembers`;
     const staffDocRef = doc(db, collectionPath, id);
@@ -75,7 +76,7 @@ export function useStaffMembers(): StaffMembersState {
   }, [user, allStaffMembers]);
 
   const deleteStaffMember = useCallback(async (id: string) => {
-    if (!user || user.role !== 'editor') throw new Error("User does not have permission.");
+    if (!user || user.role !== 'admin') throw new Error("User does not have permission.");
     if (!user.officeLocation) throw new Error("User has no office location.");
     const collectionPath = `offices/${user.officeLocation.toLowerCase()}/staffMembers`;
     const staffDocRef = doc(db, collectionPath, id);
@@ -94,7 +95,7 @@ export function useStaffMembers(): StaffMembersState {
   }, [user]);
 
   const updateStaffStatus = useCallback(async (id: string, newStatus: StaffStatusType) => {
-    if (!user || user.role !== 'editor') throw new Error("User does not have permission.");
+    if (!user || user.role !== 'admin') throw new Error("User does not have permission.");
     if (!user.officeLocation) throw new Error("User has no office location.");
     const collectionPath = `offices/${user.officeLocation.toLowerCase()}/staffMembers`;
     const staffDocRef = doc(db, collectionPath, id);

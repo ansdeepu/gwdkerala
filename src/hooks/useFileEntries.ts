@@ -1,3 +1,4 @@
+
 // src/hooks/useFileEntries.ts
 "use client";
 
@@ -116,7 +117,7 @@ export function useFileEntries() {
   }, [user, allFileEntries, dataStoreLoading, pendingUpdatesMap]);
 
     const addFileEntry = useCallback(async (entryData: DataEntryFormData): Promise<string> => {
-        if (!user) throw new Error("User must be logged in to add an entry.");
+        if (!user || !['admin', 'engineer', 'scientist'].includes(user.role)) throw new Error("Permission denied to add file entry.");
         if (!user.officeLocation) throw new Error("User must have an office location.");
         const collectionPath = `offices/${user.officeLocation.toLowerCase()}/fileEntries`;
         
@@ -130,7 +131,7 @@ export function useFileEntries() {
     }, [user]);
 
     const updateFileEntry = useCallback(async (fileId: string, entryData: DataEntryFormData, approveUpdateId?: string): Promise<void> => {
-        if (!user) throw new Error("User must be logged in to update an entry.");
+        if (!user || !['admin', 'engineer', 'scientist'].includes(user.role)) throw new Error("Permission denied to update file entry.");
         if (!user.officeLocation) throw new Error("User has no office location.");
         const collectionPath = `offices/${user.officeLocation.toLowerCase()}/fileEntries`;
         
@@ -141,7 +142,7 @@ export function useFileEntries() {
         const finalPayload = { ...payload, updatedAt: serverTimestamp() };
         const sanitizedPayload = sanitizeDataForFirestore(finalPayload);
 
-        if (approveUpdateId && user.role === 'editor') {
+        if (approveUpdateId && user.role === 'admin') {
             const batch = writeBatch(db);
             batch.update(docRef, sanitizedPayload);
             const updateRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`, approveUpdateId);
@@ -155,7 +156,7 @@ export function useFileEntries() {
 
 
   const deleteFileEntry = useCallback(async (docId: string): Promise<void> => {
-    if (user?.role !== 'editor') {
+    if (user?.role !== 'admin') {
         toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
         return;
     }
@@ -178,7 +179,7 @@ export function useFileEntries() {
   }, [user, toast]);
 
   const batchDeleteFileEntries = useCallback(async (fileNos: string[]): Promise<{ successCount: number; failureCount: number }> => {
-    if (user?.role !== 'editor') {
+    if (user?.role !== 'admin') {
         toast({ title: "Permission Denied", variant: "destructive" });
         return { successCount: 0, failureCount: fileNos.length };
     }

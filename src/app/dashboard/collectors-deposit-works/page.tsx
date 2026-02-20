@@ -1,4 +1,5 @@
 
+
 // src/app/dashboard/collectors-deposit-works/page.tsx
 "use client";
 
@@ -67,7 +68,7 @@ export default function CollectorsDepositWorksPage() {
   const router = useRouter();
   const { setIsNavigating } = usePageNavigation();
   
-  const canCreate = user?.role === 'editor';
+  const canCreate = user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist';
   
   const { collectorDepositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => 

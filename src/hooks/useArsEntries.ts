@@ -1,3 +1,4 @@
+
 // src/hooks/useArsEntries.ts
 "use client";
 
@@ -80,7 +81,7 @@ export function useArsEntries() {
 
 
   const addArsEntry = useCallback(async (entryData: ArsEntryFormData): Promise<string> => {
-    if (!user || user.role !== 'editor') throw new Error("Permission denied.");
+    if (!user || !['admin', 'engineer', 'scientist'].includes(user.role)) throw new Error("Permission denied.");
     if (!user.officeLocation) throw new Error("User has no office location.");
     
     const payload = {
@@ -111,7 +112,7 @@ export function useArsEntries() {
     delete (payload as any).createdAt;
 
 
-    if (approveUpdateId && approvingUser && user.role === 'editor') {
+    if (approveUpdateId && approvingUser && user.role === 'admin') {
         const batch = writeBatch(db);
         batch.update(docRef, payload);
         
@@ -123,7 +124,7 @@ export function useArsEntries() {
         });
         
         await batch.commit();
-    } else if (user.role === 'editor') {
+    } else if (user.role === 'admin' || user.role === 'engineer') {
         await updateDoc(docRef, payload);
     } else {
         throw new Error("Permission denied for direct update.");
@@ -131,7 +132,7 @@ export function useArsEntries() {
   }, [user]);
   
   const deleteArsEntry = useCallback(async (id: string) => {
-    if (!user || user.role !== 'editor') {
+    if (!user || user.role !== 'admin') {
         toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
         return;
     }
@@ -150,7 +151,7 @@ export function useArsEntries() {
   }, [allArsEntries]);
 
   const clearAllArsData = useCallback(async () => {
-    if (!user || user.role !== 'editor' || !user.officeLocation) {
+    if (!user || user.role !== 'admin' || !user.officeLocation) {
         toast({ title: "Permission Denied", variant: "destructive" });
         return;
     }

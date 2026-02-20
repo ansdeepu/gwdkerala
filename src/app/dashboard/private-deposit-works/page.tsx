@@ -1,4 +1,5 @@
 
+
 // src/app/dashboard/private-deposit-works/page.tsx
 "use client";
 
@@ -68,7 +69,7 @@ export default function PrivateDepositWorksPage() {
   const router = useRouter();
   const { setIsNavigating } = usePageNavigation();
   
-  const canCreate = user?.role === 'editor';
+  const canCreate = user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist';
 
   const { privateDepositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     const privateEntries = fileEntries.filter(entry => 
