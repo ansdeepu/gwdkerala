@@ -106,9 +106,9 @@ export default function FileDatabaseTable({ fileEntries, isLoading, searchActive
   const [currentPage, setCurrentPage] = useState(1);
   const [pendingUpdatesMap, setPendingUpdatesMap] = useState<Record<string, boolean>>({});
 
-  const canEdit = !isReadOnly && (user?.role === 'editor' || user?.role === 'supervisor');
-  const canDelete = !isReadOnly && user?.role === 'editor';
-  const canCopy = !isReadOnly && user?.role === 'editor';
+  const canEdit = !isReadOnly && (user?.role === 'admin' || user?.role === 'supervisor');
+  const canDelete = !isReadOnly && user?.role === 'admin';
+  const canCopy = !isReadOnly && user?.role === 'admin';
 
   useEffect(() => {
     if (user?.role === 'supervisor' && user.uid) {

@@ -63,7 +63,7 @@ export function useE_tenders() {
     }, [user]);
 
     const deleteTender = useCallback(async (id: string) => {
-        if (!user || user.role !== 'editor') {
+        if (!user || !['admin', 'engineer', 'scientist'].includes(user.role)) {
             toast({ title: "Permission Denied", description: "You don't have permission to delete tenders.", variant: "destructive" });
             return;
         }
