@@ -14,17 +14,18 @@ const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function TenderLayout({ children }: { children: ReactNode }) {
     const params = useParams();
-    const id = params?.id;
-    const { getTender, isLoading } = useE_tenders();
-    const { allStaffMembers, allRateDescriptions, allBidders } = useDataStore(); // Ensure data store is loaded
+    const id = params?.id as string;
+    const { getTender, isLoading: areTendersLoading } = useE_tenders();
+    const { allStaffMembers, allRateDescriptions, allBidders } = useDataStore();
     const [tender, setTender] = useState<E_tender | null>(null);
     const [isLayoutLoading, setIsLayoutLoading] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
         setIsLayoutLoading(true);
         setTender(null);
 
-        if (typeof id !== 'string' || !id) {
+        if (!id) {
             setIsLayoutLoading(false);
             return;
         }
@@ -44,23 +45,33 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
                 supervisor3Id: undefined, supervisor3Name: undefined, supervisor3Phone: undefined,
                 nameOfSupervisor: undefined, supervisorPhoneNo: undefined, remarks: '',
             };
-            setTender(newTenderData);
-            setIsLayoutLoading(false);
+            if (isMounted) {
+                setTender(newTenderData);
+                setIsLayoutLoading(false);
+            }
         } else {
             const fetchTender = async () => {
+                if (areTendersLoading) return;
+                
                 const fetchedTender = await getTender(id);
-                if (fetchedTender) {
-                    setTender(fetchedTender);
-                } else {
-                    toast({ title: "Tender Not Found", variant: "destructive" });
+                if (isMounted) {
+                    if (fetchedTender) {
+                        setTender(fetchedTender);
+                    } else {
+                        toast({ title: "Tender Not Found", variant: "destructive" });
+                    }
+                    setIsLayoutLoading(false);
                 }
-                setIsLayoutLoading(false);
             };
             fetchTender();
         }
-    }, [id, getTender]);
 
-    if (isLoading || isLayoutLoading || !tender) {
+        return () => {
+            isMounted = false;
+        };
+    }, [id, getTender, areTendersLoading]);
+
+    if (isLayoutLoading || areTendersLoading || !tender) {
         return (
             <div className="flex h-full w-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -69,5 +80,5 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
         );
     }
 
-    return <TenderDataProvider initialTender={tender}>{children}</TenderDataProvider>;
+    return <TenderDataProvider key={id} initialTender={tender}>{children}</TenderDataProvider>;
 }
