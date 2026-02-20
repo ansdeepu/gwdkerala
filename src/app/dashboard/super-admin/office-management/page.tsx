@@ -1,26 +1,37 @@
-
 // src/app/dashboard/super-admin/office-management/page.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth, type UserProfile } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { usePageHeader } from '@/hooks/usePageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc, where } from "firebase/firestore";
+import { app } from "@/lib/firebase";
+import { useDataStore, type OfficeAddress } from '@/hooks/use-data-store';
+import { useAuth } from '@/hooks/useAuth';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, PlusCircle, Trash2, Edit, Save, X, Info } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { zodResolver } from '@hookform/resolvers/zod';
+import ExcelJS from 'exceljs';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+import type { LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
+import { Loader2, Edit, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X, Info } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { getInitials } from '@/lib/utils';
 import UserManagementTable from '@/components/admin/UserManagementTable';
-import { useDataStore } from '@/hooks/use-data-store';
-import { getFirestore, doc, setDoc, serverTimestamp, getDocs, query, where, collection } from 'firebase/firestore';
-import { app } from '@/lib/firebase';
-import { usePageHeader } from '@/hooks/usePageHeader';
 
 const db = getFirestore(app);
 
@@ -91,43 +102,51 @@ export default function OfficeManagementPage() {
     setIsSubmitting(true);
     const lowerCaseOfficeLocation = data.officeLocation.toLowerCase();
     try {
-      const result = await createOfficeAdmin(data.email, data.name, data.officeLocation);
-      if (result.success) {
-        
-        const officeAddressesCollectionPath = `officeAddresses`;
-        const q = query(collection(db, officeAddressesCollectionPath), where("officeLocation", "==", lowerCaseOfficeLocation));
-        const querySnapshot = await getDocs(q);
+        const result = await createOfficeAdmin(data.email, data.name, data.officeLocation);
+        if (result.success) {
+            const batch = writeBatch(db);
 
-        if (querySnapshot.empty) {
-            const newOfficeAddressDocRef = doc(collection(db, officeAddressesCollectionPath)); 
-            await setDoc(newOfficeAddressDocRef, {
-                officeName: `Ground Water Department, ${data.officeLocation}`,
+            // 1. Create document in top-level `officeAddresses`
+            const globalOfficeAddressDocRef = doc(collection(db, "officeAddresses"));
+            batch.set(globalOfficeAddressDocRef, {
                 officeLocation: lowerCaseOfficeLocation,
                 officeCode: data.officeCode.toUpperCase(),
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
+
+            // 2. Create document in nested `offices/{officeId}/officeAddresses`
+            const officeSubCollectionPath = `offices/${lowerCaseOfficeLocation}/officeAddresses`;
+            const newOfficeSubDocRef = doc(collection(db, officeSubCollectionPath));
+            batch.set(newOfficeSubDocRef, {
+                officeName: `Ground Water Department, ${data.officeLocation}`,
+                officeLocation: lowerCaseOfficeLocation, // Redundant but good for consistency
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+
+            // 3. Create the main office document
+            const officeDocRef = doc(db, "offices", lowerCaseOfficeLocation);
+            batch.set(officeDocRef, {
+                name: `Ground Water Department, ${data.officeLocation}`,
+                createdAt: serverTimestamp(),
+            }, { merge: true });
+
+            await batch.commit();
+
+            toast({ title: "Office Accounts & Records Created", description: `Setup for ${data.officeLocation} is complete.` });
+            setIsOfficeUserDialogOpen(false);
+            officeAdminForm.reset();
+        } else {
+            throw new Error(result.error?.message || "Failed to create users.");
         }
-        
-        const officeDocRef = doc(db, "offices", lowerCaseOfficeLocation);
-        await setDoc(officeDocRef, {
-            name: `Ground Water Department, ${data.officeLocation}`,
-            createdAt: serverTimestamp(),
-        }, { merge: true });
-        
-        toast({ title: "Office Accounts Created", description: `Admin, Scientist, and Engineer accounts for ${data.officeLocation} created successfully.` });
-        setIsOfficeUserDialogOpen(false);
-        officeAdminForm.reset();
-        // Data will refresh automatically via onSnapshot in useDataStore
-      } else {
-        throw new Error(result.error?.message || "Failed to create users.");
-      }
     } catch (error: any) {
-      toast({ title: "Error", description: `Could not create office setup: ${error.message}`, variant: "destructive" });
+        toast({ title: "Error", description: `Could not create office setup: ${error.message}`, variant: "destructive" });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   };
+
 
   const handleUpdateUser = async (data: EditUserFormData) => {
     if (!userToEdit) return;
@@ -224,7 +243,7 @@ export default function OfficeManagementPage() {
                         <FormItem>
                             <FormLabel>Office Code</FormLabel>
                             <FormControl><Input placeholder="e.g., KLM" {...field} /></FormControl>
-                            <FormDescription className="text-[10px]">Short code for file numbers.</FormDescription>
+                            <FormDescription className="text-xs">Short code for file numbers.</FormDescription>
                             <FormMessage />
                         </FormItem>
                     )} />

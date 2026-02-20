@@ -1,4 +1,3 @@
-
 // src/app/dashboard/settings/page.tsx
 "use client";
 
@@ -38,7 +37,7 @@ const db = getFirestore(app);
 const OfficeAddressSchema = z.object({
   officeName: z.string().min(1, "Office Name is required."),
   officeLocation: z.string().min(1, "Office Location is required."),
-  officeCode: z.string().min(1, "Office Code is required.").max(10, "Code is too long."),
+  officeCode: z.string().optional(), // Now optional and read-only in the form
   officeNameMalayalam: z.string().optional(),
   address: z.string().optional(),
   addressMalayalam: z.string().optional(),
@@ -153,7 +152,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                         <ScrollArea className="h-full px-6 py-4">
                             <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {isSuperAdmin && (
+                                {isSuperAdmin ? (
                                     <FormField name="officeLocation" control={form.control} render={({ field }) => ( 
                                         <FormItem>
                                             <FormLabel>Office Location</FormLabel>
@@ -161,6 +160,11 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                             <FormMessage />
                                         </FormItem> 
                                     )}/>
+                                ) : (
+                                     <FormItem>
+                                        <FormLabel>Office Location</FormLabel>
+                                        <FormControl><Input value={form.getValues('officeLocation') ?? ''} readOnly /></FormControl>
+                                    </FormItem>
                                 )}
                                 <FormField
                                   name="officeCode"
@@ -173,6 +177,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                           {...field}
                                           value={field.value ?? ''}
                                           readOnly
+                                          className="bg-muted/50"
                                         />
                                       </FormControl>
                                       <FormMessage />
@@ -236,7 +241,7 @@ export default function SettingsPage() {
     const { setHeader } = usePageHeader();
     const { user, isLoading: authLoading } = useAuth();
     const { toast } = useToast();
-    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, selectedOffice } = useDataStore();
+    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, selectedOffice, refetchRateDescriptions } = useDataStore();
     const isAdmin = user?.role === 'admin';
     const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
     const canManage = isAdmin || isSuperAdmin;
@@ -264,27 +269,22 @@ export default function SettingsPage() {
             toast({ title: "Error", description: "No office location selected.", variant: "destructive" });
             return;
         }
+        if (!officeAddress?.id) {
+            toast({ title: "Error", description: "Cannot find the document ID for the current office address.", variant: "destructive" });
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const payload: { [key: string]: any } = { ...data };
+            // Do not update officeCode
+            delete payload.officeCode;
             Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });
 
-            const collectionPath = `officeAddresses`;
-            
-            const q = query(collection(db, collectionPath), where("officeLocation", "==", officeLocation.toLowerCase()));
-            const querySnapshot = await getDocs(q);
-            
-            let docRef;
-            if (querySnapshot.empty) {
-                docRef = doc(collection(db, collectionPath));
-                payload.createdAt = serverTimestamp();
-            } else {
-                docRef = querySnapshot.docs[0].ref;
-            }
-            
+            const docRef = doc(db, `offices/${officeLocation.toLowerCase()}/officeAddresses`, officeAddress.id);
             payload.updatedAt = serverTimestamp();
             
-            await setDoc(docRef, payload, { merge: true });
+            await updateDoc(docRef, payload);
             
             toast({ title: 'Office Address Saved', description: 'The office details have been updated.' });
             setIsOfficeDialogOpen(false);
