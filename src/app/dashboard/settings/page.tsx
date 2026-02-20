@@ -416,10 +416,6 @@ export default function SettingsPage() {
     if (authLoading) {
         return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
-
-    if (user?.role === 'viewer' || user?.role === 'supervisor' || user?.role === 'investigator') {
-        return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><div className="space-y-6 p-6 text-center"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-2xl font-bold">Access Denied</h1><p className="text-muted-foreground">You do not have permission to view this page.</p></div></div>;
-    }
   
     return (
       <div className="space-y-6">
