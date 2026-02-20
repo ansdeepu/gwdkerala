@@ -1,4 +1,3 @@
-
 // src/app/dashboard/e-tender/[id]/page.tsx
 "use client";
 
@@ -6,10 +5,13 @@ import { useEffect } from "react";
 import { useTenderData } from "@/components/e-tender/TenderDataContext";
 import { usePageHeader } from "@/hooks/usePageHeader";
 import TenderDetails from "@/components/e-tender/TenderDetails";
+import { useParams } from "next/navigation";
 
 export default function TenderPage() {
     const { tender } = useTenderData(); // Consumes data from layout's provider
     const { setHeader } = usePageHeader();
+    const params = useParams();
+    const id = params?.id as string;
 
     useEffect(() => {
         if (!tender) return;
@@ -27,7 +29,7 @@ export default function TenderPage() {
     // This page component just needs to render the details component.
     return (
         <div className="space-y-6">
-            <TenderDetails />
+            <TenderDetails key={id} />
         </div>
     );
 }

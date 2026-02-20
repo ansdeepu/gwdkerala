@@ -22,13 +22,13 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
         let isMounted = true;
         
         const loadTender = async () => {
-            setIsLoading(true);
-            setTender(null);
-
             if (!id) {
-                if(isMounted) setIsLoading(false);
+                setIsLoading(false);
                 return;
             }
+            
+            // Set loading to true at the beginning of any fetch/state change
+            setIsLoading(true);
 
             if (id === 'new') {
                 const newTenderData: E_tender = {
@@ -55,7 +55,9 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
                     if (fetchedTender) {
                         setTender(fetchedTender);
                     } else {
+                        // Avoid redirecting here, just show a message or let a "not found" component render
                         toast({ title: "Tender Not Found", description: "The requested tender could not be found.", variant: "destructive" });
+                        setTender(null); // Ensure no stale data
                     }
                     setIsLoading(false);
                 }
@@ -67,7 +69,7 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
         return () => {
             isMounted = false;
         };
-    }, [id, getTender]);
+    }, [id, getTender]); // `getTender` is stable due to useCallback
 
     if (isLoading || !tender) {
         return (
@@ -78,5 +80,5 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
         );
     }
 
-    return <TenderDataProvider key={id} initialTender={tender}>{children}</TenderDataProvider>;
+    return <TenderDataProvider initialTender={tender}>{children}</TenderDataProvider>;
 }
