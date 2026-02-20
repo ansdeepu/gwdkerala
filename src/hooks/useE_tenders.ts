@@ -1,3 +1,4 @@
+
 // src/hooks/useE_tenders.ts
 "use client";
 
@@ -37,7 +38,10 @@ const processDoc = (docSnap: DocumentData) => {
             processed[key] = value;
         }
     }
-    return { ...processed, id: docSnap.id } as E_tender;
+    if (docSnap.id) {
+        processed.id = docSnap.id;
+    }
+    return processed as E_tender;
 };
 
 export function useE_tenders() {
@@ -49,6 +53,9 @@ export function useE_tenders() {
         if (!user.officeLocation) throw new Error("User has no office location.");
         const collectionPath = `offices/${user.officeLocation.toLowerCase()}/eTenders`;
         const payload = { ...tenderData, officeLocation: user.officeLocation, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        if ('id' in payload) {
+            delete (payload as any).id;
+        }
         const docRef = await addDoc(collection(db, collectionPath), payload);
         return docRef.id;
     }, [user]);

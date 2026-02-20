@@ -23,7 +23,7 @@ const db = getFirestore(app);
 // Helper to convert Firestore Timestamps to JS Dates recursively
 const processFirestoreDoc = <T,>(doc: DocumentData): T => {
     const data = doc.data();
-    const converted: { [key: string]: any } = { id: doc.id };
+    const converted: { [key: string]: any } = {};
 
     for (const key in data) {
         const value = data[key];
@@ -40,6 +40,10 @@ const processFirestoreDoc = <T,>(doc: DocumentData): T => {
         } else {
             converted[key] = value;
         }
+    }
+    // This is the critical fix: Ensure the document's actual ID is always used.
+    if (doc.id) {
+      converted.id = doc.id;
     }
     return converted as T;
 };
@@ -241,31 +245,27 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
           setOfficeAddress(null);
           return;
       }
+  
+      const globalOffice = globalOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === officeLocation.toLowerCase());
       
       const subOfficeCollectionPath = `offices/${officeLocation.toLowerCase()}/officeAddresses`;
       const q = query(collection(db, subOfficeCollectionPath));
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
-          let mergedOfficeData: OfficeAddress | null = null;
-          const globalOffice = globalOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === officeLocation.toLowerCase());
-
           if (!snapshot.empty) {
               const subOfficeDoc = processFirestoreDoc(snapshot.docs[0]);
-              mergedOfficeData = {
-                  ...subOfficeDoc, // Details from sub-collection
-                  officeLocation: officeLocation, // From context
-                  officeCode: globalOffice?.officeCode || '', // From top-level
-              };
-          } else if (globalOffice) {
-              // Fallback if only the global doc exists
-              mergedOfficeData = {
-                  id: globalOffice.id,
-                  officeName: '', // No sub-doc, so no specific name
-                  officeLocation: globalOffice.officeLocation,
-                  officeCode: globalOffice.officeCode,
-              };
+              setOfficeAddress({
+                  ...subOfficeDoc,
+                  officeCode: globalOffice?.officeCode || '', // Merge officeCode
+              });
+          } else {
+              // If no sub-collection doc, still provide the global info
+              if (globalOffice) {
+                  setOfficeAddress({ ...globalOffice, officeName: '', id: globalOffice.id });
+              } else {
+                  setOfficeAddress(null);
+              }
           }
-          setOfficeAddress(mergedOfficeData);
       }, (error) => {
           console.error("Error fetching sub-collection officeAddress:", error);
           setOfficeAddress(null);
@@ -274,6 +274,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       return () => unsubscribe();
     }, [user, selectedOffice, globalOfficeAddresses]);
     
+
     // Effect for OFFICE-SCOPED data
     useEffect(() => {
         if (!user) {
@@ -429,7 +430,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             allUsers,
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
-            allOfficeAddresses: globalOfficeAddresses,
+            allOfficeAddresses: globalOfficeAddresses, // Provide the global list
             officeAddress, 
             isLoading,
             refetchRateDescriptions,
