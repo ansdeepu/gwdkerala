@@ -136,10 +136,10 @@ export default function ArsEntryPage() {
     const { toast } = useToast();
     
     const isEditing = !!entryIdToEdit;
-    const canEdit = user?.role === 'editor';
+    const canEdit = user?.role === 'admin' || user?.role === 'engineer';
     const isSupervisor = user?.role === 'supervisor';
     const isViewer = user?.role === 'viewer' || readOnlyParam === 'true';
-    const isApprovingUpdate = canEdit && !!approveUpdateId;
+    const isApprovingUpdate = user?.role === 'admin' && !!approveUpdateId;
     
     const [isFormDisabledForSupervisor, setIsFormDisabledForSupervisor] = useState(false);
     
@@ -164,7 +164,7 @@ export default function ArsEntryPage() {
     const isSupervisorDropdownDisabled = false;
 
     const isFieldReadOnly = (fieldName: keyof ArsEntryFormData): boolean => {
-        if (canEdit && !isViewer) return false; // Editor can edit everything unless in read-only mode
+        if ((user?.role === 'admin' || user?.role === 'engineer') && !isViewer) return false; // Admin/Engineer can edit everything unless in read-only mode
         if (isViewer) return true; // Viewer can edit nothing
     
         if (isSupervisor) {
@@ -231,13 +231,13 @@ export default function ArsEntryPage() {
     }, [isEditing, isViewer, isSupervisor, setHeader, isApprovingUpdate]);
 
     useEffect(() => {
-        if (canEdit) {
+        if (user?.role === 'admin' || user?.role === 'engineer') {
             fetchAllUsers().then(setAllUsers);
         }
-    }, [canEdit, fetchAllUsers]);
+    }, [user, fetchAllUsers]);
     
     const staffMap = React.useMemo(() => {
-        if (!canEdit) return new Map();
+        if (user?.role !== 'admin' && user?.role !== 'engineer') return new Map();
         const map = new Map<string, StaffMember & { uid: string }>();
         allUsers
             .filter(u => u.role === 'supervisor' && u.isApproved && u.staffId)
@@ -248,7 +248,7 @@ export default function ArsEntryPage() {
                 }
             });
         return map;
-    }, [allUsers, staffMembers, canEdit]);
+    }, [allUsers, staffMembers, user]);
 
     const supervisorList = useMemo(() => Array.from(staffMap.values()), [staffMap]);
     
@@ -399,10 +399,10 @@ export default function ArsEntryPage() {
             if (isApprovingUpdate && entryIdToEdit && approveUpdateId) {
                 await updateArsEntry(entryIdToEdit, payload, approveUpdateId, user);
                 toast({ title: "Update Approved", description: `Changes for site "${data.nameOfSite}" have been saved.` });
-            } else if (canEdit && isEditing && entryIdToEdit) {
+            } else if ((user?.role === 'admin' || user?.role === 'engineer') && isEditing && entryIdToEdit) {
                 await updateArsEntry(entryIdToEdit, payload);
                 toast({ title: "ARS Site Updated", description: `Site "${data.nameOfSite}" has been updated.` });
-            } else if (canEdit && !isEditing) {
+            } else if ((user?.role === 'admin' || user?.role === 'engineer') && !isEditing) {
                  if (!user.officeLocation) { throw new Error("User has no office location.") };
                 const fileNoTrimmed = data.fileNo.trim().toUpperCase();
                 const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/arsEntries`), where("fileNo", "==", fileNoTrimmed));
@@ -624,3 +624,4 @@ export default function ArsEntryPage() {
         </div>
     );
 }
+```
