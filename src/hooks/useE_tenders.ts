@@ -8,6 +8,7 @@ import { useAuth } from './useAuth';
 import type { E_tenderFormData } from '@/lib/schemas/eTenderSchema';
 import { toast } from './use-toast';
 import { useDataStore } from './use-data-store';
+import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 
 const db = getFirestore(app);
 
@@ -41,7 +42,7 @@ const processDoc = (docSnap: DocumentData) => {
 
 export function useE_tenders() {
     const { user } = useAuth();
-    const { allE_tenders, isLoading: dataStoreLoading } = useDataStore();
+    const { allE_tenders, isLoading: dataStoreLoading, selectedOffice } = useDataStore();
     
     const addTender = useCallback(async (tenderData: Omit<E_tender, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
         if (!user) throw new Error("User must be logged in to add a tender.");
@@ -73,9 +74,25 @@ export function useE_tenders() {
     }, [user, toast]);
     
     const getTender = useCallback(async (id: string): Promise<E_tender | null> => {
-        if (!user || !user.officeLocation) return null;
+        // First, try to find the tender in the already-loaded list. This is the most reliable.
+        const tenderFromList = allE_tenders.find(t => t.id === id);
+        if (tenderFromList) {
+            return tenderFromList;
+        }
+    
+        // If not in the list (e.g., race condition or direct access), fallback to a direct fetch.
+        if (!user) return null;
+    
+        const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
+        const officeToQuery = isSuperAdmin ? selectedOffice : user.officeLocation;
+    
+        // If there's no specific office to query, we can't fetch a single doc.
+        if (!officeToQuery) {
+            return null;
+        }
+    
         try {
-            const collectionPath = `offices/${user.officeLocation.toLowerCase()}/eTenders`;
+            const collectionPath = `offices/${officeToQuery.toLowerCase()}/eTenders`;
             const docRef = doc(db, collectionPath, id);
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
@@ -86,7 +103,7 @@ export function useE_tenders() {
             console.error("Error fetching tender by ID:", error);
             return null;
         }
-    }, [user]);
+    }, [user, selectedOffice, allE_tenders]);
 
     return { 
         tenders: allE_tenders, 
