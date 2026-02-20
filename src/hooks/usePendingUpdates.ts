@@ -81,12 +81,12 @@ export function usePendingUpdates(): PendingUpdatesState {
   const subscribeToPendingUpdates = useCallback((
     callback: (updates: PendingUpdate[]) => void
   ) => {
-    if (!user) {
+    if (!user || !user.officeLocation) {
       callback([]);
       return () => {};
     }
 
-    const statusesToQuery = user.role === 'editor' 
+    const statusesToQuery = user.role === 'admin' 
       ? ['pending', 'supervisor-unassigned'] 
       : ['pending', 'rejected'];
       
@@ -95,7 +95,8 @@ export function usePendingUpdates(): PendingUpdatesState {
         conditions.push(where('submittedByUid', '==', user.uid));
     }
     
-    const q = query(collection(db, PENDING_UPDATES_COLLECTION), ...conditions);
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`;
+    const q = query(collection(db, collectionPath), ...conditions);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const updates = snapshot.docs.map(doc => convertTimestampToDate({ id: doc.id, ...doc.data() }));
@@ -116,14 +117,15 @@ export function usePendingUpdates(): PendingUpdatesState {
     currentUser: UserProfile,
     fileLevelUpdates: Partial<Pick<DataEntryFormData, 'fileStatus' | 'remarks'>>
   ) => {
-    if (!currentUser.uid || !currentUser.name) {
+    if (!currentUser.uid || !currentUser.name || !currentUser.officeLocation) {
       throw new Error("Invalid user profile for submitting an update.");
     }
-
+    
+    const collectionPath = `offices/${currentUser.officeLocation.toLowerCase()}/pendingUpdates`;
     const batch = writeBatch(db);
 
     const existingUpdatesQuery = query(
-      collection(db, PENDING_UPDATES_COLLECTION),
+      collection(db, collectionPath),
       where('fileNo', '==', fileNo),
       where('submittedByUid', '==', currentUser.uid)
     );
@@ -132,7 +134,7 @@ export function usePendingUpdates(): PendingUpdatesState {
       batch.delete(doc.ref);
     });
 
-    const newUpdateRef = doc(collection(db, PENDING_UPDATES_COLLECTION));
+    const newUpdateRef = doc(collection(db, collectionPath));
     const newUpdateData = {
       fileNo,
       updatedSiteDetails: siteDetails,
@@ -154,9 +156,10 @@ export function usePendingUpdates(): PendingUpdatesState {
     updatedArsEntry: ArsEntryFormData,
     currentUser: UserProfile
   ) => {
-    if (!currentUser.uid || !currentUser.name) {
+    if (!currentUser.uid || !currentUser.name || !currentUser.officeLocation) {
       throw new Error("Invalid user profile for submitting an update.");
     }
+    const collectionPath = `offices/${currentUser.officeLocation.toLowerCase()}/pendingUpdates`;
 
     const newUpdate = {
       arsId: arsId,
@@ -169,23 +172,27 @@ export function usePendingUpdates(): PendingUpdatesState {
       submittedAt: serverTimestamp(),
     };
 
-    await addDoc(collection(db, PENDING_UPDATES_COLLECTION), newUpdate);
+    await addDoc(collection(db, collectionPath), newUpdate);
   }, []);
   
   const getPendingUpdateById = useCallback(async (updateId: string): Promise<PendingUpdate | null> => {
-    const docRef = doc(db, PENDING_UPDATES_COLLECTION, updateId);
+    if (!user || !user.officeLocation) return null;
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`;
+    const docRef = doc(db, collectionPath, updateId);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       return convertTimestampToDate({ id: docSnap.id, ...docSnap.data() });
     }
     return null;
-  }, []);
+  }, [user]);
 
   const rejectUpdate = useCallback(async (updateId: string, reason?: string) => {
-    if (!user || user.role !== 'editor') {
+    if (!user || user.role !== 'admin') {
       throw new Error("You do not have permission to reject updates.");
     }
-    const updateDocRef = doc(db, PENDING_UPDATES_COLLECTION, updateId);
+    if (!user.officeLocation) throw new Error("User has no office location.");
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`;
+    const updateDocRef = doc(db, collectionPath, updateId);
     await updateDoc(updateDocRef, {
       status: 'rejected',
       reviewedByUid: user.uid,
@@ -195,10 +202,12 @@ export function usePendingUpdates(): PendingUpdatesState {
   }, [user]);
 
   const deleteUpdate = useCallback(async (updateId: string) => {
-    if (!user || user.role !== 'editor') {
+    if (!user || user.role !== 'admin') {
         throw new Error("You do not have permission to delete updates.");
     }
-    const updateDocRef = doc(db, PENDING_UPDATES_COLLECTION, updateId);
+    if (!user.officeLocation) throw new Error("User has no office location.");
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`;
+    const updateDocRef = doc(db, collectionPath, updateId);
     await deleteDoc(updateDocRef);
   }, [user]);
 

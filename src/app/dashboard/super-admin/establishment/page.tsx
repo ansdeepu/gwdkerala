@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/establishment/page.tsx
 "use client";
 
@@ -30,25 +31,25 @@ import { useDataStore } from "@/hooks/use-data-store";
 export const dynamic = 'force-dynamic';
 
 const Briefcase = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
 );
 const UserPlus = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
 );
 const ShieldAlert = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
 );
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 const Expand = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m21 21-6-6m6 6v-4m0 4h-4"/><path d="M3 3l6 6"/><path d="M3 3v4m0-4h4"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m21 21-6-6m6 6v-4m0 4h-4"/><path d="M3 3l6 6"/><path d="M3 3v4m0-4h4"/></svg>
 );
 const Search = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
 );
 const FileDown = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg>
 );
 
 
@@ -94,7 +95,7 @@ export default function EstablishmentPage() {
   const [imageForModal, setImageForModal] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   
-  const canManage = user?.role === 'editor' && user.isApproved;
+  const canManage = user?.role === 'superAdmin' && user.isApproved;
   const isViewer = user?.role === 'viewer';
 
   const handleAddNewStaff = () => {
@@ -298,73 +299,73 @@ export default function EstablishmentPage() {
     <div className="space-y-6">
       <Card>
         <CardContent className="p-4 space-y-4">
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="relative flex-grow w-full sm:w-auto">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder="Search by name, PEN, designation, roles, phone, DOB (dd/MM/yyyy), remarks..."
-                        className="w-full rounded-lg bg-background pl-10 md:w-full lg:w-full shadow-sm"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                    {canManage && (
-                        <Button onClick={handleAddNewStaff} className="w-full sm:w-auto">
-                        <UserPlus className="mr-2 h-5 w-5" /> Add New Staff
-                        </Button>
-                    )}
-                    <Button variant="outline" onClick={handleExportExcel} className="w-full sm:w-auto">
-                        <FileDown className="mr-2 h-4 w-4" /> Export Excel
-                    </Button>
-                </div>
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="relative flex-grow w-full sm:w-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search by name, PEN, designation, roles, phone, DOB (dd/MM/yyyy), remarks..."
+                className="w-full rounded-lg bg-background pl-10 md:w-full lg:w-full shadow-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-            <Tabs defaultValue="activeStaff" className="w-full pt-4 border-t">
-                <TabsList className="grid w-full grid-cols-3 sm:w-[600px]">
-                <TabsTrigger value="activeStaff">Active ({activeStaffCount})</TabsTrigger>
-                <TabsTrigger value="transferredStaff">Transferred ({transferredStaffCount})</TabsTrigger>
-                <TabsTrigger value="retiredStaff">Retired ({retiredStaffCount})</TabsTrigger>
-                </TabsList>
-                <TabsContent value="activeStaff" className="mt-4">
-                <div className="max-h-[70vh] overflow-auto">
-                    <StaffTable
-                    staffData={activeStaffList}
-                    onEdit={handleEditStaff}
-                    onDelete={canManage ? deleteStaffMember : undefined}
+            <div className="flex gap-2 w-full sm:w-auto">
+              {canManage && (
+                <Button onClick={handleAddNewStaff} size="sm" className="w-full sm:w-auto">
+                  <UserPlus className="mr-2 h-4 w-4" /> Add New Staff
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleExportExcel} className="w-full sm:w-auto">
+                <FileDown className="mr-2 h-4 w-4" /> Export Excel
+              </Button>
+            </div>
+          </div>
+          <Tabs defaultValue="activeStaff" className="w-full pt-4 border-t">
+            <TabsList className="grid w-full grid-cols-3 sm:w-[600px]">
+              <TabsTrigger value="activeStaff">Active ({activeStaffCount})</TabsTrigger>
+              <TabsTrigger value="transferredStaff">Transferred ({transferredStaffCount})</TabsTrigger>
+              <TabsTrigger value="retiredStaff">Retired ({retiredStaffCount})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="activeStaff" className="mt-4">
+              <div className="max-h-[70vh] overflow-auto">
+                <StaffTable
+                  staffData={activeStaffList}
+                  onEdit={handleEditStaff}
+                  onDelete={canManage ? deleteStaffMember : undefined}
+                  onSetStatus={canManage ? handleSetStaffStatus : undefined}
+                  isViewer={isViewer}
+                  onImageClick={handleOpenImageModal}
+                  isLoading={isFiltering}
+                  searchActive={!!debouncedSearchTerm}
+                />
+              </div>
+            </TabsContent>
+            <TabsContent value="transferredStaff" className="mt-4">
+              <div className="max-h-[70vh] overflow-auto">
+                <TransferredStaffTable
+                    staffData={transferredStaffList}
                     onSetStatus={canManage ? handleSetStaffStatus : undefined}
                     isViewer={isViewer}
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}
                     searchActive={!!debouncedSearchTerm}
-                    />
-                </div>
-                </TabsContent>
-                <TabsContent value="transferredStaff" className="mt-4">
-                <div className="max-h-[70vh] overflow-auto">
-                    <TransferredStaffTable
-                        staffData={transferredStaffList}
-                        onSetStatus={canManage ? handleSetStaffStatus : undefined}
-                        isViewer={isViewer}
-                        onImageClick={handleOpenImageModal}
-                        isLoading={isFiltering}
-                        searchActive={!!debouncedSearchTerm}
-                    />
-                </div>
-                </TabsContent>
-                <TabsContent value="retiredStaff" className="mt-4">
-                <div className="max-h-[70vh] overflow-auto">
-                    <RetiredStaffTable
-                        staffData={retiredStaffList}
-                        onSetStatus={canManage ? handleSetStaffStatus : undefined}
-                        isViewer={isViewer}
-                        onImageClick={handleOpenImageModal}
-                        isLoading={isFiltering}
-                        searchActive={!!debouncedSearchTerm}
-                    />
-                </div>
-                </TabsContent>
-            </Tabs>
+                />
+              </div>
+            </TabsContent>
+            <TabsContent value="retiredStaff" className="mt-4">
+              <div className="max-h-[70vh] overflow-auto">
+                <RetiredStaffTable
+                    staffData={retiredStaffList}
+                    onSetStatus={canManage ? handleSetStaffStatus : undefined}
+                    isViewer={isViewer}
+                    onImageClick={handleOpenImageModal}
+                    isLoading={isFiltering}
+                    searchActive={!!debouncedSearchTerm}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
       

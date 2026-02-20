@@ -79,7 +79,7 @@ export default function PlanFundWorksPage() {
   const router = useRouter();
   const { setIsNavigating } = usePageNavigation();
   
-  const canCreate = user?.role === 'editor' && !isSuperAdmin;
+  const canCreate = (user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist') && !isSuperAdmin;
   
   const { filteredEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => 
