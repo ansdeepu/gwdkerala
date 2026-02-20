@@ -1,3 +1,4 @@
+
 // src/app/dashboard/ars/entry/page.tsx
 "use client";
 
@@ -624,4 +625,3 @@ export default function ArsEntryPage() {
         </div>
     );
 }
-```

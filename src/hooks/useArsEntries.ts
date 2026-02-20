@@ -1,4 +1,3 @@
-
 // src/hooks/useArsEntries.ts
 "use client";
 
@@ -163,9 +162,14 @@ export function useArsEntries() {
     await batch.commit();
   }, [user, toast]);
   
+  const refreshArsEntries = useCallback(() => {
+    // This function can be a no-op because the central store handles refetching
+  }, []);
+
   return { 
     arsEntries, 
     isLoading, 
+    refreshArsEntries,
     addArsEntry, 
     updateArsEntry, 
     deleteArsEntry, 
