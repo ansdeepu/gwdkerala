@@ -108,7 +108,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
                           <AvatarFallback className="bg-pink-100 text-pink-700 font-bold">{getInitials(staff.name)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-semibold text-pink-700 text-xs -mb-1 flex items-center gap-1.5"><Gift className="h-3 w-3" />Happy Birthday!</p>
+                          <p className="font-semibold text-pink-700 text-xs -mb-1 flex items-center gap-1.5"><Gift className="h-4 w-4" />Happy Birthday!</p>
                           <p className="font-bold text-sm text-pink-800">{staff.name}</p>
                         </div>
                       </button>

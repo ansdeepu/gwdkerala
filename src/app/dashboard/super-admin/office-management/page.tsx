@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc, where } from "firebase/firestore";
+import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc, where, serverTimestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useDataStore, type OfficeAddress } from '@/hooks/use-data-store';
 import { useAuth } from '@/hooks/useAuth';
@@ -31,7 +31,6 @@ import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, Edit, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X, Info } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { getInitials } from '@/lib/utils';
-import UserManagementTable from '@/components/admin/UserManagementTable';
 
 const db = getFirestore(app);
 

@@ -39,7 +39,7 @@ export default function HelpPage() {
        <Card>
         <CardHeader>
           <div className="flex items-center space-x-3">
-            <Building className="h-6 w-6 text-primary" />
+            <Building className="h-5 w-5 text-primary" />
             <CardTitle>About the Ground Water Department</CardTitle>
           </div>
           <CardDescription>
@@ -65,7 +65,7 @@ export default function HelpPage() {
       <Card>
         <CardHeader>
            <div className="flex items-center space-x-3">
-            <Code className="h-6 w-6 text-primary" />
+            <Code className="h-5 w-5 text-primary" />
             <CardTitle>Technology Stack</CardTitle>
           </div>
           <CardDescription>
@@ -249,7 +249,7 @@ export default function HelpPage() {
       <Card className="mt-6 border-primary/20 bg-primary/5">
         <CardHeader>
            <div className="flex items-center space-x-3">
-            <LifeBuoy className="h-6 w-6 text-primary" />
+            <LifeBuoy className="h-5 w-5 text-primary" />
             <CardTitle>Contact for Support</CardTitle>
           </div>
           <CardDescription>

@@ -98,15 +98,15 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent className="text-sm space-y-3 text-center">
                 <div className="flex items-center justify-center space-x-2">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    <ShieldCheck className="h-4 w-4 text-primary" />
                     <span className="font-medium">Role:</span>
-                    <Badge variant={user.role === 'editor' ? 'default' : 'secondary'}>
+                    <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                       {user.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'N/A'}
                     </Badge>
                 </div>
                  {user.designation && (
                     <div className="flex items-center justify-center space-x-2">
-                        <Briefcase className="h-5 w-5 text-primary" />
+                        <Briefcase className="h-4 w-4 text-primary" />
                         <span className="font-medium">Designation:</span>
                         <span className="text-foreground">{user.designation}</span>
                     </div>
@@ -119,7 +119,7 @@ export default function ProfilePage() {
             <Card>
                 <CardHeader>
                     <div className="flex items-center space-x-3">
-                         <KeyRound className="h-6 w-6 text-primary" />
+                         <KeyRound className="h-5 w-5 text-primary" />
                         <CardTitle>Change Password</CardTitle>
                     </div>
                     <CardDescription>

@@ -28,7 +28,7 @@ export default function PaginationControls({ currentPage, totalPages, onPageChan
     }
     
     if (startPage > 1) {
-        pageNumbers.push(<Button key="start-ellipsis" variant="ghost" size="icon" disabled>...</Button>);
+        pageNumbers.push(<Button key="start-ellipsis" variant="ghost" size="icon" disabled className="h-8 w-8">...</Button>);
     }
 
     for (let i = startPage; i <= endPage; i++) {
@@ -46,7 +46,7 @@ export default function PaginationControls({ currentPage, totalPages, onPageChan
     }
     
     if (endPage < totalPages) {
-        pageNumbers.push(<Button key="end-ellipsis" variant="ghost" size="icon" disabled>...</Button>);
+        pageNumbers.push(<Button key="end-ellipsis" variant="ghost" size="icon" disabled className="h-8 w-8">...</Button>);
     }
 
     return pageNumbers;

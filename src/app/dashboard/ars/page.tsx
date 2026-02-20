@@ -1,5 +1,3 @@
-
-
 // src/app/dashboard/ars/page.tsx
 "use client";
 
@@ -563,7 +561,7 @@ export default function ArsPage() {
         <CardContent className="p-4 space-y-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="relative w-full sm:flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input type="search" placeholder="Search across all fields..." className="w-full rounded-lg bg-background pl-10 shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
                 <div className="flex items-center flex-wrap sm:flex-nowrap justify-end gap-2">
@@ -633,7 +631,7 @@ export default function ArsPage() {
                         </div>
                         {lastCreatedDate && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                                <Clock className="h-3.5 w-3.5"/>
+                                <Clock className="h-4 w-4"/>
                                 Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                             </div>
                         )}
