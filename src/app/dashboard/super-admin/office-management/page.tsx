@@ -166,7 +166,7 @@ export default function OfficeManagementPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <Button onClick={() => setIsOfficeUserDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Setup New Office Accounts</Button>
+        <Button size="sm" onClick={() => setIsOfficeUserDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Setup New Office Accounts</Button>
       </div>
       <div className="space-y-4">
         {isDataLoading ? (

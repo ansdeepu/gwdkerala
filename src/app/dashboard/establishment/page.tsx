@@ -1,4 +1,5 @@
 
+
 // src/app/dashboard/establishment/page.tsx
 "use client";
 
@@ -312,11 +313,11 @@ export default function EstablishmentPage() {
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               {canManage && (
-                <Button onClick={handleAddNewStaff} className="w-full sm:w-auto">
-                  <UserPlus className="mr-2 h-5 w-5" /> Add New Staff
+                <Button onClick={handleAddNewStaff} size="sm" className="w-full sm:w-auto">
+                  <UserPlus className="mr-2 h-4 w-4" /> Add New Staff
                 </Button>
               )}
-              <Button variant="outline" onClick={handleExportExcel} className="w-full sm:w-auto">
+              <Button variant="outline" size="sm" onClick={handleExportExcel} className="w-full sm:w-auto">
                 <FileDown className="mr-2 h-4 w-4" /> Export Excel
               </Button>
             </div>

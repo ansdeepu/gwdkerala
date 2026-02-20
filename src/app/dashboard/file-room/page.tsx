@@ -1,4 +1,5 @@
 
+
 // src/app/dashboard/file-room/page.tsx
 "use client";
 
@@ -237,8 +238,8 @@ export default function FileManagerPage() {
                     </div>
                 )}
                 {canCreate && (
-                    <Button onClick={handleAddNewClick} className="w-full sm:w-auto shrink-0">
-                        <FilePlus2 className="mr-2 h-5 w-5" /> New File
+                    <Button onClick={handleAddNewClick} size="sm" className="w-full sm:w-auto shrink-0">
+                        <FilePlus2 className="mr-2 h-4 w-4" /> New File
                     </Button>
                 )}
                </div>

@@ -147,8 +147,8 @@ export default function GWInvestigationPage() {
                 </div>
                 
                 {canCreate && (
-                    <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=gwInvestigation'); }} className="w-full sm:w-auto shrink-0">
-                        <FilePlus2 className="mr-2 h-5 w-5" /> New File
+                    <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=gwInvestigation'); }} size="sm" className="w-full sm:w-auto shrink-0">
+                        <FilePlus2 className="mr-2 h-4 w-4" /> New File
                     </Button>
                 )}
                </div>

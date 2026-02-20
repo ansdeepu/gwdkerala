@@ -290,10 +290,10 @@ export default function ETenderListPage() {
                                 </Select>
                                 {canEdit && (
                                     <div className="flex items-center gap-2">
-                                        <Button onClick={() => router.push('/dashboard/bidders')} variant="secondary" className="shrink-0">
+                                        <Button size="sm" onClick={() => router.push('/dashboard/bidders')} variant="secondary" className="shrink-0">
                                             <Users className="mr-2 h-4 w-4" /> Bidders List
                                         </Button>
-                                        <Button onClick={handleCreateNew} className="w-full sm:w-auto shrink-0">
+                                        <Button size="sm" onClick={handleCreateNew} className="w-full sm:w-auto shrink-0">
                                             <PlusCircle className="mr-2 h-4 w-4" /> Create New
                                         </Button>
                                     </div>

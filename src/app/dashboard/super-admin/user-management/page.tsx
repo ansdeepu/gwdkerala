@@ -130,7 +130,7 @@ export default function DirectorateUserManagementPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-end">
-        <Button onClick={() => setIsDirectorateUserDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Create New Directorate User</Button>
+        <Button size="sm" onClick={() => setIsDirectorateUserDialogOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/> Create New Directorate User</Button>
       </div>
       <Card>
         <CardContent className="pt-6">

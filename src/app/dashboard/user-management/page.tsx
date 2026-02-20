@@ -1,4 +1,5 @@
 
+
 // src/app/dashboard/user-management/page.tsx
 "use client";
 
@@ -154,8 +155,8 @@ export default function UserManagementPage() {
         <Card>
           <CardContent className="p-4">
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button onClick={() => setIsStaffFormOpen(true)}>
-                  <UserPlus className="mr-2 h-5 w-5" /> Add New User (from Staff)
+              <Button size="sm" onClick={() => setIsStaffFormOpen(true)}>
+                  <UserPlus className="mr-2 h-4 w-4" /> Add New User (from Staff)
               </Button>
             </div>
           </CardContent>
