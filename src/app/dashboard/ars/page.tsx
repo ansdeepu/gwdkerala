@@ -680,7 +680,7 @@ export default function ArsPage() {
                                                 <div className="flex items-center justify-center space-x-1">
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <Button variant="ghost" size="icon" onClick={() => handleViewClick(site.id!)}>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewClick(site.id!)}>
                                                                 <Eye className="h-4 w-4" />
                                                             </Button>
                                                         </TooltipTrigger>
@@ -689,7 +689,7 @@ export default function ArsPage() {
                                                     {canEdit && (
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => setDeletingSite(site)}>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/90" onClick={() => setDeletingSite(site)}>
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </Button>
                                                             </TooltipTrigger>
