@@ -49,6 +49,8 @@ export default function LoggingPumpingTestPage() {
   
   useEffect(() => { setHeader('Logging & Pumping Test', 'List of all Logging & Pumping Test files.'); }, [setHeader]);
 
+  const canCreate = user?.role === 'admin' || user?.role === 'scientist' || user?.role === 'investigator';
+
   const { loggingEntries, pumpingTestEntries, lastCreatedDate } = useMemo(() => {
     const allLoggingAndPumpingEntries = fileEntries.filter(entry => {
         const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
@@ -138,7 +140,7 @@ export default function LoggingPumpingTestPage() {
                     Total Sites: <span className="font-bold text-primary">{totalSites}</span>
                 </div>
                 
-                {user?.role === 'editor' && (
+                {canCreate && (
                     <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=loggingPumpingTest'); }} className="w-full sm:w-auto shrink-0">
                         <FilePlus2 className="mr-2 h-5 w-5" /> New File
                     </Button>

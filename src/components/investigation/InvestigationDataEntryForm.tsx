@@ -749,7 +749,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const [dialogState, setDialogState] = useState<{ type: null | 'application' | 'remittance' | 'payment' | 'site' | 'reorderSite' | 'viewSite'; data: any, isView?: boolean }>({ type: null, data: null, isView: false });
   const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'payment' | 'site'; index: number } | null>(null);
 
-  const isEditor = userRole === 'editor';
+  const isEditor = userRole === 'admin' || userRole === 'scientist' || userRole === 'investigator';
   const isSupervisor = userRole === 'supervisor';
   const isViewer = userRole === 'viewer';
   const isEditing = !!fileIdToEdit;

@@ -49,6 +49,8 @@ export default function GWInvestigationPage() {
   
   useEffect(() => { setHeader('GW Investigation', 'List of all Ground Water Investigation files.'); }, [setHeader]);
 
+  const canCreate = user?.role === 'admin' || user?.role === 'scientist' || user?.role === 'investigator';
+
   const allInvestigationEntries = useMemo(() => {
     let entries = fileEntries.filter(entry => {
         const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
@@ -144,7 +146,7 @@ export default function GWInvestigationPage() {
                     Total Sites: <span className="font-bold text-primary">{totalSites}</span>
                 </div>
                 
-                {user?.role === 'editor' && (
+                {canCreate && (
                     <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=gwInvestigation'); }} className="w-full sm:w-auto shrink-0">
                         <FilePlus2 className="mr-2 h-5 w-5" /> New File
                     </Button>

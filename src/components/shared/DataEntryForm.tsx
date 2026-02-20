@@ -357,6 +357,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
         >
             <DialogHeader>
                 <DialogTitle>{isDeferredFunding ? 'Administrative Sanction Details' : 'Remittance Details'}</DialogTitle>
+                {isDeferredFunding && <DialogDescription className="text-amber-700 bg-amber-50 p-2 rounded-md border border-amber-200">The amount entered here is the deferred amount, which the department has already received for this scheme.</DialogDescription>}
             </DialogHeader>
             <div className="p-6 pt-0 space-y-4">
                 <div className={cn("grid grid-cols-1 gap-4", isDeferredFunding ? "md:grid-cols-2" : "md:grid-cols-3")}>
@@ -789,7 +790,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'payment' | 'site'; index: number } | null>(null);
   const [siteToCopy, setSiteToCopy] = useState<number | null>(null);
 
-  const isEditor = userRole === 'editor';
+  const isEditor = userRole === 'admin' || userRole === 'scientist' || userRole === 'engineer';
   const isSupervisor = userRole === 'supervisor';
   const isViewer = userRole === 'viewer';
   
