@@ -1,4 +1,3 @@
-
 // src/components/admin/UserManagementTable.tsx
 "use client";
 
@@ -283,8 +282,8 @@ export default function UserManagementTable({
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <div className="flex items-center justify-center gap-1 opacity-50 cursor-not-allowed">
-                                            <Button variant="ghost" size="icon" disabled className="h-8 w-8"><Edit className="h-4 w-4" /></Button>
-                                            <Button variant="ghost" size="icon" disabled className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" disabled><Edit className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" disabled className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent>
@@ -296,7 +295,7 @@ export default function UserManagementTable({
                                     {onEditUser && (
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditUser(userRow)} disabled={disableActions || isDeletingUser}>
+                                                <Button variant="ghost" size="icon" onClick={() => onEditUser(userRow)} disabled={disableActions || isDeletingUser}>
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
                                             </TooltipTrigger>
@@ -308,7 +307,7 @@ export default function UserManagementTable({
                                         <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10 h-8 w-8"
+                                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                                         onClick={() => handleDeleteUserClick(userRow)}
                                         disabled={disableActions || isDeletingUser}
                                         >

@@ -1,4 +1,3 @@
-
 // src/components/establishment/StaffTable.tsx
 "use client";
 
@@ -153,7 +152,7 @@ export default function StaffTable({
                       <div className="flex items-center justify-center space-x-0.5">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => onEdit && onEdit(staff)} className="h-8 w-8">
+                            <Button variant="ghost" size="icon" onClick={() => onEdit && onEdit(staff)}>
                                <Eye className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
@@ -162,7 +161,7 @@ export default function StaffTable({
                         {!isViewer && onDelete && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90 h-8 w-8" onClick={() => handleDeleteClick(staff.id, staff.name)}>
+                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => handleDeleteClick(staff.id, staff.name)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
@@ -174,7 +173,7 @@ export default function StaffTable({
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Button variant="ghost" size="icon">
                                       <UserMinus className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>

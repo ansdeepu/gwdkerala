@@ -1,4 +1,3 @@
-
 // src/components/establishment/TransferredStaffTable.tsx
 "use client";
 
@@ -114,7 +113,7 @@ export default function TransferredStaffTable({
                       <AvatarFallback>{getInitials(staff.name)}</AvatarFallback>
                     </Avatar>
                     {canExpandAvatar && (
-                      <div className="absolute bottom-0 right-0 bg-black/50 p-0.5 rounded-full">
+                      <div className="absolute bottom-0 right-0 bg-black/50 p-0.5 rounded-sm">
                         <Expand className="h-3 w-3 text-white" />
                       </div>
                     )}
@@ -146,7 +145,7 @@ export default function TransferredStaffTable({
                       {isViewer ? (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                             <Button variant="ghost" size="icon" disabled className="h-8 w-8"><Eye className="h-4 w-4" /></Button>
+                             <Button variant="ghost" size="icon" disabled><Eye className="h-4 w-4" /></Button>
                           </TooltipTrigger>
                           <TooltipContent><p>View Details (Read-only)</p></TooltipContent>
                         </Tooltip>
@@ -155,7 +154,7 @@ export default function TransferredStaffTable({
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Button variant="ghost" size="icon">
                                     <ArrowLeftRight className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>

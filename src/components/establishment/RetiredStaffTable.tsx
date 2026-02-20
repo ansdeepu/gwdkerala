@@ -1,4 +1,3 @@
-
 // src/components/establishment/RetiredStaffTable.tsx
 "use client";
 
@@ -145,7 +144,7 @@ export default function RetiredStaffTable({
                       {isViewer ? (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                             <Button variant="ghost" size="icon" disabled className="h-8 w-8"><Eye className="h-4 w-4" /></Button>
+                             <Button variant="ghost" size="icon" disabled><Eye className="h-4 w-4" /></Button>
                           </TooltipTrigger>
                           <TooltipContent><p>View Details (Read-only)</p></TooltipContent>
                         </Tooltip>
@@ -154,7 +153,7 @@ export default function RetiredStaffTable({
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Button variant="ghost" size="icon">
                                     <FileArchive className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
