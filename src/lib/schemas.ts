@@ -1,4 +1,3 @@
-
 // src/lib/schemas.ts
 import { z } from 'zod';
 import { isValid } from 'date-fns';
@@ -239,6 +238,28 @@ export const StaffMemberFormDataSchema = z.object({
   status: z.enum(staffStatusOptions).default('Active'), 
   remarks: z.string().optional().default(""),
   officeLocation: z.string().optional(),
+  
+  // Fields for creating a user account
+  createUserAccount: z.boolean().optional().default(false),
+  email: z.string().optional(),
+  password: z.string().optional(),
+}).superRefine((data, ctx) => {
+    if (data.createUserAccount) {
+      if (!data.email || !z.string().email().safeParse(data.email).success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "A valid email is required.",
+          path: ["email"],
+        });
+      }
+      if (!data.password || data.password.length < 6) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Password must be at least 6 characters.",
+          path: ["password"],
+        });
+      }
+    }
 });
 export type StaffMemberFormData = z.infer<typeof StaffMemberFormDataSchema>;
 

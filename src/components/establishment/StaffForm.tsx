@@ -17,9 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Loader2, Save, X, ImageUp, Unplug, Expand, Info } from "lucide-react";
+import { Loader2, Save, X, ImageUp, Unplug, Expand, Info, UserPlus, UserCheck } from "lucide-react";
 import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions } from "@/lib/schemas";
-import type { StaffMember } from "@/lib/schemas";
+import type { StaffMember, OfficeAddress } from "@/lib/schemas";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
@@ -31,6 +31,9 @@ import {
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ScrollArea } from "../ui/scroll-area";
+import { Checkbox } from "../ui/checkbox";
+import { Separator } from "../ui/separator";
+import type { UserProfile } from "@/hooks/useAuth";
 
 interface StaffFormProps {
   onSubmit: (data: StaffMemberFormData) => Promise<void>;
@@ -38,6 +41,8 @@ interface StaffFormProps {
   isSubmitting: boolean;
   onCancel: () => void;
   isViewer?: boolean;
+  allOfficeAddresses: OfficeAddress[];
+  allUsers: UserProfile[];
 }
 
 const isValidWebUrl = (url?: string | null): boolean => {
@@ -56,10 +61,15 @@ const isPlaceholderUrl = (url?: string | null): boolean => {
 };
 
 
-export default function StaffForm({ onSubmit, initialData, isSubmitting, onCancel, isViewer = false }: StaffFormProps) {
+export default function StaffForm({ onSubmit, initialData, isSubmitting, onCancel, isViewer = false, allOfficeAddresses, allUsers }: StaffFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+
+  const userAccountExists = React.useMemo(() => {
+    if (!initialData?.id || !allUsers) return false;
+    return allUsers.some(user => user.staffId === initialData.id);
+  }, [initialData, allUsers]);
 
   const getInitialFormValues = React.useCallback((): StaffMemberFormData => {
     const dob = initialData?.dateOfBirth;
@@ -77,6 +87,10 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
       photoUrl: isValidWebUrl(initialData?.photoUrl) ? initialData?.photoUrl ?? "" : "",
       status: initialData?.status || 'Active', 
       remarks: initialData?.remarks || "",
+      officeLocation: initialData?.officeLocation || "",
+      createUserAccount: false,
+      email: "",
+      password: ""
     };
   }, [initialData]);
 
@@ -90,7 +104,11 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData, form.reset]);
 
-  const watchedPhotoUrl = form.watch("photoUrl");
+  const { watch, control } = form;
+  const watchedPhotoUrl = watch("photoUrl");
+  const watchedStatus = watch("status");
+  const createUserAccount = watch("createUserAccount");
+  const showUserCreation = !isViewer && !userAccountExists;
   
   useEffect(() => {
     const url = watchedPhotoUrl ?? null;
@@ -254,6 +272,27 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 )}
               />
             </div>
+            {watchedStatus === 'Transferred' && !isViewer && (
+                <FormField
+                    control={form.control}
+                    name="officeLocation"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Transfer to Office</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {allOfficeAddresses.map(office => (
+                                        <SelectItem key={office.id} value={office.officeLocation}>{office.officeName}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
+
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
                <FormField
@@ -364,6 +403,73 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 )}
               />
             </div>
+             <Separator />
+
+             {showUserCreation ? (
+                <div className="space-y-4 pt-4">
+                    <FormField
+                    control={form.control}
+                    name="createUserAccount"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                        <FormControl>
+                            <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={isViewer || isSubmitting}
+                            />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                            <FormLabel>
+                            Create User Account for this Staff Member
+                            </FormLabel>
+                            <FormDescription>
+                            This will create a new login account. The default role will be 'viewer' and it will require approval.
+                            </FormDescription>
+                        </div>
+                        </FormItem>
+                    )}
+                    />
+                    {createUserAccount && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-8 pt-2 border-l-2 ml-2 border-primary/20">
+                        <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Email Address</FormLabel>
+                            <FormControl>
+                                <Input type="email" placeholder="user@gwd.kerala.gov.in" {...field} readOnly={isViewer} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                                <Input type="password" placeholder="Create a temporary password" {...field} readOnly={isViewer} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                    </div>
+                    )}
+                </div>
+            ) : (
+                initialData && userAccountExists && !isViewer && (
+                    <div className="pt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                        <UserCheck className="h-4 w-4 text-green-600" />
+                        <span>A user account already exists for this staff member.</span>
+                    </div>
+                )
+            )}
+
           </div>
         </ScrollArea>
         

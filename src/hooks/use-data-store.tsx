@@ -1,4 +1,3 @@
-
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -23,29 +22,38 @@ const db = getFirestore(app);
 // Helper to convert Firestore Timestamps to JS Dates recursively
 const processFirestoreDoc = <T,>(doc: DocumentData): T => {
     const data = doc.data();
-    const converted: { [key: string]: any } = {};
-
-    for (const key in data) {
-        const value = data[key];
+    
+    // Helper function to recursively process any value
+    const processValue = (value: any): any => {
         if (value instanceof Timestamp) {
-            converted[key] = value.toDate();
-        } else if (Array.isArray(value)) {
-            converted[key] = value.map(item =>
-                typeof item === 'object' && item !== null && !(item instanceof Timestamp)
-                    ? processFirestoreDoc({ data: () => item, id: '' })
-                    : (item instanceof Timestamp ? item.toDate() : item)
-            );
-        } else if (typeof value === 'object' && value !== null) {
-            converted[key] = processFirestoreDoc({ data: () => value, id: '' });
-        } else {
-            converted[key] = value;
+            return value.toDate();
         }
-    }
-    // This is the critical fix: Ensure the document's actual ID is always used.
+        if (Array.isArray(value)) {
+            return value.map(processValue); // Recurse for items in array
+        }
+        if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
+            // It's a plain object (a map in Firestore terms)
+            const nestedObject: { [key: string]: any } = {};
+            for (const key in value) {
+                if (Object.prototype.hasOwnProperty.call(value, key)) {
+                    nestedObject[key] = processValue(value[key]);
+                }
+            }
+            return nestedObject;
+        }
+        // Return primitives, Dates, or null as is
+        return value;
+    };
+
+    // Process the document data
+    const convertedData = processValue(data);
+
+    // Add the document ID to the final object
     if (doc.id) {
-      converted.id = doc.id;
+        convertedData.id = doc.id;
     }
-    return converted as T;
+    
+    return convertedData as T;
 };
 
 const toDateOrNull = (value: any): Date | null => {

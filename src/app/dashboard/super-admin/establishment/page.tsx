@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/establishment/page.tsx
 "use client";
 
@@ -11,7 +10,7 @@ import StaffForm from "@/components/establishment/StaffForm";
 import StaffTable from "@/components/establishment/StaffTable";
 import TransferredStaffTable from "@/components/establishment/TransferredStaffTable";
 import RetiredStaffTable from "@/components/establishment/RetiredStaffTable";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
 import type { StaffMember, StaffMemberFormData, StaffStatusType } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
@@ -66,13 +65,13 @@ const formatDateForSearch = (dateInput: Date | string | null | undefined): strin
 
 export default function EstablishmentPage() {
   const { setHeader } = usePageHeader();
-  const { officeAddress } = useDataStore();
+  const { officeAddress, allOfficeAddresses, allUsers } = useDataStore();
 
   useEffect(() => {
     setHeader('All Establishment', 'Manage all staff members across all offices.');
   }, [setHeader]);
 
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, createUserByAdmin } = useAuth();
   const { 
     staffMembers, 
     isLoading: staffLoadingHook, 
@@ -116,13 +115,24 @@ export default function EstablishmentPage() {
     setIsSubmittingForm(true);
     
     try {
+      let staffId: string | undefined = editingStaff?.id;
       if (editingStaff) {
         await updateStaffMember(editingStaff.id, data);
         toast({ title: "Staff Updated", description: `${data.name}'s details have been updated.` });
       } else {
-        await addStaffMember(data); 
+        staffId = await addStaffMember(data); 
         toast({ title: "Staff Added", description: `${data.name} has been added to the establishment.` });
       }
+      
+      if (data.createUserAccount && data.email && data.password && staffId && data.officeLocation) {
+        const result = await createUserByAdmin(data.email, data.password, data.name, staffId, data.officeLocation);
+        if (result.success) {
+            toast({ title: "User Account Created", description: `Account for ${data.email} created. It requires approval.` });
+        } else {
+            throw new Error(result.error?.message || "Failed to create user account.");
+        }
+      }
+
       setIsFormOpen(false);
       setEditingStaff(null);
     } catch (error: any) {
@@ -345,6 +355,7 @@ export default function EstablishmentPage() {
               <div className="max-h-[70vh] overflow-auto">
                 <TransferredStaffTable
                     staffData={transferredStaffList}
+                    onEdit={handleEditStaff}
                     onSetStatus={canManage ? handleSetStaffStatus : undefined}
                     isViewer={isViewer}
                     onImageClick={handleOpenImageModal}
@@ -357,6 +368,7 @@ export default function EstablishmentPage() {
               <div className="max-h-[70vh] overflow-auto">
                 <RetiredStaffTable
                     staffData={retiredStaffList}
+                    onEdit={handleEditStaff}
                     onSetStatus={canManage ? handleSetStaffStatus : undefined}
                     isViewer={isViewer}
                     onImageClick={handleOpenImageModal}
@@ -382,7 +394,6 @@ export default function EstablishmentPage() {
             <DialogTitle>{editingStaff ? (isViewer ? "View Staff Details" : "Edit Staff Details") : "Add New Staff Member"}</DialogTitle>
             <DialogDescription>
               {editingStaff ? (isViewer ? "Viewing details for the staff member." : "Update the details for the staff member.") : "Fill in the form to add a new staff member."}
-              {!isViewer && " Direct photo upload is disabled; please use a public image URL."}
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-6">
@@ -392,6 +403,8 @@ export default function EstablishmentPage() {
                 isSubmitting={isSubmittingForm}
                 onCancel={() => {setIsFormOpen(false); setEditingStaff(null);}}
                 isViewer={isViewer}
+                allOfficeAddresses={allOfficeAddresses}
+                allUsers={allUsers}
             />
           </div>
         </DialogContent>

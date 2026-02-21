@@ -10,7 +10,7 @@ import StaffForm from "@/components/establishment/StaffForm";
 import StaffTable from "@/components/establishment/StaffTable";
 import TransferredStaffTable from "@/components/establishment/TransferredStaffTable";
 import RetiredStaffTable from "@/components/establishment/RetiredStaffTable";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
 import type { StaffMember, StaffMemberFormData, StaffStatusType } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
@@ -65,13 +65,13 @@ const formatDateForSearch = (dateInput: Date | string | null | undefined): strin
 
 export default function EstablishmentPage() {
   const { setHeader } = usePageHeader();
-  const { officeAddress, allOfficeAddresses } = useDataStore();
+  const { officeAddress, allOfficeAddresses, allUsers } = useDataStore();
 
   useEffect(() => {
     setHeader('Establishment', `Manage all staff members of the Ground Water Department, ${officeAddress?.officeLocation || ''}.`);
   }, [setHeader, officeAddress]);
 
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, createOfficeAdmin, createUserByAdmin } = useAuth();
   const { 
     staffMembers, 
     isLoading: staffLoadingHook, 
@@ -115,15 +115,26 @@ export default function EstablishmentPage() {
     setIsSubmittingForm(true);
     
     try {
-      if (editingStaff) {
-        await updateStaffMember(editingStaff.id, data);
-        toast({ title: "Staff Updated", description: `${data.name}'s details have been updated.` });
-      } else {
-        await addStaffMember(data); 
-        toast({ title: "Staff Added", description: `${data.name} has been added to the establishment.` });
-      }
-      setIsFormOpen(false);
-      setEditingStaff(null);
+        let staffId: string | undefined = editingStaff?.id;
+        if (editingStaff) {
+            await updateStaffMember(editingStaff.id, data);
+            toast({ title: "Staff Updated", description: `${data.name}'s details have been updated.` });
+        } else {
+            staffId = await addStaffMember(data); 
+            toast({ title: "Staff Added", description: `${data.name} has been added to the establishment.` });
+        }
+
+        if (data.createUserAccount && data.email && data.password && staffId && user?.officeLocation) {
+            const result = await createUserByAdmin(data.email, data.password, data.name, staffId, user.officeLocation);
+            if (result.success) {
+                toast({ title: "User Account Created", description: `Account for ${data.email} created successfully. It requires approval.` });
+            } else {
+                throw new Error(result.error?.message || "Failed to create user account.");
+            }
+        }
+
+        setIsFormOpen(false);
+        setEditingStaff(null);
     } catch (error: any) {
       console.error("[EstablishmentPage] Error during form submission:", error);
       toast({ title: "Error", description: `Submission failed: ${error.message || "Could not save staff details."}`, variant: "destructive" });
@@ -393,6 +404,7 @@ export default function EstablishmentPage() {
                 onCancel={() => {setIsFormOpen(false); setEditingStaff(null);}}
                 isViewer={isViewer}
                 allOfficeAddresses={allOfficeAddresses}
+                allUsers={allUsers}
             />
           </div>
         </DialogContent>

@@ -1,5 +1,6 @@
-// This page is not used.
-// The logic has been consolidated into /dashboard/plan-fund-works/page.tsx
+// src/app/dashboard/super-admin/plan-fund-works/page.tsx
+import { redirect } from 'next/navigation';
+
 export default function DeprecatedPage() {
-  return null;
+  redirect('/dashboard/plan-fund-works');
 }
