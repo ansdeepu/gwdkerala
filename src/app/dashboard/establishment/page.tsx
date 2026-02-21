@@ -65,7 +65,7 @@ const formatDateForSearch = (dateInput: Date | string | null | undefined): strin
 
 export default function EstablishmentPage() {
   const { setHeader } = usePageHeader();
-  const { officeAddress } = useDataStore();
+  const { officeAddress, allOfficeAddresses } = useDataStore();
 
   useEffect(() => {
     setHeader('Establishment', `Manage all staff members of the Ground Water Department, ${officeAddress?.officeLocation || ''}.`);
@@ -344,6 +344,7 @@ export default function EstablishmentPage() {
               <div className="max-h-[70vh] overflow-auto">
                 <TransferredStaffTable
                     staffData={transferredStaffList}
+                    onEdit={handleEditStaff}
                     onSetStatus={canManage ? handleSetStaffStatus : undefined}
                     isViewer={isViewer}
                     onImageClick={handleOpenImageModal}
@@ -356,6 +357,7 @@ export default function EstablishmentPage() {
               <div className="max-h-[70vh] overflow-auto">
                 <RetiredStaffTable
                     staffData={retiredStaffList}
+                    onEdit={handleEditStaff}
                     onSetStatus={canManage ? handleSetStaffStatus : undefined}
                     isViewer={isViewer}
                     onImageClick={handleOpenImageModal}
@@ -381,7 +383,6 @@ export default function EstablishmentPage() {
             <DialogTitle>{editingStaff ? (isViewer ? "View Staff Details" : "Edit Staff Details") : "Add New Staff Member"}</DialogTitle>
             <DialogDescription>
               {editingStaff ? (isViewer ? "Viewing details for the staff member." : "Update the details for the staff member.") : "Fill in the form to add a new staff member."}
-              {!isViewer && " Direct photo upload is disabled; please use a public image URL."}
             </DialogDescription>
           </DialogHeader>
           <div className="px-6 pb-6">
@@ -391,6 +392,7 @@ export default function EstablishmentPage() {
                 isSubmitting={isSubmittingForm}
                 onCancel={() => {setIsFormOpen(false); setEditingStaff(null);}}
                 isViewer={isViewer}
+                allOfficeAddresses={allOfficeAddresses}
             />
           </div>
         </DialogContent>

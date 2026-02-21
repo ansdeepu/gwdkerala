@@ -1,5 +1,3 @@
-
-
 // src/app/dashboard/user-management/page.tsx
 "use client";
 
@@ -8,16 +6,9 @@ import UserManagementTable from "@/components/admin/UserManagementTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
-import NewUserForm from "@/components/admin/NewUserForm";
-import type { NewUserByAdminFormData } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { usePageHeader } from "@/hooks/usePageHeader";
-import { Loader2, UserPlus, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldAlert } from 'lucide-react';
 import { useDataStore } from "@/hooks/use-data-store";
 import { getFirestore, collection, query, onSnapshot, Timestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
@@ -28,13 +19,11 @@ export const dynamic = 'force-dynamic';
 
 export default function UserManagementPage() {
   const { setHeader } = usePageHeader();
-  const { user, isLoading, createUserByAdmin, updateUserApproval, updateUserRole, deleteUserDocument } = useAuth();
+  const { user, isLoading, updateUserApproval, updateUserRole, deleteUserDocument } = useAuth();
   const { allStaffMembers, isLoading: staffLoading } = useDataStore();
   const router = useRouter();
   const { toast } = useToast();
   
-  const [isStaffFormOpen, setIsStaffFormOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
 
@@ -96,42 +85,6 @@ export default function UserManagementPage() {
     }
   }, [user, isLoading, router]);
 
-  const handleStaffFormSubmit = async (data: NewUserByAdminFormData) => {
-    setIsSubmitting(true);
-    try {
-      const selectedStaffMember = allStaffMembers.find(s => s.id === data.staffId);
-      if (!selectedStaffMember) {
-        toast({ title: "Error", description: "Selected staff member not found.", variant: "destructive" });
-        setIsSubmitting(false);
-        return;
-      }
-      if (!user?.officeLocation) {
-        toast({ title: "Error", description: "Admin account office location missing.", variant: "destructive" });
-        setIsSubmitting(false);
-        return;
-      }
-
-      const result = await createUserByAdmin(data.email, data.password, selectedStaffMember.name, data.staffId, user.officeLocation);
-      if (result.success) {
-        toast({
-          title: "User Created",
-          description: `Account for ${data.email} created in ${user.officeLocation} database.`,
-        });
-        setIsStaffFormOpen(false);
-      } else {
-        toast({
-          title: "Creation Failed",
-          description: result.error?.message || "Could not create the user account.",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-       toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   if (isLoading || staffLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
@@ -151,30 +104,18 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      {canManageUsers && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="sm" onClick={() => setIsStaffFormOpen(true)}>
-                  <UserPlus className="mr-2 h-4 w-4" /> Add New User (from Staff)
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card className="shadow-xl border-border/60">
         <CardHeader>
           <CardTitle className="text-xl">Registered Users ({allUsers.length})</CardTitle>
           <CardDescription>
-            User accounts stored in the {user.officeLocation} sub-office database. {isAdmin && "Admin, Scientist, and Engineer accounts can only be modified by Super Admin."}
+            User accounts for the {user.officeLocation} office. {isAdmin && "Admin, Scientist, and Engineer roles can only be modified by a Super Admin."}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <UserManagementTable
             users={allUsers}
             isLoading={usersLoading}
-            onDataChange={() => {}}
+            onDataChange={() => {}} // Data reloads via onSnapshot
             currentUser={user}
             isViewer={isViewer}
             updateUserApproval={updateUserApproval}
@@ -184,18 +125,6 @@ export default function UserManagementPage() {
           />
         </CardContent>
       </Card>
-
-      <Dialog open={isStaffFormOpen} onOpenChange={setIsStaffFormOpen}>
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl flex flex-col p-0 h-auto">
-              <NewUserForm
-                  staffMembers={allStaffMembers}
-                  staffLoading={staffLoading}
-                  onSubmit={handleStaffFormSubmit}
-                  isSubmitting={isSubmitting}
-                  onCancel={() => setIsStaffFormOpen(false)}
-              />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
