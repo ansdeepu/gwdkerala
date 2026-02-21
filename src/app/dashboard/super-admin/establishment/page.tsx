@@ -124,8 +124,9 @@ export default function EstablishmentPage() {
         toast({ title: "Staff Added", description: `${data.name} has been added to the establishment.` });
       }
       
-      if (data.createUserAccount && data.email && data.password && staffId && data.officeLocation) {
-        const result = await createUserByAdmin(data.email, data.password, data.name, staffId, data.officeLocation);
+      if (data.createUserAccount && data.email && staffId && data.officeLocation) {
+        const defaultPassword = "123456";
+        const result = await createUserByAdmin(data.email, defaultPassword, data.name, staffId, data.officeLocation);
         if (result.success) {
             toast({ title: "User Account Created", description: `Account for ${data.email} created. It requires approval.` });
         } else {
