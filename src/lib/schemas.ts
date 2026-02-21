@@ -224,8 +224,7 @@ const dateOrString = z.union([
   })
 ]);
 
-
-export const StaffMemberFormDataSchema = z.object({
+const BaseStaffMemberFormDataSchema = z.object({
   photoUrl: z.string().url({ message: "Please enter a valid image URL." }).optional().or(z.literal("")),
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   nameMalayalam: z.string().optional(),
@@ -235,7 +234,7 @@ export const StaffMemberFormDataSchema = z.object({
   dateOfBirth: z.string().optional(),
   phoneNo: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }).optional().or(z.literal("")),
   roles: z.string().optional(),
-  status: z.enum(staffStatusOptions).default('Active'), 
+  status: z.enum(staffStatusOptions).default('Active'),
   remarks: z.string().optional().default(""),
   officeLocation: z.string().optional(),
   
@@ -243,7 +242,9 @@ export const StaffMemberFormDataSchema = z.object({
   createUserAccount: z.boolean().optional().default(false),
   email: z.string().optional(),
   password: z.string().optional(),
-}).superRefine((data, ctx) => {
+});
+
+export const StaffMemberFormDataSchema = BaseStaffMemberFormDataSchema.superRefine((data, ctx) => {
     if (data.createUserAccount) {
       if (!data.email || !z.string().email().safeParse(data.email).success) {
         ctx.addIssue({
@@ -264,11 +265,11 @@ export const StaffMemberFormDataSchema = z.object({
 export type StaffMemberFormData = z.infer<typeof StaffMemberFormDataSchema>;
 
 
-export const StaffMemberSchema = StaffMemberFormDataSchema.extend({
+export const StaffMemberSchema = BaseStaffMemberFormDataSchema.extend({
   id: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  status: z.enum(staffStatusOptions).default('Active'), 
+  status: z.enum(staffStatusOptions).default('Active'),
   remarks: z.string().optional().default(""),
   dateOfBirth: dateOrString.nullable().optional(),
 });

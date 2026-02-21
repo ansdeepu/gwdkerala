@@ -1,4 +1,5 @@
 
+      
 // src/hooks/useE_tenders.ts
 "use client";
 
@@ -19,29 +20,40 @@ export type E_tender = E_tenderFormData & {
   updatedAt?: Date;
 };
 
-const processDoc = (docSnap: DocumentData) => {
+const processDoc = (docSnap: DocumentData): E_tender => {
     const data = docSnap.data();
-    const processed: { [key: string]: any } = {};
-    for (const key in data) {
-        const value = data[key];
+    
+    // Helper function to recursively process any value
+    const processValue = (value: any): any => {
         if (value instanceof Timestamp) {
-            processed[key] = value.toDate();
-        } else if (Array.isArray(value)) {
-            // Recursively process arrays of objects (like bidders, corrigendums)
-            processed[key] = value.map(item => 
-                (item instanceof Timestamp) ? item.toDate() : 
-                (typeof item === 'object' && item !== null && !(item instanceof Date)) ? processDoc({ data: () => item }) : item
-            );
-        } else if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
-            processed[key] = processDoc({ data: () => value });
-        } else {
-            processed[key] = value;
+            return value.toDate();
         }
-    }
+        if (Array.isArray(value)) {
+            return value.map(processValue); // Recurse for items in array
+        }
+        if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
+            // It's a plain object (a map in Firestore terms)
+            const nestedObject: { [key: string]: any } = {};
+            for (const key in value) {
+                if (Object.prototype.hasOwnProperty.call(value, key)) {
+                    nestedObject[key] = processValue(value[key]);
+                }
+            }
+            return nestedObject;
+        }
+        // Return primitives, Dates, or null as is
+        return value;
+    };
+
+    // Process the document data
+    const convertedData = processValue(data);
+
+    // Add the document ID to the final object
     if (docSnap.id) {
-        processed.id = docSnap.id;
+        convertedData.id = docSnap.id;
     }
-    return processed as E_tender;
+    
+    return convertedData as E_tender;
 };
 
 export function useE_tenders() {
@@ -121,3 +133,5 @@ export function useE_tenders() {
         getTender, 
     };
 }
+
+    
