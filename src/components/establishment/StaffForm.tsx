@@ -1,3 +1,4 @@
+
 // src/components/establishment/StaffForm.tsx
 "use client";
 
@@ -139,7 +140,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
       <form onSubmit={form.handleSubmit(handleFormSubmitInternal)} className="flex flex-col h-full overflow-hidden">
         <ScrollArea className="flex-1 pr-6 -mr-6">
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <FormField
                 control={form.control}
                 name="name"
