@@ -253,13 +253,6 @@ export const StaffMemberFormDataSchema = BaseStaffMemberFormDataSchema.superRefi
           path: ["email"],
         });
       }
-      if (!data.password || data.password.length < 6) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Password must be at least 6 characters.",
-          path: ["password"],
-        });
-      }
     }
 });
 export type StaffMemberFormData = z.infer<typeof StaffMemberFormDataSchema>;

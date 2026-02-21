@@ -5,13 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
-  Form,
   FormControl,
   FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
+  Form,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -436,29 +436,12 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                             Create User Account for this Staff Member
                             </FormLabel>
                             <FormDescription>
-                            This will create a new login account. The default role will be 'viewer' and it will require approval.
+                            A default password '123456' will be used. The new user will require approval.
                             </FormDescription>
                         </div>
                         </FormItem>
                     )}
                     />
-                    {createUserAccount && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-8 pt-2 border-l-2 ml-2 border-primary/20">
-                        <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Password</FormLabel>
-                            <FormControl>
-                                <Input type="password" placeholder="Create a temporary password" {...field} readOnly={isViewer} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                    </div>
-                    )}
                 </div>
             ) : (
                 initialData && userAccountExists && !isViewer && (
