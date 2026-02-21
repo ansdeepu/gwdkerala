@@ -23,7 +23,8 @@ service cloud.firestore {
     }
 
     function getRole() {
-      return getUserData().role;
+      let data = getUserData();
+      return data != null ? data.role : null;
     }
 
     function isSuperAdmin() {
@@ -127,7 +128,7 @@ service cloud.firestore {
       }
 
       match /users/{userId} {
-        allow read: if officeRead();
+        allow get, list: if officeRead();
         allow write: if canManageAll();
       }
 
@@ -229,6 +230,9 @@ service cloud.firestore {
       allow read: if isSuperAdmin();
     }
     match /{path=**}/officeAddresses/{docId} {
+      allow read: if isSuperAdmin();
+    }
+    match /{path=**}/users/{userId} {
       allow read: if isSuperAdmin();
     }
   }
