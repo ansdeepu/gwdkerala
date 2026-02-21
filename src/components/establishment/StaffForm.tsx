@@ -418,29 +418,31 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         <div className="flex justify-between items-center pt-6 mt-auto">
           <div className="flex-1">
             {showUserCreation ? (
-               <FormField
-                control={form.control}
-                name="createUserAccount"
-                render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                    <FormControl>
-                        <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={isViewer || isSubmitting}
-                        />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                        <FormLabel>
-                        Create User Account
-                        </FormLabel>
-                        <FormDescription className="text-xs">
-                        Uses default password. Requires approval.
-                        </FormDescription>
-                    </div>
-                    </FormItem>
-                )}
-                />
+              <div className="p-3 rounded-md bg-primary/10 border border-primary/20">
+                <FormField
+                  control={form.control}
+                  name="createUserAccount"
+                  render={({ field }) => (
+                      <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl>
+                          <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isViewer || isSubmitting}
+                          />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                          <FormLabel className="font-semibold text-primary">
+                          Create User Account
+                          </FormLabel>
+                          <FormDescription className="text-xs text-primary/80">
+                          This will create a user account with the default password: <strong>123456</strong>
+                          </FormDescription>
+                      </div>
+                      </FormItem>
+                  )}
+                  />
+              </div>
             ) : (
                 initialData && userAccountExists && !isViewer && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
