@@ -74,6 +74,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const getInitialFormValues = React.useCallback((): StaffMemberFormData => {
     const dob = initialData?.dateOfBirth;
     const formattedDob = dob ? format(new Date(dob), 'yyyy-MM-dd') : "";
+    const userForStaff = initialData?.id ? allUsers.find(u => u.staffId === initialData.id) : undefined;
 
     return {
       name: initialData?.name || "",
@@ -81,6 +82,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
       designation: initialData?.designation || undefined,
       designationMalayalam: initialData?.designationMalayalam || undefined,
       pen: initialData?.pen || "",
+      email: userForStaff?.email || "",
       dateOfBirth: formattedDob,
       phoneNo: initialData?.phoneNo || "",
       roles: initialData?.roles || "",
@@ -89,10 +91,9 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
       remarks: initialData?.remarks || "",
       officeLocation: initialData?.officeLocation || "",
       createUserAccount: false,
-      email: "",
       password: ""
     };
-  }, [initialData]);
+  }, [initialData, allUsers]);
 
   const form = useForm<StaffMemberFormData>({
     resolver: zodResolver(StaffMemberFormDataSchema),
@@ -138,7 +139,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
       <form onSubmit={form.handleSubmit(handleFormSubmitInternal)} className="flex flex-col h-full overflow-hidden">
         <ScrollArea className="flex-1 pr-6 -mr-6">
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FormField
                 control={form.control}
                 name="name"
@@ -222,7 +223,19 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   </FormItem>
                 )}
               />
-
+               <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="Enter email address" {...field} value={field.value ?? ""} readOnly={isViewer || userAccountExists} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
                <FormField
                 control={form.control}
                 name="phoneNo"
@@ -432,19 +445,6 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                     />
                     {createUserAccount && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-8 pt-2 border-l-2 ml-2 border-primary/20">
-                        <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Email Address</FormLabel>
-                            <FormControl>
-                                <Input type="email" placeholder="user@gwd.kerala.gov.in" {...field} readOnly={isViewer} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
                         <FormField
                         control={form.control}
                         name="password"
