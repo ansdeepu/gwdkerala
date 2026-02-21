@@ -1,4 +1,3 @@
-
 // src/components/establishment/StaffForm.tsx
 "use client";
 
@@ -263,6 +262,9 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   </FormItem>
                 )}
                 />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
                <FormField
                 control={form.control}
                 name="status"
@@ -285,35 +287,11 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   </FormItem>
                 )}
               />
-            </div>
-            {watchedStatus === 'Transferred' && !isViewer && (
-                <FormField
-                    control={form.control}
-                    name="officeLocation"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Transfer to Office</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {allOfficeAddresses.map(office => (
-                                        <SelectItem key={office.id} value={office.officeLocation}>{office.officeName}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            )}
-
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-start">
                <FormField
                 control={form.control}
                 name="photoUrl"
                 render={({ field }) => (
-                    <FormItem className="space-y-2 md:col-span-2">
+                    <FormItem className="space-y-2">
                         <FormLabel>Staff Photo URL</FormLabel>
                         <div className="flex items-start gap-4">
                             <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
@@ -386,12 +364,11 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                     </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="roles"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-1">
+                  <FormItem>
                     <FormLabel>Roles/Responsibilities</FormLabel>
                     <FormControl>
                       <Textarea placeholder="e.g., Section Clerk, Field Supervisor" className="resize-y min-h-[120px]" {...field} readOnly={isViewer}/>
@@ -401,12 +378,11 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   </FormItem>
                 )}
               />
-            
               <FormField
                 control={form.control}
                 name="remarks"
                 render={({ field }) => (
-                  <FormItem className="md:col-span-1">
+                  <FormItem>
                     <FormLabel>Remarks</FormLabel>
                     <FormControl>
                       <Textarea placeholder="Any additional remarks about the staff member." className="resize-y min-h-[120px]" {...field} readOnly={isViewer}/>
@@ -417,6 +393,28 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 )}
               />
             </div>
+            {watchedStatus === 'Transferred' && !isViewer && (
+                <FormField
+                    control={form.control}
+                    name="officeLocation"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Transfer to Office</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {allOfficeAddresses.map(office => (
+                                        <SelectItem key={office.id} value={office.officeLocation}>{office.officeName}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
+
+
              <Separator />
 
              {showUserCreation ? (
