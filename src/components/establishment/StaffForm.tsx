@@ -91,7 +91,6 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
       remarks: initialData?.remarks || "",
       officeLocation: initialData?.officeLocation || "",
       createUserAccount: false,
-      password: ""
     };
   }, [initialData, allUsers]);
 
@@ -413,58 +412,55 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                     )}
                 />
             )}
-
-
-             <Separator />
-
-             {showUserCreation ? (
-                <div className="space-y-4 pt-4">
-                    <FormField
-                    control={form.control}
-                    name="createUserAccount"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
-                        <FormControl>
-                            <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={isViewer || isSubmitting}
-                            />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                            <FormLabel>
-                            Create User Account for this Staff Member
-                            </FormLabel>
-                            <FormDescription>
-                            A default password '123456' will be used. The new user will require approval.
-                            </FormDescription>
-                        </div>
-                        </FormItem>
-                    )}
-                    />
-                </div>
-            ) : (
-                initialData && userAccountExists && !isViewer && (
-                    <div className="pt-4 flex items-center gap-2 text-sm text-muted-foreground">
-                        <UserCheck className="h-4 w-4 text-green-600" />
-                        <span>A user account already exists for this staff member.</span>
-                    </div>
-                )
-            )}
-
           </div>
         </ScrollArea>
         
-        <div className="flex justify-center space-x-3 pt-6 mt-auto">
-          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
-            <X className="mr-2 h-4 w-4" /> Cancel
-          </Button>
-          {!isViewer && (
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              {initialData?.id ? "Save Changes" : "Add Staff Member"}
+        <div className="flex justify-between items-center pt-6 mt-auto">
+          <div className="flex-1">
+            {showUserCreation ? (
+               <FormField
+                control={form.control}
+                name="createUserAccount"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                    <FormControl>
+                        <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={isViewer || isSubmitting}
+                        />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                        <FormLabel>
+                        Create User Account
+                        </FormLabel>
+                        <FormDescription className="text-xs">
+                        Uses default password. Requires approval.
+                        </FormDescription>
+                    </div>
+                    </FormItem>
+                )}
+                />
+            ) : (
+                initialData && userAccountExists && !isViewer && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <UserCheck className="h-4 w-4 text-green-600" />
+                        <span>User account already exists.</span>
+                    </div>
+                )
+            )}
+          </div>
+          <div className="flex justify-end space-x-3">
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+                <X className="mr-2 h-4 w-4" /> Cancel
             </Button>
-          )}
+            {!isViewer && (
+                <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                {initialData?.id ? "Save Changes" : "Add Staff Member"}
+                </Button>
+            )}
+          </div>
         </div>
       </form>
     </Form>
