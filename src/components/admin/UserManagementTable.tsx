@@ -254,7 +254,12 @@ export default function UserManagementTable({
                          {updatingUsers[userRow.uid]?.role ? <Loader2 className="h-3 w-3 animate-spin" /> : <SelectValue />}
                       </SelectTrigger>
                       <SelectContent>
-                        {userRoleOptions.filter(r => r !== 'superAdmin').map(roleOption => (
+                        {userRoleOptions
+                          .filter(r => {
+                            if (isSuperAdmin) return r !== 'superAdmin';
+                            return r !== 'superAdmin' && r !== 'admin';
+                          })
+                          .map(roleOption => (
                           <SelectItem key={roleOption} value={roleOption} className="text-xs">
                             {roleOption.charAt(0).toUpperCase() + roleOption.slice(1)}
                           </SelectItem>
