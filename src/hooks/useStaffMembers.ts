@@ -64,8 +64,11 @@ export function useStaffMembers(): StaffMembersState {
 
   const updateStaffMember = useCallback(async (id: string, staffData: Partial<StaffMemberFormData>) => {
     if (!user || (user.role !== 'admin' && user.role !== 'superAdmin')) throw new Error("User does not have permission.");
+    
     const memberToUpdate = allStaffMembers.find(s => s.id === id);
-    const officeLocation = memberToUpdate?.officeLocation;
+    // Determine office location more robustly
+    const officeLocation = memberToUpdate?.officeLocation || (user.role === 'superAdmin' ? selectedOffice : user.officeLocation);
+    
     if (!officeLocation) throw new Error("Could not determine office location for the staff member.");
 
     const collectionPath = `offices/${officeLocation.toLowerCase()}/staffMembers`;
@@ -77,7 +80,7 @@ export function useStaffMembers(): StaffMembersState {
     const payload = { ...sanitizeStaffMemberForFirestore(staffData), updatedAt: serverTimestamp() };
     delete payload.createdAt;
     await updateDoc(staffDocRef, payload);
-  }, [user, allStaffMembers]);
+  }, [user, allStaffMembers, selectedOffice]);
 
   const deleteStaffMember = useCallback(async (id: string) => {
     if (!user || (user.role !== 'admin' && user.role !== 'superAdmin')) throw new Error("User does not have permission.");
