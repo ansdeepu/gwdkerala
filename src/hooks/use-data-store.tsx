@@ -20,19 +20,19 @@ import { isValid, parse, parseISO } from 'date-fns';
 const db = getFirestore(app);
 
 // Helper to convert Firestore Timestamps to JS Dates recursively
-const processFirestoreData = (data: any): any => {
+const processData = (data: any): any => {
     if (!data) return data;
     if (data instanceof Timestamp) {
         return data.toDate();
     }
     if (Array.isArray(data)) {
-        return data.map(processFirestoreData);
+        return data.map(processData);
     }
     if (typeof data === 'object' && !(data instanceof Date)) {
         const converted: { [key: string]: any } = {};
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                converted[key] = processFirestoreData(data[key]);
+                converted[key] = processData(data[key]);
             }
         }
         return converted;
@@ -212,7 +212,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     const descriptions = snapshot.docs.reduce((acc, doc) => ({...acc, [doc.id]: doc.data().description}), {} as Record<RateDescriptionId, string>);
                     setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
                 } else {
-                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...processFirestoreData(doc.data()) }));
+                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...processData(doc.data()) }));
                     setter(data);
                 }
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
@@ -246,7 +246,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
           if (!snapshot.empty) {
-              const subOfficeDocData = processFirestoreData(snapshot.docs[0].data());
+              const subOfficeDocData = processData(snapshot.docs[0].data());
               setOfficeAddress({
                   id: snapshot.docs[0].id,
                   ...subOfficeDocData,
@@ -312,18 +312,17 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 const data = snapshot.docs.map(doc => {
-                    const simpleProcessedData = processFirestoreData(doc.data());
-                    const finalData = { id: doc.id, ...simpleProcessedData };
+                    const processedData = processData(doc.data());
+                    processedData.id = doc.id;
 
-                    // This is the key part: only add officeLocation for super admin on collectionGroup query
                     if (isSuperAdminUser && !officeToQuery) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                            (finalData as any).officeLocation = pathSegments[officeIdIndex + 1];
+                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
                         }
                     }
-                    return finalData;
+                    return processedData;
                 });
                 
                 if (needsSpecialSort && collectionName === 'staffMembers') {

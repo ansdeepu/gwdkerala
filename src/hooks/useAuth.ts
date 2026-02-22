@@ -46,20 +46,20 @@ export const updateUserLastActive = async (uid: string): Promise<void> => {
   } catch (error) {}
 };
 
-// Utility to convert Firestore Timestamps to JS Dates recursively
-const processFirestoreData = (data: any): any => {
+// Helper to convert Firestore Timestamps to JS Dates recursively
+const processData = (data: any): any => {
     if (!data) return data;
     if (data instanceof Timestamp) {
         return data.toDate();
     }
     if (Array.isArray(data)) {
-        return data.map(processFirestoreData);
+        return data.map(processData);
     }
     if (typeof data === 'object' && !(data instanceof Date)) {
         const converted: { [key: string]: any } = {};
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
-                converted[key] = processFirestoreData(data[key]);
+                converted[key] = processData(data[key]);
             }
         }
         return converted;
@@ -266,7 +266,7 @@ export function useAuth() {
       const querySnapshot = await getDocs(collection(db, "users"));
       return querySnapshot.docs.map(docSnap => {
           const data = docSnap.data();
-          const processed = processFirestoreData(data);
+          const processed = processData(data);
           return {
               uid: docSnap.id,
               ...processed,
@@ -382,45 +382,35 @@ export function useAuth() {
     const userRef = doc(db, "users", targetUserUid);
     const userSnap = await getDoc(userRef);
 
-    // If the user doesn't exist at the top level, we can't get their roles or office,
-    // but we should still try to clean up if we have an officeLocation.
     if (!userSnap.exists()) {
         if (officeLocation) {
             console.warn(`User ${targetUserUid} not found in top-level 'users' collection. Attempting sub-collection delete only.`);
             const officeUserRef = doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid);
             await deleteDoc(officeUserRef);
         } else {
-             console.warn(`User ${targetUserUid} not found and no office location provided. Cannot delete.`);
+            console.warn(`User ${targetUserUid} not found and no office location provided. Cannot delete.`);
         }
         return;
     }
 
     const userToDeleteData = userSnap.data();
     const userRole = userToDeleteData?.role;
-    // Prioritize the officeLocation passed from the UI, fallback to the one in the user document.
     const effectiveOfficeLocation = officeLocation || userToDeleteData?.officeLocation;
 
-    // This handles the case where the user has an office location.
     if (effectiveOfficeLocation) {
         if ((userRole === 'supervisor' || userRole === 'investigator')) {
             await handleSupervisorCleanup(targetUserUid, effectiveOfficeLocation);
         }
         
         const batch = writeBatch(db);
-        // Delete from top-level 'users' collection
         batch.delete(userRef);
-        
-        // Delete from office-specific sub-collection
         const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
         batch.delete(officeUserRef);
-        
         await batch.commit();
     } else {
-        // This case handles directorate users (or any user without an officeLocation)
         await deleteDoc(userRef);
-        console.log(`User ${targetUserUid} deleted from top-level 'users' collection. No office location cleanup was necessary.`);
     }
-  }, [authState.user, handleSupervisorCleanup]);
+}, [authState.user, handleSupervisorCleanup]);
 
 
   const updatePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: any }> => {
