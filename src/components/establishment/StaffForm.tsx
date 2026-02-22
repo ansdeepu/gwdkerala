@@ -76,27 +76,35 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   });
   
   useEffect(() => {
-    const dob = initialData?.dateOfBirth;
-    const formattedDob = dob ? format(new Date(dob), 'yyyy-MM-dd') : "";
-    const userForStaff = initialData?.id ? allUsers.find(u => u.staffId === initialData.id) : undefined;
-    
-    form.reset({
-      name: initialData?.name || "",
-      nameMalayalam: initialData?.nameMalayalam || "",
-      designation: initialData?.designation || undefined,
-      designationMalayalam: initialData?.designationMalayalam || undefined,
-      pen: initialData?.pen || "",
-      email: userForStaff?.email || "",
-      dateOfBirth: formattedDob,
-      phoneNo: initialData?.phoneNo || "",
-      roles: initialData?.roles || "",
-      photoUrl: isValidWebUrl(initialData?.photoUrl) ? initialData?.photoUrl ?? "" : "",
-      status: initialData?.status || 'Active', 
-      remarks: initialData?.remarks || "",
-      officeLocation: initialData?.officeLocation || "",
-      createUserAccount: false,
-    });
-  }, [initialData, allUsers, form.reset]);
+    if (initialData) {
+        const dob = initialData.dateOfBirth;
+        const formattedDob = dob ? format(new Date(dob), 'yyyy-MM-dd') : "";
+        const userForStaff = initialData.id ? allUsers.find(u => u.staffId === initialData.id) : undefined;
+
+        form.reset({
+            name: initialData.name ?? "",
+            nameMalayalam: initialData.nameMalayalam ?? "",
+            designation: initialData.designation ?? undefined,
+            designationMalayalam: initialData.designationMalayalam ?? undefined,
+            pen: initialData.pen ?? "",
+            email: userForStaff?.email ?? "",
+            dateOfBirth: formattedDob,
+            phoneNo: initialData.phoneNo ?? "",
+            roles: initialData.roles ?? "",
+            photoUrl: isValidWebUrl(initialData.photoUrl) ? initialData.photoUrl ?? "" : "",
+            status: initialData.status ?? 'Active',
+            remarks: initialData.remarks ?? "",
+            officeLocation: initialData.officeLocation ?? "",
+            createUserAccount: false,
+        });
+    } else {
+        form.reset({
+            name: "", nameMalayalam: "", designation: undefined, designationMalayalam: undefined,
+            pen: "", email: "", dateOfBirth: "", phoneNo: "", roles: "", photoUrl: "",
+            status: 'Active', remarks: "", officeLocation: "", createUserAccount: false
+        });
+    }
+  }, [initialData, allUsers, form]);
 
   const { watch, control } = form;
   const watchedPhotoUrl = watch("photoUrl");
@@ -165,7 +173,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select designation" />
@@ -187,7 +195,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation (in Malayalam)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select Malayalam designation" />
@@ -264,7 +272,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -393,7 +401,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Transfer to Office</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value ?? ""}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     {allOfficeAddresses.map(office => (
