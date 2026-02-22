@@ -229,7 +229,7 @@ const BaseStaffMemberFormDataSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   nameMalayalam: z.string().optional(),
   designation: z.enum(designationOptions).optional(),
-  designationMalayalam: z.enum(designationMalayalamOptions).optional(),
+  designationMalayalam: z.preprocess((val) => (val === "" ? undefined : val), z.enum(designationMalayalamOptions).optional()),
   pen: z.string().min(1, { message: "PEN is required." }),
   dateOfBirth: z.string().optional(),
   phoneNo: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }).optional().or(z.literal("")),
