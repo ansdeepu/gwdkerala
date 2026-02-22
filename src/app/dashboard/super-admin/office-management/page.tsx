@@ -171,10 +171,11 @@ export default function OfficeManagementPage() {
         if (!officeToDelete || usersToDelete.length === 0) return;
         setIsDeletingOfficeUsers(true);
         try {
-            for (const userToDelete of usersToDelete) {
-                if (userToDelete.email === SUPER_ADMIN_EMAIL) continue;
-                await deleteUserDocument(userToDelete.uid, userToDelete.officeLocation);
-            }
+            await Promise.all(usersToDelete.map(userToDelete => {
+                if (userToDelete.email === SUPER_ADMIN_EMAIL) return Promise.resolve();
+                return deleteUserDocument(userToDelete.uid, userToDelete.officeLocation);
+            }));
+
             toast({ title: "Users Deleted", description: `All users for ${officeToDelete} have been removed.` });
         } catch (error: any) {
             toast({ title: "Error", description: `Could not delete all users: ${error.message}`, variant: "destructive" });

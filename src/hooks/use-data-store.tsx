@@ -312,9 +312,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 const data = snapshot.docs.map(doc => {
-                    const processedData = processData(doc.data());
-                    processedData.id = doc.id;
-
+                    const processedData = { id: doc.id, ...processData(doc.data()) };
                     if (isSuperAdminUser && !officeToQuery) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
