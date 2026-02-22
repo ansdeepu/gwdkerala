@@ -20,26 +20,28 @@ import { isValid, parse, parseISO } from 'date-fns';
 const db = getFirestore(app);
 
 // Helper to convert Firestore Timestamps to JS Dates recursively
-const processData = (data: any): any => {
-    if (!data) return data;
-    if (data instanceof Timestamp) {
-        return data.toDate();
-    }
-    if (Array.isArray(data)) {
-        return data.map(processData);
-    }
-    if (typeof data === 'object' && !(data instanceof Date)) {
-        const converted: { [key: string]: any } = {};
-        for (const key in data) {
-            if (Object.prototype.hasOwnProperty.call(data, key)) {
-                converted[key] = processData(data[key]);
-            }
-        }
-        return converted;
-    }
-    return data;
-};
+const processFirestoreDoc = <T,>(doc: DocumentData): T => {
+    const data = doc.data();
+    const converted: { [key: string]: any } = { id: doc.id };
 
+    for (const key in data) {
+        const value = data[key];
+        if (value instanceof Timestamp) {
+            converted[key] = value.toDate();
+        } else if (Array.isArray(value)) {
+            converted[key] = value.map(item =>
+                typeof item === 'object' && item !== null && !(item instanceof Timestamp)
+                    ? processFirestoreDoc({ data: () => item, id: '' })
+                    : (item instanceof Timestamp ? item.toDate() : item)
+            );
+        } else if (typeof value === 'object' && value !== null) {
+            converted[key] = processFirestoreDoc({ data: () => value, id: '' });
+        } else {
+            converted[key] = value;
+        }
+    }
+    return converted as T;
+};
 
 const toDateOrNull = (value: any): Date | null => {
     if (value === null || value === undefined || value === '') return null;
@@ -212,7 +214,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     const descriptions = snapshot.docs.reduce((acc, doc) => ({...acc, [doc.id]: doc.data().description}), {} as Record<RateDescriptionId, string>);
                     setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
                 } else {
-                    const data = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...processData(docSnap.data()) }));
+                    const data = snapshot.docs.map(doc => processFirestoreDoc(doc));
                     setter(data);
                 }
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
@@ -246,10 +248,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
           if (!snapshot.empty) {
-              const subOfficeDocData = processData(snapshot.docs[0].data());
+              const subOfficeDoc = processFirestoreDoc(snapshot.docs[0]);
               setOfficeAddress({
-                  id: snapshot.docs[0].id,
-                  ...subOfficeDocData,
+                  ...subOfficeDoc,
                   officeCode: globalOffice?.officeCode || '', // Merge officeCode
               });
           } else {
@@ -311,12 +312,12 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-                let data = snapshot.docs.map(docSnap => {
-                    const processedData = { id: docSnap.id, ...processData(docSnap.data()) };
-                    (processedData as any).uid = docSnap.id;
-
+                let data = snapshot.docs.map(doc => {
+                    const docData = doc.data();
+                    const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
+                    (processedData as any).uid = doc.id; // Ensure uid is present for UserProfile
                     if (isSuperAdminUser && !officeToQuery) {
-                        const pathSegments = docSnap.ref.path.split('/');
+                        const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
                             (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
@@ -326,8 +327,15 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 });
                 
                 if (collectionName === 'users' && isSuperAdminUser && !officeToQuery) {
-                    const uniqueUsers = Array.from(new Map(data.map(user => [user.id, user])).values());
-                    data = uniqueUsers;
+                    // De-duplicate users. Prefer the record with an officeLocation if duplicates are found.
+                    const userMap = new Map<string, UserProfile>();
+                    data.forEach(user => {
+                        const existing = userMap.get((user as UserProfile).uid);
+                        if (!existing || (!existing.officeLocation && (user as UserProfile).officeLocation)) {
+                            userMap.set((user as UserProfile).uid, user as UserProfile);
+                        }
+                    });
+                    data = Array.from(userMap.values());
                 }
                 
                 if (needsSpecialSort && collectionName === 'staffMembers') {
