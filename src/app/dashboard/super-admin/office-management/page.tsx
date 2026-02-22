@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc, where, serverTimestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useDataStore, type OfficeAddress } from '@/hooks/use-data-store';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, type UserProfile } from '@/hooks/useAuth';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
@@ -31,6 +31,7 @@ import { SUPER_ADMIN_EMAIL } from '@/lib/config';
 import { Loader2, Edit, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X, Info, PlusCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { getInitials } from '@/lib/utils';
+import UserManagementTable from '@/components/admin/UserManagementTable';
 
 const db = getFirestore(app);
 
