@@ -1,4 +1,3 @@
-
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -21,40 +20,24 @@ import { isValid, parse, parseISO } from 'date-fns';
 const db = getFirestore(app);
 
 // Helper to convert Firestore Timestamps to JS Dates recursively
-const processFirestoreDoc = <T,>(doc: DocumentData): T => {
-    const data = doc.data();
-
-    // Helper function to recursively process any value
-    const processValue = (value: any): any => {
-        if (value instanceof Timestamp) {
-            return value.toDate();
-        }
-        if (Array.isArray(value)) {
-            return value.map(processValue); // Recurse for items in array
-        }
-        if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
-            // It's a plain object (a map in Firestore terms)
-            const nestedObject: { [key: string]: any } = {};
-            for (const key in value) {
-                if (Object.prototype.hasOwnProperty.call(value, key)) {
-                    nestedObject[key] = processValue(value[key]);
-                }
-            }
-            return nestedObject;
-        }
-        // Return primitives, Dates, or null as is
-        return value;
-    };
-
-    // Process the document data
-    const convertedData = processValue(data);
-
-    // Add the document ID to the final object
-    if (doc.id) {
-        convertedData.id = doc.id;
+const processFirestoreData = (data: any): any => {
+    if (!data) return data;
+    if (data instanceof Timestamp) {
+        return data.toDate();
     }
-
-    return convertedData as T;
+    if (Array.isArray(data)) {
+        return data.map(processFirestoreData);
+    }
+    if (typeof data === 'object' && !(data instanceof Date)) {
+        const converted: { [key: string]: any } = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                converted[key] = processFirestoreData(data[key]);
+            }
+        }
+        return converted;
+    }
+    return data;
 };
 
 const toDateOrNull = (value: any): Date | null => {
@@ -228,7 +211,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     const descriptions = snapshot.docs.reduce((acc, doc) => ({...acc, [doc.id]: doc.data().description}), {} as Record<RateDescriptionId, string>);
                     setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
                 } else {
-                    const data = snapshot.docs.map(doc => processFirestoreDoc(doc));
+                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...processFirestoreData(doc.data()) }));
                     setter(data);
                 }
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
@@ -262,9 +245,10 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
           if (!snapshot.empty) {
-              const subOfficeDoc = processFirestoreDoc(snapshot.docs[0]);
+              const subOfficeDocData = processFirestoreData(snapshot.docs[0].data());
               setOfficeAddress({
-                  ...subOfficeDoc,
+                  id: snapshot.docs[0].id,
+                  ...subOfficeDocData,
                   officeCode: globalOffice?.officeCode || '', // Merge officeCode
               });
           } else {
@@ -327,7 +311,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 const data = snapshot.docs.map(doc => {
-                    const processedData = processFirestoreDoc(doc);
+                    const processedData = { id: doc.id, ...processFirestoreData(doc.data()) };
                     if (isSuperAdminUser && !officeToQuery && doc.ref.path) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');

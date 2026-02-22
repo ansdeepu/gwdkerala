@@ -1,4 +1,3 @@
-
 // src/hooks/useAuth.ts
 "use client";
 
@@ -362,24 +361,30 @@ export function useAuth() {
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {
         console.warn("User to delete not found in top-level 'users' collection.");
-        return; // Or handle as an error
+        return;
     }
 
     const userToDeleteData = userSnap.data();
     const userRole = userToDeleteData?.role;
     const effectiveOfficeLocation = officeLocation || userToDeleteData?.officeLocation;
+    
+    if (!effectiveOfficeLocation) {
+        // For users that might not have an office (like Directorate users),
+        // we can still delete them from the top-level collection.
+        await deleteDoc(userRef);
+        console.log(`User ${targetUserUid} deleted from top-level. No office location was found to perform further cleanup.`);
+        return;
+    }
 
-    if ((userRole === 'supervisor' || userRole === 'investigator') && effectiveOfficeLocation) {
+    if ((userRole === 'supervisor' || userRole === 'investigator')) {
         await handleSupervisorCleanup(targetUserUid, effectiveOfficeLocation);
     }
     
     const batch = writeBatch(db);
     batch.delete(userRef);
     
-    if (effectiveOfficeLocation) {
-        const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
-        batch.delete(officeUserRef);
-    }
+    const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
+    batch.delete(officeUserRef);
     
     await batch.commit();
   }, [authState.user, handleSupervisorCleanup]);
