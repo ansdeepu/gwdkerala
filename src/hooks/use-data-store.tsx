@@ -1,5 +1,4 @@
 
-      
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -328,13 +327,14 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 const data = snapshot.docs.map(doc => {
-                    const docData = doc.data();
-                    const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
+                    const processedData = processFirestoreDoc(doc);
                     if (isSuperAdminUser && !officeToQuery) {
-                        const pathSegments = doc.ref.path.split('/');
-                        const officeIdIndex = pathSegments.indexOf('offices');
-                        if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
+                        if (doc.ref.path) { // Safeguard
+                            const pathSegments = doc.ref.path.split('/');
+                            const officeIdIndex = pathSegments.indexOf('offices');
+                            if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
+                                (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
+                            }
                         }
                     }
                     return processedData;
@@ -460,5 +460,3 @@ export function useDataStore() {
     }
     return context;
 }
-
-    
