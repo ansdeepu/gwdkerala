@@ -46,6 +46,25 @@ export const updateUserLastActive = async (uid: string): Promise<void> => {
   } catch (error) {}
 };
 
+// Utility to convert Firestore Timestamps to JS Dates recursively
+const processFirestoreDoc = (data: any): any => {
+    if (!data) return data;
+    const converted: { [key: string]: any } = {};
+    for (const key in data) {
+        const value = data[key];
+        if (value instanceof Timestamp) {
+            converted[key] = value.toDate();
+        } else if (Array.isArray(value)) {
+            converted[key] = value.map(item => typeof item === 'object' && item !== null ? processFirestoreDoc(item) : item);
+        } else if (typeof value === 'object' && value !== null) {
+            converted[key] = processFirestoreDoc(value);
+        } else {
+            converted[key] = value;
+        }
+    }
+    return converted;
+};
+
 
 export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({
@@ -352,11 +371,12 @@ export function useAuth() {
 
   const deleteUserDocument = useCallback(async (targetUserUid: string, officeLocation?: string): Promise<void> => {
     if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
-      throw new Error("Permission denied.");
+        throw new Error("Permission denied.");
     }
     if (authState.user.uid === targetUserUid) {
-      throw new Error("You cannot delete yourself.");
+        throw new Error("You cannot delete yourself.");
     }
+
     const userRef = doc(db, "users", targetUserUid);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {
@@ -367,27 +387,26 @@ export function useAuth() {
     const userToDeleteData = userSnap.data();
     const userRole = userToDeleteData?.role;
     const effectiveOfficeLocation = officeLocation || userToDeleteData?.officeLocation;
-    
-    if (!effectiveOfficeLocation) {
-        // For users that might not have an office (like Directorate users),
-        // we can still delete them from the top-level collection.
+
+    if (effectiveOfficeLocation) {
+        if ((userRole === 'supervisor' || userRole === 'investigator')) {
+            await handleSupervisorCleanup(targetUserUid, effectiveOfficeLocation);
+        }
+        
+        const batch = writeBatch(db);
+        batch.delete(userRef);
+        
+        const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
+        batch.delete(officeUserRef);
+        
+        await batch.commit();
+    } else {
+        // For users without an office (e.g., Directorate), just delete the top-level doc.
         await deleteDoc(userRef);
         console.log(`User ${targetUserUid} deleted from top-level. No office location was found to perform further cleanup.`);
-        return;
     }
-
-    if ((userRole === 'supervisor' || userRole === 'investigator')) {
-        await handleSupervisorCleanup(targetUserUid, effectiveOfficeLocation);
-    }
-    
-    const batch = writeBatch(db);
-    batch.delete(userRef);
-    
-    const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
-    batch.delete(officeUserRef);
-    
-    await batch.commit();
   }, [authState.user, handleSupervisorCleanup]);
+
 
   const updatePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: any }> => {
     const firebaseUser = auth.currentUser;
@@ -451,22 +470,3 @@ interface AuthState {
   user: UserProfile | null;
   firebaseUser: FirebaseUser | null;
 }
-
-// Utility to convert Firestore Timestamps to JS Dates recursively
-const processFirestoreDoc = (data: any): any => {
-    if (!data) return data;
-    const converted: { [key: string]: any } = {};
-    for (const key in data) {
-        const value = data[key];
-        if (value instanceof Timestamp) {
-            converted[key] = value.toDate();
-        } else if (Array.isArray(value)) {
-            converted[key] = value.map(item => typeof item === 'object' && item !== null ? processFirestoreDoc(item) : item);
-        } else if (typeof value === 'object' && value !== null) {
-            converted[key] = processFirestoreDoc(value);
-        } else {
-            converted[key] = value;
-        }
-    }
-    return converted;
-};

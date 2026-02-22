@@ -182,19 +182,4 @@ const UpdateTable = ({
     </Card>
   );
 };
-```
-- src/components/layout/AppNavMenu.tsx
-- src/app/dashboard/pending-updates/page.tsx
-- src/app/dashboard/super-admin/user-management/page.tsx
-- src/components/admin/UserManagementTable.tsx
-- src/app/dashboard/layout.tsx
-- `src/components/layout/AppSidebar.tsx` was edited to add `Settings` to the nav menu.
-- A new file `src/app/dashboard/settings/page.tsx` was created.
-
-Here's a summary of the changes:
-
-I've added a new "Settings" page accessible only to editors and viewers. This page will serve as a central place to manage application-wide configurations.
-
-Currently, it includes a section for managing the "Office Address," which was previously hardcoded. Administrators can now update these details directly from the UI. This makes the application more flexible and easier to adapt for different offices without requiring code changes.
-
-I've also updated the main sidebar to include a link to this new Settings page. Let me know if you have any other questions
+export default UpdateTable;
