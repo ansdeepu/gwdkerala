@@ -99,6 +99,9 @@ export function useAuth() {
         if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
             const isApproved = isAdminByEmail || userData.isApproved === true;
+            
+            // For super admin, we need to ensure the officeLocation is not set on the user object from the DB
+            const officeLocation = isAdminByEmail ? undefined : userData.officeLocation;
 
             userProfile = {
                 uid: firebaseUser.uid,
@@ -107,7 +110,7 @@ export function useAuth() {
                 role: isAdminByEmail ? 'superAdmin' : (userData.role || 'viewer'),
                 isApproved: isApproved,
                 staffId: userData.staffId || undefined,
-                officeLocation: userData.officeLocation,
+                officeLocation: officeLocation,
                 createdAt: userData.createdAt instanceof Timestamp ? userData.createdAt.toDate() : new Date(),
                 lastActiveAt: userData.lastActiveAt instanceof Timestamp ? userData.lastActiveAt.toDate() : undefined,
             };
@@ -117,6 +120,7 @@ export function useAuth() {
                 role: 'superAdmin', isApproved: true,
                 createdAt: new Date(),
             };
+            // The top-level user doc for super-admin should NOT have officeLocation
             await setDoc(doc(db, "users", firebaseUser.uid), {
                 email: firebaseUser.email, name: userProfile.name, role: 'superAdmin', isApproved: true, createdAt: Timestamp.now(),
             });
@@ -175,20 +179,24 @@ export function useAuth() {
       const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
       const newFirebaseUser = userCredential.user;
   
-      const userProfileData = {
+      const globalProfileData = {
         email: newFirebaseUser.email,
         name: name,
         staffId: staffId,
-        officeLocation: officeLocation.toLowerCase(),
         role: role,
         isApproved: false,
         createdAt: Timestamp.now(),
         lastActiveAt: Timestamp.now(),
       };
       
+      const officeProfileData = {
+        ...globalProfileData,
+        officeLocation: officeLocation.toLowerCase(),
+      };
+      
       const batch = writeBatch(db);
-      batch.set(doc(db, "users", newFirebaseUser.uid), userProfileData);
-      batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, newFirebaseUser.uid), userProfileData);
+      batch.set(doc(db, "users", newFirebaseUser.uid), globalProfileData);
+      batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, newFirebaseUser.uid), officeProfileData);
   
       await batch.commit();
       await signOut(tempAuth);
@@ -224,17 +232,23 @@ export function useAuth() {
       for (const acc of accounts) {
         const userCredential = await createUserWithEmailAndPassword(tempAuth, acc.email, defaultPassword);
         const uid = userCredential.user.uid;
-        const profile = {
+        
+        const globalProfile = {
           email: acc.email,
           name: acc.name,
-          officeLocation: officeLocation.toLowerCase(),
           role: acc.role,
           isApproved: true,
           createdAt: Timestamp.now(),
           lastActiveAt: Timestamp.now(),
         };
-        batch.set(doc(db, "users", uid), profile);
-        batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, uid), profile);
+
+        const officeProfile = {
+            ...globalProfile,
+            officeLocation: officeLocation.toLowerCase(),
+        };
+
+        batch.set(doc(db, "users", uid), globalProfile);
+        batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, uid), officeProfile);
       }
       
       await batch.commit();
@@ -433,13 +447,16 @@ export function useAuth() {
     }
     try {
         const batch = writeBatch(db);
-        const updatePayload: { [key: string]: any } = { ...data };
-        if (updatePayload.officeLocation) {
-            updatePayload.officeLocation = updatePayload.officeLocation.toLowerCase();
+        const { officeLocation, ...globalData } = data; // Separate officeLocation
+        
+        // Update top-level user doc without officeLocation
+        if (Object.keys(globalData).length > 0) {
+          batch.update(doc(db, "users", targetUserUid), globalData);
         }
-        batch.update(doc(db, "users", targetUserUid), updatePayload);
-        if (data.officeLocation) {
-            batch.update(doc(db, `offices/${data.officeLocation.toLowerCase()}/users`, targetUserUid), updatePayload);
+
+        if (officeLocation) {
+            const officePayload = { ...data, officeLocation: officeLocation.toLowerCase() };
+            batch.update(doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid), officePayload);
         }
         await batch.commit();
         return { success: true };
