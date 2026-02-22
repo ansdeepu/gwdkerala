@@ -40,6 +40,7 @@ const processData = (data: any): any => {
     return data;
 };
 
+
 const toDateOrNull = (value: any): Date | null => {
     if (value === null || value === undefined || value === '') return null;
     if (value instanceof Date && !isNaN(value.getTime())) return value;
@@ -310,10 +311,12 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-                const data = snapshot.docs.map(doc => {
-                    const processedData = { id: doc.id, ...processData(doc.data()) };
+                let data = snapshot.docs.map(docSnap => {
+                    const processedData = { id: docSnap.id, ...processData(docSnap.data()) };
+                    (processedData as any).uid = docSnap.id;
+
                     if (isSuperAdminUser && !officeToQuery) {
-                        const pathSegments = doc.ref.path.split('/');
+                        const pathSegments = docSnap.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
                             (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
@@ -321,6 +324,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     }
                     return processedData;
                 });
+                
+                if (collectionName === 'users' && isSuperAdminUser && !officeToQuery) {
+                    const uniqueUsers = Array.from(new Map(data.map(user => [user.id, user])).values());
+                    data = uniqueUsers;
+                }
                 
                 if (needsSpecialSort && collectionName === 'staffMembers') {
                     const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);

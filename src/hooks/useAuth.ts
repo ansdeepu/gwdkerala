@@ -462,8 +462,43 @@ export function useAuth() {
       return { success: false, error };
     }
   }, [authState.user]);
+  
+  const createDirectorateUser = useCallback(async (email: string, password: string, name: string): Promise<{ success: boolean; error?: any }> => {
+    if (authState.user?.role !== 'superAdmin') {
+        return { success: false, error: { message: "Permission denied." } };
+    }
 
-  return { ...authState, login, logout, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, createUserByAdmin, createOfficeAdmin, updatePassword, updateSuperAdminProfile, updateUserProfileByAdmin };
+    const tempAppName = `temp-dir-app-${Date.now()}`;
+    const tempApp = initializeApp(app.options, tempAppName);
+    const tempAuth = getAuth(tempApp);
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+        const newFirebaseUser = userCredential.user;
+
+        const userProfileData = {
+            email: newFirebaseUser.email,
+            name: name,
+            officeLocation: null, // Explicitly null for Directorate
+            role: 'viewer' as UserRole,
+            isApproved: true, // Directorate users are approved by default
+            createdAt: Timestamp.now(),
+            lastActiveAt: Timestamp.now(),
+        };
+
+        await setDoc(doc(db, "users", newFirebaseUser.uid), userProfileData);
+        
+        await signOut(tempAuth);
+        await deleteApp(tempApp);
+
+        return { success: true };
+    } catch (error: any) {
+        await deleteApp(tempApp).catch(() => {});
+        return { success: false, error };
+    }
+  }, [authState.user]);
+
+  return { ...authState, login, logout, fetchAllUsers, updateUserApproval, updateUserRole, deleteUserDocument, createUserByAdmin, createOfficeAdmin, updatePassword, updateSuperAdminProfile, updateUserProfileByAdmin, createDirectorateUser };
 }
 
 interface AuthState {
