@@ -315,7 +315,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 let data = snapshot.docs.map(doc => {
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
-                    (processedData as any).uid = doc.id; // Ensure uid is present for UserProfile
                     if (isSuperAdminUser && !officeToQuery) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
@@ -327,13 +326,17 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 });
                 
                 if (collectionName === 'users' && isSuperAdminUser && !officeToQuery) {
-                    // De-duplicate users. Prefer the record with an officeLocation if duplicates are found.
                     const userMap = new Map<string, UserProfile>();
-                    data.forEach(user => {
-                        const existing = userMap.get((user as UserProfile).uid);
-                        if (!existing || (!existing.officeLocation && (user as UserProfile).officeLocation)) {
-                            userMap.set((user as UserProfile).uid, user as UserProfile);
-                        }
+                    data.forEach(u => {
+                       const user = u as UserProfile;
+                       const existing = userMap.get(user.uid);
+                       // A more robust merge: combine properties, preferring the one with an officeLocation as it's more specific.
+                       if (existing) {
+                           const mergedUser = user.officeLocation ? { ...existing, ...user } : { ...user, ...existing };
+                           userMap.set(user.uid, mergedUser);
+                       } else {
+                           userMap.set(user.uid, user);
+                       }
                     });
                     data = Array.from(userMap.values());
                 }

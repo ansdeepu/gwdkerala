@@ -75,38 +75,39 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     resolver: zodResolver(StaffMemberFormDataSchema),
   });
   
+  const { watch, control, reset } = form;
+  
   useEffect(() => {
     if (initialData) {
         const dob = initialData.dateOfBirth;
         const formattedDob = dob ? format(new Date(dob), 'yyyy-MM-dd') : "";
         const userForStaff = initialData.id ? allUsers.find(u => u.staffId === initialData.id) : undefined;
 
-        form.reset({
-            name: initialData.name ?? "",
-            nameMalayalam: initialData.nameMalayalam ?? "",
-            designation: initialData.designation ?? undefined,
-            designationMalayalam: initialData.designationMalayalam ?? undefined,
-            pen: initialData.pen ?? "",
-            email: userForStaff?.email ?? "",
+        reset({
+            name: initialData.name || "",
+            nameMalayalam: initialData.nameMalayalam || "",
+            designation: initialData.designation || undefined,
+            designationMalayalam: initialData.designationMalayalam || undefined,
+            pen: initialData.pen || "",
+            email: userForStaff?.email || "",
             dateOfBirth: formattedDob,
-            phoneNo: initialData.phoneNo ?? "",
-            roles: initialData.roles ?? "",
+            phoneNo: initialData.phoneNo || "",
+            roles: initialData.roles || "",
             photoUrl: isValidWebUrl(initialData.photoUrl) ? initialData.photoUrl ?? "" : "",
-            status: initialData.status ?? 'Active',
-            remarks: initialData.remarks ?? "",
-            officeLocation: initialData.officeLocation ?? "",
+            status: initialData.status || 'Active',
+            remarks: initialData.remarks || "",
+            officeLocation: initialData.officeLocation || "",
             createUserAccount: false,
         });
     } else {
-        form.reset({
+        reset({
             name: "", nameMalayalam: "", designation: undefined, designationMalayalam: undefined,
             pen: "", email: "", dateOfBirth: "", phoneNo: "", roles: "", photoUrl: "",
             status: 'Active', remarks: "", officeLocation: "", createUserAccount: false
         });
     }
-  }, [initialData, allUsers, form]);
+  }, [initialData, allUsers, reset]);
 
-  const { watch, control } = form;
   const watchedPhotoUrl = watch("photoUrl");
   const watchedStatus = watch("status");
   const createUserAccount = watch("createUserAccount");
