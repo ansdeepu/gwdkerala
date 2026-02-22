@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { Loader2, Save, X, ImageUp, Unplug, Expand, UserCheck } from "lucide-react";
 import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions } from "@/lib/schemas";
 import type { StaffMember, OfficeAddress } from "@/lib/schemas";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
   Dialog,
@@ -59,63 +59,71 @@ const isPlaceholderUrl = (url?: string | null): boolean => {
   return url.startsWith("https://placehold.co");
 };
 
+/**
+ * Case-insensitive field look-up to handle manual Firestore entry variations
+ */
+const getField = (data: any, key: string): any => {
+    if (!data) return undefined;
+    if (data[key] !== undefined) return data[key];
+    // Check for capitalized version (e.g. designation -> Designation)
+    const capitalized = key.charAt(0).toUpperCase() + key.slice(1);
+    if (data[capitalized] !== undefined) return data[capitalized];
+    // Check for all caps
+    const allCaps = key.toUpperCase();
+    if (data[allCaps] !== undefined) return data[allCaps];
+    return undefined;
+};
+
 export default function StaffForm({ onSubmit, initialData, isSubmitting, onCancel, isViewer = false, allOfficeAddresses, allUsers }: StaffFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
+  // Derive initial values defensively. remounting via 'key' prop ensures this is called fresh.
+  const defaultValues = useMemo((): StaffMemberFormData => {
+    if (!initialData) {
+        return {
+            name: "", nameMalayalam: "", designation: "" as any, designationMalayalam: "" as any,
+            pen: "", email: "", dateOfBirth: "", phoneNo: "", roles: "", photoUrl: "",
+            status: 'Active' as StaffStatusType, remarks: "", officeLocation: "", createUserAccount: false
+        };
+    }
+
+    const userForStaff = allUsers.find(u => 
+        u.staffId && initialData.id && 
+        String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
+    );
+
+    // Prioritize values from DB, checking for both lowercase and capitalized keys
+    const rawDesignation = getField(initialData, 'designation') || getField(initialData, 'roles') || "";
+    const rawDesignationMalayalam = getField(initialData, 'designationMalayalam') || "";
+    const rawStatus = getField(initialData, 'status') || "Active";
+    const rawEmail = getField(initialData, 'email') || userForStaff?.email || "";
+
+    return {
+        name: String(getField(initialData, 'name') || "").trim(),
+        nameMalayalam: String(getField(initialData, 'nameMalayalam') || "").trim(),
+        designation: String(rawDesignation).trim() as any,
+        designationMalayalam: String(rawDesignationMalayalam).trim() as any,
+        pen: String(getField(initialData, 'pen') || "").trim(),
+        email: String(rawEmail).trim(),
+        dateOfBirth: initialData.dateOfBirth ? format(new Date(initialData.dateOfBirth), 'yyyy-MM-dd') : "",
+        phoneNo: String(getField(initialData, 'phoneNo') || "").trim(),
+        roles: String(getField(initialData, 'roles') || "").trim(),
+        photoUrl: String(getField(initialData, 'photoUrl') || "").trim(),
+        status: String(rawStatus).trim() as StaffStatusType,
+        remarks: String(getField(initialData, 'remarks') || "").trim(),
+        officeLocation: String(getField(initialData, 'officeLocation') || "").trim(),
+        createUserAccount: false,
+    };
+  }, [initialData, allUsers]);
+
   const form = useForm<StaffMemberFormData>({
     resolver: zodResolver(StaffMemberFormDataSchema),
-    defaultValues: {
-        name: "", nameMalayalam: "", designation: "", designationMalayalam: "",
-        pen: "", email: "", dateOfBirth: "", phoneNo: "", roles: "", photoUrl: "",
-        status: 'Active', remarks: "", officeLocation: "", createUserAccount: false
-    }
+    defaultValues
   });
   
-  const { watch, control, reset, setValue } = form;
-  
-  // Robust data normalization when initialData changes
-  useEffect(() => {
-    if (initialData) {
-        console.log("Initializing StaffForm with:", initialData);
-
-        // Find linked user for email fallback
-        const userForStaff = allUsers.find(u => 
-            u.staffId && initialData.id && 
-            String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
-        );
-
-        // Normalize values strictly. 
-        // 1. Convert null/undefined to empty string.
-        // 2. Trim whitespace to ensure exact matches for <Select> components.
-        const normalizedData: StaffMemberFormData = {
-            name: String(initialData.name || "").trim(),
-            nameMalayalam: String(initialData.nameMalayalam || "").trim(),
-            
-            // Fetch designation value precisely from Firestore fields
-            designation: String(initialData.designation || (initialData as any).roles || "").trim() as any,
-            designationMalayalam: String(initialData.designationMalayalam || "").trim() as any,
-            
-            pen: String(initialData.pen || "").trim(),
-            
-            // Prioritize email stored in staff doc, fallback to user doc
-            email: String(initialData.email || userForStaff?.email || "").trim(),
-            
-            dateOfBirth: initialData.dateOfBirth ? format(new Date(initialData.dateOfBirth), 'yyyy-MM-dd') : "",
-            phoneNo: String(initialData.phoneNo || "").trim(),
-            roles: String((initialData as any).roles || "").trim(),
-            photoUrl: String(initialData.photoUrl || "").trim(),
-            status: (initialData.status || "Active").trim() as StaffStatusType,
-            remarks: String(initialData.remarks || "").trim(),
-            officeLocation: String(initialData.officeLocation || "").trim(),
-            createUserAccount: false,
-        };
-
-        reset(normalizedData);
-    }
-  }, [initialData, allUsers, reset]);
-
+  const { watch, control, handleSubmit } = form;
   const watchedPhotoUrl = watch("photoUrl");
   const watchedStatus = watch("status");
   
@@ -132,26 +140,20 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
       setImageLoadError(false);
     } else {
       setImagePreview(null); 
-      setImageLoadError(watchedPhotoUrl !== "" && watchedPhotoUrl !== undefined);
+      setImageLoadError(!!(watchedPhotoUrl && watchedPhotoUrl.trim() !== ""));
     }
   }, [watchedPhotoUrl]);
 
   const handleFormSubmitInternal = (data: StaffMemberFormData) => {
     if (isViewer) return;
-    const dataToSubmit: StaffMemberFormData = {
-        ...data,
-        email: data.email?.trim() || "",
-        remarks: data.remarks || "",
-        dateOfBirth: data.dateOfBirth ? data.dateOfBirth : "",
-    };
-    onSubmit(dataToSubmit);
+    onSubmit(data);
   };
 
   const canExpandImage = imagePreview && !imageLoadError && !isPlaceholderUrl(imagePreview);
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmitInternal)} className="flex flex-col h-full overflow-hidden">
+      <form onSubmit={handleSubmit(handleFormSubmitInternal)} className="flex flex-col h-full overflow-hidden">
         <ScrollArea className="flex-1 pr-6 -mr-6">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -175,7 +177,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Full Name (in Malayalam)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter full name in Malayalam" {...field} value={field.value ?? ""} readOnly={isViewer} />
+                      <Input placeholder="Enter full name in Malayalam" {...field} value={field.value || ""} readOnly={isViewer} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -187,7 +189,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select designation" />
@@ -209,7 +211,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation (in Malayalam)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select Malayalam designation" />
@@ -245,7 +247,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter email address" {...field} value={field.value ?? ""} readOnly={isViewer || userAccountExists} />
+                      <Input type="email" placeholder="Enter email address" {...field} value={field.value || ""} readOnly={isViewer || userAccountExists} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -258,7 +260,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="Enter 10 digit phone number" {...field} value={field.value ?? ""} readOnly={isViewer} />
+                      <Input type="tel" placeholder="Enter 10 digit phone number" {...field} value={field.value || ""} readOnly={isViewer} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -271,7 +273,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Date of Birth</FormLabel>
                     <FormControl>
-                       <Input type="date" {...field} value={field.value ?? ""} readOnly={isViewer}/>
+                       <Input type="date" {...field} value={field.value || ""} readOnly={isViewer}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -286,7 +288,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -386,7 +388,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Roles/Responsibilities</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="e.g., Section Clerk, Field Supervisor" className="resize-y min-h-[120px]" {...field} value={field.value ?? ""} readOnly={isViewer}/>
+                      <Textarea placeholder="e.g., Section Clerk, Field Supervisor" className="resize-y min-h-[120px]" {...field} value={field.value || ""} readOnly={isViewer}/>
                     </FormControl>
                     <FormDescription>(Optional)</FormDescription>
                     <FormMessage />
@@ -400,7 +402,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Remarks</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Any additional remarks about the staff member." className="resize-y min-h-[120px]" {...field} value={field.value ?? ""} readOnly={isViewer}/>
+                      <Textarea placeholder="Any additional remarks about the staff member." className="resize-y min-h-[120px]" {...field} value={field.value || ""} readOnly={isViewer}/>
                     </FormControl>
                     <FormDescription>(Optional)</FormDescription>
                     <FormMessage />
@@ -415,7 +417,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Transfer to Office</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     {allOfficeAddresses.map(office => (

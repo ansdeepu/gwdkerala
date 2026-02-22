@@ -18,7 +18,7 @@ import {
 import { getStorage, ref as storageRef, deleteObject } from "firebase/storage"; 
 import { app } from "@/lib/firebase";
 import { useAuth } from './useAuth';
-import { useDataStore } from './use-data-store'; // Import the central store hook
+import { useDataStore } from './use-data-store'; 
 
 const db = getFirestore(app);
 const storage = getStorage(app);
@@ -28,8 +28,8 @@ const sanitizeStaffMemberForFirestore = (data: any): any => {
   for (const key in data) {
     if (Object.prototype.hasOwnProperty.call(data, key) && !['createUserAccount', 'password', 'id', 'createdAt', 'updatedAt'].includes(key)) {
       const value = data[key];
-      if (value instanceof Date) sanitized[key] = value; // Keep as Date object for serverTimestamp
-      else if (value === undefined) sanitized[key] = null;
+      if (value instanceof Date) sanitized[key] = value; 
+      else if (value === undefined || value === "") sanitized[key] = null;
       else sanitized[key] = value;
     }
   }
@@ -57,7 +57,12 @@ export function useStaffMembers(): StaffMembersState {
     if (!officeLocation) throw new Error("An office location must be selected to add staff.");
 
     const collectionPath = `offices/${officeLocation.toLowerCase()}/staffMembers`;
-    const payload = { ...sanitizeStaffMemberForFirestore(staffData), officeLocation: officeLocation.toLowerCase(), createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+    const payload = { 
+        ...sanitizeStaffMemberForFirestore(staffData), 
+        officeLocation: officeLocation.toLowerCase(), 
+        createdAt: serverTimestamp(), 
+        updatedAt: serverTimestamp() 
+    };
     const docRef = await addDoc(collection(db, collectionPath), payload);
     return docRef.id;
   }, [user, selectedOffice]);
@@ -66,7 +71,6 @@ export function useStaffMembers(): StaffMembersState {
     if (!user || (user.role !== 'admin' && user.role !== 'superAdmin')) throw new Error("User does not have permission.");
     
     const memberToUpdate = allStaffMembers.find(s => s.id === id);
-    // Determine office location more robustly
     const officeLocation = memberToUpdate?.officeLocation || (user.role === 'superAdmin' ? selectedOffice : user.officeLocation);
     
     if (!officeLocation) throw new Error("Could not determine office location for the staff member.");
