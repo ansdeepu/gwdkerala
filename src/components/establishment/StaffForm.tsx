@@ -1,3 +1,4 @@
+
 // src/components/establishment/StaffForm.tsx
 "use client";
 
@@ -18,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Loader2, Save, X, ImageUp, Unplug, Expand, Info, UserPlus, UserCheck } from "lucide-react";
-import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions } from "@/lib/schemas";
+import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions, designationMalayalamOptions as malOpts } from "@/lib/schemas";
 import type { StaffMember, OfficeAddress } from "@/lib/schemas";
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
@@ -79,24 +80,34 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   
   useEffect(() => {
     if (initialData) {
+        // Normalize strings and handle potential mismatched Select values by trimming
+        const trimmedDesignation = (initialData.designation || "").trim();
+        const trimmedDesignationMal = (initialData.designationMalayalam || "").trim();
+        const trimmedStatus = (initialData.status || "Active").trim();
+
+        // Safety check: ensure values exist in options to avoid blank selects
+        const finalDesignation = designationOptions.includes(trimmedDesignation as any) ? trimmedDesignation : "";
+        const finalDesignationMal = malOpts.includes(trimmedDesignationMal as any) ? trimmedDesignationMal : "";
+        const finalStatus = staffStatusOptions.includes(trimmedStatus as any) ? trimmedStatus : "Active";
+
         const dob = initialData.dateOfBirth;
         const formattedDob = dob ? format(new Date(dob), 'yyyy-MM-dd') : "";
         const userForStaff = initialData.id ? allUsers.find(u => u.staffId === initialData.id) : undefined;
 
         reset({
-            name: initialData.name?.trim() || "",
-            nameMalayalam: initialData.nameMalayalam?.trim() || "",
-            designation: initialData.designation?.trim() ?? "",
-            designationMalayalam: initialData.designationMalayalam?.trim() ?? "",
-            pen: initialData.pen?.trim() || "",
-            email: userForStaff?.email || "",
+            name: (initialData.name || "").trim(),
+            nameMalayalam: (initialData.nameMalayalam || "").trim(),
+            designation: finalDesignation,
+            designationMalayalam: finalDesignationMal,
+            pen: (initialData.pen || "").trim(),
+            email: (userForStaff?.email || "").trim(),
             dateOfBirth: formattedDob,
-            phoneNo: initialData.phoneNo?.trim() || "",
-            roles: initialData.roles?.trim() || "",
-            photoUrl: isValidWebUrl(initialData.photoUrl) ? initialData.photoUrl ?? "" : "",
-            status: initialData.status?.trim() ?? 'Active',
-            remarks: initialData.remarks?.trim() || "",
-            officeLocation: initialData.officeLocation?.trim() ?? "",
+            phoneNo: (initialData.phoneNo || "").trim(),
+            roles: (initialData.roles || "").trim(),
+            photoUrl: isValidWebUrl(initialData.photoUrl) ? (initialData.photoUrl || "").trim() : "",
+            status: finalStatus as StaffStatusType,
+            remarks: (initialData.remarks || "").trim(),
+            officeLocation: (initialData.officeLocation || "").trim(),
             createUserAccount: false,
         });
     } else {
@@ -110,7 +121,6 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
 
   const watchedPhotoUrl = watch("photoUrl");
   const watchedStatus = watch("status");
-  const createUserAccount = watch("createUserAccount");
   const showUserCreation = !isViewer && !userAccountExists;
   
   useEffect(() => {
@@ -120,7 +130,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
       setImageLoadError(false);
     } else {
       setImagePreview(null); 
-      setImageLoadError(watchedPhotoUrl !== "");
+      setImageLoadError(watchedPhotoUrl !== "" && watchedPhotoUrl !== undefined);
     }
   }, [watchedPhotoUrl]);
 

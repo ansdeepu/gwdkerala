@@ -1,3 +1,4 @@
+
 // src/app/dashboard/establishment/page.tsx
 "use client";
 
@@ -71,7 +72,7 @@ export default function EstablishmentPage() {
     setHeader('Establishment', `Manage all staff members of the Ground Water Department, ${officeAddress?.officeLocation || ''}.`);
   }, [setHeader, officeAddress]);
 
-  const { user, isLoading: authLoading, createOfficeAdmin, createUserByAdmin } = useAuth();
+  const { user, isLoading: authLoading, createUserByAdmin } = useAuth();
   const { 
     staffMembers, 
     isLoading: staffLoadingHook, 
@@ -403,6 +404,7 @@ export default function EstablishmentPage() {
           </DialogHeader>
           <div className="px-6 pb-6 flex-1 min-h-0">
             <StaffForm
+                key={editingStaff?.id || 'new'}
                 onSubmit={handleFormSubmit}
                 initialData={editingStaff}
                 isSubmitting={isSubmittingForm}

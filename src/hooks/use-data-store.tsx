@@ -1,3 +1,4 @@
+
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -22,24 +23,27 @@ const db = getFirestore(app);
 // Helper to convert Firestore Timestamps to JS Dates recursively
 const processFirestoreDoc = <T,>(doc: DocumentData): T => {
     const data = doc.data();
+    if (!data) return { id: doc.id } as any;
+    
     const converted: { [key: string]: any } = { id: doc.id };
 
-    for (const key in data) {
-        const value = data[key];
-        if (value instanceof Timestamp) {
-            converted[key] = value.toDate();
-        } else if (Array.isArray(value)) {
-            converted[key] = value.map(item =>
-                typeof item === 'object' && item !== null && !(item instanceof Timestamp)
-                    ? processFirestoreDoc({ data: () => item, id: '' })
-                    : (item instanceof Timestamp ? item.toDate() : item)
-            );
-        } else if (typeof value === 'object' && value !== null) {
-            converted[key] = processFirestoreDoc({ data: () => value, id: '' });
-        } else {
-            converted[key] = value;
+    const convertValue = (val: any): any => {
+        if (val instanceof Timestamp) return val.toDate();
+        if (Array.isArray(val)) return val.map(convertValue);
+        if (val !== null && typeof val === 'object' && !(val instanceof Date)) {
+            const obj: any = {};
+            for (const k in val) {
+                obj[k] = convertValue(val[k]);
+            }
+            return obj;
         }
+        return val;
+    };
+
+    for (const key in data) {
+        converted[key] = convertValue(data[key]);
     }
+    
     return converted as T;
 };
 
@@ -300,17 +304,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
             
             let q;
-            if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
-                if (collectionName === 'users') {
-                    // For super admin "All Offices" view, the top-level users collection is the source of truth.
-                    q = query(collection(db, 'users'));
-                } else {
-                    // For all other data types, query the collection group to get data from all offices.
-                    q = query(collectionGroup(db, collectionName));
-                }
-            } else if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
+            if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
                 const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = query(collection(db, path));
+            } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
+                q = query(collectionGroup(db, collectionName));
             } else { // Should not happen for authenticated users, but as a safeguard
                 setter([]);
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
@@ -321,8 +319,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 const data = snapshot.docs.map(doc => {
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
-                    // For collection group queries, manually add the officeLocation from the path
-                    if (isSuperAdminUser && !officeToQuery && collectionName !== 'users') {
+                    if (isSuperAdminUser && !officeToQuery) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
