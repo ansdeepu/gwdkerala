@@ -30,7 +30,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { ScrollArea } from "../ui/scroll-area";
 import { Checkbox } from "../ui/checkbox";
 import { Separator } from "../ui/separator";
@@ -92,6 +92,8 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
 
         const dob = initialData.dateOfBirth;
         const formattedDob = dob ? format(new Date(dob), 'yyyy-MM-dd') : "";
+        
+        // Robust lookup for user email
         const userForStaff = initialData.id ? allUsers.find(u => u.staffId === initialData.id) : undefined;
 
         reset({
@@ -104,7 +106,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
             dateOfBirth: formattedDob,
             phoneNo: (initialData.phoneNo || "").trim(),
             roles: (initialData.roles || "").trim(),
-            photoUrl: isValidWebUrl(initialData.photoUrl) ? (initialData.photoUrl || "").trim() : "",
+            photoUrl: (initialData.photoUrl || "").trim(),
             status: finalStatus as StaffStatusType,
             remarks: (initialData.remarks || "").trim(),
             officeLocation: (initialData.officeLocation || "").trim(),
