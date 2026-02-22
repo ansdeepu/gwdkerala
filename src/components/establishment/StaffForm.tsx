@@ -71,12 +71,16 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     return allUsers.some(user => user.staffId === initialData.id);
   }, [initialData, allUsers]);
 
-  const getInitialFormValues = useCallback((): StaffMemberFormData => {
+  const form = useForm<StaffMemberFormData>({
+    resolver: zodResolver(StaffMemberFormDataSchema),
+  });
+  
+  useEffect(() => {
     const dob = initialData?.dateOfBirth;
     const formattedDob = dob ? format(new Date(dob), 'yyyy-MM-dd') : "";
     const userForStaff = initialData?.id ? allUsers.find(u => u.staffId === initialData.id) : undefined;
-
-    return {
+    
+    form.reset({
       name: initialData?.name || "",
       nameMalayalam: initialData?.nameMalayalam || "",
       designation: initialData?.designation || undefined,
@@ -91,17 +95,8 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
       remarks: initialData?.remarks || "",
       officeLocation: initialData?.officeLocation || "",
       createUserAccount: false,
-    };
-  }, [initialData, allUsers]);
-
-  const form = useForm<StaffMemberFormData>({
-    resolver: zodResolver(StaffMemberFormDataSchema),
-    defaultValues: getInitialFormValues(),
-  });
-  
-  useEffect(() => {
-    form.reset(getInitialFormValues());
-  }, [getInitialFormValues, form]);
+    });
+  }, [initialData, allUsers, form]);
 
   const { watch, control } = form;
   const watchedPhotoUrl = watch("photoUrl");
