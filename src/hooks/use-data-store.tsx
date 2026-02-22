@@ -23,7 +23,7 @@ const db = getFirestore(app);
 // Helper to convert Firestore Timestamps to JS Dates recursively
 const processFirestoreDoc = <T,>(doc: DocumentData): T => {
     const data = doc.data();
-    
+
     // Helper function to recursively process any value
     const processValue = (value: any): any => {
         if (value instanceof Timestamp) {
@@ -53,9 +53,10 @@ const processFirestoreDoc = <T,>(doc: DocumentData): T => {
     if (doc.id) {
         convertedData.id = doc.id;
     }
-    
+
     return convertedData as T;
 };
+
 
 const toDateOrNull = (value: any): Date | null => {
     if (value === null || value === undefined || value === '') return null;
@@ -328,13 +329,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 const data = snapshot.docs.map(doc => {
                     const processedData = processFirestoreDoc(doc);
-                    if (isSuperAdminUser && !officeToQuery) {
-                        if (doc.ref.path) { // Safeguard
-                            const pathSegments = doc.ref.path.split('/');
-                            const officeIdIndex = pathSegments.indexOf('offices');
-                            if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                                (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
-                            }
+                    if (isSuperAdminUser && !officeToQuery && doc.ref.path) {
+                        const pathSegments = doc.ref.path.split('/');
+                        const officeIdIndex = pathSegments.indexOf('offices');
+                        if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
+                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
                         }
                     }
                     return processedData;

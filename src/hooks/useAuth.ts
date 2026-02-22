@@ -376,7 +376,6 @@ export function useAuth() {
         batch.delete(officeUserRef);
     }
     await batch.commit();
-
   }, [authState.user, handleSupervisorCleanup]);
 
   const updatePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: any }> => {
@@ -451,7 +450,7 @@ const processFirestoreDoc = (data: any): any => {
         if (value instanceof Timestamp) {
             converted[key] = value.toDate();
         } else if (Array.isArray(value)) {
-            converted[key] = value.map(item => typeof item === 'object' ? processFirestoreDoc(item) : item);
+            converted[key] = value.map(item => typeof item === 'object' && item !== null ? processFirestoreDoc(item) : item);
         } else if (typeof value === 'object' && value !== null) {
             converted[key] = processFirestoreDoc(value);
         } else {
