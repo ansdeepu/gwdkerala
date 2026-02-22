@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { Loader2, Save, X, ImageUp, Unplug, Expand, Info, UserPlus, UserCheck } from "lucide-react";
 import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions } from "@/lib/schemas";
 import type { StaffMember, OfficeAddress } from "@/lib/schemas";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import {
   Dialog,
@@ -71,7 +71,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     return allUsers.some(user => user.staffId === initialData.id);
   }, [initialData, allUsers]);
 
-  const getInitialFormValues = React.useCallback((): StaffMemberFormData => {
+  const getInitialFormValues = useCallback((): StaffMemberFormData => {
     const dob = initialData?.dateOfBirth;
     const formattedDob = dob ? format(new Date(dob), 'yyyy-MM-dd') : "";
     const userForStaff = initialData?.id ? allUsers.find(u => u.staffId === initialData.id) : undefined;
@@ -101,8 +101,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   
   useEffect(() => {
     form.reset(getInitialFormValues());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialData, form.reset]);
+  }, [getInitialFormValues, form]);
 
   const { watch, control } = form;
   const watchedPhotoUrl = watch("photoUrl");
