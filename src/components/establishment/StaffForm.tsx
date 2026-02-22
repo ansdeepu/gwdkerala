@@ -76,15 +76,15 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   
   const { watch, control, reset, setValue } = form;
   
-  // Logic to initialize or reset form when data changes
   useEffect(() => {
     if (initialData) {
-        // Find linked user for email
+        // Find linked user for email using trimmed, case-insensitive comparison
         const userForStaff = allUsers.find(u => 
-            u.staffId && initialData.id && String(u.staffId).trim() === String(initialData.id).trim()
+            u.staffId && initialData.id && 
+            String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
         );
 
-        // NORMALIZE DATA: Trim strings and ensure non-null values for Selects
+        // NORMALIZE DATA: Trimming whitespace is critical for Select component matching
         const normalizedData = {
             name: (initialData.name || "").trim(),
             nameMalayalam: (initialData.nameMalayalam || "").trim(),
@@ -102,12 +102,6 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
             createUserAccount: false,
         };
 
-        // DEBUG LOGS - Verify what is being loaded
-        console.log("--- StaffForm Initialization ---");
-        console.log("Initial Staff Data:", initialData);
-        console.log("Matched User Account:", userForStaff);
-        console.log("Normalized Form Values:", normalizedData);
-
         reset(normalizedData);
     }
   }, [initialData, allUsers, reset]);
@@ -116,7 +110,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const watchedStatus = watch("status");
   
   const userAccountExists = React.useMemo(() => {
-    return allUsers.some(user => user.staffId && initialData?.id && String(user.staffId).trim() === String(initialData.id).trim());
+    return allUsers.some(user => user.staffId && initialData?.id && String(user.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase());
   }, [initialData, allUsers]);
 
   const showUserCreation = !isViewer && !userAccountExists;

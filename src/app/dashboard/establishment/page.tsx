@@ -113,6 +113,15 @@ export default function EstablishmentPage() {
         toast({ title: "Permission Denied", description: "You do not have permission to perform this action.", variant: "destructive"});
         return;
     }
+    
+    if (data.createUserAccount && data.email) {
+        const emailExists = allUsers.some(u => u.email?.toLowerCase().trim() === data.email?.toLowerCase().trim());
+        if (emailExists) {
+            toast({ title: "Email Taken", description: "A user with this email already exists. Cannot create a new account.", variant: "destructive" });
+            return;
+        }
+    }
+
     setIsSubmittingForm(true);
     
     try {
@@ -126,10 +135,6 @@ export default function EstablishmentPage() {
         }
 
         if (data.createUserAccount && data.email && staffId && user?.officeLocation) {
-            const emailExists = allUsers.some(u => u.email === data.email);
-            if (emailExists) {
-                throw new Error("A user with this email already exists. Cannot create a new account.");
-            }
             const defaultPassword = "123456";
             const result = await createUserByAdmin(data.email, defaultPassword, data.name, staffId, user.officeLocation);
             if (result.success) {
