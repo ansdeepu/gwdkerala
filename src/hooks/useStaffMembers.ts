@@ -26,7 +26,7 @@ const storage = getStorage(app);
 const sanitizeStaffMemberForFirestore = (data: any): any => {
   const sanitized: any = {};
   for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key) && !['isTransferred', 'place', 'id', 'createdAt', 'updatedAt'].includes(key)) {
+    if (Object.prototype.hasOwnProperty.call(data, key) && !['createUserAccount', 'password', 'id', 'createdAt', 'updatedAt'].includes(key)) {
       const value = data[key];
       if (value instanceof Date) sanitized[key] = value; // Keep as Date object for serverTimestamp
       else if (value === undefined) sanitized[key] = null;

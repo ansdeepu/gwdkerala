@@ -1,5 +1,4 @@
 
-// src/components/establishment/StaffForm.tsx
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Loader2, Save, X, ImageUp, Unplug, Expand, Info, UserCheck } from "lucide-react";
+import { Loader2, Save, X, ImageUp, Unplug, Expand, UserCheck } from "lucide-react";
 import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions } from "@/lib/schemas";
 import type { StaffMember, OfficeAddress } from "@/lib/schemas";
 import React, { useState, useEffect } from "react";
@@ -78,21 +77,22 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   
   useEffect(() => {
     if (initialData) {
-        // IMPROVED LOOKUP: Finding linked user for email using trimmed, case-insensitive comparison
+        // Find linked user for email fallback
         const userForStaff = allUsers.find(u => 
             u.staffId && initialData.id && 
             String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
         );
 
-        // DATA NORMALIZATION: Trimming whitespace and falling back to 'roles' for missing designation
-        const normalizedData = {
+        // Normalize values for strict Select components
+        const normalizedData: StaffMemberFormData = {
             name: (initialData.name || "").trim(),
             nameMalayalam: (initialData.nameMalayalam || "").trim(),
-            // Fallback: If designation is missing in Firestore, try using the value from 'roles' field
+            // Map 'roles' from DB to 'designation' if designation is missing
             designation: (initialData.designation || (initialData as any).roles || "").trim(),
-            designationMalayalam: ((initialData as any).designationMalayalam || "").trim(),
+            designationMalayalam: (initialData.designationMalayalam || "").trim(),
             pen: (initialData.pen || "").trim(),
-            email: (userForStaff?.email || "").trim(),
+            // Prioritize email stored in staff doc, fallback to user doc
+            email: (initialData.email || userForStaff?.email || "").trim(),
             dateOfBirth: initialData.dateOfBirth ? format(new Date(initialData.dateOfBirth), 'yyyy-MM-dd') : "",
             phoneNo: (initialData.phoneNo || "").trim(),
             roles: ((initialData as any).roles || "").trim(),
@@ -129,10 +129,11 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
 
   const handleFormSubmitInternal = (data: StaffMemberFormData) => {
     if (isViewer) return;
-    const dataToSubmit: any = {
+    const dataToSubmit: StaffMemberFormData = {
         ...data,
+        email: data.email?.trim() || "", // Ensure email is explicitly included in the staff doc
         remarks: data.remarks || "",
-        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
+        dateOfBirth: data.dateOfBirth ? data.dateOfBirth : "",
     };
     onSubmit(dataToSubmit);
   };

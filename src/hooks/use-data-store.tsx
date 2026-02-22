@@ -264,7 +264,10 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
             
             let q;
-            if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
+            if (collectionName === 'users' && isSuperAdminUser && !officeToQuery) {
+                // If super admin and no office selected, use the top-level users collection as the source of truth
+                q = query(collection(db, 'users'));
+            } else if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
                 const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
