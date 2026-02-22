@@ -84,19 +84,19 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         const userForStaff = initialData.id ? allUsers.find(u => u.staffId === initialData.id) : undefined;
 
         reset({
-            name: initialData.name || "",
-            nameMalayalam: initialData.nameMalayalam || "",
-            designation: initialData.designation ?? "",
-            designationMalayalam: initialData.designationMalayalam ?? "",
-            pen: initialData.pen || "",
+            name: initialData.name?.trim() || "",
+            nameMalayalam: initialData.nameMalayalam?.trim() || "",
+            designation: initialData.designation?.trim() ?? "",
+            designationMalayalam: initialData.designationMalayalam?.trim() ?? "",
+            pen: initialData.pen?.trim() || "",
             email: userForStaff?.email || "",
             dateOfBirth: formattedDob,
-            phoneNo: initialData.phoneNo || "",
-            roles: initialData.roles || "",
+            phoneNo: initialData.phoneNo?.trim() || "",
+            roles: initialData.roles?.trim() || "",
             photoUrl: isValidWebUrl(initialData.photoUrl) ? initialData.photoUrl ?? "" : "",
-            status: initialData.status ?? 'Active',
-            remarks: initialData.remarks || "",
-            officeLocation: initialData.officeLocation ?? "",
+            status: initialData.status?.trim() ?? 'Active',
+            remarks: initialData.remarks?.trim() || "",
+            officeLocation: initialData.officeLocation?.trim() ?? "",
             createUserAccount: false,
         });
     } else {
