@@ -55,7 +55,7 @@ type EditUserFormData = z.infer<typeof EditUserSchema>;
 export default function OfficeManagementPage() {
   const { setHeader } = usePageHeader();
   const { user: currentUser, createOfficeAdmin, deleteUserDocument, updateUserApproval, updateUserRole, updateUserProfileByAdmin } = useAuth();
-  const { allStaffMembers, allUsers, isLoading: isDataLoading } = useDataStore();
+  const { allStaffMembers, allUsers, isLoading: isDataLoading, allOfficeAddresses } = useDataStore();
   const { toast } = useToast();
   const [isOfficeUserDialogOpen, setIsOfficeUserDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -196,7 +196,9 @@ export default function OfficeManagementPage() {
         {isDataLoading ? (
               <div className="flex items-center justify-center py-10"><Loader2 className="h-8 w-8 animate-spin"/></div>
         ) : offices.length > 0 ? (
-            offices.map(([officeLocation, officeUsers]) => (
+            offices.map(([officeLocation, officeUsers]) => {
+                const officeCode = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === officeLocation.toLowerCase())?.officeCode;
+                return (
                 <Card key={officeLocation} className="bg-secondary/50">
                     <CardHeader>
                         <div className="flex justify-between items-center">
@@ -218,10 +220,11 @@ export default function OfficeManagementPage() {
                             deleteUserDocument={deleteUserDocument}
                             staffMembers={allStaffMembers}
                             onEditUser={(user) => setUserToEdit(user)}
+                            officeCode={officeCode}
                         />
                     </CardContent>
                 </Card>
-            ))
+            )})
         ) : (
               <p className="text-center text-muted-foreground py-10">No offices found.</p>
         )}

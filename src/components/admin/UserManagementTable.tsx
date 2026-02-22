@@ -74,6 +74,7 @@ interface UserManagementTableProps {
   deleteUserDocument: (uid: string, officeLocation?: string) => Promise<void>;
   staffMembers: StaffMember[];
   onEditUser?: (user: UserProfile) => void;
+  officeCode?: string;
 }
 
 export default function UserManagementTable({
@@ -87,6 +88,7 @@ export default function UserManagementTable({
   deleteUserDocument,
   staffMembers,
   onEditUser,
+  officeCode,
 }: UserManagementTableProps) {
   const { toast } = useToast();
   const [updatingUsers, setUpdatingUsers] = useState<Record<string, { approval?: boolean, role?: boolean }>>({});
@@ -231,7 +233,7 @@ export default function UserManagementTable({
                 <TableCell className="px-3 py-2">
                   <Avatar className="h-9 w-9 mx-auto">
                       <AvatarImage src={photoUrl || undefined} alt={userRow.name || 'User'} data-ai-hint="person user" />
-                      <AvatarFallback className={cn("font-semibold", avatarColorClass)}>{getInitials(userRow.name)}</AvatarFallback>
+                      <AvatarFallback className={cn("font-semibold", avatarColorClass)}>{officeCode ? officeCode.toUpperCase() : getInitials(userRow.name)}</AvatarFallback>
                   </Avatar>
                 </TableCell>
                 <TableCell className="font-medium px-3 py-2 whitespace-normal break-words">{userRow.name || "N/A"}</TableCell>
