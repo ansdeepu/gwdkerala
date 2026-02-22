@@ -358,9 +358,13 @@ export function useAuth() {
     if (authState.user.uid === targetUserUid) {
       throw new Error("You cannot delete yourself.");
     }
-
     const userRef = doc(db, "users", targetUserUid);
     const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+        console.warn("User to delete not found in top-level 'users' collection.");
+        return; // Or handle as an error
+    }
+
     const userToDeleteData = userSnap.data();
     const userRole = userToDeleteData?.role;
     const effectiveOfficeLocation = officeLocation || userToDeleteData?.officeLocation;
@@ -371,10 +375,12 @@ export function useAuth() {
     
     const batch = writeBatch(db);
     batch.delete(userRef);
+    
     if (effectiveOfficeLocation) {
         const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
         batch.delete(officeUserRef);
     }
+    
     await batch.commit();
   }, [authState.user, handleSupervisorCleanup]);
 

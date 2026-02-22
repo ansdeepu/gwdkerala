@@ -57,7 +57,6 @@ const processFirestoreDoc = <T,>(doc: DocumentData): T => {
     return convertedData as T;
 };
 
-
 const toDateOrNull = (value: any): Date | null => {
     if (value === null || value === undefined || value === '') return null;
     if (value instanceof Date && !isNaN(value.getTime())) return value;
