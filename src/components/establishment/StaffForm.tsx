@@ -18,10 +18,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Loader2, Save, X, ImageUp, Unplug, Expand, Info, UserPlus, UserCheck } from "lucide-react";
-import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions, designationMalayalamOptions as malOpts } from "@/lib/schemas";
+import { Loader2, Save, X, ImageUp, Unplug, Expand, Info, UserCheck } from "lucide-react";
+import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions } from "@/lib/schemas";
 import type { StaffMember, OfficeAddress } from "@/lib/schemas";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Dialog,
@@ -33,7 +33,6 @@ import {
 import { format, isValid } from "date-fns";
 import { ScrollArea } from "../ui/scroll-area";
 import { Checkbox } from "../ui/checkbox";
-import { Separator } from "../ui/separator";
 import type { UserProfile } from "@/hooks/useAuth";
 
 interface StaffFormProps {
@@ -61,68 +60,65 @@ const isPlaceholderUrl = (url?: string | null): boolean => {
   return url.startsWith("https://placehold.co");
 };
 
-
 export default function StaffForm({ onSubmit, initialData, isSubmitting, onCancel, isViewer = false, allOfficeAddresses, allUsers }: StaffFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
-  const userAccountExists = React.useMemo(() => {
-    if (!initialData?.id || !allUsers) return false;
-    return allUsers.some(user => user.staffId === initialData.id);
-  }, [initialData, allUsers]);
-
   const form = useForm<StaffMemberFormData>({
     resolver: zodResolver(StaffMemberFormDataSchema),
+    defaultValues: {
+        name: "", nameMalayalam: "", designation: "", designationMalayalam: "",
+        pen: "", email: "", dateOfBirth: "", phoneNo: "", roles: "", photoUrl: "",
+        status: 'Active', remarks: "", officeLocation: "", createUserAccount: false
+    }
   });
   
-  const { watch, control, reset } = form;
+  const { watch, control, reset, setValue } = form;
   
+  // Logic to initialize or reset form when data changes
   useEffect(() => {
     if (initialData) {
-        // Normalize strings and handle potential mismatched Select values by trimming
-        const trimmedDesignation = (initialData.designation || "").trim();
-        const trimmedDesignationMal = (initialData.designationMalayalam || "").trim();
-        const trimmedStatus = (initialData.status || "Active").trim();
+        // Find linked user for email
+        const userForStaff = allUsers.find(u => 
+            u.staffId && initialData.id && String(u.staffId).trim() === String(initialData.id).trim()
+        );
 
-        // Safety check: ensure values exist in options to avoid blank selects
-        const finalDesignation = designationOptions.includes(trimmedDesignation as any) ? trimmedDesignation : "";
-        const finalDesignationMal = malOpts.includes(trimmedDesignationMal as any) ? trimmedDesignationMal : "";
-        const finalStatus = staffStatusOptions.includes(trimmedStatus as any) ? trimmedStatus : "Active";
-
-        const dob = initialData.dateOfBirth;
-        const formattedDob = dob ? format(new Date(dob), 'yyyy-MM-dd') : "";
-        
-        // Robust lookup for user email
-        const userForStaff = initialData.id ? allUsers.find(u => u.staffId === initialData.id) : undefined;
-
-        reset({
+        // NORMALIZE DATA: Trim strings and ensure non-null values for Selects
+        const normalizedData = {
             name: (initialData.name || "").trim(),
             nameMalayalam: (initialData.nameMalayalam || "").trim(),
-            designation: finalDesignation,
-            designationMalayalam: finalDesignationMal,
+            designation: (initialData.designation || "").trim(),
+            designationMalayalam: (initialData.designationMalayalam || "").trim(),
             pen: (initialData.pen || "").trim(),
             email: (userForStaff?.email || "").trim(),
-            dateOfBirth: formattedDob,
+            dateOfBirth: initialData.dateOfBirth ? format(new Date(initialData.dateOfBirth), 'yyyy-MM-dd') : "",
             phoneNo: (initialData.phoneNo || "").trim(),
             roles: (initialData.roles || "").trim(),
             photoUrl: (initialData.photoUrl || "").trim(),
-            status: finalStatus as StaffStatusType,
+            status: (initialData.status || "Active").trim() as StaffStatusType,
             remarks: (initialData.remarks || "").trim(),
             officeLocation: (initialData.officeLocation || "").trim(),
             createUserAccount: false,
-        });
-    } else {
-        reset({
-            name: "", nameMalayalam: "", designation: "", designationMalayalam: "",
-            pen: "", email: "", dateOfBirth: "", phoneNo: "", roles: "", photoUrl: "",
-            status: 'Active', remarks: "", officeLocation: "", createUserAccount: false
-        });
+        };
+
+        // DEBUG LOGS - Verify what is being loaded
+        console.log("--- StaffForm Initialization ---");
+        console.log("Initial Staff Data:", initialData);
+        console.log("Matched User Account:", userForStaff);
+        console.log("Normalized Form Values:", normalizedData);
+
+        reset(normalizedData);
     }
   }, [initialData, allUsers, reset]);
 
   const watchedPhotoUrl = watch("photoUrl");
   const watchedStatus = watch("status");
+  
+  const userAccountExists = React.useMemo(() => {
+    return allUsers.some(user => user.staffId && initialData?.id && String(user.staffId).trim() === String(initialData.id).trim());
+  }, [initialData, allUsers]);
+
   const showUserCreation = !isViewer && !userAccountExists;
   
   useEffect(() => {

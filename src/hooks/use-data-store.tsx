@@ -16,7 +16,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { isValid, parse, parseISO } from 'date-fns';
+import { isValid, parse } from 'date-fns';
 
 const db = getFirestore(app);
 
@@ -46,46 +46,6 @@ const processFirestoreDoc = <T,>(doc: DocumentData): T => {
     
     return converted as T;
 };
-
-const toDateOrNull = (value: any): Date | null => {
-    if (value === null || value === undefined || value === '') return null;
-    if (value instanceof Date && !isNaN(value.getTime())) return value;
-    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
-        try {
-            const ms = value.seconds * 1000 + (value.nanoseconds ? Math.round(value.nanoseconds / 1e6) : 0);
-            const d = new Date(ms);
-            if (!isNaN(d.getTime())) return d;
-        } catch { /* fallthrough */ }
-    }
-    if (typeof value === 'number' && isFinite(value)) {
-        const ms = value < 1e12 ? value * 1000 : value;
-        const d = new Date(ms);
-        if (!isNaN(d.getTime())) return d;
-    }
-    if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (trimmed === '') return null;
-        const formats = [
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-            "yyyy-MM-dd'T'HH:mm:ss'Z'",
-            "yyyy-MM-dd'T'HH:mm",
-            "yyyy-MM-dd",
-            'dd/MM/yyyy',
-        ];
-        for (const fmt of formats) {
-            try {
-                const parsedDate = parse(trimmed, fmt, new Date());
-                if (isValid(parsedDate)) return parsedDate;
-            } catch (e) {}
-        }
-        try {
-            const fallback = new Date(trimmed);
-            if (!isNaN(fallback.getTime())) return fallback;
-        } catch { /* ignore */ }
-    }
-    return null;
-};
-
 
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
 
@@ -254,7 +214,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
           if (!snapshot.empty) {
               const subOfficeDoc = processFirestoreDoc(snapshot.docs[0]);
               setOfficeAddress({
-                  ...subOfficeDoc,
+                  ...subOfficeDoc as any,
                   officeCode: globalOffice?.officeCode || '', // Merge officeCode
               });
           } else {
@@ -331,7 +291,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
                 let data = dataRaw;
 
-                // De-duplicate and merge logic for Users (especially important for collectionGroup results)
+                // Robust de-duplicate and merge logic for Users
                 if (collectionName === 'users') {
                     const mergedMap = new Map<string, any>();
                     dataRaw.forEach((item: any) => {
@@ -339,8 +299,14 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                         if (!existing) {
                             mergedMap.set(item.id, item);
                         } else {
-                            // Merge objects, preferring non-null values
-                            mergedMap.set(item.id, { ...existing, ...item });
+                            // Merge objects, preferring non-null values to preserve IDs and linked IDs
+                            const merged = { ...existing };
+                            Object.entries(item).forEach(([k, v]) => {
+                                if (v !== null && v !== undefined && v !== "") {
+                                    (merged as any)[k] = v;
+                                }
+                            });
+                            mergedMap.set(item.id, merged);
                         }
                     });
                     data = Array.from(mergedMap.values());
@@ -356,8 +322,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     });
                 } else if (needsSpecialSort && collectionName === 'eTenders') {
                     (data as E_tender[]).sort((a, b) => {
-                         const dateA = toDateOrNull(a.tenderDate)?.getTime() ?? 0;
-                         const dateB = toDateOrNull(b.tenderDate)?.getTime() ?? 0;
+                         const dateA = a.tenderDate instanceof Date ? a.tenderDate.getTime() : 0;
+                         const dateB = b.tenderDate instanceof Date ? b.tenderDate.getTime() : 0;
                          return dateB - dateA;
                     });
                 }
@@ -446,7 +412,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             allUsers,
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
-            allOfficeAddresses: globalOfficeAddresses, // Provide the global list
+            allOfficeAddresses: globalOfficeAddresses,
             officeAddress, 
             isLoading,
             refetchRateDescriptions,
