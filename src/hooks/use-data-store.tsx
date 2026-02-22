@@ -40,6 +40,7 @@ const processFirestoreData = (data: any): any => {
     return data;
 };
 
+
 const toDateOrNull = (value: any): Date | null => {
     if (value === null || value === undefined || value === '') return null;
     if (value instanceof Date && !isNaN(value.getTime())) return value;
@@ -311,15 +312,18 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 const data = snapshot.docs.map(doc => {
-                    const processedData = { id: doc.id, ...processFirestoreData(doc.data()) };
-                    if (isSuperAdminUser && !officeToQuery && doc.ref.path) {
+                    const simpleProcessedData = processFirestoreData(doc.data());
+                    const finalData = { id: doc.id, ...simpleProcessedData };
+
+                    // This is the key part: only add officeLocation for super admin on collectionGroup query
+                    if (isSuperAdminUser && !officeToQuery) {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
+                            (finalData as any).officeLocation = pathSegments[officeIdIndex + 1];
                         }
                     }
-                    return processedData;
+                    return finalData;
                 });
                 
                 if (needsSpecialSort && collectionName === 'staffMembers') {

@@ -47,22 +47,24 @@ export const updateUserLastActive = async (uid: string): Promise<void> => {
 };
 
 // Utility to convert Firestore Timestamps to JS Dates recursively
-const processFirestoreDoc = (data: any): any => {
+const processFirestoreData = (data: any): any => {
     if (!data) return data;
-    const converted: { [key: string]: any } = {};
-    for (const key in data) {
-        const value = data[key];
-        if (value instanceof Timestamp) {
-            converted[key] = value.toDate();
-        } else if (Array.isArray(value)) {
-            converted[key] = value.map(item => typeof item === 'object' && item !== null ? processFirestoreDoc(item) : item);
-        } else if (typeof value === 'object' && value !== null) {
-            converted[key] = processFirestoreDoc(value);
-        } else {
-            converted[key] = value;
-        }
+    if (data instanceof Timestamp) {
+        return data.toDate();
     }
-    return converted;
+    if (Array.isArray(data)) {
+        return data.map(processFirestoreData);
+    }
+    if (typeof data === 'object' && !(data instanceof Date)) {
+        const converted: { [key: string]: any } = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                converted[key] = processFirestoreData(data[key]);
+            }
+        }
+        return converted;
+    }
+    return data;
 };
 
 
@@ -264,7 +266,7 @@ export function useAuth() {
       const querySnapshot = await getDocs(collection(db, "users"));
       return querySnapshot.docs.map(docSnap => {
           const data = docSnap.data();
-          const processed = processFirestoreDoc(data);
+          const processed = processFirestoreData(data);
           return {
               uid: docSnap.id,
               ...processed,
@@ -379,31 +381,44 @@ export function useAuth() {
 
     const userRef = doc(db, "users", targetUserUid);
     const userSnap = await getDoc(userRef);
+
+    // If the user doesn't exist at the top level, we can't get their roles or office,
+    // but we should still try to clean up if we have an officeLocation.
     if (!userSnap.exists()) {
-        console.warn("User to delete not found in top-level 'users' collection.");
+        if (officeLocation) {
+            console.warn(`User ${targetUserUid} not found in top-level 'users' collection. Attempting sub-collection delete only.`);
+            const officeUserRef = doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid);
+            await deleteDoc(officeUserRef);
+        } else {
+             console.warn(`User ${targetUserUid} not found and no office location provided. Cannot delete.`);
+        }
         return;
     }
 
     const userToDeleteData = userSnap.data();
     const userRole = userToDeleteData?.role;
+    // Prioritize the officeLocation passed from the UI, fallback to the one in the user document.
     const effectiveOfficeLocation = officeLocation || userToDeleteData?.officeLocation;
 
+    // This handles the case where the user has an office location.
     if (effectiveOfficeLocation) {
         if ((userRole === 'supervisor' || userRole === 'investigator')) {
             await handleSupervisorCleanup(targetUserUid, effectiveOfficeLocation);
         }
         
         const batch = writeBatch(db);
+        // Delete from top-level 'users' collection
         batch.delete(userRef);
         
+        // Delete from office-specific sub-collection
         const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
         batch.delete(officeUserRef);
         
         await batch.commit();
     } else {
-        // For users without an office (e.g., Directorate), just delete the top-level doc.
+        // This case handles directorate users (or any user without an officeLocation)
         await deleteDoc(userRef);
-        console.log(`User ${targetUserUid} deleted from top-level. No office location was found to perform further cleanup.`);
+        console.log(`User ${targetUserUid} deleted from top-level 'users' collection. No office location cleanup was necessary.`);
     }
   }, [authState.user, handleSupervisorCleanup]);
 
