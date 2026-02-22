@@ -187,11 +187,11 @@ export function useAuth() {
         isApproved: false,
         createdAt: Timestamp.now(),
         lastActiveAt: Timestamp.now(),
+        officeLocation: officeLocation.toLowerCase(),
       };
       
       const officeProfileData = {
-        ...globalProfileData,
-        officeLocation: officeLocation.toLowerCase(),
+        ...globalProfileData
       };
       
       const batch = writeBatch(db);
@@ -240,11 +240,11 @@ export function useAuth() {
           isApproved: true,
           createdAt: Timestamp.now(),
           lastActiveAt: Timestamp.now(),
+          officeLocation: officeLocation.toLowerCase(),
         };
 
         const officeProfile = {
             ...globalProfile,
-            officeLocation: officeLocation.toLowerCase(),
         };
 
         batch.set(doc(db, "users", uid), globalProfile);
