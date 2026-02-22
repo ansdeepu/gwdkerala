@@ -256,7 +256,15 @@ export default function UserManagementTable({
                       <SelectContent>
                         {userRoleOptions
                           .filter(r => {
-                            if (isSuperAdmin) return r !== 'superAdmin';
+                            // Always include the user's current role to prevent a blank display
+                            if (r === userRow.role) return true;
+
+                            // SuperAdmin can manage all roles except other SuperAdmins
+                            if (isSuperAdmin) {
+                              return r !== 'superAdmin';
+                            }
+                            
+                            // Regular admins cannot assign 'superAdmin' or 'admin' roles to others
                             return r !== 'superAdmin' && r !== 'admin';
                           })
                           .map(roleOption => (
