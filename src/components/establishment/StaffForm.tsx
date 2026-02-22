@@ -96,7 +96,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
       officeLocation: initialData?.officeLocation || "",
       createUserAccount: false,
     });
-  }, [initialData, allUsers, form]);
+  }, [initialData, allUsers, form.reset]);
 
   const { watch, control } = form;
   const watchedPhotoUrl = watch("photoUrl");
@@ -165,7 +165,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select designation" />
@@ -187,7 +187,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation (in Malayalam)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select Malayalam designation" />
@@ -264,7 +264,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
