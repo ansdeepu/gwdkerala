@@ -362,16 +362,16 @@ export function useAuth() {
     const userSnap = await getDoc(userRef);
     const userToDeleteData = userSnap.data();
     const userRole = userToDeleteData?.role;
+    const effectiveOfficeLocation = officeLocation || userToDeleteData?.officeLocation;
 
-    // Perform cleanup FIRST, before deleting the user record
-    if ((userRole === 'supervisor' || userRole === 'investigator') && officeLocation) {
-        await handleSupervisorCleanup(targetUserUid, officeLocation);
+    if ((userRole === 'supervisor' || userRole === 'investigator') && effectiveOfficeLocation) {
+        await handleSupervisorCleanup(targetUserUid, effectiveOfficeLocation);
     }
     
     const batch = writeBatch(db);
     batch.delete(userRef);
-    if (officeLocation) {
-        const officeUserRef = doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid);
+    if (effectiveOfficeLocation) {
+        const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
         batch.delete(officeUserRef);
     }
     await batch.commit();
