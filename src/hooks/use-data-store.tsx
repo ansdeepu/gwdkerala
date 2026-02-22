@@ -300,11 +300,17 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
             
             let q;
-            if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
+            if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
+                if (collectionName === 'users') {
+                    // For super admin "All Offices" view, the top-level users collection is the source of truth.
+                    q = query(collection(db, 'users'));
+                } else {
+                    // For all other data types, query the collection group to get data from all offices.
+                    q = query(collectionGroup(db, collectionName));
+                }
+            } else if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
                 const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = query(collection(db, path));
-            } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
-                q = query(collectionGroup(db, collectionName));
             } else { // Should not happen for authenticated users, but as a safeguard
                 setter([]);
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
@@ -312,10 +318,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-                let data = snapshot.docs.map(doc => {
+                const data = snapshot.docs.map(doc => {
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
-                    if (isSuperAdminUser && !officeToQuery) {
+                    // For collection group queries, manually add the officeLocation from the path
+                    if (isSuperAdminUser && !officeToQuery && collectionName !== 'users') {
                         const pathSegments = doc.ref.path.split('/');
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
@@ -324,22 +331,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     }
                     return processedData;
                 });
-                
-                if (collectionName === 'users' && isSuperAdminUser && !officeToQuery) {
-                    const userMap = new Map<string, UserProfile>();
-                    data.forEach(u => {
-                       const user = u as UserProfile;
-                       const existing = userMap.get(user.uid);
-                       // A more robust merge: combine properties, preferring the one with an officeLocation as it's more specific.
-                       if (existing) {
-                           const mergedUser = user.officeLocation ? { ...existing, ...user } : { ...user, ...existing };
-                           userMap.set(user.uid, mergedUser);
-                       } else {
-                           userMap.set(user.uid, user);
-                       }
-                    });
-                    data = Array.from(userMap.values());
-                }
                 
                 if (needsSpecialSort && collectionName === 'staffMembers') {
                     const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
