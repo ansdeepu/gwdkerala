@@ -283,12 +283,12 @@ export function useAuth() {
         const data = fDoc.data();
         let changed = false;
         const newSites = data.siteDetails?.map((s: any) => {
-            if (s.supervisorUid === uid && ["Work Order Issued", "Work in Progress"].includes(s.workStatus)) {
+            if (s.supervisorUid === uid && s.workStatus && ["Work Order Issued", "Work in Progress"].includes(s.workStatus)) {
                 changed = true;
                 return { ...s, supervisorUid: null, supervisorName: null };
             }
             return s;
-        });
+        }) || [];
         if (changed) {
             batch.update(fDoc.ref, { siteDetails: newSites });
             // Create system notification
@@ -296,7 +296,7 @@ export function useAuth() {
             batch.set(notifRef, {
                 fileNo: data.fileNo,
                 status: 'supervisor-unassigned',
-                notes: 'Work status file has no assigned Supervisor (Supervisor role removed).',
+                notes: 'Work status file has no assigned Supervisor (user account deleted).',
                 submittedAt: serverTimestamp(),
                 submittedByName: 'System',
                 isArsUpdate: false,
@@ -310,14 +310,14 @@ export function useAuth() {
     const arsSnap = await getDocs(arsQuery);
     arsSnap.forEach(aDoc => {
         const data = aDoc.data();
-        if (["Work Order Issued", "Work in Progress"].includes(data.arsStatus)) {
+        if (data.arsStatus && ["Work Order Issued", "Work in Progress"].includes(data.arsStatus)) {
             batch.update(aDoc.ref, { supervisorUid: null, supervisorName: null });
             const notifRef = doc(collection(db, `${officePath}/pendingUpdates`));
             batch.set(notifRef, {
                 arsId: aDoc.id,
                 fileNo: data.fileNo,
                 status: 'supervisor-unassigned',
-                notes: 'ARS Work status file has no assigned Supervisor (Supervisor role removed).',
+                notes: 'ARS Work status file has no assigned Supervisor (user account deleted).',
                 submittedAt: serverTimestamp(),
                 submittedByName: 'System',
                 isArsUpdate: true,
@@ -363,12 +363,22 @@ export function useAuth() {
       throw new Error("You cannot delete yourself.");
     }
 
+    const userRef = doc(db, "users", targetUserUid);
+    const userSnap = await getDoc(userRef);
+    const userToDeleteData = userSnap.data();
+    const userRole = userToDeleteData?.role;
+
     const batch = writeBatch(db);
-    batch.delete(doc(db, "users", targetUserUid));
+    batch.delete(userRef);
     if (officeLocation) {
         batch.delete(doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid));
     }
     await batch.commit();
+
+    if ((userRole === 'supervisor' || userRole === 'investigator') && officeLocation) {
+        await handleSupervisorCleanup(targetUserUid, officeLocation);
+    }
+
   }, [authState.user]);
 
   const updatePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: any }> => {
