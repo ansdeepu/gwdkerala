@@ -1,4 +1,3 @@
-
 // src/hooks/useAuth.ts
 "use client";
 
@@ -272,11 +271,10 @@ export function useAuth() {
     await batch.commit();
   }, [authState.user]);
 
-  const handleSupervisorCleanup = async (uid: string, officeId: string) => {
+  const handleSupervisorCleanup = useCallback(async (uid: string, officeId: string) => {
     const batch = writeBatch(db);
     const officePath = `offices/${officeId.toLowerCase()}`;
     
-    // Cleanup File Entries
     const filesQuery = query(collection(db, `${officePath}/fileEntries`));
     const filesSnap = await getDocs(filesQuery);
     filesSnap.forEach(fDoc => {
@@ -285,13 +283,12 @@ export function useAuth() {
         const newSites = data.siteDetails?.map((s: any) => {
             if (s.supervisorUid === uid && s.workStatus && ["Work Order Issued", "Work in Progress"].includes(s.workStatus)) {
                 changed = true;
-                return { ...s, supervisorUid: null, supervisorName: null };
+                return { ...s, supervisorUid: null, supervisorName: null, supervisorDesignation: null };
             }
             return s;
         }) || [];
         if (changed) {
             batch.update(fDoc.ref, { siteDetails: newSites });
-            // Create system notification
             const notifRef = doc(collection(db, `${officePath}/pendingUpdates`));
             batch.set(notifRef, {
                 fileNo: data.fileNo,
@@ -305,7 +302,6 @@ export function useAuth() {
         }
     });
 
-    // Cleanup ARS Entries
     const arsQuery = query(collection(db, `${officePath}/arsEntries`), where('supervisorUid', '==', uid));
     const arsSnap = await getDocs(arsQuery);
     arsSnap.forEach(aDoc => {
@@ -327,7 +323,7 @@ export function useAuth() {
     });
 
     await batch.commit();
-  };
+  }, []);
 
   const updateUserRole = useCallback(async (targetUserUid: string, newRole: UserRole, staffId?: string, officeLocation?: string): Promise<void> => {
     if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
@@ -349,11 +345,10 @@ export function useAuth() {
     }
     await batch.commit();
 
-    // Role specific cleanup
     if ((oldRole === 'supervisor' || oldRole === 'investigator') && newRole !== 'supervisor' && newRole !== 'investigator' && officeLocation) {
         await handleSupervisorCleanup(targetUserUid, officeLocation);
     }
-  }, [authState.user]);
+  }, [authState.user, handleSupervisorCleanup]);
 
   const deleteUserDocument = useCallback(async (targetUserUid: string, officeLocation?: string): Promise<void> => {
     if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
@@ -368,18 +363,20 @@ export function useAuth() {
     const userToDeleteData = userSnap.data();
     const userRole = userToDeleteData?.role;
 
-    const batch = writeBatch(db);
-    batch.delete(userRef);
-    if (officeLocation) {
-        batch.delete(doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid));
-    }
-    await batch.commit();
-
+    // Perform cleanup FIRST, before deleting the user record
     if ((userRole === 'supervisor' || userRole === 'investigator') && officeLocation) {
         await handleSupervisorCleanup(targetUserUid, officeLocation);
     }
+    
+    const batch = writeBatch(db);
+    batch.delete(userRef);
+    if (officeLocation) {
+        const officeUserRef = doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid);
+        batch.delete(officeUserRef);
+    }
+    await batch.commit();
 
-  }, [authState.user]);
+  }, [authState.user, handleSupervisorCleanup]);
 
   const updatePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: any }> => {
     const firebaseUser = auth.currentUser;
