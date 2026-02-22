@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import PaginationControls from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { getInitials } from "@/lib/utils";
 
 
 interface StaffTableProps {
@@ -27,17 +28,6 @@ interface StaffTableProps {
 }
 
 const ITEMS_PER_PAGE = 20;
-
-const getInitials = (name?: string) => {
-  if (!name || name.trim() === '') return 'U';
-  return name
-    .trim()
-    .split(/\s+/)
-    .map(n => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-};
 
 const formatDateSafe = (dateInput: Date | string | null | undefined): string => {
   if (!dateInput) return "N/A";

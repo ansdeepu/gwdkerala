@@ -9,7 +9,8 @@ export const getInitials = (name?: string) => {
   if (!name || name.trim() === '') return 'U';
   return name
     .trim()
-    .split(/\s+/)
+    .split(/[\s-]+/)
+    .filter(Boolean)
     .map(n => n[0])
     .slice(0, 2)
     .join('')
