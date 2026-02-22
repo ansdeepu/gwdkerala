@@ -382,34 +382,31 @@ export function useAuth() {
     const userRef = doc(db, "users", targetUserUid);
     const userSnap = await getDoc(userRef);
 
-    if (!userSnap.exists()) {
-        if (officeLocation) {
-            console.warn(`User ${targetUserUid} not found in top-level 'users' collection. Attempting sub-collection delete only.`);
-            const officeUserRef = doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid);
-            await deleteDoc(officeUserRef);
-        } else {
-            console.warn(`User ${targetUserUid} not found and no office location provided. Cannot delete.`);
-        }
-        return;
-    }
-
-    const userToDeleteData = userSnap.data();
-    const userRole = userToDeleteData?.role;
+    const userToDeleteData = userSnap.exists() ? userSnap.data() : null;
     const effectiveOfficeLocation = officeLocation || userToDeleteData?.officeLocation;
+    const userRole = userToDeleteData?.role;
 
-    if (effectiveOfficeLocation) {
-        if ((userRole === 'supervisor' || userRole === 'investigator')) {
+    // Perform cleanup ONLY if an office location is confirmed to exist.
+    if (effectiveOfficeLocation && typeof effectiveOfficeLocation === 'string') {
+        if (userRole === 'supervisor' || userRole === 'investigator') {
             await handleSupervisorCleanup(targetUserUid, effectiveOfficeLocation);
         }
-        
-        const batch = writeBatch(db);
+    }
+
+    // Always attempt to delete from both collections if possible.
+    const batch = writeBatch(db);
+    if (userSnap.exists()) {
         batch.delete(userRef);
+    }
+    
+    // Also delete from the office-specific subcollection if we know where it is.
+    if (effectiveOfficeLocation && typeof effectiveOfficeLocation === 'string') {
         const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
         batch.delete(officeUserRef);
-        await batch.commit();
-    } else {
-        await deleteDoc(userRef);
     }
+
+    await batch.commit();
+
 }, [authState.user, handleSupervisorCleanup]);
 
 
