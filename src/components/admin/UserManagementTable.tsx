@@ -233,7 +233,7 @@ export default function UserManagementTable({
                 <TableCell className="px-3 py-2">
                   <Avatar className="h-9 w-9 mx-auto">
                       <AvatarImage src={photoUrl || undefined} alt={userRow.name || 'User'} data-ai-hint="person user" />
-                      <AvatarFallback className={cn("font-semibold", avatarColorClass)}>{officeCode ? officeCode.toUpperCase() : getInitials(userRow.name)}</AvatarFallback>
+                      <AvatarFallback className={cn("font-semibold text-xs", avatarColorClass)}>{officeCode ? officeCode.toUpperCase() : getInitials(userRow.name)}</AvatarFallback>
                   </Avatar>
                 </TableCell>
                 <TableCell className="font-medium px-3 py-2 whitespace-normal break-words">{userRow.name || "N/A"}</TableCell>
