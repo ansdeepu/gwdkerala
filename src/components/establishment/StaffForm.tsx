@@ -75,31 +75,40 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   
   const { watch, control, reset, setValue } = form;
   
+  // Robust data normalization when initialData changes
   useEffect(() => {
     if (initialData) {
+        console.log("Initializing StaffForm with:", initialData);
+
         // Find linked user for email fallback
         const userForStaff = allUsers.find(u => 
             u.staffId && initialData.id && 
             String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
         );
 
-        // Normalize values for strict Select components
+        // Normalize values strictly. 
+        // 1. Convert null/undefined to empty string.
+        // 2. Trim whitespace to ensure exact matches for <Select> components.
         const normalizedData: StaffMemberFormData = {
-            name: (initialData.name || "").trim(),
-            nameMalayalam: (initialData.nameMalayalam || "").trim(),
-            // Map 'roles' from DB to 'designation' if designation is missing
-            designation: (initialData.designation || (initialData as any).roles || "").trim(),
-            designationMalayalam: (initialData.designationMalayalam || "").trim(),
-            pen: (initialData.pen || "").trim(),
+            name: String(initialData.name || "").trim(),
+            nameMalayalam: String(initialData.nameMalayalam || "").trim(),
+            
+            // Fetch designation value precisely from Firestore fields
+            designation: String(initialData.designation || (initialData as any).roles || "").trim() as any,
+            designationMalayalam: String(initialData.designationMalayalam || "").trim() as any,
+            
+            pen: String(initialData.pen || "").trim(),
+            
             // Prioritize email stored in staff doc, fallback to user doc
-            email: (initialData.email || userForStaff?.email || "").trim(),
+            email: String(initialData.email || userForStaff?.email || "").trim(),
+            
             dateOfBirth: initialData.dateOfBirth ? format(new Date(initialData.dateOfBirth), 'yyyy-MM-dd') : "",
-            phoneNo: (initialData.phoneNo || "").trim(),
-            roles: ((initialData as any).roles || "").trim(),
-            photoUrl: (initialData.photoUrl || "").trim(),
+            phoneNo: String(initialData.phoneNo || "").trim(),
+            roles: String((initialData as any).roles || "").trim(),
+            photoUrl: String(initialData.photoUrl || "").trim(),
             status: (initialData.status || "Active").trim() as StaffStatusType,
-            remarks: (initialData.remarks || "").trim(),
-            officeLocation: (initialData.officeLocation || "").trim(),
+            remarks: String(initialData.remarks || "").trim(),
+            officeLocation: String(initialData.officeLocation || "").trim(),
             createUserAccount: false,
         };
 
@@ -131,7 +140,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     if (isViewer) return;
     const dataToSubmit: StaffMemberFormData = {
         ...data,
-        email: data.email?.trim() || "", // Ensure email is explicitly included in the staff doc
+        email: data.email?.trim() || "",
         remarks: data.remarks || "",
         dateOfBirth: data.dateOfBirth ? data.dateOfBirth : "",
     };

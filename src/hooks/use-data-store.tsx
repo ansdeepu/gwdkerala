@@ -20,9 +20,12 @@ import { isValid, parse } from 'date-fns';
 
 const db = getFirestore(app);
 
-// Helper to convert Firestore Timestamps to JS Dates recursively
-const processFirestoreDoc = <T,>(doc: DocumentData): T => {
-    const data = typeof doc.data === 'function' ? doc.data() : doc;
+/**
+ * Robustly converts a Firestore document into a plain JS object.
+ * Recursively handles Timestamps -> Dates and nested objects/arrays.
+ */
+const processFirestoreDoc = <T,>(doc: DocumentData | { data: () => any, id: string }): T => {
+    const data = doc.data();
     if (!data) return { id: doc.id } as any;
     
     const converted: { [key: string]: any } = { id: doc.id };
@@ -264,10 +267,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
             
             let q;
-            if (collectionName === 'users' && isSuperAdminUser && !officeToQuery) {
-                // If super admin and no office selected, use the top-level users collection as the source of truth
-                q = query(collection(db, 'users'));
-            } else if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
+            if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
                 const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
