@@ -386,20 +386,21 @@ export function useAuth() {
     const effectiveOfficeLocation = officeLocation || userToDeleteData?.officeLocation;
     const userRole = userToDeleteData?.role;
 
-    // Perform cleanup ONLY if an office location is confirmed to exist.
+    // Guard clause: Only run cleanup if we have a valid office location string
     if (effectiveOfficeLocation && typeof effectiveOfficeLocation === 'string') {
         if (userRole === 'supervisor' || userRole === 'investigator') {
             await handleSupervisorCleanup(targetUserUid, effectiveOfficeLocation);
         }
     }
 
-    // Always attempt to delete from both collections if possible.
     const batch = writeBatch(db);
+    
+    // Always attempt to delete from the top-level 'users' collection
     if (userSnap.exists()) {
         batch.delete(userRef);
     }
     
-    // Also delete from the office-specific subcollection if we know where it is.
+    // Also attempt to delete from the office-specific subcollection if we know where it is
     if (effectiveOfficeLocation && typeof effectiveOfficeLocation === 'string') {
         const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
         batch.delete(officeUserRef);

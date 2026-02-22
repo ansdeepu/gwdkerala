@@ -212,7 +212,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     const descriptions = snapshot.docs.reduce((acc, doc) => ({...acc, [doc.id]: doc.data().description}), {} as Record<RateDescriptionId, string>);
                     setter((prev: Record<RateDescriptionId, string>) => ({ ...defaultRateDescriptions, ...prev, ...descriptions }));
                 } else {
-                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...processData(doc.data()) }));
+                    const data = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...processData(docSnap.data()) }));
                     setter(data);
                 }
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
