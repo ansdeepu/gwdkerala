@@ -78,23 +78,24 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   
   useEffect(() => {
     if (initialData) {
-        // Find linked user for email using trimmed, case-insensitive comparison
+        // IMPROVED LOOKUP: Finding linked user for email using trimmed, case-insensitive comparison
         const userForStaff = allUsers.find(u => 
             u.staffId && initialData.id && 
             String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
         );
 
-        // NORMALIZE DATA: Trimming whitespace is critical for Select component matching
+        // DATA NORMALIZATION: Trimming whitespace and falling back to 'roles' for missing designation
         const normalizedData = {
             name: (initialData.name || "").trim(),
             nameMalayalam: (initialData.nameMalayalam || "").trim(),
-            designation: (initialData.designation || "").trim(),
-            designationMalayalam: (initialData.designationMalayalam || "").trim(),
+            // Fallback: If designation is missing in Firestore, try using the value from 'roles' field
+            designation: (initialData.designation || (initialData as any).roles || "").trim(),
+            designationMalayalam: ((initialData as any).designationMalayalam || "").trim(),
             pen: (initialData.pen || "").trim(),
             email: (userForStaff?.email || "").trim(),
             dateOfBirth: initialData.dateOfBirth ? format(new Date(initialData.dateOfBirth), 'yyyy-MM-dd') : "",
             phoneNo: (initialData.phoneNo || "").trim(),
-            roles: (initialData.roles || "").trim(),
+            roles: ((initialData as any).roles || "").trim(),
             photoUrl: (initialData.photoUrl || "").trim(),
             status: (initialData.status || "Active").trim() as StaffStatusType,
             remarks: (initialData.remarks || "").trim(),

@@ -1,3 +1,4 @@
+
 // src/lib/schemas.ts
 import { z } from 'zod';
 import { isValid } from 'date-fns';
@@ -29,6 +30,7 @@ export const RegisterSchema = z.object({
 export type RegisterFormData = z.infer<typeof RegisterSchema>;
 
 export const designationOptions = [
+    "District Officer",
     "Executive Engineer",
     "Senior Hydrogeologist",
     "Assistant Executive Engineer",
@@ -61,6 +63,7 @@ export const designationOptions = [
 export type Designation = typeof designationOptions[number];
 
 export const designationMalayalamOptions = [
+    "ജില്ലാ ഓഫീസർ",
     "എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ",
     "സീനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്",
     "അസിസ്റ്റന്റ് എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ",

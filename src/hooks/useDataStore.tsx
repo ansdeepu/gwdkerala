@@ -1,3 +1,4 @@
+
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -34,7 +35,8 @@ const processFirestoreDoc = <T,>(doc: DocumentData): T => {
                     ? processFirestoreDoc({ data: () => item, id: '' })
                     : (item instanceof Timestamp ? item.toDate() : item)
             );
-        } else if (typeof value === 'object' && value !== null) {
+        } else if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
+            // FIX: Ensure we don't recursively process objects that are already native types like Date
             converted[key] = processFirestoreDoc({ data: () => value, id: '' });
         } else {
             converted[key] = value;
@@ -250,7 +252,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
           if (!snapshot.empty) {
               const subOfficeDoc = processFirestoreDoc(snapshot.docs[0]);
               setOfficeAddress({
-                  ...subOfficeDoc,
+                  ...subOfficeDoc as any,
                   officeCode: globalOffice?.officeCode || '', // Merge officeCode
               });
           } else {
@@ -312,7 +314,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-                const data = snapshot.docs.map(doc => {
+                const dataRaw = snapshot.docs.map(doc => {
                     const docData = doc.data();
                     const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
                     if (isSuperAdminUser && !officeToQuery) {
@@ -324,6 +326,29 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     }
                     return processedData;
                 });
+
+                let data = dataRaw;
+
+                // Robust de-duplicate and merge logic for Users
+                if (collectionName === 'users') {
+                    const mergedMap = new Map<string, any>();
+                    dataRaw.forEach((item: any) => {
+                        const existing = mergedMap.get(item.id);
+                        if (!existing) {
+                            mergedMap.set(item.id, item);
+                        } else {
+                            // Merge objects, preferring non-null values to preserve IDs and linked IDs
+                            const merged = { ...existing };
+                            Object.entries(item).forEach(([k, v]) => {
+                                if (v !== null && v !== undefined && v !== "") {
+                                    (merged as any)[k] = v;
+                                }
+                            });
+                            mergedMap.set(item.id, merged);
+                        }
+                    });
+                    data = Array.from(mergedMap.values());
+                }
                 
                 if (needsSpecialSort && collectionName === 'staffMembers') {
                     const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
@@ -335,8 +360,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     });
                 } else if (needsSpecialSort && collectionName === 'eTenders') {
                     (data as E_tender[]).sort((a, b) => {
-                         const dateA = toDateOrNull(a.tenderDate)?.getTime() ?? 0;
-                         const dateB = toDateOrNull(b.tenderDate)?.getTime() ?? 0;
+                         const dateA = a.tenderDate instanceof Date ? a.tenderDate.getTime() : 0;
+                         const dateB = b.tenderDate instanceof Date ? b.tenderDate.getTime() : 0;
                          return dateB - dateA;
                     });
                 }
@@ -425,7 +450,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             allUsers,
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
-            allOfficeAddresses: globalOfficeAddresses, // Provide the global list
+            allOfficeAddresses: globalOfficeAddresses,
             officeAddress, 
             isLoading,
             refetchRateDescriptions,
