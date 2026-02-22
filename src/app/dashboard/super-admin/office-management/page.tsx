@@ -60,6 +60,10 @@ export default function OfficeManagementPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserProfile | null>(null);
 
+  const [officeToDelete, setOfficeToDelete] = useState<string | null>(null);
+  const [usersToDelete, setUsersToDelete] = useState<UserProfile[]>([]);
+  const [isDeletingOfficeUsers, setIsDeletingOfficeUsers] = useState(false);
+
   useEffect(() => {
     setHeader("Office Management", "Create and manage accounts for each office location.");
   }, [setHeader]);
@@ -162,6 +166,24 @@ export default function OfficeManagementPage() {
         setIsSubmitting(false);
     }
   };
+  
+    const handleDeleteAllUsersInOffice = async () => {
+        if (!officeToDelete || usersToDelete.length === 0) return;
+        setIsDeletingOfficeUsers(true);
+        try {
+            for (const userToDelete of usersToDelete) {
+                if (userToDelete.email === SUPER_ADMIN_EMAIL) continue;
+                await deleteUserDocument(userToDelete.uid, userToDelete.officeLocation);
+            }
+            toast({ title: "Users Deleted", description: `All users for ${officeToDelete} have been removed.` });
+        } catch (error: any) {
+            toast({ title: "Error", description: `Could not delete all users: ${error.message}`, variant: "destructive" });
+        } finally {
+            setIsDeletingOfficeUsers(false);
+            setOfficeToDelete(null);
+            setUsersToDelete([]);
+        }
+    };
 
   return (
     <div className="space-y-6">
@@ -175,7 +197,12 @@ export default function OfficeManagementPage() {
             offices.map(([officeLocation, officeUsers]) => (
                 <Card key={officeLocation} className="bg-secondary/50">
                     <CardHeader>
-                        <CardTitle className="text-lg capitalize">{officeLocation}</CardTitle>
+                        <div className="flex justify-between items-center">
+                            <CardTitle className="text-lg capitalize">{officeLocation}</CardTitle>
+                            <Button variant="destructive" size="sm" onClick={() => { setOfficeToDelete(officeLocation); setUsersToDelete(officeUsers); }}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete All Users
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <UserManagementTable
@@ -327,6 +354,23 @@ export default function OfficeManagementPage() {
             </DialogContent>
         </Dialog>
       )}
+
+      <AlertDialog open={!!officeToDelete} onOpenChange={() => setOfficeToDelete(null)}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      This will permanently delete all {usersToDelete.length} users in the <strong>{officeToDelete}</strong> office. This action cannot be undone.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeletingOfficeUsers}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAllUsersInOffice} disabled={isDeletingOfficeUsers} className="bg-destructive hover:bg-destructive/90">
+                      {isDeletingOfficeUsers ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : "Yes, Delete All"}
+                  </AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
