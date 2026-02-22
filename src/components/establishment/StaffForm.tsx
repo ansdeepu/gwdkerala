@@ -86,22 +86,22 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         reset({
             name: initialData.name || "",
             nameMalayalam: initialData.nameMalayalam || "",
-            designation: initialData.designation || undefined,
-            designationMalayalam: initialData.designationMalayalam || undefined,
+            designation: initialData.designation ?? "",
+            designationMalayalam: initialData.designationMalayalam ?? "",
             pen: initialData.pen || "",
             email: userForStaff?.email || "",
             dateOfBirth: formattedDob,
             phoneNo: initialData.phoneNo || "",
             roles: initialData.roles || "",
             photoUrl: isValidWebUrl(initialData.photoUrl) ? initialData.photoUrl ?? "" : "",
-            status: initialData.status || 'Active',
+            status: initialData.status ?? 'Active',
             remarks: initialData.remarks || "",
-            officeLocation: initialData.officeLocation || "",
+            officeLocation: initialData.officeLocation ?? "",
             createUserAccount: false,
         });
     } else {
         reset({
-            name: "", nameMalayalam: "", designation: undefined, designationMalayalam: undefined,
+            name: "", nameMalayalam: "", designation: "", designationMalayalam: "",
             pen: "", email: "", dateOfBirth: "", phoneNo: "", roles: "", photoUrl: "",
             status: 'Active', remarks: "", officeLocation: "", createUserAccount: false
         });
@@ -174,7 +174,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || undefined} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select designation" />
@@ -196,7 +196,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation (in Malayalam)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || undefined} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select Malayalam designation" />
@@ -245,7 +245,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input type="tel" placeholder="Enter 10 digit phone number" {...field} readOnly={isViewer} />
+                      <Input type="tel" placeholder="Enter 10 digit phone number" {...field} value={field.value ?? ""} readOnly={isViewer} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -258,7 +258,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Date of Birth</FormLabel>
                     <FormControl>
-                       <Input type="date" {...field} readOnly={isViewer}/>
+                       <Input type="date" {...field} value={field.value ?? ""} readOnly={isViewer}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -273,7 +273,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || undefined} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -373,7 +373,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Roles/Responsibilities</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="e.g., Section Clerk, Field Supervisor" className="resize-y min-h-[120px]" {...field} readOnly={isViewer}/>
+                      <Textarea placeholder="e.g., Section Clerk, Field Supervisor" className="resize-y min-h-[120px]" {...field} value={field.value ?? ""} readOnly={isViewer}/>
                     </FormControl>
                     <FormDescription>(Optional)</FormDescription>
                     <FormMessage />
@@ -387,7 +387,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Remarks</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Any additional remarks about the staff member." className="resize-y min-h-[120px]" {...field} readOnly={isViewer}/>
+                      <Textarea placeholder="Any additional remarks about the staff member." className="resize-y min-h-[120px]" {...field} value={field.value ?? ""} readOnly={isViewer}/>
                     </FormControl>
                     <FormDescription>(Optional)</FormDescription>
                     <FormMessage />
