@@ -395,14 +395,14 @@ export default function EstablishmentPage() {
               setIsFormOpen(true);
           }
       }}>
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-5xl max-h-[90vh] flex flex-col">
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-5xl max-h-[98vh] flex flex-col overflow-hidden">
           <DialogHeader className="p-6 pb-4 shrink-0">
             <DialogTitle>{editingStaff ? (isViewer ? "View Staff Details" : "Edit Staff Details") : "Add New Staff Member"}</DialogTitle>
             <DialogDescription>
               {editingStaff ? (isViewer ? "Viewing details for the staff member." : "Update the details for the staff member.") : "Fill in the form to add a new staff member."}
             </DialogDescription>
           </DialogHeader>
-          <div className="px-6 pb-6 flex-1 min-h-0">
+          <div className="px-6 pb-6 flex-1 min-h-0 overflow-hidden">
             <StaffForm
                 key={editingStaff?.id || 'new'}
                 onSubmit={handleFormSubmit}

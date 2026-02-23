@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Loader2, Save, X, ImageUp, Unplug, Expand, UserCheck } from "lucide-react";
+import { Loader2, Save, X, ImageUp, Unplug, Expand, UserCheck, Info } from "lucide-react";
 import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions } from "@/lib/schemas";
 import type { StaffMember, OfficeAddress } from "@/lib/schemas";
 import React, { useState, useEffect, useMemo } from "react";
@@ -29,7 +28,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { format, isValid } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { ScrollArea } from "../ui/scroll-area";
 import { Checkbox } from "../ui/checkbox";
 import type { UserProfile } from "@/hooks/useAuth";
@@ -64,13 +63,17 @@ const isPlaceholderUrl = (url?: string | null): boolean => {
  */
 const getField = (data: any, key: string): any => {
     if (!data) return undefined;
-    if (data[key] !== undefined) return data[key];
-    // Check for capitalized version (e.g. designation -> Designation)
+    if (data[key] !== undefined && data[key] !== null) return data[key];
+    
+    // Check for exact match first (case-sensitive)
     const capitalized = key.charAt(0).toUpperCase() + key.slice(1);
-    if (data[capitalized] !== undefined) return data[capitalized];
-    // Check for all caps
-    const allCaps = key.toUpperCase();
-    if (data[allCaps] !== undefined) return data[allCaps];
+    if (data[capitalized] !== undefined && data[capitalized] !== null) return data[capitalized];
+    
+    // Check all keys case-insensitively
+    const searchKey = key.toLowerCase();
+    const foundKey = Object.keys(data).find(k => k.toLowerCase() === searchKey);
+    if (foundKey) return data[foundKey];
+
     return undefined;
 };
 
@@ -79,7 +82,6 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const [imageLoadError, setImageLoadError] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
-  // Derive initial values defensively. remounting via 'key' prop ensures this is called fresh.
   const defaultValues = useMemo((): StaffMemberFormData => {
     if (!initialData) {
         return {
@@ -89,30 +91,35 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         };
     }
 
+    // Try to find a linked user account to extract the email
     const userForStaff = allUsers.find(u => 
         u.staffId && initialData.id && 
         String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
     );
 
-    // Prioritize values from DB, checking for both lowercase and capitalized keys
-    const rawDesignation = getField(initialData, 'designation') || getField(initialData, 'roles') || "";
-    const rawDesignationMalayalam = getField(initialData, 'designationMalayalam') || "";
-    const rawStatus = getField(initialData, 'status') || "Active";
-    const rawEmail = getField(initialData, 'email') || userForStaff?.email || "";
+    // Handle various date formats for the input
+    let dateStr = "";
+    const rawDob = getField(initialData, 'dateOfBirth') || getField(initialData, 'Date of Birth');
+    if (rawDob) {
+        const d = rawDob instanceof Date ? rawDob : new Date(rawDob);
+        if (isValid(d)) {
+            dateStr = format(d, 'yyyy-MM-dd');
+        }
+    }
 
     return {
-        name: String(getField(initialData, 'name') || "").trim(),
-        nameMalayalam: String(getField(initialData, 'nameMalayalam') || "").trim(),
-        designation: String(rawDesignation).trim() as any,
-        designationMalayalam: String(rawDesignationMalayalam).trim() as any,
-        pen: String(getField(initialData, 'pen') || "").trim(),
-        email: String(rawEmail).trim(),
-        dateOfBirth: initialData.dateOfBirth ? format(new Date(initialData.dateOfBirth), 'yyyy-MM-dd') : "",
-        phoneNo: String(getField(initialData, 'phoneNo') || "").trim(),
-        roles: String(getField(initialData, 'roles') || "").trim(),
-        photoUrl: String(getField(initialData, 'photoUrl') || "").trim(),
-        status: String(rawStatus).trim() as StaffStatusType,
-        remarks: String(getField(initialData, 'remarks') || "").trim(),
+        name: String(getField(initialData, 'name') || getField(initialData, 'Full Name') || "").trim(),
+        nameMalayalam: String(getField(initialData, 'nameMalayalam') || getField(initialData, 'Full Name (in Malayalam)') || "").trim(),
+        designation: String(getField(initialData, 'designation') || getField(initialData, 'Designation') || "").trim() as any,
+        designationMalayalam: String(getField(initialData, 'designationMalayalam') || getField(initialData, 'Designation (in Malayalam)') || "").trim() as any,
+        pen: String(getField(initialData, 'pen') || getField(initialData, 'PEN') || "").trim(),
+        email: String(getField(initialData, 'email') || getField(initialData, 'Email') || userForStaff?.email || "").trim(),
+        dateOfBirth: dateStr,
+        phoneNo: String(getField(initialData, 'phoneNo') || getField(initialData, 'Phone Number') || "").trim(),
+        roles: String(getField(initialData, 'roles') || getField(initialData, 'Roles/Responsibilities') || "").trim(),
+        photoUrl: String(getField(initialData, 'photoUrl') || getField(initialData, 'Staff Photo URL') || "").trim(),
+        status: String(getField(initialData, 'status') || getField(initialData, 'Status') || "Active").trim() as StaffStatusType,
+        remarks: String(getField(initialData, 'remarks') || getField(initialData, 'Remarks') || "").trim(),
         officeLocation: String(getField(initialData, 'officeLocation') || "").trim(),
         createUserAccount: false,
     };
@@ -127,7 +134,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const watchedPhotoUrl = watch("photoUrl");
   const watchedStatus = watch("status");
   
-  const userAccountExists = React.useMemo(() => {
+  const userAccountExists = useMemo(() => {
     return allUsers.some(user => user.staffId && initialData?.id && String(user.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase());
   }, [initialData, allUsers]);
 
@@ -155,7 +162,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     <Form {...form}>
       <form onSubmit={handleSubmit(handleFormSubmitInternal)} className="flex flex-col h-full overflow-hidden">
         <ScrollArea className="flex-1 pr-6 -mr-6">
-          <div className="space-y-6">
+          <div className="space-y-6 pb-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <FormField
                 control={form.control}
@@ -189,7 +196,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select designation" />
@@ -211,7 +218,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation (in Malayalam)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select Malayalam designation" />
@@ -288,7 +295,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -417,7 +424,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Transfer to Office</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                            <Select onValueChange={field.onChange} value={field.value ?? ""}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     {allOfficeAddresses.map(office => (
@@ -433,8 +440,8 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
           </div>
         </ScrollArea>
         
-        <div className="flex justify-between items-center pt-6 mt-auto">
-          <div className="flex-1">
+        <div className="flex flex-col sm:flex-row justify-between items-center pt-6 mt-auto gap-4 border-t">
+          <div className="flex-1 w-full sm:w-auto">
             {showUserCreation ? (
               <div className="p-3 rounded-md bg-primary/10 border border-primary/20">
                 <FormField
@@ -470,7 +477,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 )
             )}
           </div>
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-3 w-full sm:w-auto">
             <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
                 <X className="mr-2 h-4 w-4" /> Cancel
             </Button>
