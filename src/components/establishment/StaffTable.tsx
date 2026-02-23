@@ -6,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit3, Trash2, ArrowRightLeft, UserMinus, Eye, Expand, FileArchive, Loader2, Clock } from "lucide-react";
+import { Trash2, ArrowRightLeft, UserMinus, Eye, Expand, FileArchive, Loader2, Clock } from "lucide-react";
 import type { StaffMember, StaffStatusType } from "@/lib/schemas";
 import { format, isValid } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -154,7 +154,7 @@ export default function StaffTable({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" onClick={() => onEdit && onEdit(staff)}>
-                               {isPendingTransfer ? <Eye className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+                               <Eye className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent><p>{(isViewer || isPendingTransfer) ? "View Details" : "View / Edit Staff"}</p></TooltipContent>
