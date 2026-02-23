@@ -51,6 +51,7 @@ interface StaffMembersState {
   getStaffMemberById: (id: string) => Promise<StaffMember | undefined>;
   updateStaffStatus: (id: string, newStatus: StaffStatusType) => Promise<void>; 
   approveTransfer: (id: string, currentOffice: string, targetOffice: string) => Promise<void>;
+  cancelTransfer: (id: string) => Promise<void>;
 }
 
 
@@ -191,6 +192,23 @@ export function useStaffMembers(): StaffMembersState {
     toast({ title: "Transfer Approved", description: `Staff member moved to ${targetOffice}.` });
   }, [user, allStaffMembers]);
 
+  const cancelTransfer = useCallback(async (id: string) => {
+    if (!user || user.role !== 'superAdmin') throw new Error("Permission denied.");
+    const member = allStaffMembers.find(s => s.id === id);
+    if (!member) return;
+
+    const currentOffice = (member as any).officeLocationFromPath || member.officeLocation;
+    if (!currentOffice) throw new Error("Office location not found.");
+
+    const docRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
+    await updateDoc(docRef, {
+        status: 'Active',
+        targetOffice: null,
+        updatedAt: serverTimestamp(),
+    });
+    toast({ title: "Transfer Cancelled", description: `Transfer request for ${member.name} has been cancelled.` });
+  }, [user, allStaffMembers]);
+
   const deleteStaffMember = useCallback(async (id: string) => {
     if (!user || (user.role !== 'admin' && user.role !== 'superAdmin')) throw new Error("User does not have permission.");
     const memberToDelete = allStaffMembers.find(s => s.id === id);
@@ -243,6 +261,7 @@ export function useStaffMembers(): StaffMembersState {
     deleteStaffMember, 
     getStaffMemberById, 
     updateStaffStatus,
-    approveTransfer
+    approveTransfer,
+    cancelTransfer
   };
 }

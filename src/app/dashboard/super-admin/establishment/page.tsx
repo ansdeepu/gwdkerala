@@ -39,7 +39,7 @@ import { usePageHeader } from "@/hooks/usePageHeader";
 import { useDataStore } from "@/hooks/use-data-store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Search, FileDown, UserPlus, Loader2, Expand, Trash2, Edit } from "lucide-react";
+import { CheckCircle, Search, FileDown, UserPlus, Loader2, Expand, Trash2, Edit, XCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 
@@ -68,7 +68,8 @@ export default function SuperAdminEstablishmentPage() {
     updateStaffMember, 
     deleteStaffMember,
     updateStaffStatus,
-    approveTransfer
+    approveTransfer,
+    cancelTransfer
   } = useStaffMembers();
   const { toast } = useToast();
 
@@ -163,6 +164,17 @@ export default function SuperAdminEstablishmentPage() {
         await approveTransfer(staff.id, currentOffice, targetOffice);
     } catch (error: any) {
         toast({ title: "Approval Failed", description: error.message, variant: "destructive" });
+    } finally {
+        setIsProcessingApproval(null);
+    }
+  };
+
+  const handleCancelTransfer = async (staff: StaffMember) => {
+    setIsProcessingApproval(staff.id);
+    try {
+        await cancelTransfer(staff.id);
+    } catch (error: any) {
+        toast({ title: "Operation Failed", description: error.message, variant: "destructive" });
     } finally {
         setIsProcessingApproval(null);
     }
@@ -288,11 +300,21 @@ export default function SuperAdminEstablishmentPage() {
                                             </Button>
                                             <Button 
                                                 size="sm" 
+                                                variant="outline"
+                                                className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                                                onClick={() => handleCancelTransfer(staff)}
+                                                disabled={isProcessingApproval === staff.id}
+                                            >
+                                                {isProcessingApproval === staff.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+                                                Cancel Request
+                                            </Button>
+                                            <Button 
+                                                size="sm" 
                                                 variant="destructive"
                                                 onClick={() => handleDeleteClick(staff.id, staff.name)}
                                             >
                                                 <Trash2 className="h-4 w-4 mr-2" />
-                                                Delete
+                                                Delete Profile
                                             </Button>
                                         </div>
                                     </TableCell>
@@ -360,7 +382,7 @@ export default function SuperAdminEstablishmentPage() {
               <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                      This will permanently delete the staff record for <strong>{staffToDelete?.name}</strong>. This action cannot be undone.
+                      This will permanently delete the staff record for <strong>{staffToDelete?.name}</strong>. This action cannot be undone and will purge the profile from all offices.
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
