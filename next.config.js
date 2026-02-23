@@ -41,7 +41,13 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'i.imgur.com',
+        hostname: '**.imgur.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.postimg.cc',
         port: '',
         pathname: '/**',
       },
@@ -55,5 +61,5 @@ const nextConfig = {
   },
 };
 
-// Force cache invalidation by updating this comment. V29
+// Force cache invalidation by updating this comment. V30
 module.exports = nextConfig;

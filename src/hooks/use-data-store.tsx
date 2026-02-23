@@ -16,36 +16,42 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { isValid, parse, parseISO } from 'date-fns';
+import { isValid, parse } from 'date-fns';
 
 const db = getFirestore(app);
 
 /**
- * Robustly converts Firestore documents to JS objects.
- * Handles recursive Timestamp conversion without losing other object properties.
+ * Robustly converts Firestore documents or data objects to JS objects.
+ * Recursively converts Timestamps to Dates while preserving all other properties.
  */
+const processFirestoreData = (data: any): any => {
+    if (data === null || data === undefined) return data;
+
+    if (data instanceof Timestamp) {
+        return data.toDate();
+    }
+
+    if (Array.isArray(data)) {
+        return data.map(processFirestoreData);
+    }
+
+    if (typeof data === 'object' && !(data instanceof Date)) {
+        const processed: Record<string, any> = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                processed[key] = processFirestoreData(data[key]);
+            }
+        }
+        return processed;
+    }
+
+    return data;
+};
+
 const processFirestoreDoc = <T,>(docSnap: any): T => {
     const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
     if (!data) return {} as T;
-
-    const convertValue = (value: any): any => {
-        if (value instanceof Timestamp) {
-            return value.toDate();
-        }
-        if (Array.isArray(value)) {
-            return value.map(convertValue);
-        }
-        if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
-            const nested: any = {};
-            for (const k in value) {
-                nested[k] = convertValue(value[k]);
-            }
-            return nested;
-        }
-        return value;
-    };
-
-    const processed = convertValue(data);
+    const processed = processFirestoreData(data);
     return { ...processed, id: docSnap.id } as T;
 };
 

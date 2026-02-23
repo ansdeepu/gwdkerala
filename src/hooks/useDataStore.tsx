@@ -1,5 +1,5 @@
 
-// src/hooks/use-data-store.tsx
+// src/hooks/useDataStore.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
@@ -16,83 +16,53 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { isValid, parse, parseISO } from 'date-fns';
+import { isValid, parse } from 'date-fns';
 
 const db = getFirestore(app);
 
-// Helper to convert Firestore Timestamps to JS Dates recursively
-const processFirestoreDoc = <T,>(doc: DocumentData): T => {
-    const data = doc.data();
-    const converted: { [key: string]: any } = { id: doc.id };
+/**
+ * Robustly converts Firestore documents or data objects to JS objects.
+ * Recursively converts Timestamps to Dates while preserving all other properties.
+ */
+const processFirestoreData = (data: any): any => {
+    if (data === null || data === undefined) return data;
 
-    for (const key in data) {
-        const value = data[key];
-        if (value instanceof Timestamp) {
-            converted[key] = value.toDate();
-        } else if (Array.isArray(value)) {
-            converted[key] = value.map(item =>
-                typeof item === 'object' && item !== null && !(item instanceof Timestamp)
-                    ? processFirestoreDoc({ data: () => item, id: '' })
-                    : (item instanceof Timestamp ? item.toDate() : item)
-            );
-        } else if (typeof value === 'object' && value !== null && !(value instanceof Date)) {
-            // FIX: Ensure we don't recursively process objects that are already native types like Date
-            converted[key] = processFirestoreDoc({ data: () => value, id: '' });
-        } else {
-            converted[key] = value;
-        }
+    if (data instanceof Timestamp) {
+        return data.toDate();
     }
-    return converted as T;
+
+    if (Array.isArray(data)) {
+        return data.map(processFirestoreData);
+    }
+
+    if (typeof data === 'object' && !(data instanceof Date)) {
+        const processed: Record<string, any> = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                processed[key] = processFirestoreData(data[key]);
+            }
+        }
+        return processed;
+    }
+
+    return data;
 };
 
-const toDateOrNull = (value: any): Date | null => {
-    if (value === null || value === undefined || value === '') return null;
-    if (value instanceof Date && !isNaN(value.getTime())) return value;
-    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
-        try {
-            const ms = value.seconds * 1000 + (value.nanoseconds ? Math.round(value.nanoseconds / 1e6) : 0);
-            const d = new Date(ms);
-            if (!isNaN(d.getTime())) return d;
-        } catch { /* fallthrough */ }
-    }
-    if (typeof value === 'number' && isFinite(value)) {
-        const ms = value < 1e12 ? value * 1000 : value;
-        const d = new Date(ms);
-        if (!isNaN(d.getTime())) return d;
-    }
-    if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (trimmed === '') return null;
-        const formats = [
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-            "yyyy-MM-dd'T'HH:mm:ss'Z'",
-            "yyyy-MM-dd'T'HH:mm",
-            "yyyy-MM-dd",
-            'dd/MM/yyyy',
-        ];
-        for (const fmt of formats) {
-            try {
-                const parsedDate = parse(trimmed, fmt, new Date());
-                if (isValid(parsedDate)) return parsedDate;
-            } catch (e) {}
-        }
-        try {
-            const fallback = new Date(trimmed);
-            if (!isNaN(fallback.getTime())) return fallback;
-        } catch { /* ignore */ }
-    }
-    return null;
+const processFirestoreDoc = <T,>(docSnap: any): T => {
+    const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
+    if (!data) return {} as T;
+    const processed = processFirestoreData(data);
+    return { ...processed, id: docSnap.id } as T;
 };
-
 
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
 
 export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
-    tenderFee: "For Works:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 500\\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\\n- Over 50 Lakhs up to 1 Crore: Rs 5000\\n- Above 1 Crore: Rs 10000\\n\\nFor Purchase:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 800\\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\\n- Above 25 Lakhs: Rs 3000",
-    emd: "For Works:\\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\\n- Above Rs. 10 Crore: Rs. 5 Lakh\\n\\nFor Purchase:\\n- Up to 2 Crore: 1.00% of the project cost\\n- Above 2 Crore: No EMD",
-    performanceGuarantee: "Performance Guarantee , the amount collected at the time of executing contract agreement will be 5% of the contract value(agrecd PAC)and the deposit will be retained till the texpiry of Defect Liability Period. At least fifty percent(50%) of this deposit shall be collected in the form of Treasury Fixed Deposit and the rest in the form of Bank Guarantee or any other forms prescribed in the revised PWD Manual.",
+    tenderFee: "For Works:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 500\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\n- Over 50 Lakhs up to 1 Crore: Rs 5000\n- Above 1 Crore: Rs 10000\n\nFor Purchase:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 800\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\n- Above 25 Lakhs: Rs 3000",
+    emd: "For Works:\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\n- Above Rs. 10 Crore: Rs. 5 Lakh\n\nFor Purchase:\n- Up to 2 Crore: 1.00% of the project cost\n- Above 2 Crore: No EMD",
+    performanceGuarantee: "Performance Guarantee, the amount collected at the time of executing contract agreement will be 5% of the contract value (agreed PAC) and the deposit will be retained till the expiry of Defect Liability Period. At least fifty percent (50%) of this deposit shall be collected in the form of Treasury Fixed Deposit and the rest in the form of Bank Guarantee or any other forms prescribed in the revised PWD Manual.",
     additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%. This deposit is calculated as 25% of the difference between the estimate cost and the tender amount, but it will not exceed 10% of the estimate cost. This deposit will be released after satisfactory completion of the work.",
-    stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
+    stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,00,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
 };
 
 export interface OfficeAddress {
@@ -183,14 +153,15 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const refetchRateDescriptions = useCallback(() => setLoadingStates(prev => ({...prev, rates: true})), []);
 
      const deleteArsEntry = useCallback(async (id: string) => {
-        if (!user || user.role !== 'editor') {
+        if (!user || (user.role !== 'admin' && user.role !== 'superAdmin')) {
             toast({ title: "Permission Denied", description: "You don't have permission to delete entries.", variant: "destructive" });
             return;
         }
-        if (!user.officeLocation) throw new Error("User must have an office location for this action.");
-        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc) throw new Error("An office location must be selected.");
+        const collectionPath = `offices/${officeLoc.toLowerCase()}/arsEntries`;
         await deleteDoc(doc(db, collectionPath, id));
-    }, [user]);
+    }, [user, selectedOffice]);
 
     // Effect for GLOBAL (non-office-specific) data
     useEffect(() => {
@@ -229,7 +200,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         return () => unsubscribes.forEach(unsub => unsub());
     }, [user]);
 
-    // Effect to set the single active office address based on user role and selection
+    // Effect to set the single active office address
     useEffect(() => {
       if (!user) {
           setOfficeAddress(null);
@@ -253,10 +224,9 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
               const subOfficeDoc = processFirestoreDoc(snapshot.docs[0]);
               setOfficeAddress({
                   ...subOfficeDoc as any,
-                  officeCode: globalOffice?.officeCode || '', // Merge officeCode
+                  officeCode: globalOffice?.officeCode || '',
               });
           } else {
-              // If no sub-collection doc, still provide the global info
               if (globalOffice) {
                   setOfficeAddress({ ...globalOffice, officeName: '', id: globalOffice.id });
               } else {
@@ -302,34 +272,36 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
             
             let q;
-            if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
+            if (officeToQuery) {
                 const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = query(collection(db, path));
-            } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
-                q = query(collectionGroup(db, collectionName));
-            } else { // Should not happen for authenticated users, but as a safeguard
+            } else if (isSuperAdminUser && !officeToQuery) {
+                if (collectionName === 'users') {
+                    q = query(collection(db, 'users'));
+                } else {
+                    q = query(collectionGroup(db, collectionName));
+                }
+            } else {
                 setter([]);
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
                 return () => {};
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-                const dataRaw = snapshot.docs.map(doc => {
-                    const docData = doc.data();
-                    const processedData = processFirestoreDoc({ id: doc.id, data: () => docData });
-                    if (isSuperAdminUser && !officeToQuery) {
-                        const pathSegments = doc.ref.path.split('/');
-                        const officeIdIndex = pathSegments.indexOf('offices');
-                        if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                            (processedData as any).officeLocation = pathSegments[officeIdIndex + 1];
-                        }
+                const dataRaw = snapshot.docs.map(docSnap => {
+                    const processedData = processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() }) as any;
+                    
+                    const pathSegments = docSnap.ref.path.split('/');
+                    const officeIdIndex = pathSegments.indexOf('offices');
+                    if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
+                        processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
                     }
+
                     return processedData;
                 });
 
                 let data = dataRaw;
 
-                // Robust de-duplicate and merge logic for Users
                 if (collectionName === 'users') {
                     const mergedMap = new Map<string, any>();
                     dataRaw.forEach((item: any) => {
@@ -337,7 +309,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                         if (!existing) {
                             mergedMap.set(item.id, item);
                         } else {
-                            // Merge objects, preferring non-null values to preserve IDs and linked IDs
                             const merged = { ...existing };
                             Object.entries(item).forEach(([k, v]) => {
                                 if (v !== null && v !== undefined && v !== "") {
@@ -387,33 +358,36 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const useAddVehicle = <T extends {}>(collectionName: string) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
-          if (!user.officeLocation) throw new Error("User must have an office location.");
-          const collectionPath = `offices/${user.officeLocation.toLowerCase()}/${collectionName}`;
+          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+          if (!officeLoc) throw new Error("An office location must be selected to add staff.");
+          const collectionPath = `offices/${officeLoc.toLowerCase()}/${collectionName}`;
           const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
           await addDoc(collection(db, collectionPath), payload);
           toast({ title: 'Item Added', description: 'The new item has been saved.' });
-      }, [user]);
+      }, [user, selectedOffice]);
     };
   
     const useUpdateVehicle = <T extends { id?: string }>(collectionName: string) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
-          if (!user.officeLocation) throw new Error("User must have an office location.");
+          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+          if (!officeLoc) throw new Error("User must have an office location.");
           if (!data.id) throw new Error("Document ID is missing for update.");
-          const docRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/${collectionName}`, data.id);
+          const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, data.id);
           const payload = { ...data, updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
           await updateDoc(docRef, payload);
           toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
-      }, [user]);
+      }, [user, selectedOffice]);
     };
   
     const useDeleteVehicle = (collectionName: string) => {
       return useCallback(async (id: string, name: string) => {
           if (!user) throw new Error("User must be logged in.");
-           if (!user.officeLocation) throw new Error("User must have an office location.");
-          const docRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/${collectionName}`, id);
+          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+          if (!officeLoc) throw new Error("User must have an office location.");
+          const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, id);
           deleteDoc(docRef)
               .then(() => {
                   toast({ title: 'Item Deleted', description: `${name} has been removed.` });
@@ -428,7 +402,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                       toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
                   }
               });
-      }, [user]);
+      }, [user, selectedOffice]);
     };
 
     const addDepartmentVehicle = useAddVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);

@@ -55,11 +55,6 @@ const isValidWebUrl = (url?: string | null): boolean => {
   }
 };
 
-const isPlaceholderUrl = (url?: string | null): boolean => {
-  if (!url) return false;
-  return url.startsWith("https://placehold.co");
-};
-
 const toDateOrNull = (value: any): Date | null => {
     if (!value) return null;
     if (value instanceof Date && !isNaN(value.getTime())) return value;
@@ -203,7 +198,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   
   useEffect(() => {
     const url = watchedPhotoUrl ?? null;
-    if (isValidWebUrl(url) && !isPlaceholderUrl(url)) {
+    if (isValidWebUrl(url)) {
       setImagePreview(url);
       setImageLoadError(false);
     } else {
@@ -216,8 +211,6 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     if (isViewer) return;
     onSubmit(data);
   };
-
-  const canExpandImage = imagePreview && !imageLoadError && !isPlaceholderUrl(imagePreview);
 
   const visibleStatusOptions = useMemo(() => {
     return staffStatusOptions.filter(o => o !== 'Pending Transfer');
@@ -419,28 +412,23 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                                 <button
                                   type="button"
                                   className={cn(
-                                    "relative h-24 w-24 rounded-md border flex items-center justify-center cursor-default",
-                                    canExpandImage && "cursor-pointer hover:opacity-80 transition-opacity"
+                                    "relative h-24 w-24 rounded-md border flex items-center justify-center cursor-default bg-white",
+                                    imagePreview && "cursor-pointer hover:opacity-80 transition-opacity"
                                   )}
-                                  onClick={() => canExpandImage && setIsImageModalOpen(true)}
-                                  disabled={!canExpandImage}
-                                  aria-label={canExpandImage ? "View larger image" : "Image preview"}
+                                  onClick={() => imagePreview && setIsImageModalOpen(true)}
+                                  disabled={!imagePreview}
+                                  aria-label={imagePreview ? "View larger image" : "Image preview"}
                                 >
-                                  {imagePreview && !imageLoadError && (
-                                    <Image
+                                  {imagePreview && !imageLoadError ? (
+                                    <img
                                         src={imagePreview}
                                         alt="Staff photo preview"
-                                        width={96}
-                                        height={96}
                                         className="rounded-md object-cover h-full w-full"
-                                        data-ai-hint="person face"
                                         onError={() => {
-                                            setImagePreview(null);
                                             setImageLoadError(true);
                                         }}
                                     />
-                                  )}
-                                  {(!imagePreview || imageLoadError) && (
+                                  ) : (
                                       <div className="h-full w-full bg-muted flex items-center justify-center rounded-md">
                                           {imageLoadError ? (
                                               <Unplug className="h-10 w-10 text-destructive" />
@@ -449,17 +437,17 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                                           )}
                                       </div>
                                   )}
-                                  {canExpandImage && (
+                                  {imagePreview && !imageLoadError && (
                                     <div className="absolute bottom-1 right-1 bg-black/50 p-1 rounded-sm">
                                       <Expand className="h-3 w-3 text-white" />
                                     </div>
                                   )}
                                 </button>
                               </DialogTrigger>
-                               {canExpandImage && imagePreview && (
-                                <DialogContent className="p-2">
-                                  <div className="flex justify-center items-center max-h-[80vh] overflow-hidden">
-                                    <img src={imagePreview} alt="Staff photo enlarged" className="max-w-full max-h-[75vh] object-contain rounded-md"/>
+                               {imagePreview && !imageLoadError && (
+                                <DialogContent className="p-2 border-0 bg-transparent shadow-none max-w-[90vw] flex justify-center">
+                                  <div className="flex justify-center items-center max-h-[85vh] overflow-hidden">
+                                    <img src={imagePreview} alt="Staff photo enlarged" className="max-w-full max-h-full object-contain rounded-md shadow-2xl"/>
                                   </div>
                                 </DialogContent>
                               )}
@@ -477,7 +465,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                                 <FormDescription>
                                     Enter a direct public URL. Uploading files is not supported.
                                 </FormDescription>
-                                 {imageLoadError && <p className="text-xs text-destructive mt-1">Invalid or unloadable URL</p>}
+                                 {imageLoadError && <p className="text-xs text-destructive mt-1">Invalid or unloadable image URL</p>}
                             </div>
                         </div>
                         <FormMessage />
