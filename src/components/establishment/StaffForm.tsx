@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -76,8 +75,7 @@ const toDateOrNull = (value: any): Date | null => {
 };
 
 /**
- * Case-insensitive field look-up to handle manual Firestore entry variations.
- * Also handles specific human-readable mappings found in the database.
+ * Case-insensitive field look-up to handle variations in Firestore keys.
  */
 const getField = (data: any, key: string): any => {
     if (!data) return undefined;
@@ -85,19 +83,18 @@ const getField = (data: any, key: string): any => {
     // Check direct key first
     if (data[key] !== undefined && data[key] !== null) return data[key];
     
-    // Check specific human-readable mappings
+    // Mapping for common capitalization differences or alternate names
     const mappings: Record<string, string[]> = {
-        'name': ['Full Name', 'Name'],
-        'nameMalayalam': ['Full Name (in Malayalam)', 'Name (Malayalam)'],
-        'designation': ['Designation'],
-        'designationMalayalam': ['Designation (in Malayalam)', 'Designation (Malayalam)'],
+        'name': ['Name', 'Full Name'],
+        'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)'],
+        'designation': ['Designation', 'Roles/Responsibilities', 'roles'],
+        'designationMalayalam': ['DesignationMalayalam', 'Designation (Malayalam)'],
         'pen': ['PEN'],
         'email': ['Email'],
-        'phoneNo': ['Phone Number', 'Phone', 'Mobile'],
+        'phoneNo': ['PhoneNo', 'PhoneNumber', 'Phone'],
         'status': ['Status'],
-        'roles': ['Roles/Responsibilities', 'Roles'],
-        'photoUrl': ['Staff Photo URL', 'Photo'],
-        'officeLocation': ['Office Location', 'Office'],
+        'photoUrl': ['PhotoUrl', 'Photo'],
+        'officeLocation': ['OfficeLocation', 'Office'],
     };
 
     if (mappings[key]) {
@@ -106,12 +103,17 @@ const getField = (data: any, key: string): any => {
         }
     }
 
-    // Check all keys case-insensitively
+    // Fallback: check all keys case-insensitively
     const searchKey = key.toLowerCase();
     const foundKey = Object.keys(data).find(k => k.toLowerCase() === searchKey);
     if (foundKey) return data[foundKey];
 
     return undefined;
+};
+
+const capitalize = (s?: string) => {
+    if (!s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 };
 
 export default function StaffForm({ onSubmit, initialData, isSubmitting, onCancel, isViewer = false, allOfficeAddresses, allUsers }: StaffFormProps) {
@@ -122,7 +124,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const defaultValues = useMemo((): StaffMemberFormData => {
     const rawData = initialData || {};
     
-    // Robustly extract data regardless of field capitalization in Firestore
+    // Extract and trim data
     const name = String(getField(rawData, 'name') ?? "").trim();
     const nameMalayalam = String(getField(rawData, 'nameMalayalam') ?? "").trim();
     const designation = String(getField(rawData, 'designation') ?? "").trim() as any;
@@ -135,21 +137,18 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     const remarks = String(getField(rawData, 'remarks') ?? "").trim();
     const officeLocation = String(getField(rawData, 'officeLocation') ?? "").trim();
     
-    // Find linked user account for email fallback
+    // Find linked user for email fallback
     const userForStaff = allUsers.find(u => 
         u.staffId && initialData?.id && 
         String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
     );
     const email = String(getField(rawData, 'email') || userForStaff?.email || "").trim();
 
-    // Handle date formatting for the input field
     let dateStr = "";
     const rawDob = getField(rawData, 'dateOfBirth');
     if (rawDob) {
         const d = toDateOrNull(rawDob);
-        if (d && isValid(d)) {
-            dateStr = format(d, 'yyyy-MM-dd');
-        }
+        if (d && isValid(d)) dateStr = format(d, 'yyyy-MM-dd');
     }
 
     return {
@@ -177,7 +176,6 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   
   const { watch, control, handleSubmit, reset } = form;
   
-  // Re-reset the form if defaultValues change (e.g. after users load)
   useEffect(() => {
     reset(defaultValues);
   }, [defaultValues, reset]);
@@ -275,7 +273,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                           <SelectValue placeholder="Select Malayalam designation" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="max-h-80">
                         {designationMalayalamOptions.map(option => (
                           <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}
@@ -305,7 +303,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter email address" {...field} value={field.value || ""} readOnly={isViewer || userAccountExists} />
+                      <Input type="email" placeholder="Enter email address" {...field} value={field.value || ""} readOnly={isViewer} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -477,9 +475,11 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                             <FormLabel>Transfer to Office</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value ?? ""}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
-                                <SelectContent>
+                                <SelectContent className="max-h-80">
                                     {allOfficeAddresses.map(office => (
-                                        <SelectItem key={office.id} value={office.officeLocation}>{office.officeName}</SelectItem>
+                                        <SelectItem key={office.id} value={office.officeLocation}>
+                                            {office.officeName || capitalize(office.officeLocation)}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
