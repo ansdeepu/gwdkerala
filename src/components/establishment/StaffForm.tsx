@@ -73,9 +73,6 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
 };
 
-/**
- * Robust helper to fetch fields from Firestore doc regardless of casing or alternative keys.
- */
 const getField = (data: any, key: string): any => {
     if (!data) return undefined;
     
@@ -248,7 +245,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer || isSubmitting}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select designation" />
@@ -270,7 +267,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation (in Malayalam)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer || isSubmitting}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select Malayalam designation" />
@@ -347,7 +344,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer || isSubmitting}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -472,7 +469,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 )}
               />
             </div>
-            {isTransferring && !isViewer && (
+            {isTransferring && (
                 <div className="pt-4 border-t space-y-4">
                     <FormField
                         control={form.control}
@@ -480,7 +477,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Transfer to Office</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer || isSubmitting}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
                                     <SelectContent className="max-h-80">
                                         {allOfficeAddresses.map(office => (

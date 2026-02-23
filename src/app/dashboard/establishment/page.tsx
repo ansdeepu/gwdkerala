@@ -1,3 +1,4 @@
+
 // src/app/dashboard/establishment/page.tsx
 "use client";
 
@@ -61,6 +62,7 @@ export default function EstablishmentPage() {
   const { toast } = useToast();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isViewOnly, setIsViewOnly] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
   
@@ -77,16 +79,18 @@ export default function EstablishmentPage() {
 
   const handleAddNewStaff = () => {
     setEditingStaff(null);
+    setIsViewOnly(false);
     setIsFormOpen(true);
   };
 
-  const handleEditStaff = (staff: StaffMember) => {
+  const handleEditStaff = (staff: StaffMember, viewOnly: boolean = false) => {
     setEditingStaff(staff);
+    setIsViewOnly(viewOnly);
     setIsFormOpen(true);
   };
 
   const handleFormSubmit = async (data: StaffMemberFormData) => {
-    if (!canManage) {
+    if (!canManage || isViewOnly) {
         toast({ title: "Permission Denied", variant: "destructive"});
         return;
     }
@@ -219,7 +223,7 @@ export default function EstablishmentPage() {
               <div className="max-h-[70vh] overflow-auto">
                 <StaffTable
                   staffData={activeStaffList}
-                  onEdit={handleEditStaff}
+                  onEdit={(s) => handleEditStaff(s, s.status === 'Pending Transfer')}
                   onDelete={canManage ? deleteStaffMember : undefined}
                   onSetStatus={canManage ? handleSetStaffStatus : undefined}
                   isViewer={isViewer}
@@ -233,9 +237,9 @@ export default function EstablishmentPage() {
               <div className="max-h-[70vh] overflow-auto">
                 <TransferredStaffTable
                     staffData={transferredStaffList}
-                    onEdit={handleEditStaff}
+                    onEdit={(s) => handleEditStaff(s, true)}
                     onSetStatus={undefined}
-                    isViewer={isViewer}
+                    isViewer={true}
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}
                     searchActive={!!debouncedSearchTerm}
@@ -246,9 +250,9 @@ export default function EstablishmentPage() {
               <div className="max-h-[70vh] overflow-auto">
                 <RetiredStaffTable
                     staffData={retiredStaffList}
-                    onEdit={handleEditStaff}
+                    onEdit={(s) => handleEditStaff(s, true)}
                     onSetStatus={undefined}
-                    isViewer={isViewer}
+                    isViewer={true}
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}
                     searchActive={!!debouncedSearchTerm}
@@ -262,7 +266,7 @@ export default function EstablishmentPage() {
       <Dialog open={isFormOpen} onOpenChange={(isOpen) => !isOpen && setIsFormOpen(false)}>
         <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-5xl h-[95vh] flex flex-col p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-4 shrink-0">
-            <DialogTitle>{editingStaff ? "Edit Staff Details" : "Add New Staff Member"}</DialogTitle>
+            <DialogTitle>{editingStaff ? (isViewer || isViewOnly ? "Staff Details" : "Edit Staff Details") : "Add New Staff Member"}</DialogTitle>
           </DialogHeader>
           <div className="px-6 pb-6 flex-1 min-h-0 overflow-hidden">
             <StaffForm
@@ -271,7 +275,7 @@ export default function EstablishmentPage() {
                 initialData={editingStaff}
                 isSubmitting={isSubmittingForm}
                 onCancel={() => setIsFormOpen(false)}
-                isViewer={isViewer}
+                isViewer={isViewer || isViewOnly}
                 allOfficeAddresses={allOfficeAddresses}
                 allUsers={allUsers}
             />

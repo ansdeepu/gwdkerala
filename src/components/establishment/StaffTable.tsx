@@ -154,12 +154,12 @@ export default function StaffTable({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" onClick={() => onEdit && onEdit(staff)}>
-                               <Eye className="h-4 w-4" />
+                               {isPendingTransfer ? <Eye className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent><p>{isViewer ? "View Details" : "View / Edit Staff"}</p></TooltipContent>
+                          <TooltipContent><p>{(isViewer || isPendingTransfer) ? "View Details" : "View / Edit Staff"}</p></TooltipContent>
                         </Tooltip>
-                        {!isViewer && onDelete && (
+                        {!isViewer && onDelete && !isPendingTransfer && (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => handleDeleteClick(staff.id, staff.name)}>
