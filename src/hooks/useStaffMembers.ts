@@ -22,7 +22,7 @@ import {
 } from "firebase/firestore";
 import { getStorage, ref as storageRef, deleteObject } from "firebase/storage"; 
 import { app } from "@/lib/firebase";
-import { useAuth } from './useAuth';
+import { useAuth, type UserProfile } from './useAuth';
 import { useDataStore } from './use-data-store'; 
 import { toast } from "./use-toast";
 
@@ -50,6 +50,7 @@ interface StaffMembersState {
   deleteStaffMember: (id: string, staffName: string) => Promise<void>;
   getStaffMemberById: (id: string) => Promise<StaffMember | undefined>;
   updateStaffStatus: (id: string, newStatus: StaffStatusType) => Promise<void>; 
+  approveTransfer: (id: string, currentOffice: string, targetOffice: string) => Promise<void>;
 }
 
 
@@ -84,64 +85,55 @@ export function useStaffMembers(): StaffMembersState {
 
     const isSuperAdmin = user.role === 'superAdmin';
     const targetOffice = staffData.officeLocation?.toLowerCase();
-    
-    // Logic for transferring a staff member to a NEW office
-    const isMovingToNewOffice = isSuperAdmin && targetOffice && targetOffice !== currentOffice.toLowerCase();
+    const isRequestingMove = targetOffice && targetOffice !== currentOffice.toLowerCase();
 
-    if (isMovingToNewOffice) {
-        const batch = writeBatch(db);
-        const oldDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
-        const newDocRef = doc(collection(db, `offices/${targetOffice}/staffMembers`));
+    // Logic for initiating or completing a move
+    if (isRequestingMove) {
+        if (!isSuperAdmin) {
+            // Sub-Admins only mark as "Pending Transfer"
+            const docRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
+            await updateDoc(docRef, {
+                ...sanitizeStaffMemberForFirestore(staffData),
+                status: 'Pending Transfer',
+                targetOffice: targetOffice,
+                updatedAt: serverTimestamp(),
+            });
+            toast({ title: "Transfer Initiated", description: `Transfer request to ${staffData.officeLocation} sent for Super Admin approval.` });
+        } else {
+            // Super Admin can bypass the workflow and move immediately if they want
+            const batch = writeBatch(db);
+            const oldDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
+            const newDocRef = doc(collection(db, `offices/${targetOffice}/staffMembers`));
 
-        // 1. Create a brand new "Active" record in the target office
-        const newDocData = {
-            ...memberToUpdate,
-            ...sanitizeStaffMemberForFirestore(staffData),
-            status: 'Active',
-            officeLocation: targetOffice,
-            updatedAt: serverTimestamp(),
-        };
-        delete (newDocData as any).id;
-        delete (newDocData as any).officeLocationFromPath;
-        delete (newDocData as any).createdAt;
+            const newDocData = {
+                ...memberToUpdate,
+                ...sanitizeStaffMemberForFirestore(staffData),
+                status: 'Active',
+                officeLocation: targetOffice,
+                updatedAt: serverTimestamp(),
+            };
+            delete (newDocData as any).id;
+            delete (newDocData as any).officeLocationFromPath;
+            delete (newDocData as any).createdAt;
 
-        batch.set(newDocRef, {
-            ...newDocData,
-            createdAt: serverTimestamp(),
-        });
+            batch.set(newDocRef, { ...newDocData, createdAt: serverTimestamp() });
+            batch.update(oldDocRef, { status: 'Transferred', targetOffice: targetOffice, updatedAt: serverTimestamp() });
 
-        // 2. Mark the original record in the old office as "Transferred"
-        // Explicitly update ALL status key variations to ensure it disappears from Active list
-        batch.update(oldDocRef, {
-            status: 'Transferred',
-            Status: 'Transferred',
-            updatedAt: serverTimestamp(),
-        });
-
-        // 3. Update the linked user account to point to the new office
-        const usersRef = collection(db, 'users');
-        const qUser = query(usersRef, where('staffId', '==', id));
-        const userDocs = await getDocs(qUser);
-        
-        if (!userDocs.empty) {
+            // Update linked user
+            const usersRef = collection(db, 'users');
+            const qUser = query(usersRef, where('staffId', '==', id));
+            const userDocs = await getDocs(qUser);
             userDocs.forEach(uDoc => {
-                // Update global user doc
                 batch.update(uDoc.ref, { officeLocation: targetOffice });
-                // Also update office-specific user subcollection if it exists
                 const oldOfficeUserRef = doc(db, `offices/${currentOffice.toLowerCase()}/users`, uDoc.id);
                 batch.delete(oldOfficeUserRef);
-                
                 const newOfficeUserRef = doc(db, `offices/${targetOffice}/users`, uDoc.id);
-                batch.set(newOfficeUserRef, {
-                    ...uDoc.data(),
-                    officeLocation: targetOffice,
-                    updatedAt: serverTimestamp(),
-                });
+                batch.set(newOfficeUserRef, { ...uDoc.data(), officeLocation: targetOffice, updatedAt: serverTimestamp() });
             });
-        }
 
-        await batch.commit();
-        toast({ title: "Transfer Successful", description: `Record moved to ${staffData.officeLocation}. Old office record marked as Transferred.` });
+            await batch.commit();
+            toast({ title: "Staff Transferred", description: `Record moved to ${staffData.officeLocation}.` });
+        }
     } else {
         // Standard update within the same office
         const staffDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
@@ -151,6 +143,52 @@ export function useStaffMembers(): StaffMembersState {
         await updateDoc(staffDocRef, payload);
     }
   }, [user, allStaffMembers, selectedOffice]);
+
+  const approveTransfer = useCallback(async (id: string, currentOffice: string, targetOffice: string) => {
+    if (!user || user.role !== 'superAdmin') throw new Error("Permission denied.");
+    
+    const memberToUpdate = allStaffMembers.find(s => s.id === id);
+    if (!memberToUpdate) throw new Error("Staff member not found.");
+
+    const batch = writeBatch(db);
+    const oldDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
+    const newDocRef = doc(collection(db, `offices/${targetOffice.toLowerCase()}/staffMembers`));
+
+    // 1. Create Active record in new office
+    const newDocData = {
+        ...memberToUpdate,
+        status: 'Active',
+        officeLocation: targetOffice.toLowerCase(),
+        updatedAt: serverTimestamp(),
+    };
+    delete (newDocData as any).id;
+    delete (newDocData as any).officeLocationFromPath;
+    delete (newDocData as any).createdAt;
+    delete (newDocData as any).targetOffice;
+
+    batch.set(newDocRef, { ...newDocData, createdAt: serverTimestamp() });
+
+    // 2. Mark old record as Transferred
+    batch.update(oldDocRef, { 
+        status: 'Transferred', 
+        updatedAt: serverTimestamp() 
+    });
+
+    // 3. Update linked user
+    const usersRef = collection(db, 'users');
+    const qUser = query(usersRef, where('staffId', '==', id));
+    const userDocs = await getDocs(qUser);
+    userDocs.forEach(uDoc => {
+        batch.update(uDoc.ref, { officeLocation: targetOffice.toLowerCase() });
+        const oldOfficeUserRef = doc(db, `offices/${currentOffice.toLowerCase()}/users`, uDoc.id);
+        batch.delete(oldOfficeUserRef);
+        const newOfficeUserRef = doc(db, `offices/${targetOffice.toLowerCase()}/users`, uDoc.id);
+        batch.set(newOfficeUserRef, { ...uDoc.data(), officeLocation: targetOffice.toLowerCase(), updatedAt: serverTimestamp() });
+    });
+
+    await batch.commit();
+    toast({ title: "Transfer Approved", description: `Staff member moved to ${targetOffice}.` });
+  }, [user, allStaffMembers]);
 
   const deleteStaffMember = useCallback(async (id: string) => {
     if (!user || (user.role !== 'admin' && user.role !== 'superAdmin')) throw new Error("User does not have permission.");
@@ -192,7 +230,6 @@ export function useStaffMembers(): StaffMembersState {
     const staffDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/staffMembers`, id);
     await updateDoc(staffDocRef, { 
         status: newStatus,
-        Status: newStatus, // Sync both common keys
         updatedAt: serverTimestamp() 
     });
   }, [user, allStaffMembers]);
@@ -204,6 +241,7 @@ export function useStaffMembers(): StaffMembersState {
     updateStaffMember, 
     deleteStaffMember, 
     getStaffMemberById, 
-    updateStaffStatus 
+    updateStaffStatus,
+    approveTransfer
   };
 }

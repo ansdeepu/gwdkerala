@@ -1,3 +1,4 @@
+
 // src/components/establishment/StaffTable.tsx
 "use client";
 
@@ -5,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit3, Trash2, ArrowRightLeft, UserMinus, Eye, Expand, FileArchive, Loader2 } from "lucide-react";
+import { Edit3, Trash2, ArrowRightLeft, UserMinus, Eye, Expand, FileArchive, Loader2, Clock } from "lucide-react";
 import type { StaffMember, StaffStatusType } from "@/lib/schemas";
 import { format, isValid } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -14,6 +15,7 @@ import PaginationControls from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { getInitials } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 
 interface StaffTableProps {
@@ -55,7 +57,7 @@ export default function StaffTable({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [staffData, searchActive]); // Reset page if data or search status changes
+  }, [staffData, searchActive]); 
 
   const paginatedStaff = staffData.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -103,8 +105,10 @@ export default function StaffTable({
             <TableBody>
               {paginatedStaff.length > 0 ? paginatedStaff.map((staff, index) => {
                 const canExpandAvatar = staff.photoUrl && !isPlaceholderUrl(staff.photoUrl) && onImageClick;
+                const isPendingTransfer = staff.status === 'Pending Transfer';
+                
                 return (
-                  <TableRow key={staff.id}>
+                  <TableRow key={staff.id} className={cn("hover:bg-primary/5", isPendingTransfer && "opacity-60 bg-amber-50/30")}>
                     <TableCell>{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
                     <TableCell className="px-2 py-2 text-center">
                       <button
@@ -129,7 +133,14 @@ export default function StaffTable({
                       </button>
                     </TableCell>
                     <TableCell className={cn("font-medium whitespace-normal break-words max-w-[150px] px-2 py-2 text-left")}>
-                      {staff.name}
+                      <div className="flex flex-col gap-1">
+                        {staff.name}
+                        {isPendingTransfer && (
+                            <Badge variant="outline" className="w-fit text-[10px] font-bold border-amber-500 text-amber-700 bg-amber-100 flex items-center gap-1">
+                                <Clock className="h-3 w-3"/> Pending Transfer
+                            </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className={cn("whitespace-normal break-words max-w-[180px] px-2 py-2 text-left")}>
                       {staff.designation}
@@ -158,7 +169,7 @@ export default function StaffTable({
                             <TooltipContent><p>Delete Staff</p></TooltipContent>
                           </Tooltip>
                         )}
-                        {!isViewer && onSetStatus && (
+                        {!isViewer && onSetStatus && !isPendingTransfer && (
                            <DropdownMenu>
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -172,7 +183,7 @@ export default function StaffTable({
                               </Tooltip>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => onSetStatus(staff.id, "Transferred", staff.name)}>
-                                  <ArrowRightLeft className="mr-2 h-4 w-4" /> Mark Transferred
+                                  <ArrowRightLeft className="mr-2 h-4 w-4" /> Initiate Transfer
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => onSetStatus(staff.id, "Retired", staff.name)}>
                                   <FileArchive className="mr-2 h-4 w-4" /> Mark Retired
@@ -187,7 +198,7 @@ export default function StaffTable({
               }) : (
                 <TableRow>
                   <TableCell colSpan={9} className="h-24 text-center px-2 py-2">
-                    {searchActive ? "No staff members found matching your search." : "No active staff members found."}
+                    {searchActive ? "No staff members found matching your search." : "No staff members found."}
                   </TableCell>
                 </TableRow>
               )}

@@ -217,7 +217,7 @@ export const PendingUpdateSchema = PendingUpdateFormDataSchema.extend({
 export type PendingUpdate = z.infer<typeof PendingUpdateSchema>;
 
 // Establishment / Staff Schemas
-export const staffStatusOptions = ["Active", "Transferred", "Retired"] as const;
+export const staffStatusOptions = ["Active", "Transferred", "Retired", "Pending Transfer"] as const;
 export type StaffStatusType = typeof staffStatusOptions[number];
 
 const dateOrString = z.union([
