@@ -90,7 +90,8 @@ const getField = (data: any, key: string): any => {
         'photoUrl': ['photoUrl', 'PhotoUrl', 'Photo', 'photo'],
         'officeLocation': ['officeLocation', 'OfficeLocation', 'Office', 'location'],
         'targetOffice': ['targetOffice', 'TargetOffice'],
-        'serviceStartDate': ['serviceStartDate', 'ServiceStartDate', 'Period of Service', 'periodOfService', 'dateOfJoining'],
+        'serviceStartDate': ['serviceStartDate', 'ServiceStartDate', 'Period of Service From', 'dateOfJoining'],
+        'serviceEndDate': ['serviceEndDate', 'ServiceEndDate', 'Period of Service To'],
     };
 
     if (mappings[key]) {
@@ -146,11 +147,18 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         if (d && isValid(d)) dobDateStr = format(d, 'yyyy-MM-dd');
     }
 
-    let serviceDateStr = "";
-    const rawServiceDate = getField(rawData, 'serviceStartDate');
-    if (rawServiceDate) {
-        const d = toDateOrNull(rawServiceDate);
-        if (d && isValid(d)) serviceDateStr = format(d, 'yyyy-MM-dd');
+    let serviceStartDateStr = "";
+    const rawServiceStartDate = getField(rawData, 'serviceStartDate');
+    if (rawServiceStartDate) {
+        const d = toDateOrNull(rawServiceStartDate);
+        if (d && isValid(d)) serviceStartDateStr = format(d, 'yyyy-MM-dd');
+    }
+
+    let serviceEndDateStr = "";
+    const rawServiceEndDate = getField(rawData, 'serviceEndDate');
+    if (rawServiceEndDate) {
+        const d = toDateOrNull(rawServiceEndDate);
+        if (d && isValid(d)) serviceEndDateStr = format(d, 'yyyy-MM-dd');
     }
 
     return {
@@ -161,7 +169,8 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         pen: normalize(getField(rawData, 'pen')),
         email,
         dateOfBirth: dobDateStr,
-        serviceStartDate: serviceDateStr,
+        serviceStartDate: serviceStartDateStr,
+        serviceEndDate: serviceEndDateStr,
         phoneNo: normalize(getField(rawData, 'phoneNo')),
         roles: normalize(getField(rawData, 'roles')),
         photoUrl: normalize(getField(rawData, 'photoUrl')),
@@ -352,11 +361,23 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 name="serviceStartDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Period of Service</FormLabel>
+                    <FormLabel>Period of Service (From)</FormLabel>
                     <FormControl>
                        <Input type="date" {...field} value={field.value || ""} readOnly={isViewer}/>
                     </FormControl>
-                    <FormDescription>Joining Date of Service</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="serviceEndDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Period of Service (To)</FormLabel>
+                    <FormControl>
+                       <Input type="date" {...field} value={field.value || ""} readOnly={isViewer}/>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

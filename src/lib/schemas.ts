@@ -236,6 +236,7 @@ const BaseStaffMemberFormDataSchema = z.object({
   pen: z.string().min(1, { message: "PEN is required." }),
   dateOfBirth: z.string().optional(),
   serviceStartDate: z.string().optional(),
+  serviceEndDate: z.string().optional(),
   phoneNo: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }).optional().or(z.literal("")),
   roles: z.string().optional(),
   status: z.preprocess((val) => (val === "" ? undefined : val), z.enum(staffStatusOptions).default('Active')),
@@ -270,6 +271,7 @@ export const StaffMemberSchema = BaseStaffMemberFormDataSchema.extend({
   remarks: z.string().optional().default(""),
   dateOfBirth: dateOrString.nullable().optional(),
   serviceStartDate: dateOrString.nullable().optional(),
+  serviceEndDate: dateOrString.nullable().optional(),
 });
 export type StaffMember = z.infer<typeof StaffMemberSchema>;
 

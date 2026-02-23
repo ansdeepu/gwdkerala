@@ -38,9 +38,9 @@ const getInitials = (name?: string) => {
 };
 
 const formatDateSafe = (dateInput: Date | string | null | undefined): string => {
-  if (!dateInput) return "N/A";
+  if (!dateInput) return "";
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  return isValid(date) ? format(date, "dd/MM/yyyy") : "N/A";
+  return isValid(date) ? format(date, "dd/MM/yyyy") : "";
 };
 
 const isPlaceholderUrl = (url?: string | null): boolean => {
@@ -88,7 +88,7 @@ export default function TransferredStaffTable({
               <TableHead className="px-2 py-2 text-left">Name</TableHead>
               <TableHead className="px-2 py-2 text-left">Designation</TableHead>
               <TableHead className="px-2 py-2 text-left">PEN</TableHead>
-              <TableHead className="px-2 py-2 text-left">Roles</TableHead>
+              <TableHead className="px-2 py-2 text-left text-xs">Period of Service</TableHead>
               <TableHead className="px-2 py-2 text-left">DOB</TableHead>
               <TableHead className="px-2 py-2 min-w-[150px] text-left">Remarks</TableHead>
               <TableHead className="text-center w-[100px] px-2 py-2">Actions</TableHead>
@@ -97,6 +97,9 @@ export default function TransferredStaffTable({
           <TableBody>
             {paginatedStaff.length > 0 ? paginatedStaff.map((staff, index) => {
               const canExpandAvatar = staff.photoUrl && !isPlaceholderUrl(staff.photoUrl) && onImageClick;
+              const serviceStart = formatDateSafe(staff.serviceStartDate);
+              const serviceEnd = formatDateSafe(staff.serviceEndDate);
+
               return (
               <TableRow key={staff.id}>
                 <TableCell>{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
@@ -129,8 +132,10 @@ export default function TransferredStaffTable({
                   {staff.designation}
                 </TableCell>
                 <TableCell className={cn("whitespace-normal break-words max-w-[100px] px-2 py-2 text-left")}>{staff.pen}</TableCell>
-                <TableCell className={cn("whitespace-normal break-words max-w-[150px] text-xs px-2 py-2 text-left")}>{staff.roles || "N/A"}</TableCell>
-                <TableCell className="text-xs px-2 py-2 text-left">{formatDateSafe(staff.dateOfBirth)}</TableCell>
+                <TableCell className="text-[10px] px-2 py-2 text-left">
+                    {serviceStart ? `${serviceStart} - ${serviceEnd || 'Present'}` : 'N/A'}
+                </TableCell>
+                <TableCell className="text-xs px-2 py-2 text-left">{formatDateSafe(staff.dateOfBirth) || 'N/A'}</TableCell>
                 <TableCell className="text-xs px-2 py-2 whitespace-normal break-words max-w-[200px] text-left">
                   {staff.remarks ? (
                       <Tooltip>
