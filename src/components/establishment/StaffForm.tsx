@@ -60,9 +60,6 @@ const isPlaceholderUrl = (url?: string | null): boolean => {
   return url.startsWith("https://placehold.co");
 };
 
-/**
- * Robustly converts a Firestore date-like object to a JS Date.
- */
 const toDateOrNull = (value: any): Date | null => {
     if (!value) return null;
     if (value instanceof Date && !isNaN(value.getTime())) return value;
@@ -76,16 +73,10 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
 };
 
-/**
- * Case-insensitive field look-up to handle variations in Firestore keys.
- */
 const getField = (data: any, key: string): any => {
     if (!data) return undefined;
-    
-    // Check direct key first
     if (data[key] !== undefined && data[key] !== null) return data[key];
     
-    // Mapping for common capitalization differences or alternate names
     const mappings: Record<string, string[]> = {
         'name': ['Name', 'Full Name'],
         'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)'],
@@ -105,7 +96,6 @@ const getField = (data: any, key: string): any => {
         }
     }
 
-    // Fallback: check all keys case-insensitively
     const searchKey = key.toLowerCase();
     const foundKey = Object.keys(data).find(k => k.toLowerCase() === searchKey);
     if (foundKey) return data[foundKey];
@@ -127,25 +117,25 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const defaultValues = useMemo((): StaffMemberFormData => {
     const rawData = initialData || {};
     
-    // Extract and trim data
-    const name = String(getField(rawData, 'name') ?? "").trim();
-    const nameMalayalam = String(getField(rawData, 'nameMalayalam') ?? "").trim();
-    const designation = String(getField(rawData, 'designation') ?? "").trim() as any;
-    const designationMalayalam = String(getField(rawData, 'designationMalayalam') ?? "").trim() as any;
-    const pen = String(getField(rawData, 'pen') ?? "").trim();
-    const phoneNo = String(getField(rawData, 'phoneNo') ?? "").trim();
-    const roles = String(getField(rawData, 'roles') ?? "").trim();
-    const photoUrl = String(getField(rawData, 'photoUrl') ?? "").trim();
-    const status = (String(getField(rawData, 'status') ?? "").trim() || 'Active') as StaffStatusType;
-    const officeLocation = String(getField(rawData, 'officeLocation') ?? "").trim();
-    const remarks = String(getField(rawData, 'remarks') ?? "").trim();
+    const normalize = (val: any) => String(val ?? "").trim();
+
+    const name = normalize(getField(rawData, 'name'));
+    const nameMalayalam = normalize(getField(rawData, 'nameMalayalam'));
+    const designation = normalize(getField(rawData, 'designation')) as any;
+    const designationMalayalam = normalize(getField(rawData, 'designationMalayalam')) as any;
+    const pen = normalize(getField(rawData, 'pen'));
+    const phoneNo = normalize(getField(rawData, 'phoneNo'));
+    const roles = normalize(getField(rawData, 'roles'));
+    const photoUrl = normalize(getField(rawData, 'photoUrl'));
+    const status = (normalize(getField(rawData, 'status')) || 'Active') as StaffStatusType;
+    const officeLocation = normalize(getField(rawData, 'officeLocation'));
+    const remarks = normalize(getField(rawData, 'remarks'));
     
-    // Find linked user for email fallback
     const userForStaff = allUsers.find(u => 
         u.staffId && initialData?.id && 
         String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
     );
-    const email = String(getField(rawData, 'email') || userForStaff?.email || "").trim();
+    const email = normalize(getField(rawData, 'email') || userForStaff?.email);
 
     let dateStr = "";
     const rawDob = getField(rawData, 'dateOfBirth');
@@ -488,7 +478,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <FormDescription className="text-xs">Selecting a new office will physically move this record to that office's collection.</FormDescription>
+                                    <FormDescription className="text-xs">Selecting a new office will create a copy of this record in the new location and preserve a historical copy here.</FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}

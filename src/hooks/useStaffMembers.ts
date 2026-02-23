@@ -76,32 +76,35 @@ export function useStaffMembers(): StaffMembersState {
     const memberToUpdate = allStaffMembers.find(s => s.id === id);
     if (!memberToUpdate) throw new Error("Staff member not found.");
 
-    // Determine current physical office location from path metadata provided by data store
     const currentOffice = (memberToUpdate as any).officeLocationFromPath || memberToUpdate.officeLocation || user.officeLocation;
     if (!currentOffice) throw new Error("Could not determine office location for the staff member.");
 
     const isSuperAdmin = user.role === 'superAdmin';
-    // Cross-office move is ONLY allowed for Super Admin.
     const isMovingOffice = isSuperAdmin && staffData.status === 'Transferred' && staffData.officeLocation && staffData.officeLocation.toLowerCase() !== currentOffice.toLowerCase();
 
     if (isMovingOffice) {
         const batch = writeBatch(db);
         const oldDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
-        const newDocRef = doc(db, `offices/${staffData.officeLocation!.toLowerCase()}/staffMembers`, id);
+        const newDocRef = doc(collection(db, `offices/${staffData.officeLocation!.toLowerCase()}/staffMembers`));
 
         const newDocData = {
             ...memberToUpdate,
             ...sanitizeStaffMemberForFirestore(staffData),
+            status: 'Active',
             updatedAt: serverTimestamp(),
         };
         delete (newDocData as any).id;
         delete (newDocData as any).officeLocationFromPath;
 
         batch.set(newDocRef, newDocData);
-        batch.delete(oldDocRef);
+        // Preserve a copy in the old office but mark as Transferred
+        batch.update(oldDocRef, {
+            status: 'Transferred',
+            updatedAt: serverTimestamp(),
+        });
 
         await batch.commit();
-        toast({ title: "Transfer Successful", description: `Profile physically moved to ${staffData.officeLocation}.` });
+        toast({ title: "Transfer Successful", description: `Record copied to ${staffData.officeLocation}. Original record marked as Transferred.` });
     } else {
         const staffDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
         const payload = { ...sanitizeStaffMemberForFirestore(staffData), updatedAt: serverTimestamp() };
@@ -148,8 +151,7 @@ export function useStaffMembers(): StaffMembersState {
     const officeLocation = (memberToUpdate as any).officeLocationFromPath || memberToUpdate.officeLocation;
     if (!officeLocation) throw new Error("Could not determine office location for the staff member.");
 
-    const collectionPath = `offices/${officeLocation.toLowerCase()}/staffMembers`;
-    const staffDocRef = doc(db, collectionPath, id);
+    const staffDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/staffMembers`, id);
     await updateDoc(staffDocRef, { status: newStatus, updatedAt: serverTimestamp() });
   }, [user, allStaffMembers]);
 

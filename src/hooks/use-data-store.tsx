@@ -16,14 +16,14 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { isValid, parse, parseISO } from 'date-fns';
+import { isValid, parse } from 'date-fns';
 
 const db = getFirestore(app);
 
 // Helper to convert Firestore Timestamps to JS Dates recursively
-const processFirestoreDoc = <T,>(doc: DocumentData): T => {
-    const data = doc.data();
-    const converted: { [key: string]: any } = { id: doc.id };
+const processFirestoreDoc = <T,>(docObj: any): T => {
+    const data = typeof docObj.data === 'function' ? docObj.data() : docObj;
+    const id = docObj.id || '';
 
     const convertValue = (value: any): any => {
         if (value instanceof Timestamp) {
@@ -42,17 +42,16 @@ const processFirestoreDoc = <T,>(doc: DocumentData): T => {
         return value;
     };
 
-    for (const key in data) {
-        converted[key] = convertValue(data[key]);
-    }
-    return converted as T;
+    const result = convertValue(data);
+    if (id) result.id = id;
+    return result as T;
 };
 
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
 
 export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
-    tenderFee: "For Works:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 500\\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\\n- Over 50 Lakhs up to 1 Crore: Rs 5000\\n- Above 1 Crore: Rs 10000\\n\\nFor Purchase:\\n- Up to Rs 1 Lakh: No Fee\\n- Over 1 Lakh up to 10 Lakhs: Rs 800\\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\\n- Above 25 Lakhs: Rs 3000",
-    emd: "For Works:\\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\\n- Above Rs. 10 Crore: Rs. 5 Lakh\\n\\nFor Purchase:\\n- Up to 2 Crore: 1.00% of the project cost\\n- Above 2 Crore: No EMD",
+    tenderFee: "For Works:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 500\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\n- Over 50 Lakhs up to 1 Crore: Rs 5000\n- Above 1 Crore: Rs 10000\n\nFor Purchase:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 800\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\n- Above 25 Lakhs: Rs 3000",
+    emd: "For Works:\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\n- Above Rs. 10 Crore: Rs. 5 Lakh\n\nFor Purchase:\n- Up to 2 Crore: 1.00% of the project cost\n- Above 2 Crore: No EMD",
     performanceGuarantee: "Performance Guarantee , the amount collected at the time of executing contract agreement will be 5% of the contract value(agrecd PAC)and the deposit will be retained till the texpiry of Defect Liability Period. At least fifty percent(50%) of this deposit shall be collected in the form of Treasury Fixed Deposit and the rest in the form of Bank Guarantee or any other forms prescribed in the revised PWD Manual.",
     additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%. This deposit is calculated as 25% of the difference between the estimate cost and the tender amount, but it will not exceed 10% of the estimate cost. This deposit will be released after satisfactory completion of the work.",
     stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
@@ -220,7 +219,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                   officeCode: globalOffice?.officeCode || '', // Merge officeCode
               });
           } else {
-              // If no sub-collection doc, still provide the global info
               if (globalOffice) {
                   setOfficeAddress({ ...globalOffice, officeName: '', id: globalOffice.id });
               } else {
@@ -266,11 +264,10 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
             
             let q;
-            if (officeToQuery) { // Super Admin with a specific office selected OR a regular user
+            if (officeToQuery) {
                 const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = query(collection(db, path));
-            } else if (isSuperAdminUser && !officeToQuery) { // Super Admin with "All Offices" selected
-                // For users, query the master list in root
+            } else if (isSuperAdminUser && !officeToQuery) {
                 if (collectionName === 'users') {
                     q = query(collection(db, 'users'));
                 } else {
@@ -283,11 +280,10 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-                const dataRaw = snapshot.docs.map(doc => {
-                    const processedData = processFirestoreDoc({ id: doc.id, data: () => doc.data() }) as any;
+                const dataRaw = snapshot.docs.map(docSnap => {
+                    const processedData = processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() }) as any;
                     
-                    // Always extract officeLocation from path to ensure hooks know physical location
-                    const pathSegments = doc.ref.path.split('/');
+                    const pathSegments = docSnap.ref.path.split('/');
                     const officeIdIndex = pathSegments.indexOf('offices');
                     if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
                         processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
@@ -298,7 +294,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
                 let data = dataRaw;
 
-                // Robust de-duplicate and merge logic for Users
                 if (collectionName === 'users') {
                     const mergedMap = new Map<string, any>();
                     dataRaw.forEach((item: any) => {
