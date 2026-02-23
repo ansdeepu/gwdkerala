@@ -79,7 +79,7 @@ const getField = (data: any, key: string): any => {
     
     const mappings: Record<string, string[]> = {
         'name': ['Name', 'Full Name'],
-        'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)'],
+        'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)', 'Designation (in Malayalam)'],
         'designation': ['Designation', 'Roles/Responsibilities', 'roles', 'Post'],
         'designationMalayalam': ['DesignationMalayalam', 'Designation (Malayalam)', 'Post (Malayalam)'],
         'pen': ['PEN', 'pen'],

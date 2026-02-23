@@ -29,7 +29,7 @@ const storage = getStorage(app);
 const sanitizeStaffMemberForFirestore = (data: any): any => {
   const sanitized: any = {};
   for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key) && !['createUserAccount', 'password', 'id', 'createdAt', 'updatedAt'].includes(key)) {
+    if (Object.prototype.hasOwnProperty.call(data, key) && !['createUserAccount', 'password', 'id', 'createdAt', 'updatedAt', 'officeLocationFromPath'].includes(key)) {
       const value = data[key];
       if (value instanceof Date) sanitized[key] = value; 
       else if (value === undefined || value === "") sanitized[key] = null;
@@ -87,21 +87,32 @@ export function useStaffMembers(): StaffMembersState {
         const oldDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
         const newDocRef = doc(collection(db, `offices/${staffData.officeLocation!.toLowerCase()}/staffMembers`));
 
+        // 1. Create a copy in the new office
         const newDocData = {
             ...memberToUpdate,
             ...sanitizeStaffMemberForFirestore(staffData),
             status: 'Active',
+            officeLocation: staffData.officeLocation!.toLowerCase(),
             updatedAt: serverTimestamp(),
         };
         delete (newDocData as any).id;
         delete (newDocData as any).officeLocationFromPath;
 
         batch.set(newDocRef, newDocData);
-        // Preserve a copy in the old office but mark as Transferred
+
+        // 2. Mark the original record as Transferred
         batch.update(oldDocRef, {
             status: 'Transferred',
             updatedAt: serverTimestamp(),
         });
+
+        // 3. Update the user account if one exists
+        const linkedUser = (await getDocs(query(collection(db, 'users'), where('staffId', '==', id)))).docs[0];
+        if (linkedUser) {
+            batch.update(linkedUser.ref, { officeLocation: staffData.officeLocation!.toLowerCase() });
+            // Also update the subcollection user doc
+            batch.update(doc(db, `offices/${currentOffice.toLowerCase()}/users`, linkedUser.id), { officeLocation: staffData.officeLocation!.toLowerCase() });
+        }
 
         await batch.commit();
         toast({ title: "Transfer Successful", description: `Record copied to ${staffData.officeLocation}. Original record marked as Transferred.` });

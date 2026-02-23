@@ -6,14 +6,14 @@ import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
-  SidebarFooter, // Import SidebarFooter
+  SidebarFooter,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import AppNavMenu from './AppNavMenu';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useAuth } from '@/hooks/useAuth'; // Import useAuth
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // Import Avatar components
+import { useAuth } from '@/hooks/useAuth';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,12 +21,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'; // Import DropdownMenu components
+} from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
 import { useStaffMembers } from '@/hooks/useStaffMembers';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useDataStore } from '@/hooks/use-data-store';
 import { LogOut, User } from 'lucide-react';
 import { getInitials } from '@/lib/utils';
 
