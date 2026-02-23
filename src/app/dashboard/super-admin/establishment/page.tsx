@@ -22,6 +22,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { format, isValid } from "date-fns";
 import ExcelJS from "exceljs";
@@ -29,7 +39,7 @@ import { usePageHeader } from "@/hooks/usePageHeader";
 import { useDataStore } from "@/hooks/use-data-store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Search, FileDown, UserPlus, Loader2, Expand } from "lucide-react";
+import { CheckCircle, Search, FileDown, UserPlus, Loader2, Expand, Trash2, Edit } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 
@@ -38,12 +48,6 @@ export const dynamic = 'force-dynamic';
 const isPlaceholderUrl = (url?: string | null): boolean => {
   if (!url) return false;
   return url.startsWith("https://placehold.co");
-};
-
-const formatDateForSearch = (dateInput: Date | string | null | undefined): string => {
-  if (!dateInput) return "";
-  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-  return isValid(date) ? format(date, "dd/MM/yyyy") : "";
 };
 
 const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
@@ -72,6 +76,7 @@ export default function SuperAdminEstablishmentPage() {
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
   const [isProcessingApproval, setIsProcessingApproval] = useState<string | null>(null);
+  const [staffToDelete, setStaffToDelete] = useState<{ id: string; name: string } | null>(null);
   
   const [searchTerm, setSearchTerm] = useState(""); 
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(""); 
@@ -79,7 +84,6 @@ export default function SuperAdminEstablishmentPage() {
   const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([]);
 
   const [imageForModal, setImageForModal] = useState<string | null>(null);
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   
   const canManage = user?.role === 'superAdmin' && user.isApproved;
   const isViewer = user?.role === 'viewer';
@@ -92,6 +96,24 @@ export default function SuperAdminEstablishmentPage() {
   const handleEditStaff = (staff: StaffMember) => {
     setEditingStaff(staff);
     setIsFormOpen(true);
+  };
+
+  const handleDeleteClick = (id: string, name: string) => {
+    setStaffToDelete({ id, name });
+  };
+
+  const confirmDelete = async () => {
+    if (!staffToDelete) return;
+    setIsSubmittingForm(true);
+    try {
+      await deleteStaffMember(staffToDelete.id, staffToDelete.name);
+      toast({ title: "Staff Record Deleted", description: `Record for ${staffToDelete.name} has been removed.` });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSubmittingForm(false);
+      setStaffToDelete(null);
+    }
   };
 
   const handleFormSubmit = async (data: StaffMemberFormData) => {
@@ -214,7 +236,7 @@ export default function SuperAdminEstablishmentPage() {
                 <StaffTable
                   staffData={activeStaffList}
                   onEdit={handleEditStaff}
-                  onDelete={deleteStaffMember}
+                  onDelete={handleDeleteClick}
                   onSetStatus={updateStaffStatus}
                   isViewer={isViewer}
                   onImageClick={setImageForModal}
@@ -234,7 +256,7 @@ export default function SuperAdminEstablishmentPage() {
                                 <TableHead>Current Office</TableHead>
                                 <TableHead>Target Office</TableHead>
                                 <TableHead>Requested On</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -246,15 +268,33 @@ export default function SuperAdminEstablishmentPage() {
                                     <TableCell className="font-semibold text-primary capitalize">{(staff as any).targetOffice}</TableCell>
                                     <TableCell>{staff.updatedAt ? format(staff.updatedAt, 'dd/MM/yyyy') : 'N/A'}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button 
-                                            size="sm" 
-                                            className="bg-green-600 hover:bg-green-700" 
-                                            onClick={() => handleApproveTransfer(staff)}
-                                            disabled={isProcessingApproval === staff.id}
-                                        >
-                                            {isProcessingApproval === staff.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-                                            Approve Transfer
-                                        </Button>
+                                        <div className="flex justify-end items-center gap-2">
+                                            <Button 
+                                                size="sm" 
+                                                variant="outline"
+                                                onClick={() => handleEditStaff(staff)}
+                                            >
+                                                <Edit className="h-4 w-4 mr-2" />
+                                                Edit
+                                            </Button>
+                                            <Button 
+                                                size="sm" 
+                                                className="bg-green-600 hover:bg-green-700" 
+                                                onClick={() => handleApproveTransfer(staff)}
+                                                disabled={isProcessingApproval === staff.id}
+                                            >
+                                                {isProcessingApproval === staff.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                                                Approve
+                                            </Button>
+                                            <Button 
+                                                size="sm" 
+                                                variant="destructive"
+                                                onClick={() => handleDeleteClick(staff.id, staff.name)}
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Delete
+                                            </Button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             )) : (
@@ -314,6 +354,28 @@ export default function SuperAdminEstablishmentPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!staffToDelete} onOpenChange={(open) => !open && setStaffToDelete(null)}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      This will permanently delete the staff record for <strong>{staffToDelete?.name}</strong>. This action cannot be undone.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setStaffToDelete(null)} disabled={isSubmittingForm}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                      onClick={confirmDelete}
+                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                      disabled={isSubmittingForm}
+                  >
+                      {isSubmittingForm ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                      Delete Record
+                  </AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={!!imageForModal} onOpenChange={(open) => !open && setImageForModal(null)}>
         <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="p-0 border-0 bg-transparent shadow-none w-auto max-w-[90vw]">
