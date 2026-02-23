@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDataStore } from '@/hooks/use-data-store';
 import { designationOptions } from '@/lib/schemas';
-import { Edit, Save, PlusCircle, Trash2, Search, ClipboardCheck } from 'lucide-react';
+import { Edit, Save, PlusCircle, Trash2, Search, ClipboardCheck, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -141,7 +141,7 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
                         <DialogTitle>Sanctioned Strength Configuration</DialogTitle>
                         <DialogDescription>Set the authorized headcount for a specific designation.</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
+                    <div className="space-y-4 px-6 py-4">
                         <div className="space-y-2">
                             <Label>Designation</Label>
                             <Select 
@@ -171,7 +171,7 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsConfigDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleSaveStrength} disabled={!configData.designation || isSubmitting}>
-                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="mr-2 h-4 w-4 mr-2" />}
                             Save Configuration
                         </Button>
                     </DialogFooter>
