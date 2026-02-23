@@ -344,8 +344,8 @@ export const ApplicationFeeSchema = z.object({
     id: z.string(),
     applicationFeeType: z.enum(applicationFeeTypes).optional(),
     applicationFeeAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-    applicationFeePaymentDate: optionalDateSchema,
     applicationFeeChallanNo: z.string().optional(),
+    applicationFeePaymentDate: optionalDateSchema,
 });
 export type ApplicationFee = z.infer<typeof ApplicationFeeSchema>;
 

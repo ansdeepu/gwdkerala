@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/establishment/page.tsx
 "use client";
 

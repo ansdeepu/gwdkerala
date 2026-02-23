@@ -16,14 +16,14 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { isValid, parse } from 'date-fns';
+import { isValid, parse, parseISO } from 'date-fns';
 
 const db = getFirestore(app);
 
 // Helper to convert Firestore Timestamps to JS Dates recursively
-const processFirestoreDoc = <T,>(docObj: any): T => {
-    const data = typeof docObj.data === 'function' ? docObj.data() : docObj;
-    const id = docObj.id || '';
+const processFirestoreDoc = <T,>(doc: DocumentData): T => {
+    const data = typeof doc.data === 'function' ? doc.data() : doc;
+    const converted: { [key: string]: any } = { id: doc.id };
 
     const convertValue = (value: any): any => {
         if (value instanceof Timestamp) {
@@ -42,9 +42,9 @@ const processFirestoreDoc = <T,>(docObj: any): T => {
         return value;
     };
 
-    const result = convertValue(data);
-    if (id) result.id = id;
-    return result as T;
+    const finalData = convertValue(data);
+    if (doc.id) finalData.id = doc.id;
+    return finalData as T;
 };
 
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
@@ -54,7 +54,7 @@ export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
     emd: "For Works:\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\n- Above Rs. 10 Crore: Rs. 5 Lakh\n\nFor Purchase:\n- Up to 2 Crore: 1.00% of the project cost\n- Above 2 Crore: No EMD",
     performanceGuarantee: "Performance Guarantee , the amount collected at the time of executing contract agreement will be 5% of the contract value(agrecd PAC)and the deposit will be retained till the texpiry of Defect Liability Period. At least fifty percent(50%) of this deposit shall be collected in the form of Treasury Fixed Deposit and the rest in the form of Bank Guarantee or any other forms prescribed in the revised PWD Manual.",
     additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%. This deposit is calculated as 25% of the difference between the estimate cost and the tender amount, but it will not exceed 10% of the estimate cost. This deposit will be released after satisfactory completion of the work.",
-    stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
+    stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,00,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
 };
 
 export interface OfficeAddress {
