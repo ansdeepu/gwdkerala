@@ -89,8 +89,6 @@ export default function TransferredStaffTable({
               <TableHead className="px-2 py-2 text-left">Designation</TableHead>
               <TableHead className="px-2 py-2 text-left">PEN</TableHead>
               <TableHead className="px-2 py-2 text-left text-xs">Period of Service</TableHead>
-              <TableHead className="px-2 py-2 text-left">DOB</TableHead>
-              <TableHead className="px-2 py-2 min-w-[150px] text-left">Remarks</TableHead>
               <TableHead className="text-center w-[100px] px-2 py-2">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -135,19 +133,6 @@ export default function TransferredStaffTable({
                 <TableCell className="text-[10px] px-2 py-2 text-left">
                     {serviceStart ? `${serviceStart} - ${serviceEnd || 'Present'}` : 'N/A'}
                 </TableCell>
-                <TableCell className="text-xs px-2 py-2 text-left">{formatDateSafe(staff.dateOfBirth) || 'N/A'}</TableCell>
-                <TableCell className="text-xs px-2 py-2 whitespace-normal break-words max-w-[200px] text-left">
-                  {staff.remarks ? (
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <p className="line-clamp-2">{staff.remarks}</p>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" align="start" className="max-w-xs">
-                          <p className="text-xs whitespace-pre-wrap">{staff.remarks}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : "N/A"}
-                </TableCell>
                 <TableCell className="text-center px-2 py-2">
                     <div className="flex items-center justify-center space-x-0.5">
                       <Tooltip>
@@ -186,7 +171,7 @@ export default function TransferredStaffTable({
               </TableRow>
             )}) : (
               <TableRow>
-                <TableCell colSpan={9} className="h-24 text-center px-2 py-2">
+                <TableCell colSpan={7} className="h-24 text-center px-2 py-2">
                    {searchActive ? "No staff members found matching your search." : "No transferred staff members found."}
                 </TableCell>
               </TableRow>
