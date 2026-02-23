@@ -82,17 +82,17 @@ const getField = (data: any, key: string): any => {
     if (data[key] !== undefined && data[key] !== null) return data[key];
     
     const mappings: Record<string, string[]> = {
-        'name': ['Name', 'Full Name'],
-        'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)', 'Name malayalam', 'name malayalam'],
-        'designation': ['Designation', 'Roles/Responsibilities', 'roles', 'Post'],
-        'designationMalayalam': ['DesignationMalayalam', 'Designation (Malayalam)', 'Designation malayalam', 'Post (Malayalam)', 'designation (malayalam)'],
-        'pen': ['PEN', 'pen'],
-        'email': ['Email', 'email', 'Email ID'],
-        'phoneNo': ['PhoneNo', 'PhoneNumber', 'Phone', 'phone'],
-        'status': ['Status', 'status'],
-        'photoUrl': ['PhotoUrl', 'Photo', 'photo', 'photoUrl'],
-        'officeLocation': ['OfficeLocation', 'Office', 'location', 'officeLocation'],
-        'targetOffice': ['TargetOffice', 'targetOffice'],
+        'name': ['name', 'Name', 'Full Name'],
+        'nameMalayalam': ['nameMalayalam', 'NameMalayalam', 'Name (Malayalam)', 'Name malayalam'],
+        'designation': ['designation', 'Designation', 'Roles/Responsibilities', 'roles', 'Post'],
+        'designationMalayalam': ['designationMalayalam', 'DesignationMalayalam', 'Designation (Malayalam)', 'Designation malayalam', 'Post (Malayalam)'],
+        'pen': ['pen', 'PEN'],
+        'email': ['email', 'Email', 'Email ID'],
+        'phoneNo': ['phoneNo', 'PhoneNo', 'PhoneNumber', 'Phone', 'phone'],
+        'status': ['status', 'Status'],
+        'photoUrl': ['photoUrl', 'PhotoUrl', 'Photo', 'photo'],
+        'officeLocation': ['officeLocation', 'OfficeLocation', 'Office', 'location'],
+        'targetOffice': ['targetOffice', 'TargetOffice'],
     };
 
     if (mappings[key]) {
@@ -131,6 +131,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     const designationMalayalamValue = normalize(getField(rawData, 'designationMalayalam'));
     const statusValue = normalize(getField(rawData, 'status')) as StaffStatusType;
     
+    // Use targetOffice as the primary value for the officeLocation field if it exists (relevant for transfers)
     const currentTarget = normalize(getField(rawData, 'targetOffice'));
     const currentOffice = normalize(getField(rawData, 'officeLocation'));
     const officeLocationValue = currentTarget || currentOffice;
@@ -204,11 +205,12 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
 
   const canExpandImage = imagePreview && !imageLoadError && !isPlaceholderUrl(imagePreview);
 
-  // Filter out 'Pending Transfer' from the manual dropdown.
-  // This is an internal state, not a user-selectable option.
   const visibleStatusOptions = useMemo(() => {
     return staffStatusOptions.filter(o => o !== 'Pending Transfer');
   }, []);
+
+  // Show the office selection field if the status is "Transferred" OR if it's already "Pending Transfer" (for Super Admin corrections)
+  const isTransferring = watchedStatus === 'Transferred' || watchedStatus === 'Pending Transfer';
 
   return (
     <Form {...form}>
@@ -473,7 +475,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 )}
               />
             </div>
-            {watchedStatus === 'Transferred' && !isViewer && (
+            {isTransferring && !isViewer && (
                 <div className="pt-4 border-t space-y-4">
                     <FormField
                         control={form.control}
