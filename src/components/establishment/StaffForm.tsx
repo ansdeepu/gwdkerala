@@ -131,7 +131,6 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     const designationMalayalamValue = normalize(getField(rawData, 'designationMalayalam'));
     const statusValue = normalize(getField(rawData, 'status')) as StaffStatusType;
     
-    // Use targetOffice as the primary value for the officeLocation field if it exists (relevant for transfers)
     const currentTarget = normalize(getField(rawData, 'targetOffice'));
     const currentOffice = normalize(getField(rawData, 'officeLocation'));
     const officeLocationValue = currentTarget || currentOffice;
@@ -209,8 +208,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     return staffStatusOptions.filter(o => o !== 'Pending Transfer');
   }, []);
 
-  // Show the office selection field if the status is "Transferred" OR if it's already "Pending Transfer" (for Super Admin corrections)
-  const isTransferring = watchedStatus === 'Transferred' || watchedStatus === 'Pending Transfer';
+  const isTransferring = watchedStatus === 'Transferred' || watchedStatus === 'Pending Transfer' || user?.role === 'superAdmin';
 
   return (
     <Form {...form}>
@@ -359,7 +357,6 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                         {visibleStatusOptions.map(option => (
                           <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}
-                        {/* Always include the current status even if filtered out, so it shows if it's already 'Pending Transfer' */}
                         {field.value === 'Pending Transfer' && (
                             <SelectItem value="Pending Transfer">Pending Transfer</SelectItem>
                         )}
@@ -495,7 +492,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                                 </Select>
                                 <FormDescription className="text-xs">
                                     {user?.role === 'superAdmin' 
-                                        ? "Selecting a new office will move the record immediately upon save." 
+                                        ? "Select the destination office. Click 'Save Changes' to update the request, or use the 'Approve' button in the table to complete the move." 
                                         : "Select the destination office. This request will be sent to the Super Admin for final approval."
                                     }
                                 </FormDescription>

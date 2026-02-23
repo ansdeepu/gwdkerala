@@ -32,7 +32,9 @@ const storage = getStorage(app);
 const sanitizeStaffMemberForFirestore = (data: any): any => {
   const sanitized: any = {};
   for (const key in data) {
-    if (Object.prototype.hasOwnProperty.call(data, key) && !['createUserAccount', 'password', 'id', 'createdAt', 'updatedAt', 'officeLocationFromPath'].includes(key)) {
+    // We exclude officeLocation here because it's used as a targetOffice metadata, 
+    // but the physical container field in Firestore is officeLocation.
+    if (Object.prototype.hasOwnProperty.call(data, key) && !['createUserAccount', 'password', 'id', 'createdAt', 'updatedAt', 'officeLocationFromPath', 'officeLocation'].includes(key)) {
       const value = data[key];
       if (value instanceof Date) sanitized[key] = value; 
       else if (value === undefined || value === "") sanitized[key] = null;
@@ -84,67 +86,36 @@ export function useStaffMembers(): StaffMembersState {
     const currentOffice = (memberToUpdate as any).officeLocationFromPath || memberToUpdate.officeLocation || user.officeLocation;
     if (!currentOffice) throw new Error("Could not determine current office location.");
 
-    const isSuperAdmin = user.role === 'superAdmin';
     const targetOffice = staffData.officeLocation?.toLowerCase();
-    const isRequestingMove = targetOffice && targetOffice !== currentOffice.toLowerCase();
+    const isRequestingTransfer = staffData.status === 'Transferred' || staffData.status === 'Pending Transfer' || (targetOffice && targetOffice !== currentOffice.toLowerCase());
 
-    // Logic for initiating or completing a move
-    if (isRequestingMove) {
-        if (!isSuperAdmin) {
-            // Sub-Admins only mark as "Pending Transfer"
-            const docRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
-            await updateDoc(docRef, {
-                ...sanitizeStaffMemberForFirestore(staffData),
-                status: 'Pending Transfer',
-                targetOffice: targetOffice, // Store destination metadata for super admin
-                updatedAt: serverTimestamp(),
-            });
-            toast({ title: "Transfer Initiated", description: `Transfer request to ${staffData.officeLocation} sent for Super Admin approval.` });
-        } else {
-            // Super Admin can bypass the workflow and move immediately if they want
-            const batch = writeBatch(db);
-            const oldDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
-            const newDocRef = doc(collection(db, `offices/${targetOffice}/staffMembers`));
+    const payload = sanitizeStaffMemberForFirestore(staffData);
+    payload.updatedAt = serverTimestamp();
 
-            const newDocData = {
-                ...memberToUpdate,
-                ...sanitizeStaffMemberForFirestore(staffData),
-                status: 'Active',
-                officeLocation: targetOffice,
-                updatedAt: serverTimestamp(),
-            };
-            delete (newDocData as any).id;
-            delete (newDocData as any).officeLocationFromPath;
-            delete (newDocData as any).createdAt;
-            delete (newDocData as any).targetOffice;
-
-            batch.set(newDocRef, { ...newDocData, createdAt: serverTimestamp() });
-            batch.update(oldDocRef, { status: 'Transferred', updatedAt: serverTimestamp() });
-
-            // Update linked user
-            const usersRef = collection(db, 'users');
-            const qUser = query(usersRef, where('staffId', '==', id));
-            const userDocs = await getDocs(qUser);
-            userDocs.forEach(uDoc => {
-                batch.update(uDoc.ref, { officeLocation: targetOffice });
-                const oldOfficeUserRef = doc(db, `offices/${currentOffice.toLowerCase()}/users`, uDoc.id);
-                batch.delete(oldOfficeUserRef);
-                const newOfficeUserRef = doc(db, `offices/${targetOffice}/users`, uDoc.id);
-                batch.set(newOfficeUserRef, { ...uDoc.data(), officeLocation: targetOffice, updatedAt: serverTimestamp() });
-            });
-
-            await batch.commit();
-            toast({ title: "Staff Transferred", description: `Record moved to ${staffData.officeLocation}.` });
-        }
+    if (isRequestingTransfer) {
+        // If we are initiating or updating a transfer, we set the internal state.
+        // We do NOT perform the move here. Approval happens via the "Approve" button in the table.
+        payload.status = 'Pending Transfer';
+        payload.targetOffice = targetOffice;
     } else {
-        // Standard update within the same office
-        const staffDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
-        const payload = { ...sanitizeStaffMemberForFirestore(staffData), updatedAt: serverTimestamp() };
-        delete (payload as any).createdAt;
-        delete (payload as any).officeLocationFromPath;
-        await updateDoc(staffDocRef, payload);
+        // If the user selected the home office, ensure request metadata is cleared.
+        if (targetOffice === currentOffice.toLowerCase()) {
+            payload.targetOffice = null;
+            if (staffData.status === 'Pending Transfer') {
+                payload.status = 'Active';
+            }
+        }
     }
-  }, [user, allStaffMembers, selectedOffice]);
+
+    const staffDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
+    await updateDoc(staffDocRef, payload);
+    
+    if (isRequestingTransfer) {
+        toast({ title: "Profile Saved", description: `Record updated and marked as Pending Transfer to ${staffData.officeLocation}.` });
+    } else {
+        toast({ title: "Profile Saved", description: "Your changes have been saved." });
+    }
+  }, [user, allStaffMembers]);
 
   const approveTransfer = useCallback(async (id: string, currentOffice: string, targetOffice: string) => {
     if (!user || user.role !== 'superAdmin') throw new Error("Permission denied.");
