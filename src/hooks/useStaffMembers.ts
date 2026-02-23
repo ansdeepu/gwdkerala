@@ -80,7 +80,9 @@ export function useStaffMembers(): StaffMembersState {
     const currentOffice = (memberToUpdate as any).officeLocationFromPath || memberToUpdate.officeLocation || user.officeLocation;
     if (!currentOffice) throw new Error("Could not determine office location for the staff member.");
 
-    const isMovingOffice = staffData.status === 'Transferred' && staffData.officeLocation && staffData.officeLocation.toLowerCase() !== currentOffice.toLowerCase();
+    const isSuperAdmin = user.role === 'superAdmin';
+    // Cross-office move is ONLY allowed for Super Admin.
+    const isMovingOffice = isSuperAdmin && staffData.status === 'Transferred' && staffData.officeLocation && staffData.officeLocation.toLowerCase() !== currentOffice.toLowerCase();
 
     if (isMovingOffice) {
         const batch = writeBatch(db);
@@ -99,7 +101,7 @@ export function useStaffMembers(): StaffMembersState {
         batch.delete(oldDocRef);
 
         await batch.commit();
-        toast({ title: "Transfer Successful", description: `Profile moved to ${staffData.officeLocation}.` });
+        toast({ title: "Transfer Successful", description: `Profile physically moved to ${staffData.officeLocation}.` });
     } else {
         const staffDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
         const payload = { ...sanitizeStaffMemberForFirestore(staffData), updatedAt: serverTimestamp() };

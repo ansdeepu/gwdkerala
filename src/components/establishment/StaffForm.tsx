@@ -1,3 +1,5 @@
+
+// src/components/establishment/StaffForm.tsx
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +33,7 @@ import {
 import { format, isValid, parseISO } from "date-fns";
 import { ScrollArea } from "../ui/scroll-area";
 import { Checkbox } from "../ui/checkbox";
-import type { UserProfile } from "@/hooks/useAuth";
+import { useAuth, type UserProfile } from "@/hooks/useAuth";
 
 interface StaffFormProps {
   onSubmit: (data: StaffMemberFormData) => Promise<void>;
@@ -117,6 +119,7 @@ const capitalize = (s?: string) => {
 };
 
 export default function StaffForm({ onSubmit, initialData, isSubmitting, onCancel, isViewer = false, allOfficeAddresses, allUsers }: StaffFormProps) {
+  const { user } = useAuth();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -467,26 +470,36 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
               />
             </div>
             {watchedStatus === 'Transferred' && !isViewer && (
-                <FormField
-                    control={form.control}
-                    name="officeLocation"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Transfer to Office</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
-                                <SelectContent className="max-h-80">
-                                    {allOfficeAddresses.map(office => (
-                                        <SelectItem key={office.id} value={office.officeLocation}>
-                                            {office.officeName || capitalize(office.officeLocation)}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
+                <div className="pt-4 border-t space-y-4">
+                    {user?.role === 'superAdmin' ? (
+                        <FormField
+                            control={form.control}
+                            name="officeLocation"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Transfer to Office</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
+                                        <SelectContent className="max-h-80">
+                                            {allOfficeAddresses.map(office => (
+                                                <SelectItem key={office.id} value={office.officeLocation}>
+                                                    {office.officeName || capitalize(office.officeLocation)}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormDescription className="text-xs">Selecting a new office will physically move this record to that office's collection.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    ) : (
+                        <div className="flex items-start gap-2 p-3 text-sm text-amber-800 bg-amber-100/50 border border-amber-200 rounded-md shadow-sm">
+                            <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                            <p>Staff marked as <strong>Transferred</strong> will remain in this office's records until a <strong>Super Admin</strong> performs the physical move to a new office location.</p>
+                        </div>
                     )}
-                />
+                </div>
             )}
           </div>
         </ScrollArea>
