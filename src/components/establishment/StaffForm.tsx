@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -59,16 +60,52 @@ const isPlaceholderUrl = (url?: string | null): boolean => {
 };
 
 /**
- * Case-insensitive field look-up to handle manual Firestore entry variations
+ * Robustly converts a Firestore date-like object to a JS Date.
+ */
+const toDateOrNull = (value: any): Date | null => {
+    if (!value) return null;
+    if (value instanceof Date && !isNaN(value.getTime())) return value;
+    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
+        return new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+    }
+    if (typeof value === 'string') {
+        const d = parseISO(value);
+        if (isValid(d)) return d;
+    }
+    return null;
+};
+
+/**
+ * Case-insensitive field look-up to handle manual Firestore entry variations.
+ * Also handles specific human-readable mappings found in the database.
  */
 const getField = (data: any, key: string): any => {
     if (!data) return undefined;
+    
+    // Check direct key first
     if (data[key] !== undefined && data[key] !== null) return data[key];
     
-    // Check for exact match first (case-sensitive)
-    const capitalized = key.charAt(0).toUpperCase() + key.slice(1);
-    if (data[capitalized] !== undefined && data[capitalized] !== null) return data[capitalized];
-    
+    // Check specific human-readable mappings
+    const mappings: Record<string, string[]> = {
+        'name': ['Full Name', 'Name'],
+        'nameMalayalam': ['Full Name (in Malayalam)', 'Name (Malayalam)'],
+        'designation': ['Designation'],
+        'designationMalayalam': ['Designation (in Malayalam)', 'Designation (Malayalam)'],
+        'pen': ['PEN'],
+        'email': ['Email'],
+        'phoneNo': ['Phone Number', 'Phone', 'Mobile'],
+        'status': ['Status'],
+        'roles': ['Roles/Responsibilities', 'Roles'],
+        'photoUrl': ['Staff Photo URL', 'Photo'],
+        'officeLocation': ['Office Location', 'Office'],
+    };
+
+    if (mappings[key]) {
+        for (const altKey of mappings[key]) {
+            if (data[altKey] !== undefined && data[altKey] !== null) return data[altKey];
+        }
+    }
+
     // Check all keys case-insensitively
     const searchKey = key.toLowerCase();
     const foundKey = Object.keys(data).find(k => k.toLowerCase() === searchKey);
@@ -83,44 +120,52 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const defaultValues = useMemo((): StaffMemberFormData => {
-    if (!initialData) {
-        return {
-            name: "", nameMalayalam: "", designation: "" as any, designationMalayalam: "" as any,
-            pen: "", email: "", dateOfBirth: "", phoneNo: "", roles: "", photoUrl: "",
-            status: 'Active' as StaffStatusType, remarks: "", officeLocation: "", createUserAccount: false
-        };
-    }
-
-    // Try to find a linked user account to extract the email
+    const rawData = initialData || {};
+    
+    // Robustly extract data regardless of field capitalization in Firestore
+    const name = String(getField(rawData, 'name') ?? "").trim();
+    const nameMalayalam = String(getField(rawData, 'nameMalayalam') ?? "").trim();
+    const designation = String(getField(rawData, 'designation') ?? "").trim() as any;
+    const designationMalayalam = String(getField(rawData, 'designationMalayalam') ?? "").trim() as any;
+    const pen = String(getField(rawData, 'pen') ?? "").trim();
+    const phoneNo = String(getField(rawData, 'phoneNo') ?? "").trim();
+    const roles = String(getField(rawData, 'roles') ?? "").trim();
+    const photoUrl = String(getField(rawData, 'photoUrl') ?? "").trim();
+    const status = (String(getField(rawData, 'status') ?? "").trim() || 'Active') as StaffStatusType;
+    const remarks = String(getField(rawData, 'remarks') ?? "").trim();
+    const officeLocation = String(getField(rawData, 'officeLocation') ?? "").trim();
+    
+    // Find linked user account for email fallback
     const userForStaff = allUsers.find(u => 
-        u.staffId && initialData.id && 
+        u.staffId && initialData?.id && 
         String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
     );
+    const email = String(getField(rawData, 'email') || userForStaff?.email || "").trim();
 
-    // Handle various date formats for the input
+    // Handle date formatting for the input field
     let dateStr = "";
-    const rawDob = getField(initialData, 'dateOfBirth') || getField(initialData, 'Date of Birth');
+    const rawDob = getField(rawData, 'dateOfBirth');
     if (rawDob) {
-        const d = rawDob instanceof Date ? rawDob : new Date(rawDob);
-        if (isValid(d)) {
+        const d = toDateOrNull(rawDob);
+        if (d && isValid(d)) {
             dateStr = format(d, 'yyyy-MM-dd');
         }
     }
 
     return {
-        name: String(getField(initialData, 'name') || getField(initialData, 'Full Name') || "").trim(),
-        nameMalayalam: String(getField(initialData, 'nameMalayalam') || getField(initialData, 'Full Name (in Malayalam)') || "").trim(),
-        designation: String(getField(initialData, 'designation') || getField(initialData, 'Designation') || "").trim() as any,
-        designationMalayalam: String(getField(initialData, 'designationMalayalam') || getField(initialData, 'Designation (in Malayalam)') || "").trim() as any,
-        pen: String(getField(initialData, 'pen') || getField(initialData, 'PEN') || "").trim(),
-        email: String(getField(initialData, 'email') || getField(initialData, 'Email') || userForStaff?.email || "").trim(),
+        name,
+        nameMalayalam,
+        designation,
+        designationMalayalam,
+        pen,
+        email,
         dateOfBirth: dateStr,
-        phoneNo: String(getField(initialData, 'phoneNo') || getField(initialData, 'Phone Number') || "").trim(),
-        roles: String(getField(initialData, 'roles') || getField(initialData, 'Roles/Responsibilities') || "").trim(),
-        photoUrl: String(getField(initialData, 'photoUrl') || getField(initialData, 'Staff Photo URL') || "").trim(),
-        status: String(getField(initialData, 'status') || getField(initialData, 'Status') || "Active").trim() as StaffStatusType,
-        remarks: String(getField(initialData, 'remarks') || getField(initialData, 'Remarks') || "").trim(),
-        officeLocation: String(getField(initialData, 'officeLocation') || "").trim(),
+        phoneNo,
+        roles,
+        photoUrl,
+        status,
+        remarks,
+        officeLocation,
         createUserAccount: false,
     };
   }, [initialData, allUsers]);
@@ -130,7 +175,13 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     defaultValues
   });
   
-  const { watch, control, handleSubmit } = form;
+  const { watch, control, handleSubmit, reset } = form;
+  
+  // Re-reset the form if defaultValues change (e.g. after users load)
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
+
   const watchedPhotoUrl = watch("photoUrl");
   const watchedStatus = watch("status");
   
@@ -440,7 +491,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
           </div>
         </ScrollArea>
         
-        <div className="flex flex-col sm:flex-row justify-between items-center pt-6 mt-auto gap-4 border-t">
+        <div className="flex flex-col sm:flex-row justify-between items-center pt-6 mt-auto gap-4 border-t shrink-0">
           <div className="flex-1 w-full sm:w-auto">
             {showUserCreation ? (
               <div className="p-3 rounded-md bg-primary/10 border border-primary/20">
