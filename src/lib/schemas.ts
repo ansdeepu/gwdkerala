@@ -235,6 +235,7 @@ const BaseStaffMemberFormDataSchema = z.object({
   designationMalayalam: z.preprocess((val) => (val === "" ? undefined : val), z.enum(designationMalayalamOptions).optional()),
   pen: z.string().min(1, { message: "PEN is required." }),
   dateOfBirth: z.string().optional(),
+  serviceStartDate: z.string().optional(),
   phoneNo: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }).optional().or(z.literal("")),
   roles: z.string().optional(),
   status: z.preprocess((val) => (val === "" ? undefined : val), z.enum(staffStatusOptions).default('Active')),
@@ -268,6 +269,7 @@ export const StaffMemberSchema = BaseStaffMemberFormDataSchema.extend({
   status: z.enum(staffStatusOptions).default('Active'),
   remarks: z.string().optional().default(""),
   dateOfBirth: dateOrString.nullable().optional(),
+  serviceStartDate: dateOrString.nullable().optional(),
 });
 export type StaffMember = z.infer<typeof StaffMemberSchema>;
 

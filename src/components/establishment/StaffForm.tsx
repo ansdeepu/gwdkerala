@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Loader2, Save, X, ImageUp, Unplug, Expand, UserCheck, Info } from "lucide-react";
+import { Loader2, Save, X, ImageUp, Unplug, Expand, UserCheck, Info, CalendarIcon } from "lucide-react";
 import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions } from "@/lib/schemas";
 import type { StaffMember, OfficeAddress } from "@/lib/schemas";
 import React, { useState, useEffect, useMemo } from "react";
@@ -90,6 +90,7 @@ const getField = (data: any, key: string): any => {
         'photoUrl': ['photoUrl', 'PhotoUrl', 'Photo', 'photo'],
         'officeLocation': ['officeLocation', 'OfficeLocation', 'Office', 'location'],
         'targetOffice': ['targetOffice', 'TargetOffice'],
+        'serviceStartDate': ['serviceStartDate', 'ServiceStartDate', 'Period of Service', 'periodOfService', 'dateOfJoining'],
     };
 
     if (mappings[key]) {
@@ -138,11 +139,18 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     );
     const email = normalize(getField(rawData, 'email') || userForStaff?.email);
 
-    let dateStr = "";
+    let dobDateStr = "";
     const rawDob = getField(rawData, 'dateOfBirth');
     if (rawDob) {
         const d = toDateOrNull(rawDob);
-        if (d && isValid(d)) dateStr = format(d, 'yyyy-MM-dd');
+        if (d && isValid(d)) dobDateStr = format(d, 'yyyy-MM-dd');
+    }
+
+    let serviceDateStr = "";
+    const rawServiceDate = getField(rawData, 'serviceStartDate');
+    if (rawServiceDate) {
+        const d = toDateOrNull(rawServiceDate);
+        if (d && isValid(d)) serviceDateStr = format(d, 'yyyy-MM-dd');
     }
 
     return {
@@ -152,7 +160,8 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         designationMalayalam: designationMalayalamOptions.find(o => o.toLowerCase().trim() === designationMalayalamValue.toLowerCase()) as any,
         pen: normalize(getField(rawData, 'pen')),
         email,
-        dateOfBirth: dateStr,
+        dateOfBirth: dobDateStr,
+        serviceStartDate: serviceDateStr,
         phoneNo: normalize(getField(rawData, 'phoneNo')),
         roles: normalize(getField(rawData, 'roles')),
         photoUrl: normalize(getField(rawData, 'photoUrl')),
@@ -340,6 +349,20 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
                <FormField
                 control={form.control}
+                name="serviceStartDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Period of Service</FormLabel>
+                    <FormControl>
+                       <Input type="date" {...field} value={field.value || ""} readOnly={isViewer}/>
+                    </FormControl>
+                    <FormDescription>Joining Date of Service</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+                />
+               <FormField
+                control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
@@ -440,6 +463,9 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                     </FormItem>
                 )}
               />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <FormField
                 control={form.control}
                 name="roles"
