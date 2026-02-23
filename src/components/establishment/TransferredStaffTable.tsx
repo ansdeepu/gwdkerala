@@ -30,7 +30,8 @@ const getInitials = (name?: string) => {
   if (!name || name.trim() === '') return 'U';
   return name
     .trim()
-    .split(/\s+/)
+    .split(/[\s-]+/)
+    .filter(Boolean)
     .map(n => n[0])
     .slice(0, 2)
     .join('')
@@ -46,6 +47,11 @@ const formatDateSafe = (dateInput: Date | string | null | undefined): string => 
 const isPlaceholderUrl = (url?: string | null): boolean => {
   if (!url) return false;
   return url.startsWith("https://placehold.co");
+};
+
+const capitalize = (s?: string | null) => {
+    if (!s) return "";
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 };
 
 
@@ -88,6 +94,7 @@ export default function TransferredStaffTable({
               <TableHead className="px-2 py-2 text-left">Name</TableHead>
               <TableHead className="px-2 py-2 text-left">Designation</TableHead>
               <TableHead className="px-2 py-2 text-left">PEN</TableHead>
+              <TableHead className="px-2 py-2 text-left">Transferred To</TableHead>
               <TableHead className="px-2 py-2 text-left text-xs">Period of Service</TableHead>
               <TableHead className="text-center w-[100px] px-2 py-2">Actions</TableHead>
             </TableRow>
@@ -97,6 +104,7 @@ export default function TransferredStaffTable({
               const canExpandAvatar = staff.photoUrl && !isPlaceholderUrl(staff.photoUrl) && onImageClick;
               const serviceStart = formatDateSafe(staff.serviceStartDate);
               const serviceEnd = formatDateSafe(staff.serviceEndDate);
+              const targetOffice = (staff as any).targetOffice;
 
               return (
               <TableRow key={staff.id}>
@@ -130,7 +138,10 @@ export default function TransferredStaffTable({
                   {staff.designation}
                 </TableCell>
                 <TableCell className={cn("whitespace-normal break-words max-w-[100px] px-2 py-2 text-left")}>{staff.pen}</TableCell>
-                <TableCell className="text-[10px] px-2 py-2 text-left">
+                <TableCell className="px-2 py-2 text-left font-semibold text-primary">
+                    {targetOffice ? capitalize(targetOffice) : "N/A"}
+                </TableCell>
+                <TableCell className="text-[10px] px-2 py-2 text-left whitespace-nowrap">
                     {serviceStart ? `${serviceStart} - ${serviceEnd || 'Present'}` : 'N/A'}
                 </TableCell>
                 <TableCell className="text-center px-2 py-2">
@@ -141,7 +152,7 @@ export default function TransferredStaffTable({
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>{isViewer ? "View Details" : "View / Edit Profile"}</p></TooltipContent>
+                        <TooltipContent><p>View Details</p></TooltipContent>
                       </Tooltip>
                       
                       {!isViewer && onSetStatus && (
@@ -171,7 +182,7 @@ export default function TransferredStaffTable({
               </TableRow>
             )}) : (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center px-2 py-2">
+                <TableCell colSpan={8} className="h-24 text-center px-2 py-2">
                    {searchActive ? "No staff members found matching your search." : "No transferred staff members found."}
                 </TableCell>
               </TableRow>
