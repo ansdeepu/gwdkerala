@@ -99,7 +99,6 @@ export default function StaffTable({
                 <TableHead className="px-2 py-2 text-left text-xs">Period of Service</TableHead>
                 <TableHead className="px-2 py-2 text-left">Roles</TableHead>
                 <TableHead className="px-2 py-2 text-left">Phone No.</TableHead>
-                <TableHead className="px-2 py-2 text-left">DOB</TableHead>
                 <TableHead className="text-center w-[130px] px-2 py-2">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -165,7 +164,6 @@ export default function StaffTable({
                       ) : "N/A"}
                     </TableCell>
                     <TableCell className="text-xs px-2 py-2 text-left">{staff.phoneNo || "N/A"}</TableCell>
-                    <TableCell className="text-xs px-2 py-2 text-left">{formatDateSafe(staff.dateOfBirth) || 'N/A'}</TableCell>
                     <TableCell className="text-center px-2 py-2">
                       <div className="flex items-center justify-center space-x-0.5">
                         <Tooltip>

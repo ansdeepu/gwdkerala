@@ -225,7 +225,7 @@ export default function EstablishmentPage() {
                   staffData={activeStaffList}
                   onEdit={(s) => handleEditStaff(s, s.status === 'Pending Transfer')}
                   onDelete={canManage ? deleteStaffMember : undefined}
-                  onSetStatus={canManage ? handleSetStaffStatus : undefined}
+                  onSetStatus={undefined}
                   isViewer={isViewer}
                   onImageClick={handleOpenImageModal}
                   isLoading={isFiltering}
