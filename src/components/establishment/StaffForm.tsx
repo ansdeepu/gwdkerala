@@ -79,10 +79,8 @@ const toDateOrNull = (value: any): Date | null => {
 const getField = (data: any, key: string): any => {
     if (!data) return undefined;
     
-    // Exact match
     if (data[key] !== undefined && data[key] !== null) return data[key];
     
-    // Mapped aliases
     const mappings: Record<string, string[]> = {
         'name': ['Name', 'Full Name'],
         'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)', 'Name malayalam', 'name malayalam'],
@@ -103,7 +101,6 @@ const getField = (data: any, key: string): any => {
         }
     }
 
-    // Case-insensitive search as a fallback
     const searchKey = key.toLowerCase();
     const foundKey = Object.keys(data).find(k => k.toLowerCase() === searchKey);
     if (foundKey) return data[foundKey];
@@ -134,7 +131,6 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     const designationMalayalamValue = normalize(getField(rawData, 'designationMalayalam'));
     const statusValue = normalize(getField(rawData, 'status')) as StaffStatusType;
     
-    // For office location, if we're initiating a transfer, we want to load the targetOffice if it exists
     const currentTarget = normalize(getField(rawData, 'targetOffice'));
     const currentOffice = normalize(getField(rawData, 'officeLocation'));
     const officeLocationValue = currentTarget || currentOffice;
@@ -207,6 +203,12 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   };
 
   const canExpandImage = imagePreview && !imageLoadError && !isPlaceholderUrl(imagePreview);
+
+  // Filter out 'Pending Transfer' from the manual dropdown.
+  // This is an internal state, not a user-selectable option.
+  const visibleStatusOptions = useMemo(() => {
+    return staffStatusOptions.filter(o => o !== 'Pending Transfer');
+  }, []);
 
   return (
     <Form {...form}>
@@ -352,9 +354,13 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {staffStatusOptions.map(option => (
+                        {visibleStatusOptions.map(option => (
                           <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}
+                        {/* Always include the current status even if filtered out, so it shows if it's already 'Pending Transfer' */}
+                        {field.value === 'Pending Transfer' && (
+                            <SelectItem value="Pending Transfer">Pending Transfer</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
