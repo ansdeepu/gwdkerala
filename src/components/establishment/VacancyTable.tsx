@@ -29,33 +29,23 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
     const vacancyData = useMemo(() => {
         const activeStaff = allStaffMembers.filter(s => s.status === 'Active');
         
-        // We only show designations that either have staff OR have a non-zero sanctioned strength
-        const configuredDesignations = new Set([
-            ...activeStaff.map(s => s.designation).filter(Boolean),
-            ...Object.keys(allSanctionedStrength)
-        ]);
-
-        const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
-
-        const data = Array.from(configuredDesignations).map(designation => {
-            const sanctioned = allSanctionedStrength[designation!] || 0;
+        // Show ALL official designations from the hierarchy
+        const data = designationOptions.map(designation => {
+            const sanctioned = allSanctionedStrength[designation] || 0;
             const current = activeStaff.filter(s => s.designation === designation).length;
             const vacancy = Math.max(0, sanctioned - current);
             return {
-                designation: designation!,
+                designation,
                 sanctioned,
                 current,
                 vacancy
             };
         });
 
+        // Filter by search term if provided
         return data.filter(row => {
             if (!searchTerm) return true;
             return row.designation.toLowerCase().includes(searchTerm.toLowerCase());
-        }).sort((a, b) => {
-            const orderA = designationSortOrder[a.designation] ?? designationOptions.length;
-            const orderB = designationSortOrder[b.designation] ?? designationOptions.length;
-            return orderA - orderB;
         });
     }, [allStaffMembers, allSanctionedStrength, searchTerm]);
 

@@ -37,7 +37,7 @@ const isPlaceholderUrl = (url?: string | null): boolean => {
   return url.startsWith("https://placehold.co");
 };
 
-const formatDateForSearch = (dateInput: Date | string | null | undefined): string => {
+const formatDateSafe = (dateInput: Date | string | null | undefined): string => {
   if (!dateInput) return "";
   const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   return isValid(date) ? format(date, "dd/MM/yyyy") : "";
@@ -134,25 +134,55 @@ export default function EstablishmentPage() {
     }
   };
   
-  const handleSetStaffStatus = async (staffId: string, newStatus: StaffStatusType, staffName: string) => {
-    if (!canManage) {
-        toast({ title: "Permission Denied", variant: "destructive"});
-        return;
-    }
-    try {
-      await updateStaffStatus(staffId, newStatus);
-      toast({ title: "Status Updated" });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    }
-  };
-
   const handleOpenImageModal = (imageUrl: string | null) => {
     if (imageUrl && !isPlaceholderUrl(imageUrl)) {
       setImageForModal(imageUrl);
       setIsImageModalOpen(true);
     }
   };
+
+  const handleExportExcel = useCallback(async () => {
+    if (filteredStaff.length === 0) {
+      toast({ title: "No Data", description: "There is no data to export." });
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Staff Report");
+
+    const headers = ["Sl. No.", "Name", "Designation", "PEN", "Status", "Mobile", "Email", "Roles", "Service Period"];
+    const headerRow = worksheet.addRow(headers);
+    headerRow.font = { bold: true };
+
+    filteredStaff.forEach((staff, index) => {
+      const servicePeriod = `${formatDateSafe(staff.serviceStartDate)} - ${formatDateSafe(staff.serviceEndDate) || 'Present'}`;
+      worksheet.addRow([
+        index + 1,
+        staff.name,
+        staff.designation,
+        staff.pen,
+        staff.status,
+        staff.phoneNo || 'N/A',
+        staff.email || 'N/A',
+        staff.roles || 'N/A',
+        servicePeriod
+      ]);
+    });
+
+    worksheet.columns.forEach(column => {
+      column.width = 20;
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `GWD_Staff_Report_${format(new Date(), 'yyyyMMdd_HHmmss')}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Excel Exported" });
+  }, [filteredStaff, toast]);
 
   useEffect(() => {
     const timerId = setTimeout(() => { setDebouncedSearchTerm(searchTerm); }, 300); 
@@ -212,6 +242,9 @@ export default function EstablishmentPage() {
                   <UserPlus className="mr-2 h-4 w-4" /> Add New Staff
                 </Button>
               )}
+              <Button variant="outline" size="sm" onClick={handleExportExcel} className="w-full sm:w-auto">
+                <FileDown className="mr-2 h-4 w-4" /> Export Excel
+              </Button>
             </div>
           </div>
           <Tabs defaultValue="activeStaff" className="w-full pt-4 border-t">
