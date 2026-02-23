@@ -11,6 +11,7 @@ import StaffForm from "@/components/establishment/StaffForm";
 import StaffTable from "@/components/establishment/StaffTable";
 import TransferredStaffTable from "@/components/establishment/TransferredStaffTable";
 import RetiredStaffTable from "@/components/establishment/RetiredStaffTable";
+import VacancyTable from "@/components/establishment/VacancyTable";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
 import type { StaffMember, StaffMemberFormData, StaffStatusType } from "@/lib/schemas";
@@ -214,10 +215,11 @@ export default function EstablishmentPage() {
             </div>
           </div>
           <Tabs defaultValue="activeStaff" className="w-full pt-4 border-t">
-            <TabsList className="grid w-full grid-cols-3 sm:w-[600px]">
+            <TabsList className="grid w-full grid-cols-4 sm:w-[800px]">
               <TabsTrigger value="activeStaff">Active ({activeStaffList.length})</TabsTrigger>
               <TabsTrigger value="transferredStaff">Transferred ({transferredStaffList.length})</TabsTrigger>
               <TabsTrigger value="retiredStaff">Retired ({retiredStaffList.length})</TabsTrigger>
+              <TabsTrigger value="vacancy">Vacancy</TabsTrigger>
             </TabsList>
             <TabsContent value="activeStaff" className="mt-4">
               <div className="max-h-[70vh] overflow-auto">
@@ -258,6 +260,11 @@ export default function EstablishmentPage() {
                     searchActive={!!debouncedSearchTerm}
                 />
               </div>
+            </TabsContent>
+            <TabsContent value="vacancy" className="mt-4">
+                <div className="max-h-[70vh] overflow-auto">
+                    <VacancyTable canManage={canManage} />
+                </div>
             </TabsContent>
           </Tabs>
         </CardContent>

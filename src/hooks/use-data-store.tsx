@@ -3,7 +3,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { getFirestore, collection, onSnapshot, query, Timestamp, DocumentData, orderBy, getDocs, type QuerySnapshot, where, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, writeBatch, collectionGroup } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, query, Timestamp, DocumentData, orderBy, getDocs, type QuerySnapshot, where, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, writeBatch, collectionGroup, setDoc } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { useAuth, type UserProfile } from './useAuth';
 import type { DataEntryFormData } from '@/lib/schemas/DataEntrySchema';
@@ -111,6 +111,7 @@ interface DataStoreContextType {
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
     allOfficeAddresses: OfficeAddress[];
+    allSanctionedStrength: Record<string, number>;
     officeAddress: OfficeAddress | null;
     isLoading: boolean;
     refetchRateDescriptions: () => void;
@@ -124,6 +125,7 @@ interface DataStoreContextType {
     addRigCompressor: (data: RigCompressor) => Promise<void>;
     updateRigCompressor: (data: RigCompressor) => Promise<void>;
     deleteRigCompressor: (id: string, name: string) => Promise<void>;
+    updateSanctionedStrength: (designation: string, strength: number) => Promise<void>;
 }
 
 const DataStoreContext = createContext<DataStoreContextType | undefined>(undefined);
@@ -143,11 +145,12 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allHiredVehicles, setAllHiredVehicles] = useState<HiredVehicle[]>([]);
     const [allRigCompressors, setAllRigCompressors] = useState<RigCompressor[]>([]);
     const [globalOfficeAddresses, setGlobalOfficeAddresses] = useState<OfficeAddress[]>([]);
+    const [allSanctionedStrength, setAllSanctionedStrength] = useState<Record<string, number>>({});
     const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null);
 
     const [loadingStates, setLoadingStates] = useState({
         users: true, files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
-        departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true,
+        departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true, vacancy: true
     });
     
     const refetchRateDescriptions = useCallback(() => setLoadingStates(prev => ({...prev, rates: true})), []);
@@ -161,6 +164,19 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         if (!officeLoc) throw new Error("An office location must be selected.");
         const collectionPath = `offices/${officeLoc.toLowerCase()}/arsEntries`;
         await deleteDoc(doc(db, collectionPath, id));
+    }, [user, selectedOffice]);
+
+    const updateSanctionedStrength = useCallback(async (designation: string, strength: number) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc) throw new Error("An office location must be selected.");
+        
+        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/sanctionedStrength`, designation);
+        if (strength <= 0) {
+            await deleteDoc(docRef);
+        } else {
+            await setDoc(docRef, { count: strength, updatedAt: serverTimestamp() });
+        }
     }, [user, selectedOffice]);
 
     // Effect for GLOBAL (non-office-specific) data
@@ -248,7 +264,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setAllUsers([]); setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); 
             setAllAgencyApplications([]); setAllE_tenders([]); setAllDepartmentVehicles([]); 
             setAllHiredVehicles([]); setAllRigCompressors([]); setAllLsgConstituencyMaps([]);
-            setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false }));
+            setAllSanctionedStrength({});
+            setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, vacancy: false }));
             return;
         }
         
@@ -266,6 +283,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             hiredVehicles: { setter: setAllHiredVehicles, loaderKey: 'hiredVehicles' },
             rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
             localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
+            sanctionedStrength: { setter: setAllSanctionedStrength, loaderKey: 'vacancy' },
         };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
@@ -282,61 +300,69 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     q = query(collectionGroup(db, collectionName));
                 }
             } else {
-                setter([]);
+                setter(collectionName === 'sanctionedStrength' ? {} : []);
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
                 return () => {};
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-                const dataRaw = snapshot.docs.map(docSnap => {
-                    const processedData = processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() }) as any;
-                    
-                    const pathSegments = docSnap.ref.path.split('/');
-                    const officeIdIndex = pathSegments.indexOf('offices');
-                    if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                        processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
-                    }
-
-                    return processedData;
-                });
-
-                let data = dataRaw;
-
-                if (collectionName === 'users') {
-                    const mergedMap = new Map<string, any>();
-                    dataRaw.forEach((item: any) => {
-                        const existing = mergedMap.get(item.id);
-                        if (!existing) {
-                            mergedMap.set(item.id, item);
-                        } else {
-                            const merged = { ...existing };
-                            Object.entries(item).forEach(([k, v]) => {
-                                if (v !== null && v !== undefined && v !== "") {
-                                    (merged as any)[k] = v;
-                                }
-                            });
-                            mergedMap.set(item.id, merged);
+                if (collectionName === 'sanctionedStrength') {
+                    const strengths: Record<string, number> = {};
+                    snapshot.forEach(doc => {
+                        strengths[doc.id] = Number(doc.data().count) || 0;
+                    });
+                    setter(strengths);
+                } else {
+                    const dataRaw = snapshot.docs.map(docSnap => {
+                        const processedData = processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() }) as any;
+                        
+                        const pathSegments = docSnap.ref.path.split('/');
+                        const officeIdIndex = pathSegments.indexOf('offices');
+                        if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
+                            processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
                         }
+
+                        return processedData;
                     });
-                    data = Array.from(mergedMap.values());
+
+                    let data = dataRaw;
+
+                    if (collectionName === 'users') {
+                        const mergedMap = new Map<string, any>();
+                        dataRaw.forEach((item: any) => {
+                            const existing = mergedMap.get(item.id);
+                            if (!existing) {
+                                mergedMap.set(item.id, item);
+                            } else {
+                                const merged = { ...existing };
+                                Object.entries(item).forEach(([k, v]) => {
+                                    if (v !== null && v !== undefined && v !== "") {
+                                        (merged as any)[k] = v;
+                                    }
+                                });
+                                mergedMap.set(item.id, merged);
+                            }
+                        });
+                        data = Array.from(mergedMap.values());
+                    }
+                    
+                    if (needsSpecialSort && collectionName === 'staffMembers') {
+                        const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
+                        (data as StaffMember[]).sort((a, b) => {
+                            const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
+                            const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
+                            if (orderA !== orderB) return orderA - orderB;
+                            return a.name.localeCompare(b.name);
+                        });
+                    } else if (needsSpecialSort && collectionName === 'eTenders') {
+                        (data as E_tender[]).sort((a, b) => {
+                             const dateA = a.tenderDate instanceof Date ? a.tenderDate.getTime() : 0;
+                             const dateB = b.tenderDate instanceof Date ? b.tenderDate.getTime() : 0;
+                             return dateB - dateA;
+                        });
+                    }
+                    setter(data);
                 }
-                
-                if (needsSpecialSort && collectionName === 'staffMembers') {
-                    const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
-                    (data as StaffMember[]).sort((a, b) => {
-                        const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
-                        const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
-                        if (orderA !== orderB) return orderA - orderB;
-                        return a.name.localeCompare(b.name);
-                    });
-                } else if (needsSpecialSort && collectionName === 'eTenders') {
-                    (data as E_tender[]).sort((a, b) => {
-                         const dateA = a.tenderDate instanceof Date ? a.tenderDate.getTime() : 0;
-                         const dateB = b.tenderDate instanceof Date ? b.tenderDate.getTime() : 0;
-                         return dateB - dateA;
-                    });
-                }
-                setter(data);
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
             }, (error) => {
                  if (error.code === 'permission-denied') {
@@ -425,12 +451,14 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
             allOfficeAddresses: globalOfficeAddresses,
+            allSanctionedStrength,
             officeAddress, 
             isLoading,
             refetchRateDescriptions,
             deleteArsEntry, addDepartmentVehicle,
             updateDepartmentVehicle, deleteDepartmentVehicle, addHiredVehicle, updateHiredVehicle, deleteHiredVehicle,
             addRigCompressor, updateRigCompressor, deleteRigCompressor,
+            updateSanctionedStrength,
         }}>
             {children}
         </DataStoreContext.Provider>
