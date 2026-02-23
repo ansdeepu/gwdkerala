@@ -1,3 +1,4 @@
+
 // src/components/layout/AppSidebar.tsx
 "use client";
 
@@ -65,6 +66,8 @@ export default function AppSidebar() {
   
   const avatarColorClass = getColorClass(user?.name || user?.email || 'user');
 
+  const profilePath = user?.role === 'superAdmin' ? '/dashboard/super-admin/profile' : '/dashboard/profile';
+
   return (
     <Sidebar side="left" variant="sidebar" collapsible="icon" className="flex flex-col">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
@@ -117,7 +120,7 @@ export default function AppSidebar() {
           <DropdownMenuContent side="right" align="start" className="w-56 mb-2">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
+              <DropdownMenuItem onClick={() => router.push(profilePath)}>
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
               </DropdownMenuItem>

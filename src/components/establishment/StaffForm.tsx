@@ -89,14 +89,14 @@ const getField = (data: any, key: string): any => {
     const mappings: Record<string, string[]> = {
         'name': ['Name', 'Full Name'],
         'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)'],
-        'designation': ['Designation', 'Roles/Responsibilities', 'roles'],
-        'designationMalayalam': ['DesignationMalayalam', 'Designation (Malayalam)'],
-        'pen': ['PEN'],
-        'email': ['Email'],
-        'phoneNo': ['PhoneNo', 'PhoneNumber', 'Phone'],
-        'status': ['Status'],
-        'photoUrl': ['PhotoUrl', 'Photo'],
-        'officeLocation': ['OfficeLocation', 'Office'],
+        'designation': ['Designation', 'Roles/Responsibilities', 'roles', 'Post'],
+        'designationMalayalam': ['DesignationMalayalam', 'Designation (Malayalam)', 'Post (Malayalam)'],
+        'pen': ['PEN', 'pen'],
+        'email': ['Email', 'email'],
+        'phoneNo': ['PhoneNo', 'PhoneNumber', 'Phone', 'phone'],
+        'status': ['Status', 'status'],
+        'photoUrl': ['PhotoUrl', 'Photo', 'photo'],
+        'officeLocation': ['OfficeLocation', 'Office', 'location'],
     };
 
     if (mappings[key]) {
@@ -137,8 +137,8 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     const roles = String(getField(rawData, 'roles') ?? "").trim();
     const photoUrl = String(getField(rawData, 'photoUrl') ?? "").trim();
     const status = (String(getField(rawData, 'status') ?? "").trim() || 'Active') as StaffStatusType;
-    const remarks = String(getField(rawData, 'remarks') ?? "").trim();
     const officeLocation = String(getField(rawData, 'officeLocation') ?? "").trim();
+    const remarks = String(getField(rawData, 'remarks') ?? "").trim();
     
     // Find linked user for email fallback
     const userForStaff = allUsers.find(u => 
@@ -157,15 +157,15 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     return {
         name,
         nameMalayalam,
-        designation,
-        designationMalayalam,
+        designation: designationOptions.includes(designation) ? designation : undefined,
+        designationMalayalam: designationMalayalamOptions.includes(designationMalayalam) ? designationMalayalam : undefined,
         pen,
         email,
         dateOfBirth: dateStr,
         phoneNo,
         roles,
         photoUrl,
-        status,
+        status: staffStatusOptions.includes(status) ? status : 'Active',
         remarks,
         officeLocation,
         createUserAccount: false,
