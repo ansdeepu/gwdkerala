@@ -35,6 +35,8 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
             ...Object.keys(allSanctionedStrength)
         ]);
 
+        const designationSortOrder = designationOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
+
         const data = Array.from(configuredDesignations).map(designation => {
             const sanctioned = allSanctionedStrength[designation!] || 0;
             const current = activeStaff.filter(s => s.designation === designation).length;
@@ -50,7 +52,11 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
         return data.filter(row => {
             if (!searchTerm) return true;
             return row.designation.toLowerCase().includes(searchTerm.toLowerCase());
-        }).sort((a, b) => a.designation.localeCompare(b.designation));
+        }).sort((a, b) => {
+            const orderA = designationSortOrder[a.designation] ?? designationOptions.length;
+            const orderB = designationSortOrder[b.designation] ?? designationOptions.length;
+            return orderA - orderB;
+        });
     }, [allStaffMembers, allSanctionedStrength, searchTerm]);
 
     const handleSaveStrength = async () => {
