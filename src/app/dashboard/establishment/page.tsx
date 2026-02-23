@@ -1,4 +1,3 @@
-
 // src/app/dashboard/establishment/page.tsx
 "use client";
 
@@ -235,7 +234,7 @@ export default function EstablishmentPage() {
                 <TransferredStaffTable
                     staffData={transferredStaffList}
                     onEdit={handleEditStaff}
-                    onSetStatus={canManage ? handleSetStaffStatus : undefined}
+                    onSetStatus={undefined}
                     isViewer={isViewer}
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}
@@ -248,7 +247,7 @@ export default function EstablishmentPage() {
                 <RetiredStaffTable
                     staffData={retiredStaffList}
                     onEdit={handleEditStaff}
-                    onSetStatus={canManage ? handleSetStaffStatus : undefined}
+                    onSetStatus={undefined}
                     isViewer={isViewer}
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}

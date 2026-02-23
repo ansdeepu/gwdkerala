@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 interface RetiredStaffTableProps {
   staffData: StaffMember[];
+  onEdit?: (staff: StaffMember) => void;
   onSetStatus?: (staffId: string, newStatus: StaffStatusType, staffName: string) => void;
   isViewer: boolean;
   onImageClick?: (imageUrl: string | null) => void;
@@ -49,6 +50,7 @@ const isPlaceholderUrl = (url?: string | null): boolean => {
 export default function RetiredStaffTable({ 
     staffData, 
     onSetStatus, 
+    onEdit,
     isViewer, 
     onImageClick,
     isLoading = false,
@@ -141,14 +143,16 @@ export default function RetiredStaffTable({
                 </TableCell>
                 <TableCell className="text-center px-2 py-2">
                    <div className="flex items-center justify-center space-x-0.5">
-                      {isViewer ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                             <Button variant="ghost" size="icon" disabled><Eye className="h-4 w-4" /></Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>View Details (Read-only)</p></TooltipContent>
-                        </Tooltip>
-                      ) : onSetStatus && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" onClick={() => onEdit && onEdit(staff)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>{isViewer ? "View Details" : "View / Edit Profile"}</p></TooltipContent>
+                      </Tooltip>
+
+                      {!isViewer && onSetStatus && (
                          <DropdownMenu>
                             <Tooltip>
                               <TooltipTrigger asChild>
