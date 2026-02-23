@@ -73,17 +73,23 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
 };
 
+/**
+ * Robust helper to fetch fields from Firestore doc regardless of casing or alternative keys.
+ */
 const getField = (data: any, key: string): any => {
     if (!data) return undefined;
+    
+    // Exact match
     if (data[key] !== undefined && data[key] !== null) return data[key];
     
+    // Mapped aliases
     const mappings: Record<string, string[]> = {
         'name': ['Name', 'Full Name'],
-        'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)', 'Designation (in Malayalam)'],
+        'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)', 'Name malayalam'],
         'designation': ['Designation', 'Roles/Responsibilities', 'roles', 'Post'],
-        'designationMalayalam': ['DesignationMalayalam', 'Designation (Malayalam)', 'Post (Malayalam)'],
+        'designationMalayalam': ['DesignationMalayalam', 'Designation (Malayalam)', 'Designation malayalam', 'Post (Malayalam)'],
         'pen': ['PEN', 'pen'],
-        'email': ['Email', 'email'],
+        'email': ['Email', 'email', 'Email ID'],
         'phoneNo': ['PhoneNo', 'PhoneNumber', 'Phone', 'phone'],
         'status': ['Status', 'status'],
         'photoUrl': ['PhotoUrl', 'Photo', 'photo'],
@@ -96,6 +102,7 @@ const getField = (data: any, key: string): any => {
         }
     }
 
+    // Case-insensitive search as a fallback
     const searchKey = key.toLowerCase();
     const foundKey = Object.keys(data).find(k => k.toLowerCase() === searchKey);
     if (foundKey) return data[foundKey];
@@ -117,20 +124,16 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const defaultValues = useMemo((): StaffMemberFormData => {
     const rawData = initialData || {};
     
-    const normalize = (val: any) => String(val ?? "").trim();
+    const normalize = (val: any) => {
+        if (val === null || val === undefined) return "";
+        return String(val).trim();
+    };
 
-    const name = normalize(getField(rawData, 'name'));
-    const nameMalayalam = normalize(getField(rawData, 'nameMalayalam'));
-    const designation = normalize(getField(rawData, 'designation')) as any;
-    const designationMalayalam = normalize(getField(rawData, 'designationMalayalam')) as any;
-    const pen = normalize(getField(rawData, 'pen'));
-    const phoneNo = normalize(getField(rawData, 'phoneNo'));
-    const roles = normalize(getField(rawData, 'roles'));
-    const photoUrl = normalize(getField(rawData, 'photoUrl'));
-    const status = (normalize(getField(rawData, 'status')) || 'Active') as StaffStatusType;
-    const officeLocation = normalize(getField(rawData, 'officeLocation'));
-    const remarks = normalize(getField(rawData, 'remarks'));
-    
+    const designationValue = normalize(getField(rawData, 'designation'));
+    const designationMalayalamValue = normalize(getField(rawData, 'designationMalayalam'));
+    const statusValue = normalize(getField(rawData, 'status')) as StaffStatusType;
+    const officeLocationValue = normalize(getField(rawData, 'officeLocation'));
+
     const userForStaff = allUsers.find(u => 
         u.staffId && initialData?.id && 
         String(u.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
@@ -145,19 +148,19 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     }
 
     return {
-        name,
-        nameMalayalam,
-        designation: designationOptions.includes(designation) ? designation : undefined,
-        designationMalayalam: designationMalayalamOptions.includes(designationMalayalam) ? designationMalayalam : undefined,
-        pen,
+        name: normalize(getField(rawData, 'name')),
+        nameMalayalam: normalize(getField(rawData, 'nameMalayalam')),
+        designation: designationOptions.includes(designationValue as any) ? designationValue as any : undefined,
+        designationMalayalam: designationMalayalamOptions.includes(designationMalayalamValue as any) ? designationMalayalamValue as any : undefined,
+        pen: normalize(getField(rawData, 'pen')),
         email,
         dateOfBirth: dateStr,
-        phoneNo,
-        roles,
-        photoUrl,
-        status: staffStatusOptions.includes(status) ? status : 'Active',
-        remarks,
-        officeLocation,
+        phoneNo: normalize(getField(rawData, 'phoneNo')),
+        roles: normalize(getField(rawData, 'roles')),
+        photoUrl: normalize(getField(rawData, 'photoUrl')),
+        status: staffStatusOptions.includes(statusValue) ? statusValue : 'Active',
+        remarks: normalize(getField(rawData, 'remarks')),
+        officeLocation: officeLocationValue,
         createUserAccount: false,
     };
   }, [initialData, allUsers]);

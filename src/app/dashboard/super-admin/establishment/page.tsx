@@ -46,7 +46,7 @@ const Expand = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m21 21-6-6m6 6v-4m0 4h-4"/><path d="M3 3l6 6"/><path d="M3 3v4m0-4h4"/></svg>
 );
 const Search = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
 );
 const FileDown = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg>
@@ -87,8 +87,8 @@ export default function EstablishmentPage() {
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
   
-  const [searchTerm, setSearchTerm] = useState(""); // User's live input
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(""); // Term used for filtering after delay
+  const [searchTerm, setSearchTerm] = useState(""); 
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(""); 
   const [isFiltering, setIsFiltering] = useState(false);
   const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([]);
 
@@ -244,24 +244,21 @@ export default function EstablishmentPage() {
     toast({ title: "Excel Exported", description: `Report downloaded successfully.` });
   };
   
-  // Debounce the search term to avoid excessive re-renders and filtering
   useEffect(() => {
     const timerId = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 300); // 300ms delay
+    }, 300); 
 
     return () => {
       clearTimeout(timerId);
     };
   }, [searchTerm]);
 
-  // Handle the actual filtering logic when the debounced term changes
   useEffect(() => {
     if (staffLoadingHook) return;
     setIsFiltering(true);
     const lowerSearchTerm = debouncedSearchTerm.toLowerCase();
     
-    // Using requestAnimationFrame to ensure the loader is shown before a potentially long filtering operation
     requestAnimationFrame(() => {
       if (!lowerSearchTerm) {
           setFilteredStaff(staffMembers);

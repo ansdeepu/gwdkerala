@@ -16,6 +16,9 @@ import {
   getDoc,
   writeBatch,
   setDoc,
+  getDocs,
+  query,
+  where
 } from "firebase/firestore";
 import { getStorage, ref as storageRef, deleteObject } from "firebase/storage"; 
 import { app } from "@/lib/firebase";
@@ -77,46 +80,68 @@ export function useStaffMembers(): StaffMembersState {
     if (!memberToUpdate) throw new Error("Staff member not found.");
 
     const currentOffice = (memberToUpdate as any).officeLocationFromPath || memberToUpdate.officeLocation || user.officeLocation;
-    if (!currentOffice) throw new Error("Could not determine office location for the staff member.");
+    if (!currentOffice) throw new Error("Could not determine current office location.");
 
     const isSuperAdmin = user.role === 'superAdmin';
-    const isMovingOffice = isSuperAdmin && staffData.status === 'Transferred' && staffData.officeLocation && staffData.officeLocation.toLowerCase() !== currentOffice.toLowerCase();
+    const targetOffice = staffData.officeLocation?.toLowerCase();
+    
+    // Logic for transferring a staff member to a NEW office
+    const isMovingToNewOffice = isSuperAdmin && targetOffice && targetOffice !== currentOffice.toLowerCase();
 
-    if (isMovingOffice) {
+    if (isMovingToNewOffice) {
         const batch = writeBatch(db);
         const oldDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
-        const newDocRef = doc(collection(db, `offices/${staffData.officeLocation!.toLowerCase()}/staffMembers`));
+        const newDocRef = doc(collection(db, `offices/${targetOffice}/staffMembers`));
 
-        // 1. Create a copy in the new office
+        // 1. Create a brand new "Active" record in the target office
         const newDocData = {
             ...memberToUpdate,
             ...sanitizeStaffMemberForFirestore(staffData),
             status: 'Active',
-            officeLocation: staffData.officeLocation!.toLowerCase(),
+            officeLocation: targetOffice,
             updatedAt: serverTimestamp(),
         };
         delete (newDocData as any).id;
         delete (newDocData as any).officeLocationFromPath;
+        delete (newDocData as any).createdAt;
 
-        batch.set(newDocRef, newDocData);
+        batch.set(newDocRef, {
+            ...newDocData,
+            createdAt: serverTimestamp(),
+        });
 
-        // 2. Mark the original record as Transferred
+        // 2. Mark the original record in the old office as "Transferred"
         batch.update(oldDocRef, {
             status: 'Transferred',
             updatedAt: serverTimestamp(),
         });
 
-        // 3. Update the user account if one exists
-        const linkedUser = (await getDocs(query(collection(db, 'users'), where('staffId', '==', id)))).docs[0];
-        if (linkedUser) {
-            batch.update(linkedUser.ref, { officeLocation: staffData.officeLocation!.toLowerCase() });
-            // Also update the subcollection user doc
-            batch.update(doc(db, `offices/${currentOffice.toLowerCase()}/users`, linkedUser.id), { officeLocation: staffData.officeLocation!.toLowerCase() });
+        // 3. Update the linked user account to point to the new office
+        const usersRef = collection(db, 'users');
+        const qUser = query(usersRef, where('staffId', '==', id));
+        const userDocs = await getDocs(qUser);
+        
+        if (!userDocs.empty) {
+            userDocs.forEach(uDoc => {
+                // Update global user doc
+                batch.update(uDoc.ref, { officeLocation: targetOffice });
+                // Also update office-specific user subcollection if it exists
+                const oldOfficeUserRef = doc(db, `offices/${currentOffice.toLowerCase()}/users`, uDoc.id);
+                batch.delete(oldOfficeUserRef);
+                
+                const newOfficeUserRef = doc(db, `offices/${targetOffice}/users`, uDoc.id);
+                batch.set(newOfficeUserRef, {
+                    ...uDoc.data(),
+                    officeLocation: targetOffice,
+                    updatedAt: serverTimestamp(),
+                });
+            });
         }
 
         await batch.commit();
-        toast({ title: "Transfer Successful", description: `Record copied to ${staffData.officeLocation}. Original record marked as Transferred.` });
+        toast({ title: "Transfer Successful", description: `Record moved to ${staffData.officeLocation}. Old office record marked as Transferred.` });
     } else {
+        // Standard update within the same office
         const staffDocRef = doc(db, `offices/${currentOffice.toLowerCase()}/staffMembers`, id);
         const payload = { ...sanitizeStaffMemberForFirestore(staffData), updatedAt: serverTimestamp() };
         delete (payload as any).createdAt;
@@ -160,7 +185,7 @@ export function useStaffMembers(): StaffMembersState {
     if (!memberToUpdate) return;
 
     const officeLocation = (memberToUpdate as any).officeLocationFromPath || memberToUpdate.officeLocation;
-    if (!officeLocation) throw new Error("Could not determine office location for the staff member.");
+    if (!officeLocation) return;
 
     const staffDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/staffMembers`, id);
     await updateDoc(staffDocRef, { status: newStatus, updatedAt: serverTimestamp() });

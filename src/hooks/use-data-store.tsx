@@ -20,10 +20,13 @@ import { isValid, parse } from 'date-fns';
 
 const db = getFirestore(app);
 
-// Helper to convert Firestore Timestamps to JS Dates recursively
-const processFirestoreDoc = <T,>(doc: DocumentData): T => {
-    const data = typeof doc.data === 'function' ? doc.data() : doc;
-    const converted: { [key: string]: any } = { id: doc.id };
+/**
+ * Robustly converts Firestore documents to JS objects.
+ * Handles recursive Timestamp conversion and preserves all fields.
+ */
+const processFirestoreDoc = <T,>(docSnap: any): T => {
+    const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
+    if (!data) return {} as T;
 
     const convertValue = (value: any): any => {
         if (value instanceof Timestamp) {
@@ -43,7 +46,7 @@ const processFirestoreDoc = <T,>(doc: DocumentData): T => {
     };
 
     const processed = convertValue(data);
-    return { ...processed, id: doc.id } as T;
+    return { ...processed, id: docSnap.id } as T;
 };
 
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
@@ -350,7 +353,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
           const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-          if (!officeLoc) throw new Error("User must have an office location.");
+          if (!officeLoc) throw new Error("An office location must be selected to add staff.");
           const collectionPath = `offices/${officeLoc.toLowerCase()}/${collectionName}`;
           const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
