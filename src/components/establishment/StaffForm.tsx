@@ -85,15 +85,15 @@ const getField = (data: any, key: string): any => {
     // Mapped aliases
     const mappings: Record<string, string[]> = {
         'name': ['Name', 'Full Name'],
-        'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)', 'Name malayalam'],
+        'nameMalayalam': ['NameMalayalam', 'Name (Malayalam)', 'Name malayalam', 'name malayalam'],
         'designation': ['Designation', 'Roles/Responsibilities', 'roles', 'Post'],
-        'designationMalayalam': ['DesignationMalayalam', 'Designation (Malayalam)', 'Designation malayalam', 'Post (Malayalam)'],
+        'designationMalayalam': ['DesignationMalayalam', 'Designation (Malayalam)', 'Designation malayalam', 'Post (Malayalam)', 'designation (malayalam)'],
         'pen': ['PEN', 'pen'],
         'email': ['Email', 'email', 'Email ID'],
         'phoneNo': ['PhoneNo', 'PhoneNumber', 'Phone', 'phone'],
         'status': ['Status', 'status'],
-        'photoUrl': ['PhotoUrl', 'Photo', 'photo'],
-        'officeLocation': ['OfficeLocation', 'Office', 'location'],
+        'photoUrl': ['PhotoUrl', 'Photo', 'photo', 'photoUrl'],
+        'officeLocation': ['OfficeLocation', 'Office', 'location', 'officeLocation'],
     };
 
     if (mappings[key]) {
@@ -241,7 +241,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select designation" />
@@ -263,7 +263,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation (in Malayalam)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select Malayalam designation" />
@@ -340,7 +340,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""} disabled={isViewer}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />

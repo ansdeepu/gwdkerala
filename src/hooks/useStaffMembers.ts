@@ -111,8 +111,10 @@ export function useStaffMembers(): StaffMembersState {
         });
 
         // 2. Mark the original record in the old office as "Transferred"
+        // Explicitly update ALL status key variations to ensure it disappears from Active list
         batch.update(oldDocRef, {
             status: 'Transferred',
+            Status: 'Transferred',
             updatedAt: serverTimestamp(),
         });
 
@@ -188,7 +190,11 @@ export function useStaffMembers(): StaffMembersState {
     if (!officeLocation) return;
 
     const staffDocRef = doc(db, `offices/${officeLocation.toLowerCase()}/staffMembers`, id);
-    await updateDoc(staffDocRef, { status: newStatus, updatedAt: serverTimestamp() });
+    await updateDoc(staffDocRef, { 
+        status: newStatus,
+        Status: newStatus, // Sync both common keys
+        updatedAt: serverTimestamp() 
+    });
   }, [user, allStaffMembers]);
 
   return { 
