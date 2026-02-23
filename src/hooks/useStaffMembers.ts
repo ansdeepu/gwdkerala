@@ -95,7 +95,7 @@ export function useStaffMembers(): StaffMembersState {
             await updateDoc(docRef, {
                 ...sanitizeStaffMemberForFirestore(staffData),
                 status: 'Pending Transfer',
-                targetOffice: targetOffice,
+                targetOffice: targetOffice, // Store destination metadata for super admin
                 updatedAt: serverTimestamp(),
             });
             toast({ title: "Transfer Initiated", description: `Transfer request to ${staffData.officeLocation} sent for Super Admin approval.` });
@@ -115,9 +115,10 @@ export function useStaffMembers(): StaffMembersState {
             delete (newDocData as any).id;
             delete (newDocData as any).officeLocationFromPath;
             delete (newDocData as any).createdAt;
+            delete (newDocData as any).targetOffice;
 
             batch.set(newDocRef, { ...newDocData, createdAt: serverTimestamp() });
-            batch.update(oldDocRef, { status: 'Transferred', targetOffice: targetOffice, updatedAt: serverTimestamp() });
+            batch.update(oldDocRef, { status: 'Transferred', updatedAt: serverTimestamp() });
 
             // Update linked user
             const usersRef = collection(db, 'users');

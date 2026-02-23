@@ -16,13 +16,13 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { isValid, parse } from 'date-fns';
+import { isValid, parse, parseISO } from 'date-fns';
 
 const db = getFirestore(app);
 
 /**
  * Robustly converts Firestore documents to JS objects.
- * Handles recursive Timestamp conversion and preserves all fields.
+ * Handles recursive Timestamp conversion without losing other object properties.
  */
 const processFirestoreDoc = <T,>(docSnap: any): T => {
     const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;

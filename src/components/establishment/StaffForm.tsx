@@ -94,6 +94,7 @@ const getField = (data: any, key: string): any => {
         'status': ['Status', 'status'],
         'photoUrl': ['PhotoUrl', 'Photo', 'photo', 'photoUrl'],
         'officeLocation': ['OfficeLocation', 'Office', 'location', 'officeLocation'],
+        'targetOffice': ['TargetOffice', 'targetOffice'],
     };
 
     if (mappings[key]) {
@@ -132,7 +133,11 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     const designationValue = normalize(getField(rawData, 'designation'));
     const designationMalayalamValue = normalize(getField(rawData, 'designationMalayalam'));
     const statusValue = normalize(getField(rawData, 'status')) as StaffStatusType;
-    const officeLocationValue = normalize(getField(rawData, 'officeLocation'));
+    
+    // For office location, if we're initiating a transfer, we want to load the targetOffice if it exists
+    const currentTarget = normalize(getField(rawData, 'targetOffice'));
+    const currentOffice = normalize(getField(rawData, 'officeLocation'));
+    const officeLocationValue = currentTarget || currentOffice;
 
     const userForStaff = allUsers.find(u => 
         u.staffId && initialData?.id && 
@@ -241,7 +246,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select designation" />
@@ -263,7 +268,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Designation (in Malayalam)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select Malayalam designation" />
@@ -340,7 +345,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -464,34 +469,32 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
             </div>
             {watchedStatus === 'Transferred' && !isViewer && (
                 <div className="pt-4 border-t space-y-4">
-                    {user?.role === 'superAdmin' ? (
-                        <FormField
-                            control={form.control}
-                            name="officeLocation"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Transfer to Office</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
-                                        <SelectContent className="max-h-80">
-                                            {allOfficeAddresses.map(office => (
-                                                <SelectItem key={office.id} value={office.officeLocation}>
-                                                    {office.officeName || capitalize(office.officeLocation)}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormDescription className="text-xs">Selecting a new office will create a copy of this record in the new location and preserve a historical copy here.</FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    ) : (
-                        <div className="flex items-start gap-2 p-3 text-sm text-amber-800 bg-amber-100/50 border border-amber-200 rounded-md shadow-sm">
-                            <Info className="h-4 w-4 mt-0.5 shrink-0" />
-                            <p>Staff marked as <strong>Transferred</strong> will remain in this office's records until a <strong>Super Admin</strong> performs the physical move to a new office location.</p>
-                        </div>
-                    )}
+                    <FormField
+                        control={form.control}
+                        name="officeLocation"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Transfer to Office</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || ""}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
+                                    <SelectContent className="max-h-80">
+                                        {allOfficeAddresses.map(office => (
+                                            <SelectItem key={office.id} value={office.officeLocation}>
+                                                {office.officeName || capitalize(office.officeLocation)}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormDescription className="text-xs">
+                                    {user?.role === 'superAdmin' 
+                                        ? "Selecting a new office will move the record immediately upon save." 
+                                        : "Select the destination office. This request will be sent to the Super Admin for final approval."
+                                    }
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 </div>
             )}
           </div>
