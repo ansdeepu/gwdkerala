@@ -497,6 +497,14 @@ const MediaManager = ({
     return null;
   };
 
+  const getYouTubeThumbnail = (url: string) => {
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      const id = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
+      return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -511,53 +519,67 @@ const MediaManager = ({
         )}
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {fields.map((field, index) => (
-          <div key={field.id} className="relative group">
-            <button
-              type="button"
-              onClick={() => setLightboxIndex(index)}
-              className="w-24 h-24 rounded border overflow-hidden flex items-center justify-center bg-muted hover:opacity-80 transition-opacity"
-            >
-              {type === 'image' ? (
-                <img src={field.url} alt={field.description || ''} className="w-full h-full object-cover" />
-              ) : (
-                <div className="flex flex-col items-center gap-1">
-                  <Video className="h-8 w-8 text-muted-foreground" />
-                  <span className="text-[10px] font-mono text-muted-foreground">VIDEO</span>
+          <div key={field.id} className="flex flex-col gap-1 group">
+            <div className="relative aspect-square rounded-lg border overflow-hidden bg-muted">
+              <button
+                type="button"
+                onClick={() => setLightboxIndex(index)}
+                className="w-full h-full flex items-center justify-center hover:opacity-80 transition-opacity"
+              >
+                {type === 'image' ? (
+                  <img src={field.url} alt={field.description || ''} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full relative">
+                    {getYouTubeThumbnail(field.url) ? (
+                      <img src={getYouTubeThumbnail(field.url)!} className="w-full h-full object-cover" />
+                    ) : (
+                      <video src={field.url} className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                )}
+              </button>
+              {!isReadOnly && (
+                <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button type="button" variant="secondary" size="icon" className="h-7 w-7 shadow-sm" onClick={() => handleEditClick(index, field)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button type="button" variant="destructive" size="icon" className="h-7 w-7 shadow-sm" onClick={() => remove(index)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               )}
-            </button>
-            {!isReadOnly && (
-              <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button type="button" variant="secondary" size="icon" className="h-6 w-6" onClick={() => handleEditClick(index, field)}>
-                  <Pencil className="h-3 w-3" />
-                </Button>
-                <Button type="button" variant="destructive" size="icon" className="h-6 w-6" onClick={() => remove(index)}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
+            </div>
+            {field.description && (
+              <p className="text-[10px] text-muted-foreground line-clamp-2 px-1 py-0.5 bg-secondary/30 rounded">
+                {field.description}
+              </p>
             )}
           </div>
         ))}
-        {fields.length === 0 && <p className="text-xs text-muted-foreground italic py-2">No {type}s added.</p>}
+        {fields.length === 0 && (
+          <div className="col-span-full py-8 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
+            <p className="text-xs italic">No {type}s added yet.</p>
+          </div>
+        )}
       </div>
 
       <Dialog open={isMediaModalOpen} onOpenChange={setIsMediaModalOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-w-md">
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle>{editingMedia ? 'Edit' : 'Add'} {type === 'image' ? 'Image' : 'Video'} Link</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleMediaSubmit} className="space-y-4 pt-4">
+          <form onSubmit={handleMediaSubmit} className="p-6 pt-2 space-y-4">
             <div className="space-y-2">
               <Label>Media Link (URL)</Label>
               <Input name="url" defaultValue={editingMedia?.data?.url || ''} placeholder="https://..." required />
             </div>
             <div className="space-y-2">
               <Label>Description</Label>
-              <Textarea name="description" defaultValue={editingMedia?.data?.description || ''} placeholder="Enter a brief description..." />
+              <Textarea name="description" defaultValue={editingMedia?.data?.description || ''} placeholder="Enter a brief description..." className="min-h-[100px]" />
             </div>
-            <DialogFooter>
+            <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={() => setIsMediaModalOpen(false)}>Cancel</Button>
               <Button type="submit">Save</Button>
             </DialogFooter>
