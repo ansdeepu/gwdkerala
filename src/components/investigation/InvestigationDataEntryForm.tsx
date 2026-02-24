@@ -130,7 +130,6 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
 
 const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
 const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
-const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
 
 const investigationFileStatusOptions = [
     "File Under Process",
@@ -141,6 +140,99 @@ const investigationFileStatusOptions = [
     "Partially Completed",
     "File Closed",
 ] as const;
+
+const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({
+  amountRemitted: undefined,
+  dateOfRemittance: "",
+  remittedAccount: "Bank",
+  remittanceRemarks: ""
+});
+
+const createDefaultPaymentDetail = (): PaymentDetailFormData => ({
+  dateOfPayment: "",
+  paymentAccount: "Bank",
+  revenueHead: undefined,
+  contractorsPayment: undefined,
+  gst: undefined,
+  incomeTax: undefined,
+  kbcwb: undefined,
+  refundToParty: undefined,
+  totalPaymentPerEntry: 0,
+  paymentRemarks: ""
+});
+
+const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({
+  nameOfSite: "",
+  localSelfGovt: "",
+  constituency: undefined,
+  latitude: undefined,
+  longitude: undefined,
+  purpose: "GW Investigation",
+  estimateAmount: undefined,
+  remittedAmount: undefined,
+  siteConditions: undefined,
+  tsAmount: undefined,
+  tenderNo: "",
+  diameter: undefined,
+  totalDepth: undefined,
+  casingPipeUsed: "",
+  outerCasingPipe: "",
+  innerCasingPipe: "",
+  yieldDischarge: "",
+  zoneDetails: "",
+  waterLevel: "",
+  drillingRemarks: "",
+  developingRemarks: "",
+  schemeRemarks: "",
+  pumpDetails: "",
+  waterTankCapacity: "",
+  noOfTapConnections: undefined,
+  noOfBeneficiary: "",
+  dateOfCompletion: "",
+  typeOfRig: undefined,
+  contractorName: "",
+  supervisorUid: undefined,
+  supervisorName: undefined,
+  supervisorDesignation: undefined,
+  totalExpenditure: undefined,
+  workStatus: undefined,
+  workRemarks: "",
+  surveyOB: "",
+  surveyLocation: "",
+  surveyPlainPipe: "",
+  surveySlottedPipe: "",
+  surveyRemarks: "",
+  surveyRecommendedDiameter: "",
+  surveyRecommendedTD: "",
+  surveyRecommendedOB: "",
+  surveyRecommendedCasingPipe: "",
+  surveyRecommendedPlainPipe: "",
+  surveyRecommendedSlottedPipe: "",
+  surveyRecommendedMsCasingPipe: "",
+  arsTypeOfScheme: undefined,
+  arsPanchayath: undefined,
+  arsBlock: undefined,
+  arsAsTsDetails: undefined,
+  arsSanctionedDate: "",
+  arsTenderedAmount: undefined,
+  arsAwardedAmount: undefined,
+  arsNumberOfStructures: undefined,
+  arsStorageCapacity: undefined,
+  arsNumberOfFillings: undefined,
+  isArsImport: false,
+  pilotDrillingDepth: "",
+  pumpingLineLength: "",
+  deliveryLineLength: "",
+  implementationRemarks: "",
+  vesRequired: "No",
+  feasibility: "No",
+  nameOfInvestigator: undefined,
+  vesInvestigator: undefined,
+  hydrogeologicalRemarks: "",
+  geophysicalRemarks: "",
+  workImages: [],
+  workVideos: []
+});
 
 
 const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): string[] => {
@@ -881,7 +973,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         if (originalData.index !== undefined) {
             updateRemittance(originalData.index, remittanceData);
         } else {
-            appendRemittance(remiittanceData);
+            appendRemittance(remittanceData);
         }
         if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
             const newPaymentEntry: PaymentDetailFormData = {
@@ -929,7 +1021,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell><TableCell>{item.paymentAccount}</TableCell><TableCell className="text-right">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.paymentRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item }, false)}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN')}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         <Card><CardHeader><CardTitle className="text-xl">5. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN') || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN') || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN') || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
-        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isEditing={isEditing} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} category={watch('category')} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} workTypeContext={workTypeContext} /></DialogContent></Dialog>
