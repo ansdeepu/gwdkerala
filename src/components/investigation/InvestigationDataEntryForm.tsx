@@ -67,7 +67,7 @@ import type { StaffMember } from "@/lib/schemas";
 import { z } from "zod";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { getFirestore, doc, updateDoc, serverTimestamp, query, collection, where, getDocs } from "firebase/firestore";
+import { getFirestore, doc, updateDoc, serverTimestamp, query, collection, where, getDocs, Timestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useDataStore } from "@/hooks/use-data-store";
 import { ScrollArea } from "../ui/scroll-area";
@@ -96,50 +96,6 @@ const toDateOrNull = (value: any): Date | null => {
     }
     return null;
 };
-
-const processDataForForm = (data: any): any => {
-  const transform = (obj: any): any => {
-    if (obj === null || obj === undefined) return obj;
-    if (Array.isArray(obj)) return obj.map(transform);
-    if (typeof obj === 'object') {
-      const maybeDate = toDateOrNull(obj);
-      if (maybeDate) return format(maybeDate, 'yyyy-MM-dd');
-      const newObj: { [key: string]: any } = {};
-      for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          const value = obj[key];
-          if (key.toLowerCase().includes('date')) {
-            const date = toDateOrNull(value);
-            newObj[key] = date && isValid(date) ? format(date, 'yyyy-MM-dd') : "";
-          } else {
-            newObj[key] = transform(value);
-          }
-        }
-      }
-      return newObj;
-    }
-    return obj;
-  };
-  return transform(data);
-};
-
-const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
-    if (!payment) return 0;
-    return (Number(payment.revenueHead) || 0);
-};
-
-const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
-const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
-
-const investigationFileStatusOptions = [
-    "File Under Process",
-    "Completed Except Disputed",
-    "Partially Completed Except Disputed",
-    "Fully Disputed",
-    "Fully Completed",
-    "Partially Completed",
-    "File Closed",
-] as const;
 
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({
   amountRemitted: undefined,
@@ -233,6 +189,24 @@ const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({
   workImages: [],
   workVideos: []
 });
+
+const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
+    if (!payment) return 0;
+    return (Number(payment.revenueHead) || 0);
+};
+
+const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
+const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
+
+const investigationFileStatusOptions = [
+    "File Under Process",
+    "Completed Except Disputed",
+    "Partially Completed Except Disputed",
+    "Fully Disputed",
+    "Fully Completed",
+    "Partially Completed",
+    "File Closed",
+] as const;
 
 
 const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): string[] => {
@@ -465,8 +439,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, isEditing 
     );
 };
 
-const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding, category }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean; category?: string | null }) => {
-    const { toast } = useToast();
+const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void, category?: string | null }) => {
     const form = useForm<RemittanceDetailFormData>({
       resolver: zodResolver(RemittanceDetailSchema),
       defaultValues: {
@@ -480,9 +453,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
         onConfirm(data);
     };
     
-    const availableRemittanceAccounts = useMemo(() => {
-        return ["Bank", "STSB", "Revenue Head"];
-    }, []);
+    const availableRemittanceAccounts = ["Bank", "STSB", "Revenue Head"];
 
     return (
       <Form {...form}>
@@ -519,7 +490,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
     );
 };
 
-const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean, workTypeContext: string | null }) => {
+const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, workTypeContext: string | null }) => {
     const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
 
     const form = useForm<PaymentDetailFormData>({
@@ -592,10 +563,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
     const pageTitle = 'GW Investigation';
-    
     const workStatusOptions = ["Pending", "VES Pending", "Completed"] as const;
-    const purposeOptions = ['GW Investigation'];
-
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
         onConfirm(data);
@@ -1022,9 +990,9 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Card><CardHeader><CardTitle className="text-xl">5. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN') || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN') || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN') || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isEditing={isEditing} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} category={watch('category')} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={watch('category')} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} workTypeContext={workTypeContext} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>
     </FormProvider>

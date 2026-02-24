@@ -69,7 +69,7 @@ import type { StaffMember } from "@/lib/schemas";
 import { z } from "zod";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { getFirestore, doc, updateDoc, serverTimestamp, query, collection, where, getDocs } from "firebase/firestore";
+import { getFirestore, doc, updateDoc, serverTimestamp, query, collection, where, getDocs, Timestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useDataStore } from "@/hooks/use-data-store";
 import { ScrollArea } from "../ui/scroll-area";
@@ -99,10 +99,92 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
 };
 
-const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
-const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
-const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", vesRequired: "No", feasibility: "No", nameOfInvestigator: undefined, vesInvestigator: undefined, hydrogeologicalRemarks: "", geophysicalRemarks: "", workImages: [], workVideos: [] });
+const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({
+  amountRemitted: undefined,
+  dateOfRemittance: "",
+  remittedAccount: "Bank",
+  remittanceRemarks: ""
+});
 
+const createDefaultPaymentDetail = (): PaymentDetailFormData => ({
+  dateOfPayment: "",
+  paymentAccount: "Bank",
+  revenueHead: undefined,
+  contractorsPayment: undefined,
+  gst: undefined,
+  incomeTax: undefined,
+  kbcwb: undefined,
+  refundToParty: undefined,
+  totalPaymentPerEntry: 0,
+  paymentRemarks: ""
+});
+
+const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({
+  nameOfSite: "",
+  localSelfGovt: "",
+  constituency: undefined,
+  latitude: undefined,
+  longitude: undefined,
+  purpose: "Geological logging",
+  estimateAmount: undefined,
+  remittedAmount: undefined,
+  siteConditions: undefined,
+  tsAmount: undefined,
+  tenderNo: "",
+  diameter: undefined,
+  totalDepth: undefined,
+  casingPipeUsed: "",
+  outerCasingPipe: "",
+  innerCasingPipe: "",
+  yieldDischarge: "",
+  zoneDetails: "",
+  waterLevel: "",
+  drillingRemarks: "",
+  developingRemarks: "",
+  schemeRemarks: "",
+  pumpDetails: "",
+  waterTankCapacity: "",
+  noOfTapConnections: undefined,
+  noOfBeneficiary: "",
+  dateOfCompletion: "",
+  typeOfRig: undefined,
+  contractorName: "",
+  supervisorUid: undefined,
+  supervisorName: undefined,
+  supervisorDesignation: undefined,
+  totalExpenditure: undefined,
+  workStatus: undefined,
+  workRemarks: "",
+  surveyOB: "",
+  surveyLocation: "",
+  surveyPlainPipe: "",
+  surveySlottedPipe: "",
+  surveyRemarks: "",
+  surveyRecommendedDiameter: "",
+  surveyRecommendedTD: "",
+  surveyRecommendedOB: "",
+  surveyRecommendedCasingPipe: "",
+  surveyRecommendedPlainPipe: "",
+  surveyRecommendedSlottedPipe: "",
+  surveyRecommendedMsCasingPipe: "",
+  arsTypeOfScheme: undefined,
+  arsPanchayath: undefined,
+  arsBlock: undefined,
+  arsAsTsDetails: undefined,
+  arsSanctionedDate: "",
+  arsTenderedAmount: undefined,
+  arsAwardedAmount: undefined,
+  arsNumberOfStructures: undefined,
+  arsStorageCapacity: undefined,
+  arsNumberOfFillings: undefined,
+  isArsImport: false,
+  pilotDrillingDepth: "",
+  pumpingLineLength: "",
+  deliveryLineLength: "",
+  implementationRemarks: "",
+  workImages: [],
+  workVideos: []
+});
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
     if (!payment) return 0;
@@ -110,7 +192,6 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
 };
 
 const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
-const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
 const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
 
 const investigationFileStatusOptions = [
@@ -367,107 +448,6 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     );
 };
 
-const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding, category }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean; category?: string | null }) => {
-    const { toast } = useToast();
-    const form = useForm<RemittanceDetailFormData>({
-      resolver: zodResolver(RemittanceDetailSchema),
-      defaultValues: {
-          ...createDefaultRemittanceDetail(),
-          ...initialData,
-          dateOfRemittance: formatDateForInput(initialData?.dateOfRemittance),
-      },
-    });
-
-    const handleConfirmSubmit = (data: RemittanceDetailFormData) => {
-        onConfirm(data);
-    };
-    
-    const availableRemittanceAccounts = useMemo(() => {
-        return ["Bank", "STSB", "Revenue Head"];
-    }, []);
-
-    return (
-      <Form {...form}>
-        <form
-          onSubmit={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            form.handleSubmit(handleConfirmSubmit)(e);
-          }}
-        >
-            <DialogHeader>
-                <DialogTitle>Remittance Details</DialogTitle>
-                {category === 'Complaints' && (
-                    <div className="flex items-start gap-2 p-3 mt-2 text-sm text-amber-800 bg-amber-100/50 border border-amber-200 rounded-md">
-                        <Info className="h-4 w-4 mt-0.5 shrink-0" />
-                        <p>For the 'Complaints' category, remittance is not applicable. Please enter the amount as zero and select any bank account to proceed.</p>
-                    </div>
-                )}
-            </DialogHeader>
-            <div className="p-6 pt-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField name="dateOfRemittance" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Date <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                    <FormField name="amountRemitted" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
-                    <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl><SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
-                </div>
-                <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remittance Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
-            </div>
-            <DialogFooter>
-                <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-                <Button type="submit">Save</Button>
-            </DialogFooter>
-        </form>
-    </Form>
-    );
-};
-
-const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean, workTypeContext: string | null }) => {
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
-
-    const form = useForm<PaymentDetailFormData>({
-      resolver: zodResolver(PaymentDetailSchema),
-      defaultValues: {
-        ...createDefaultPaymentDetail(),
-        ...initialData,
-        dateOfPayment: formatDateForInput(initialData?.dateOfPayment),
-      },
-    });
-    
-    const handleConfirmSubmit = (data: PaymentDetailFormData) => {
-        onConfirm(data);
-    };
-
-    const availablePaymentAccounts = ["Bank", "STSB"];
-
-    return (
-        <Form {...form}>
-             <form onSubmit={form.handleSubmit(handleConfirmSubmit)} className="flex flex-col h-full">
-                <DialogHeader className="p-6 pb-4 shrink-0">
-                    <DialogTitle>{pageTitle} Payment Details</DialogTitle>
-                </DialogHeader>
-                <div className="flex-1 min-h-0">
-                  <ScrollArea className="h-full px-6 py-4">
-                      <div className="space-y-4">
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                          </div>
-                          <Separator/>
-                          <FormField name="revenueHead" control={form.control} render={({ field }) => <FormItem><FormLabel>Revenue Head (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
-                          <Separator/>
-                          <FormField name="paymentRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this payment entry..." /></FormControl><FormMessage /></FormItem>} />
-                      </div>
-                  </ScrollArea>
-                </div>
-                <DialogFooter className="p-6 pt-4 shrink-0">
-                    <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-                    <Button type="submit">Save</Button>
-                </DialogFooter>
-            </form>
-        </Form>
-    );
-};
-
 const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLsgConstituencyMaps, allStaffMembers, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isReadOnly: boolean, allLsgConstituencyMaps: any[], allStaffMembers: StaffMember[], workTypeContext: string | null }) => {
     
     const defaults = {
@@ -480,22 +460,15 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
         ...defaults, 
         dateOfCompletion: formatDateForInput(defaults.dateOfCompletion),
         dateOfInvestigation: formatDateForInput(defaults.dateOfInvestigation),
-        vesDate: formatDateForInput(defaults.vesDate),
-        workImages: defaults.workImages || [],
-        workVideos: defaults.workVideos || []
+        vesDate: formatDateForInput(defaults.vesDate)
       },
     });
     
-    const { control, setValue, trigger, handleSubmit, getValues } = form;
+    const { control, setValue, trigger, watch, handleSubmit, getValues } = form;
 
-    const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
-    const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
-
-    const watchedLsg = useWatch({ control, name: "localSelfGovt" });
-    const watchedTypeOfWell = useWatch({ control, name: 'typeOfWell' });
-    const watchedVesRequired = useWatch({ control, name: 'vesRequired' });
-    const watchedWorkStatus = useWatch({ control, name: 'workStatus' });
-    const watchedFeasibility = useWatch({ control, name: 'feasibility' });
+    const watchedLsg = watch("localSelfGovt");
+    const watchedPurpose = watch('purpose');
+    const watchedWorkStatus = watch('workStatus');
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
     const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
@@ -525,7 +498,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
         const constituencies = map?.constituencies || [];
         setValue('constituency', undefined, { shouldValidate: true });
         if (constituencies.length === 1) {
-            setValue('constituency', constituencies[0] as Constituency);
+            setValue('constituency', constituencies[0] as Constituency, { shouldValidate: true });
         }
         trigger('constituency');
     }, [setValue, allLsgConstituencyMaps, trigger]);
@@ -662,31 +635,6 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                             </FormItem>
                                         )} />
                                     </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader><CardTitle>Media Gallery</CardTitle></CardHeader>
-                                <CardContent className="space-y-6">
-                                    <MediaManager
-                                      title="Work Images"
-                                      type="image"
-                                      fields={imageFields}
-                                      append={appendImage}
-                                      remove={removeImage}
-                                      update={updateImage}
-                                      isReadOnly={isReadOnly}
-                                    />
-                                    <Separator />
-                                    <MediaManager
-                                      title="Work Videos"
-                                      type="video"
-                                      fields={videoFields}
-                                      append={appendVideo}
-                                      remove={removeVideo}
-                                      update={updateVideo}
-                                      isReadOnly={isReadOnly}
-                                    />
                                 </CardContent>
                             </Card>
                         </form>
