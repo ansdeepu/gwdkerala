@@ -26,11 +26,16 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
     const [configData, setConfigData] = useState<{ designation: string; count: number }>({ designation: '', count: 0 });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const filteredDesignations = useMemo(() => {
+        // Remove District Officer from Vacancy tracking as requested
+        return designationOptions.filter(d => d !== "District Officer");
+    }, []);
+
     const vacancyData = useMemo(() => {
         const activeStaff = allStaffMembers.filter(s => s.status === 'Active');
         
-        // Show ALL official designations from the hierarchy
-        const data = designationOptions.map(designation => {
+        // Show ALL official designations from the hierarchy (except District Officer)
+        const data = filteredDesignations.map(designation => {
             const sanctioned = allSanctionedStrength[designation] || 0;
             const current = activeStaff.filter(s => s.designation === designation).length;
             const vacancy = Math.max(0, sanctioned - current);
@@ -47,7 +52,7 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
             if (!searchTerm) return true;
             return row.designation.toLowerCase().includes(searchTerm.toLowerCase());
         });
-    }, [allStaffMembers, allSanctionedStrength, searchTerm]);
+    }, [allStaffMembers, allSanctionedStrength, searchTerm, filteredDesignations]);
 
     const handleSaveStrength = async () => {
         if (!configData.designation) return;
@@ -132,12 +137,12 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
             </div>
 
             <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
+                <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-md p-0 flex flex-col h-auto">
+                    <DialogHeader className="p-6 pb-4 shrink-0">
                         <DialogTitle>Sanctioned Strength Configuration</DialogTitle>
                         <DialogDescription>Set the authorized headcount for a specific designation.</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 px-6 py-4">
+                    <div className="space-y-4 px-6 py-4 flex-1">
                         <div className="space-y-2">
                             <Label>Designation</Label>
                             <Select 
@@ -148,7 +153,7 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
                                     <SelectValue placeholder="Select Designation" />
                                 </SelectTrigger>
                                 <SelectContent className="max-h-80">
-                                    {designationOptions.map(opt => (
+                                    {filteredDesignations.map(opt => (
                                         <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                                     ))}
                                 </SelectContent>
@@ -164,7 +169,7 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
                             />
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="p-6 pt-4 border-t shrink-0">
                         <Button variant="outline" onClick={() => setIsConfigDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleSaveStrength} disabled={!configData.designation || isSubmitting}>
                             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="mr-2 h-4 w-4 mr-2" />}
