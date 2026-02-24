@@ -162,6 +162,7 @@ const MediaManager = ({
 
   const handleMediaSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    e.stopPropagation(); // Stop event from bubbling to parent forms
     const formData = new FormData(e.currentTarget);
     const url = formData.get('url') as string;
     const description = formData.get('description') as string;
@@ -243,7 +244,7 @@ const MediaManager = ({
               )}
             </div>
             {field.description && (
-              <p className="text-[10px] text-muted-foreground line-clamp-2 px-1 py-0.5 bg-secondary/30 rounded">
+              <p className="text-xs text-muted-foreground line-clamp-2 px-1 py-1 mt-0.5 bg-secondary/30 rounded font-medium">
                 {field.description}
               </p>
             )}
@@ -257,11 +258,11 @@ const MediaManager = ({
       </div>
 
       <Dialog open={isMediaModalOpen} onOpenChange={setIsMediaModalOpen}>
-        <DialogContent className="max-w-md p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-2">
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-md p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle>{editingMedia ? 'Edit' : 'Add'} {type === 'image' ? 'Image' : 'Video'} Link</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleMediaSubmit} className="p-6 pt-2 space-y-4">
+          <form onSubmit={handleMediaSubmit} className="p-6 space-y-4">
             <div className="space-y-2">
               <Label>Media Link (URL)</Label>
               <Input name="url" defaultValue={editingMedia?.data?.url || ''} placeholder="https://..." required />
@@ -270,7 +271,7 @@ const MediaManager = ({
               <Label>Description</Label>
               <Textarea name="description" defaultValue={editingMedia?.data?.description || ''} placeholder="Enter a brief description..." className="min-h-[100px]" />
             </div>
-            <DialogFooter className="p-6 pt-4 border-t">
+            <DialogFooter className="pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => setIsMediaModalOpen(false)}>Cancel</Button>
               <Button type="submit">Save</Button>
             </DialogFooter>

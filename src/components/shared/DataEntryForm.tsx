@@ -107,7 +107,7 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
 const PURPOSES_REQUIRING_DIAMETER: SitePurpose[] = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev"];
 const PURPOSES_REQUIRING_RIG_ACCESSIBILITY: SitePurpose[] = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev"];
 const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
-const SUPERVISOR_WORK_STATUS_OPTIONS: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Work Failed", "Work Completed"];
+const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig"];
 const SITE_DIALOG_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
     (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued"].includes(status)
 );
@@ -470,6 +470,7 @@ const MediaManager = ({
 
   const handleMediaSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    e.stopPropagation(); // Stop event from bubbling to parent forms
     const formData = new FormData(e.currentTarget);
     const url = formData.get('url') as string;
     const description = formData.get('description') as string;
@@ -551,7 +552,7 @@ const MediaManager = ({
               )}
             </div>
             {field.description && (
-              <p className="text-[10px] text-muted-foreground line-clamp-2 px-1 py-0.5 bg-secondary/30 rounded">
+              <p className="text-xs text-muted-foreground line-clamp-2 px-1 py-1 mt-0.5 bg-secondary/30 rounded font-medium">
                 {field.description}
               </p>
             )}
@@ -565,11 +566,11 @@ const MediaManager = ({
       </div>
 
       <Dialog open={isMediaModalOpen} onOpenChange={setIsMediaModalOpen}>
-        <DialogContent className="max-w-md p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-2">
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-md p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle>{editingMedia ? 'Edit' : 'Add'} {type === 'image' ? 'Image' : 'Video'} Link</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleMediaSubmit} className="p-6 pt-2 space-y-4">
+          <form onSubmit={handleMediaSubmit} className="p-6 space-y-4">
             <div className="space-y-2">
               <Label>Media Link (URL)</Label>
               <Input name="url" defaultValue={editingMedia?.data?.url || ''} placeholder="https://..." required />
@@ -578,7 +579,7 @@ const MediaManager = ({
               <Label>Description</Label>
               <Textarea name="description" defaultValue={editingMedia?.data?.description || ''} placeholder="Enter a brief description..." className="min-h-[100px]" />
             </div>
-            <DialogFooter className="p-6 pt-4 border-t">
+            <DialogFooter className="pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => setIsMediaModalOpen(false)}>Cancel</Button>
               <Button type="submit">Save</Button>
             </DialogFooter>
@@ -1048,7 +1049,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
             </div>
             <DialogFooter className="p-6 pt-4 shrink-0 border-t">
                 <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
-                {!isReadOnly && <Button type="submit" form="site-dialog-form">Save</Button>}
+                {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save</Button>}
             </DialogFooter>
         </div>
     );
