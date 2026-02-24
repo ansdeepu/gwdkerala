@@ -448,6 +448,104 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     );
 };
 
+const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void, category?: string | null }) => {
+    const form = useForm<RemittanceDetailFormData>({
+      resolver: zodResolver(RemittanceDetailSchema),
+      defaultValues: {
+          ...createDefaultRemittanceDetail(),
+          ...initialData,
+          dateOfRemittance: formatDateForInput(initialData?.dateOfRemittance),
+      },
+    });
+
+    const handleConfirmSubmit = (data: RemittanceDetailFormData) => {
+        onConfirm(data);
+    };
+    
+    const availableRemittanceAccounts = ["Bank", "STSB", "Revenue Head"];
+
+    return (
+      <Form {...form}>
+        <form
+          onSubmit={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            form.handleSubmit(handleConfirmSubmit)(e);
+          }}
+        >
+            <DialogHeader>
+                <DialogTitle>Remittance Details</DialogTitle>
+                {category === 'Complaints' && (
+                    <div className="flex items-start gap-2 p-3 mt-2 text-sm text-amber-800 bg-amber-100/50 border border-amber-200 rounded-md">
+                        <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                        <p>For the 'Complaints' category, remittance is not applicable. Please enter the amount as zero and select any bank account to proceed.</p>
+                    </div>
+                )}
+            </DialogHeader>
+            <div className="p-6 pt-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField name="dateOfRemittance" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Date <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField name="amountRemitted" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl><SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
+                </div>
+                <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remittance Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
+            </div>
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+                <Button type="submit">Save</Button>
+            </DialogFooter>
+        </form>
+    </Form>
+    );
+};
+
+const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, workTypeContext: string | null }) => {
+    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
+
+    const form = useForm<PaymentDetailFormData>({
+      resolver: zodResolver(PaymentDetailSchema),
+      defaultValues: {
+        ...createDefaultPaymentDetail(),
+        ...initialData,
+        dateOfPayment: formatDateForInput(initialData?.dateOfPayment),
+      },
+    });
+    
+    const handleConfirmSubmit = (data: PaymentDetailFormData) => {
+        onConfirm(data);
+    };
+
+    const availablePaymentAccounts = ["Bank", "STSB"];
+
+    return (
+        <Form {...form}>
+             <form onSubmit={form.handleSubmit(handleConfirmSubmit)} className="flex flex-col h-full">
+                <DialogHeader className="p-6 pb-4 shrink-0">
+                    <DialogTitle>{pageTitle} Payment Details</DialogTitle>
+                </DialogHeader>
+                <div className="flex-1 min-h-0">
+                  <ScrollArea className="h-full px-6 py-4">
+                      <div className="space-y-4">
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
+                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                          </div>
+                          <Separator/>
+                          <FormField name="revenueHead" control={form.control} render={({ field }) => <FormItem><FormLabel>Revenue Head (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
+                          <Separator/>
+                          <FormField name="paymentRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this payment entry..." /></FormControl><FormMessage /></FormItem>} />
+                      </div>
+                  </ScrollArea>
+                </div>
+                <DialogFooter className="p-6 pt-4 shrink-0">
+                    <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+                    <Button type="submit">Save</Button>
+                </DialogFooter>
+            </form>
+        </Form>
+    );
+};
+
 const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLsgConstituencyMaps, allStaffMembers, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isReadOnly: boolean, allLsgConstituencyMaps: any[], allStaffMembers: StaffMember[], workTypeContext: string | null }) => {
     
     const defaults = {
@@ -807,11 +905,43 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell><TableCell>{item.paymentAccount}</TableCell><TableCell className="text-right">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.paymentRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item }, false)}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN')}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         <Card><CardHeader><CardTitle className="text-xl">5. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN') || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN') || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN') || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
-        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} category={watch('category')} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+        
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}>
+            <DialogContent className="max-w-4xl">
+                <ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} />
+            </DialogContent>
+        </Dialog>
+        
+        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}>
+            <DialogContent className="max-w-3xl">
+                <RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={watch('category')} />
+            </DialogContent>
+        </Dialog>
+        
+        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}>
+            <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0">
+                <SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} />
+            </DialogContent>
+        </Dialog>
+        
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}>
+            <DialogContent className="max-w-4xl flex flex-col p-0">
+                <PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} />
+            </DialogContent>
+        </Dialog>
+        
+        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>Delete this entry?</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
       </form>
     </FormProvider>
   );
