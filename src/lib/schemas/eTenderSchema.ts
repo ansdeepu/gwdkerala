@@ -1,5 +1,6 @@
 // src/lib/schemas/eTenderSchema.ts
 import { z } from 'zod';
+import type { Designation } from './DataEntrySchema';
 
 const optionalNumberSchema = z.preprocess(
     (val) => {
@@ -23,34 +24,6 @@ export const eTenderStatusOptions = [
     "Supply Order Issued",
 ] as const;
 export type E_tenderStatus = typeof eTenderStatusOptions[number];
-
-export const designationOptions = [
-    "Executive Engineer",
-    "Senior Hydrogeologist",
-    "Assistant Executive Engineer",
-    "Hydrogeologist",
-    "Assistant Engineer",
-    "Junior Hydrogeologist",
-    "Junior Geophysicist",
-    "Master Driller",
-    "Senior Driller",
-    "Driller",
-    "Driller Mechanic",
-    "Drilling Assistant",
-    "Compressor Driver",
-    "Pump Operator",
-    "Driver, HDV",
-    "Driver, LDV",
-    "Senior Clerk",
-    "L D Typist",
-    "U D Typist",
-    "Tracer",
-    "Lascar",
-    "Office Attendant",
-    "Watcher",
-    "PTS",
-] as const;
-export type Designation = typeof designationOptions[number];
 
 export const BasicDetailsSchema = z.object({
     eTenderNo: optionalStringSchema,

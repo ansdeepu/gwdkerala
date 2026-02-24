@@ -1,4 +1,3 @@
-
 // src/lib/schemas.ts
 import { z } from 'zod';
 import { isValid } from 'date-fns';
@@ -29,75 +28,9 @@ export const RegisterSchema = z.object({
 });
 export type RegisterFormData = z.infer<typeof RegisterSchema>;
 
-export const designationOptions = [
-    "District Officer",
-    "Executive Engineer",
-    "Senior Hydrogeologist",
-    "Assistant Executive Engineer",
-    "Hydrogeologist",
-    "Geophysicist",
-    "Assistant Engineer",
-    "Junior Hydrogeologist",
-    "Junior Geophysicist",
-    "Geological Assistant",
-    "Geophysical Assistant",
-    "Master Driller",
-    "Senior Driller",
-    "Driller",
-    "Driller Mechanic",
-    "Drilling Assistant",
-    "Compressor Driver",
-    "Pump Operator",
-    "Driver, HDV",
-    "Driver, LDV",
-    "Senior Clerk",
-    "Clerk",
-    "U D Typist",
-    "L D Typist",
-    "Tracer",
-    "Lascar",
-    "Office Attendant",
-    "Watcher",
-    "PTS",
-] as const;
-export type Designation = typeof designationOptions[number];
-
-export const designationMalayalamOptions = [
-    "ജില്ലാ ഓഫീസർ",
-    "എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ",
-    "സീനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്",
-    "അസിസ്റ്റന്റ് എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ",
-    "ഹൈഡ്രോജിയോളജിസ്റ്റ്",
-    "ജിയോഫിസിസ്റ്റ്",
-    "അസിസ്റ്റന്റ് എഞ്ചിനീയർ",
-    "ജൂനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്",
-    "ജൂനിയർ ജിയോഫിസിസ്റ്റ്",
-    "ജിയോളജിക്കൽ അസിസ്റ്റന്റ്",
-    "ജിയോഫിസിക്കൽ അസിസ്റ്റന്റ്",
-    "മാസ്റ്റർ ഡ്രില്ലർ",
-    "സീനിയർ ഡ്രില്ലർ",
-    "ഡ്രില്ലർ",
-    "ഡ്രില്ലർ മെക്കാനിക്ക്",
-    "ഡ്രില്ലിംഗ് അസിസ്റ്റന്റ്",
-    "കംപ്രസ്സർ ഡ്രൈവർ",
-    "പമ്പ് ഓപ്പറേറ്റർ",
-    "ഡ്രൈവർ, എച്ച്ഡിവി",
-    "ഡ്രൈവർ, എൽഡിവി",
-    "സീനിയർ ക്ലർക്ക്",
-    "ക്ലർക്ക്",
-    "യു.ഡി ടൈപ്പിസ്റ്റ്",
-    "എൽ.ഡി ടൈപ്പിസ്റ്റ്",
-    "ട്രേസർ",
-    "ലാസ്കർ",
-    "ഓഫീസ് അറ്റൻഡന്റ്",
-    "വാച്ചർ",
-    "പിടിഎസ്"
-] as const;
-export type DesignationMalayalam = typeof designationMalayalamOptions[number];
-
 // Schema for new user creation by an admin
 export const NewUserByAdminSchema = z.object({
-  designation: z.enum(designationOptions, { required_error: "Please select a designation." }),
+  designation: z.string().min(1, "Please select a designation."),
   staffId: z.string({ required_error: "Please select a staff member." }).min(1, "Please select a staff member."),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
@@ -231,8 +164,8 @@ const BaseStaffMemberFormDataSchema = z.object({
   photoUrl: z.string().url({ message: "Please enter a valid image URL." }).optional().or(z.literal("")),
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   nameMalayalam: z.string().optional(),
-  designation: z.preprocess((val) => (val === "" ? undefined : val), z.enum(designationOptions).optional()),
-  designationMalayalam: z.preprocess((val) => (val === "" ? undefined : val), z.enum(designationMalayalamOptions).optional()),
+  designation: z.string().optional(),
+  designationMalayalam: z.string().optional(),
   pen: z.string().min(1, { message: "PEN is required." }),
   dateOfBirth: z.string().optional(),
   serviceStartDate: z.string().optional(),
