@@ -113,7 +113,7 @@ const SITE_DIALOG_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
 );
 
 
-const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): string[] => {
+const getFormattedErrorMessages = (errors: FieldErrors<any>): string[] => {
   const messages = new Set<string>();
 
   const processPath = (path: string, index: number): string => {
@@ -292,7 +292,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
         <DialogHeader>
           <DialogTitle>Application Details</DialogTitle>
         </DialogHeader>
-        <div className="p-6 pt-0 space-y-4 flex-1">
+        <div className="p-6 pt-4 space-y-4 flex-1">
              <div className="grid grid-cols-3 gap-4 items-start">
                 <div className="space-y-2 col-span-1">
                     <Label htmlFor="fileNo">File No *</Label>
@@ -320,13 +320,12 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 </div>
             </div>
         </div>
-        <DialogFooter><Button variant="outline" onClick={onCancel} disabled={isChecking}>Cancel</Button><Button onClick={handleSave} disabled={isChecking}>{isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save</Button></DialogFooter>
+        <DialogFooter className="px-6 pb-6"><Button variant="outline" onClick={onCancel} disabled={isChecking}>Cancel</Button><Button onClick={handleSave} disabled={isChecking}>{isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save</Button></DialogFooter>
       </div>
     );
 };
 
 const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean; }) => {
-    const { toast } = useToast();
     const form = useForm<RemittanceDetailFormData>({
       resolver: zodResolver(RemittanceDetailSchema),
       defaultValues: {
@@ -360,7 +359,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
                 <DialogTitle>{isDeferredFunding ? 'Administrative Sanction Details' : 'Remittance Details'}</DialogTitle>
                 {isDeferredFunding && <DialogDescription className="text-amber-700 bg-amber-50 p-2 rounded-md border border-amber-200">The amount entered here is the deferred amount, which the department has already received for this scheme.</DialogDescription>}
             </DialogHeader>
-            <div className="p-6 pt-0 space-y-4">
+            <div className="p-6 pt-4 space-y-4">
                 <div className={cn("grid grid-cols-1 gap-4", isDeferredFunding ? "md:grid-cols-2" : "md:grid-cols-3")}>
                     <FormField name="dateOfRemittance" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Date <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     <FormField name="amountRemitted" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
@@ -566,7 +565,7 @@ const MediaManager = ({
       </div>
 
       <Dialog open={isMediaModalOpen} onOpenChange={setIsMediaModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-2">
             <DialogTitle>{editingMedia ? 'Edit' : 'Add'} {type === 'image' ? 'Image' : 'Video'} Link</DialogTitle>
           </DialogHeader>
@@ -579,7 +578,7 @@ const MediaManager = ({
               <Label>Description</Label>
               <Textarea name="description" defaultValue={editingMedia?.data?.description || ''} placeholder="Enter a brief description..." className="min-h-[100px]" />
             </div>
-            <DialogFooter className="pt-2">
+            <DialogFooter className="p-6 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => setIsMediaModalOpen(false)}>Cancel</Button>
               <Button type="submit">Save</Button>
             </DialogFooter>
@@ -664,13 +663,19 @@ const MediaManager = ({
 };
 
 const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, isReadOnly, isSupervisor, allLsgConstituencyMaps, allE_tenders }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, supervisorList: any[], isReadOnly: boolean, isSupervisor: boolean, allLsgConstituencyMaps: any[], allE_tenders: any[] }) => {
-    const defaults = {
+    const { toast } = useToast();
+    const defaults = useMemo(() => ({
         ...(initialData?.nameOfSite ? initialData : createDefaultSiteDetail()),
-    };
+    }), [initialData]);
 
     const form = useForm<SiteDetailFormData>({
       resolver: zodResolver(SiteDetailSchema),
-      defaultValues: { ...defaults, dateOfCompletion: formatDateForInput(defaults.dateOfCompletion), arsSanctionedDate: formatDateForInput(defaults.arsSanctionedDate) },
+      defaultValues: { 
+        ...defaults, 
+        dateOfCompletion: formatDateForInput(defaults.dateOfCompletion),
+        workImages: defaults.workImages || [],
+        workVideos: defaults.workVideos || []
+      },
     });
     
     const { control, setValue, trigger, watch, handleSubmit, getValues } = form;
@@ -697,6 +702,20 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
         onConfirm(data);
+    };
+
+    const handleDialogError = (errors: FieldErrors<SiteDetailFormData>) => {
+        console.error("Site Dialog Validation Errors:", errors);
+        const messages = getFormattedErrorMessages(errors);
+        toast({
+            title: "Validation Error",
+            description: (
+                <ul className="list-disc pl-4 text-xs mt-1">
+                    {messages.map((m, i) => <li key={i}>{m}</li>)}
+                </ul>
+            ),
+            variant: "destructive"
+        });
     };
     
     const sortedLsgMaps = useMemo(() => {
@@ -844,7 +863,8 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                           id="site-dialog-form"
                           onSubmit={(e) => {
                             e.stopPropagation();
-                            handleSubmit(handleDialogSubmit)(e);
+                            e.preventDefault();
+                            handleSubmit(handleDialogSubmit, handleDialogError)(e);
                           }}
                           className="space-y-4"
                         >
@@ -1018,7 +1038,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                     </Form>
                 </ScrollArea>
             </div>
-            <DialogFooter className="p-6 pt-4 shrink-0">
+            <DialogFooter className="p-6 pt-4 shrink-0 border-t">
                 <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
                 {!isReadOnly && <Button type="submit" form="site-dialog-form">Save</Button>}
             </DialogFooter>
@@ -1076,13 +1096,6 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     }
   };
   const applicationTypeOptionsForForm = getApplicationTypeOptions();
-
-  // This effect no longer auto-selects if there's one option.
-  useEffect(() => {
-    if (!fileIdToEdit && workTypeContext === 'planFund') {
-      // Intentionally left blank.
-    }
-  }, [fileIdToEdit, workTypeContext, setValue]);
 
   const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
   const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
@@ -1476,59 +1489,72 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             </CardFooter>
         )}
         
-        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}>
-            <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl">
-                <ApplicationDialogContent 
-                    initialData={dialogState.data} 
-                    onConfirm={handleDialogConfirm} 
-                    onCancel={closeDialog} 
-                    formOptions={applicationTypeOptionsForForm}
-                    isEditing={!!fileIdToEdit}
-                />
-            </DialogContent>
-        </Dialog>
-        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}>
-            <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl">
-                <RemittanceDialogContent
-                    initialData={dialogState.data}
-                    onConfirm={handleDialogConfirm}
-                    onCancel={closeDialog}
-                    isDeferredFunding={isDeferredFunding}
-                />
-            </DialogContent>
-        </Dialog>
-         <Dialog open={dialogState.type === 'site' || dialogState.type === 'viewSite'} onOpenChange={closeDialog}>
-            <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} supervisorList={supervisorList} isReadOnly={dialogState.isView || isViewer} isSupervisor={isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders}/></DialogContent>
-        </Dialog>
-         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}>
-            <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent>
-        </Dialog>
-        {dialogState.type === 'reorderSite' && dialogState.data && (
-            <Dialog open={true} onOpenChange={closeDialog}>
-                <ReorderSiteDialog fromIndex={dialogState.data.from} siteCount={siteFields.length} onConfirm={handleDialogConfirm} onCancel={closeDialog} />
-            </Dialog>
-        )}
-       
-        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove the selected {itemToDelete?.type} entry from this file.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-
-        <AlertDialog open={siteToCopy !== null} onOpenChange={() => setSiteToCopy(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Copy</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to create a copy of this site?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setSiteToCopy(null)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmCopySite}>
-                Yes, Copy
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
       </form>
+
+      <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}>
+          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl">
+              <ApplicationDialogContent 
+                  initialData={dialogState.data} 
+                  onConfirm={handleDialogConfirm} 
+                  onCancel={closeDialog} 
+                  formOptions={applicationTypeOptionsForForm}
+                  isEditing={!!fileIdToEdit}
+              />
+          </DialogContent>
+      </Dialog>
+      <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}>
+          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl">
+              <RemittanceDialogContent
+                  initialData={dialogState.data}
+                  onConfirm={handleDialogConfirm}
+                  onCancel={closeDialog}
+                  isDeferredFunding={isDeferredFunding}
+              />
+          </DialogContent>
+      </Dialog>
+       <Dialog open={dialogState.type === 'site' || dialogState.type === 'viewSite'} onOpenChange={closeDialog}>
+          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0">
+            <SiteDialogContent 
+              initialData={dialogState.data} 
+              onConfirm={handleDialogConfirm} 
+              onCancel={closeDialog} 
+              supervisorList={supervisorList} 
+              isReadOnly={dialogState.isView || isViewer} 
+              isSupervisor={isSupervisor} 
+              allLsgConstituencyMaps={allLsgConstituencyMaps} 
+              allE_tenders={allE_tenders}
+            />
+          </DialogContent>
+      </Dialog>
+       <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}>
+          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0">
+            <PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} />
+          </DialogContent>
+      </Dialog>
+      {dialogState.type === 'reorderSite' && dialogState.data && (
+          <Dialog open={true} onOpenChange={closeDialog}>
+              <ReorderSiteDialog fromIndex={dialogState.data.from} siteCount={siteFields.length} onConfirm={handleDialogConfirm} onCancel={closeDialog} />
+          </Dialog>
+      )}
+     
+      <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove the selected {itemToDelete?.type} entry from this file.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+
+      <AlertDialog open={siteToCopy !== null} onOpenChange={() => setSiteToCopy(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Copy</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to create a copy of this site?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSiteToCopy(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCopySite}>
+              Yes, Copy
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </FormProvider>
   );
 }
@@ -1546,12 +1572,12 @@ const ReorderSiteDialog = ({ fromIndex, siteCount, onConfirm, onCancel }: { from
     };
     return (
         <DialogContent onPointerDownOutside={(e) => e.preventDefault()}>
-            <DialogHeader className="p-6 pb-4"><DialogTitle>Move Site</DialogTitle></DialogHeader>
-            <div className="p-6 pt-0 space-y-4">
+            <DialogHeader className="p-6 pb-4 border-b"><DialogTitle>Move Site</DialogTitle></DialogHeader>
+            <div className="p-6 pt-4 space-y-4">
                 <Label>New Position (1 to {siteCount})</Label>
                 <Input type="number" min={1} max={siteCount} value={toPosition} onChange={(e) => setToPosition(parseInt(e.target.value))} />
             </div>
-            <DialogFooter className="p-6 pt-4">
+            <DialogFooter className="p-6 pt-4 border-t">
                 <Button variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button onClick={handleConfirm}>Move</Button>
             </DialogFooter>
