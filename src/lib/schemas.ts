@@ -77,7 +77,7 @@ export * from './schemas/eTenderSchema';
 // The schemas below were originally in this file and are kept for compatibility.
 // In the future, they should be moved to their own specialized files.
 
-import { SiteDetailSchema, constituencyOptions } from './schemas/DataEntrySchema';
+import { SiteDetailSchema, constituencyOptions, MediaItemSchema } from './schemas/DataEntrySchema';
 import type { SiteDetailFormData } from './schemas/DataEntrySchema';
 
 export const ArsEntrySchema = z.object({
@@ -109,6 +109,8 @@ export const ArsEntrySchema = z.object({
   supervisorName: z.string().optional().nullable(),
   isPending: z.boolean().optional(),
   officeLocation: z.string().optional(),
+  workImages: z.array(MediaItemSchema).optional().default([]),
+  workVideos: z.array(MediaItemSchema).optional().default([]),
 }).superRefine((data, ctx) => {
     if ((data.arsStatus === 'Work Completed' || data.arsStatus === 'Work Failed') && !data.dateOfCompletion) {
         ctx.addIssue({

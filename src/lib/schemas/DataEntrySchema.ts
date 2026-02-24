@@ -17,6 +17,13 @@ const nativeDateSchema = z.preprocess(
     .refine((val) => !val || !isNaN(Date.parse(val)) || val === '', { message: "Invalid date" }) // Allow empty string
 );
 
+export const MediaItemSchema = z.object({
+  id: z.string(),
+  url: z.string().url("Please enter a valid URL"),
+  description: z.string().optional().nullable(),
+});
+export type MediaItem = z.infer<typeof MediaItemSchema>;
+
 export const designationOptions = [
     "District Officer",
     "Executive Engineer",
@@ -454,13 +461,17 @@ export const SiteDetailSchema = z.object({
   // Investigation specific fields
   nameOfInvestigator: z.string().optional().nullable(),
   dateOfInvestigation: nativeDateSchema,
-  typeOfWell: z.enum(typeOfWellOptions, { required_error: "Type of Well is required." }),
+  typeOfWell: z.enum(typeOfWellOptions, { required_error: "Type of Well is required." }).optional().nullable(),
   vesRequired: z.enum(["Yes", "No"]).optional(),
   vesInvestigator: z.string().optional().nullable(),
   vesDate: nativeDateSchema,
-  feasibility: z.enum(["Yes", "No"], { required_error: "Feasibility is required." }),
+  feasibility: z.enum(["Yes", "No"], { required_error: "Feasibility is required." }).optional().nullable(),
   hydrogeologicalRemarks: z.string().optional().nullable().default(""),
   geophysicalRemarks: z.string().optional().nullable().default(""),
+
+  // Media
+  workImages: z.array(MediaItemSchema).optional().default([]),
+  workVideos: z.array(MediaItemSchema).optional().default([]),
 
 }).superRefine((data, ctx) => {
     if ((data.workStatus === 'Completed' || FINAL_WORK_STATUSES.includes(data.workStatus as SiteWorkStatus)) && !data.dateOfCompletion) {

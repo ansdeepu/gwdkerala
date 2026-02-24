@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { Loader2, Trash2, PlusCircle, X, Save, Clock, Edit, Eye, ArrowUpDown, Copy, Info } from "lucide-react";
+import { Loader2, Trash2, PlusCircle, X, Save, Clock, Edit, Eye, ArrowUpDown, Copy, Info, ImagePlus, Video, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import {
   DataEntrySchema,
   type DataEntryFormData,
@@ -54,6 +54,7 @@ import {
   COLLECTOR_APPLICATION_TYPES,
   PLAN_FUND_APPLICATION_TYPES,
   type Bidder,
+  type MediaItem,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -95,7 +96,7 @@ const toDateOrNull = (value: any): Date | null => {
 
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
 const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
-const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: undefined, estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "" });
+const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: undefined, estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", workImages: [], workVideos: [] });
 
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
@@ -272,7 +273,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                     return; 
                 }
             } catch (error) {
-                 toast({
+                toast({
                     title: "Validation Error",
                     description: "Could not verify file number. Please try again.",
                     variant: "destructive",
@@ -437,6 +438,209 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
     );
 };
 
+const MediaManager = ({
+  title,
+  type,
+  fields,
+  append,
+  remove,
+  update,
+  isReadOnly,
+}: {
+  title: string;
+  type: 'image' | 'video';
+  fields: any[];
+  append: (item: any) => void;
+  remove: (index: number) => void;
+  update: (index: number, item: any) => void;
+  isReadOnly: boolean;
+}) => {
+  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
+  const [editingMedia, setEditingMedia] = useState<{ index: number; data: any } | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const handleAddClick = () => {
+    setEditingMedia(null);
+    setIsMediaModalOpen(true);
+  };
+
+  const handleEditClick = (index: number, data: any) => {
+    setEditingMedia({ index, data });
+    setIsMediaModalOpen(true);
+  };
+
+  const handleMediaSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const url = formData.get('url') as string;
+    const description = formData.get('description') as string;
+
+    if (!url) return;
+
+    if (editingMedia) {
+      update(editingMedia.index, { ...editingMedia.data, url, description });
+    } else {
+      append({ id: uuidv4(), url, description });
+    }
+    setIsMediaModalOpen(false);
+  };
+
+  const getEmbedUrl = (url: string) => {
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      const id = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
+      return `https://www.youtube.com/embed/${id}`;
+    }
+    if (url.includes('vimeo.com')) {
+      const id = url.split('/').pop();
+      return `https://player.vimeo.com/video/${id}`;
+    }
+    return null;
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="font-semibold text-sm flex items-center gap-2">
+          {type === 'image' ? <ImagePlus className="h-4 w-4" /> : <Video className="h-4 w-4" />}
+          {title}
+        </h4>
+        {!isReadOnly && (
+          <Button type="button" variant="outline" size="sm" onClick={handleAddClick}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Add {type === 'image' ? 'Image' : 'Video'} Link
+          </Button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        {fields.map((field, index) => (
+          <div key={field.id} className="relative group">
+            <button
+              type="button"
+              onClick={() => setLightboxIndex(index)}
+              className="w-24 h-24 rounded border overflow-hidden flex items-center justify-center bg-muted hover:opacity-80 transition-opacity"
+            >
+              {type === 'image' ? (
+                <img src={field.url} alt={field.description || ''} className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex flex-col items-center gap-1">
+                  <Video className="h-8 w-8 text-muted-foreground" />
+                  <span className="text-[10px] font-mono text-muted-foreground">VIDEO</span>
+                </div>
+              )}
+            </button>
+            {!isReadOnly && (
+              <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button type="button" variant="secondary" size="icon" className="h-6 w-6" onClick={() => handleEditClick(index, field)}>
+                  <Pencil className="h-3 w-3" />
+                </Button>
+                <Button type="button" variant="destructive" size="icon" className="h-6 w-6" onClick={() => remove(index)}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+        {fields.length === 0 && <p className="text-xs text-muted-foreground italic py-2">No {type}s added.</p>}
+      </div>
+
+      <Dialog open={isMediaModalOpen} onOpenChange={setIsMediaModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingMedia ? 'Edit' : 'Add'} {type === 'image' ? 'Image' : 'Video'} Link</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleMediaSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Media Link (URL)</Label>
+              <Input name="url" defaultValue={editingMedia?.data?.url || ''} placeholder="https://..." required />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea name="description" defaultValue={editingMedia?.data?.description || ''} placeholder="Enter a brief description..." />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsMediaModalOpen(false)}>Cancel</Button>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={lightboxIndex !== null} onOpenChange={() => setLightboxIndex(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-none">
+          <div className="relative flex flex-col h-[80vh]">
+            <div className="flex-1 relative flex items-center justify-center p-4">
+              {lightboxIndex !== null && fields[lightboxIndex] && (
+                <>
+                  {type === 'image' ? (
+                    <img
+                      src={fields[lightboxIndex].url}
+                      alt={fields[lightboxIndex].description || ''}
+                      className="max-w-full max-h-full object-contain shadow-2xl"
+                    />
+                  ) : (
+                    <div className="w-full aspect-video bg-black flex items-center justify-center overflow-hidden rounded-lg shadow-2xl">
+                      {getEmbedUrl(fields[lightboxIndex].url) ? (
+                        <iframe
+                          src={getEmbedUrl(fields[lightboxIndex].url)}
+                          className="w-full h-full border-none"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video
+                          src={fields[lightboxIndex].url}
+                          controls
+                          className="w-full h-full"
+                        />
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {fields.length > 1 && (
+                <>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white"
+                    onClick={() => setLightboxIndex(prev => (prev! - 1 + fields.length) % fields.length)}
+                  >
+                    <ChevronLeft className="h-8 w-8" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white"
+                    onClick={() => setLightboxIndex(prev => (prev! + 1) % fields.length)}
+                  >
+                    <ChevronRight className="h-8 w-8" />
+                  </Button>
+                </>
+              )}
+            </div>
+            {lightboxIndex !== null && fields[lightboxIndex]?.description && (
+              <div className="p-6 bg-black/80 text-white border-t border-white/10">
+                <p className="text-sm font-medium">{fields[lightboxIndex].description}</p>
+              </div>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 text-white/70 hover:text-white"
+              onClick={() => setLightboxIndex(null)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
 const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, isReadOnly, isSupervisor, allLsgConstituencyMaps, allE_tenders }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, supervisorList: any[], isReadOnly: boolean, isSupervisor: boolean, allLsgConstituencyMaps: any[], allE_tenders: any[] }) => {
     const defaults = {
         ...(initialData?.nameOfSite ? initialData : createDefaultSiteDetail()),
@@ -448,6 +652,9 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
     });
     
     const { control, setValue, trigger, watch, handleSubmit, getValues } = form;
+
+    const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
+    const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
 
     const watchedLsg = watch("localSelfGovt");
     const watchedPurpose = watch('purpose');
@@ -758,6 +965,31 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                                         {!isSupervisor && <FormField name="totalExpenditure" control={control} render={({ field }) => <FormItem><FormLabel>Total Expenditure (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />}
                                         <FormField name="workRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Work Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                                     </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader><CardTitle>Media Gallery</CardTitle></CardHeader>
+                                <CardContent className="space-y-6">
+                                    <MediaManager
+                                      title="Work Images"
+                                      type="image"
+                                      fields={imageFields}
+                                      append={appendImage}
+                                      remove={removeImage}
+                                      update={updateImage}
+                                      isReadOnly={isFieldReadOnly(true)}
+                                    />
+                                    <Separator />
+                                    <MediaManager
+                                      title="Work Videos"
+                                      type="video"
+                                      fields={videoFields}
+                                      append={appendVideo}
+                                      remove={removeVideo}
+                                      update={updateVideo}
+                                      isReadOnly={isFieldReadOnly(true)}
+                                    />
                                 </CardContent>
                             </Card>
                         </form>
