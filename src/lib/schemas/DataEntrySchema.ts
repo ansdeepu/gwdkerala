@@ -18,7 +18,7 @@ const nativeDateSchema = z.preprocess(
 );
 
 export const MediaItemSchema = z.object({
-  id: z.string(),
+  id: z.string().optional().or(z.literal("")),
   url: z.string().url("Please enter a valid URL"),
   description: z.string().optional().nullable(),
 });

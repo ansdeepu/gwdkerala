@@ -664,9 +664,17 @@ const MediaManager = ({
 
 const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, isReadOnly, isSupervisor, allLsgConstituencyMaps, allE_tenders }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, supervisorList: any[], isReadOnly: boolean, isSupervisor: boolean, allLsgConstituencyMaps: any[], allE_tenders: any[] }) => {
     const { toast } = useToast();
-    const defaults = useMemo(() => ({
-        ...(initialData?.nameOfSite ? initialData : createDefaultSiteDetail()),
-    }), [initialData]);
+    const defaults = useMemo(() => {
+        const d = initialData?.nameOfSite ? initialData : createDefaultSiteDetail();
+        // Ensure every media item has an ID for Zod validation
+        if (d.workImages) {
+            d.workImages = d.workImages.map((img: any) => ({ ...img, id: img.id || uuidv4() }));
+        }
+        if (d.workVideos) {
+            d.workVideos = d.workVideos.map((vid: any) => ({ ...vid, id: vid.id || uuidv4() }));
+        }
+        return d;
+    }, [initialData]);
 
     const form = useForm<SiteDetailFormData>({
       resolver: zodResolver(SiteDetailSchema),

@@ -1,4 +1,3 @@
-
 // src/app/dashboard/ars/entry/page.tsx
 "use client";
 
@@ -82,6 +81,15 @@ const processDataForForm = (data: any): any => {
                 }
             }
         }
+        
+        // Ensure every media item has an ID
+        if (processed.workImages) {
+            processed.workImages = processed.workImages.map((img: any) => ({ ...img, id: img.id || uuidv4() }));
+        }
+        if (processed.workVideos) {
+            processed.workVideos = processed.workVideos.map((vid: any) => ({ ...vid, id: vid.id || uuidv4() }));
+        }
+
         return processed;
     }
     return data;
@@ -235,7 +243,7 @@ const MediaManager = ({
               )}
             </div>
             {field.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 px-1 py-0.5 bg-secondary/30 rounded">
+              <p className="text-[10px] text-muted-foreground line-clamp-2 px-1 py-0.5 bg-secondary/30 rounded">
                 {field.description}
               </p>
             )}
