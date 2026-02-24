@@ -1,3 +1,4 @@
+
 // src/app/dashboard/ars/entry/page.tsx
 "use client";
 
@@ -234,7 +235,7 @@ const MediaManager = ({
               )}
             </div>
             {field.description && (
-              <p className="text-[10px] text-muted-foreground line-clamp-2 px-1 py-0.5 bg-secondary/30 rounded">
+              <p className="text-xs text-muted-foreground line-clamp-2 px-1 py-0.5 bg-secondary/30 rounded">
                 {field.description}
               </p>
             )}
@@ -248,7 +249,7 @@ const MediaManager = ({
       </div>
 
       <Dialog open={isMediaModalOpen} onOpenChange={setIsMediaModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md p-0 overflow-hidden">
           <DialogHeader className="p-6 pb-2">
             <DialogTitle>{editingMedia ? 'Edit' : 'Add'} {type === 'image' ? 'Image' : 'Video'} Link</DialogTitle>
           </DialogHeader>
@@ -261,7 +262,7 @@ const MediaManager = ({
               <Label>Description</Label>
               <Textarea name="description" defaultValue={editingMedia?.data?.description || ''} placeholder="Enter a brief description..." className="min-h-[100px]" />
             </div>
-            <DialogFooter className="pt-2">
+            <DialogFooter className="p-6 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => setIsMediaModalOpen(false)}>Cancel</Button>
               <Button type="submit">Save</Button>
             </DialogFooter>

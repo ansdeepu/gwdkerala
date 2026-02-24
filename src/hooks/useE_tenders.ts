@@ -1,5 +1,4 @@
 
-      
 // src/hooks/useE_tenders.ts
 "use client";
 
@@ -56,6 +55,27 @@ const processDoc = (docSnap: DocumentData): E_tender => {
     return convertedData as E_tender;
 };
 
+// Helper function to recursively remove `undefined` values, replacing them with `null`.
+const sanitizeDataForFirestore = (data: any): any => {
+    if (data === undefined) {
+        return null;
+    }
+    if (Array.isArray(data)) {
+        return data.map(item => sanitizeDataForFirestore(item));
+    }
+    if (data && typeof data === 'object' && !(data instanceof Date) && !(data instanceof Timestamp)) {
+        const sanitized: { [key: string]: any } = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                const value = data[key];
+                sanitized[key] = sanitizeDataForFirestore(value);
+            }
+        }
+        return sanitized;
+    }
+    return data;
+};
+
 export function useE_tenders() {
     const { user } = useAuth();
     const { allE_tenders, isLoading: dataStoreLoading, selectedOffice } = useDataStore();
@@ -68,7 +88,8 @@ export function useE_tenders() {
         if ('id' in payload) {
             delete (payload as any).id;
         }
-        const docRef = await addDoc(collection(db, collectionPath), payload);
+        const sanitizedPayload = sanitizeDataForFirestore(payload);
+        const docRef = await addDoc(collection(db, collectionPath), sanitizedPayload);
         return docRef.id;
     }, [user]);
 
@@ -79,7 +100,8 @@ export function useE_tenders() {
         const docRef = doc(db, collectionPath, id);
         const payload = { ...tenderData, updatedAt: serverTimestamp() };
         if ('id' in payload) delete (payload as any).id;
-        await updateDoc(docRef, payload);
+        const sanitizedPayload = sanitizeDataForFirestore(payload);
+        await updateDoc(docRef, sanitizedPayload);
     }, [user]);
 
     const deleteTender = useCallback(async (id: string) => {
@@ -133,5 +155,3 @@ export function useE_tenders() {
         getTender, 
     };
 }
-
-    

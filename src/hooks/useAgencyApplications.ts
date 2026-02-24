@@ -1,3 +1,4 @@
+
 // src/hooks/useAgencyApplications.ts
 "use client";
 
@@ -9,7 +10,8 @@ import {
   addDoc,
   updateDoc,
   serverTimestamp,
-  deleteDoc
+  deleteDoc,
+  Timestamp
 } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import type { AgencyApplication as AgencyApplicationFormData, RigRegistration as RigRegistrationFormData, OwnerInfo } from '@/lib/schemas';
@@ -28,6 +30,27 @@ export type AgencyApplication = Omit<AgencyApplicationFormData, 'rigs'> & {
   updatedAt?: Date;
 };
 
+// Helper function to recursively remove `undefined` values, replacing them with `null`.
+const sanitizeDataForFirestore = (data: any): any => {
+    if (data === undefined) {
+        return null;
+    }
+    if (Array.isArray(data)) {
+        return data.map(item => sanitizeDataForFirestore(item));
+    }
+    if (data && typeof data === 'object' && !(data instanceof Date) && !(data instanceof Timestamp)) {
+        const sanitized: { [key: string]: any } = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                const value = data[key];
+                sanitized[key] = sanitizeDataForFirestore(value);
+            }
+        }
+        return sanitized;
+    }
+    return data;
+};
+
 export function useAgencyApplications() {
   const { user } = useAuth();
   const { allAgencyApplications, isLoading: dataStoreLoading } = useDataStore(); // Use the central store
@@ -43,7 +66,8 @@ export function useAgencyApplications() {
         updatedAt: serverTimestamp(),
     };
     const collectionPath = `offices/${user.officeLocation.toLowerCase()}/agencyApplications`;
-    await addDoc(collection(db, collectionPath), payload);
+    const sanitizedPayload = sanitizeDataForFirestore(payload);
+    await addDoc(collection(db, collectionPath), sanitizedPayload);
   }, [user]);
 
   const updateApplication = useCallback(async (id: string, applicationData: Partial<AgencyApplication>) => {
@@ -60,7 +84,8 @@ export function useAgencyApplications() {
       delete (payload as any).id;
     }
     
-    await updateDoc(docRef, payload);
+    const sanitizedPayload = sanitizeDataForFirestore(payload);
+    await updateDoc(docRef, sanitizedPayload);
   }, [user]);
   
   const deleteApplication = useCallback(async (id: string) => {
