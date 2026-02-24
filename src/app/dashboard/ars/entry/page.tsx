@@ -227,7 +227,7 @@ const MediaManager = ({
                     {getYouTubeThumbnail(field.url) ? (
                       <img src={getYouTubeThumbnail(field.url)!} className="w-full h-full object-cover" />
                     ) : (
-                      <video src={field.url} className="w-full h-full object-cover" />
+                      <video src={field.url} className="w-full h-full object-cover" preload="metadata" />
                     )}
                   </div>
                 )}
@@ -244,7 +244,7 @@ const MediaManager = ({
               )}
             </div>
             {field.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 px-1 py-1 mt-0.5 bg-secondary/30 rounded font-medium">
+              <p className="text-xs font-semibold text-primary/80 line-clamp-2 px-1 py-1 mt-1.5 rounded">
                 {field.description}
               </p>
             )}

@@ -535,7 +535,7 @@ const MediaManager = ({
                     {getYouTubeThumbnail(field.url) ? (
                       <img src={getYouTubeThumbnail(field.url)!} className="w-full h-full object-cover" />
                     ) : (
-                      <video src={field.url} className="w-full h-full object-cover" />
+                      <video src={field.url} className="w-full h-full object-cover" preload="metadata" />
                     )}
                   </div>
                 )}
@@ -552,7 +552,7 @@ const MediaManager = ({
               )}
             </div>
             {field.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2 px-1 py-1 mt-0.5 bg-secondary/30 rounded font-medium">
+              <p className="text-xs font-semibold text-primary/80 line-clamp-2 px-1 py-1 mt-1.5 rounded">
                 {field.description}
               </p>
             )}
@@ -1049,7 +1049,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
             </div>
             <DialogFooter className="p-6 pt-4 shrink-0 border-t">
                 <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
-                {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save</Button>}
+                {!isReadOnly && <Button type="submit" form="site-dialog-form">Save</Button>}
             </DialogFooter>
         </div>
     );
@@ -1478,7 +1478,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                     <TableCell className="p-2 text-right text-sm font-semibold">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell>
                                     {isEditor && !isFormDisabled && <TableCell className="p-1"><div className="flex"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item })} disabled={isSupervisor || isViewer}><Edit className="h-3 w-3"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-3 w-3"/></Button></div></TableCell>}
                                 </TableRow>
-                            )) : <TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 10 : 9} className="text-center h-24">No payment details added yet.</TableCell></TableRow>}
+                            )) : <TableRow><TableCell colSpan={10} className="text-center h-24">No payment details added yet.</TableCell></TableRow>}
                         </TableBody>
                          <TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 9 : 8} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent>
                     </Table>

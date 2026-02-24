@@ -81,10 +81,47 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/comp
 
 const db = getFirestore(app);
 
-const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
-const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
-const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", vesRequired: "No", feasibility: "No", nameOfInvestigator: undefined, vesInvestigator: undefined, hydrogeologicalRemarks: "", geophysicalRemarks: "" });
+const toDateOrNull = (value: any): Date | null => {
+    if (value === null || value === undefined || value === '') return null;
+    if (value instanceof Date && isValid(value)) return value;
+    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
+        const d = new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+        if (isValid(d)) return d;
+    }
+    if (typeof value === 'string') {
+        let d = parseISO(value); 
+        if (isValid(d)) return d;
+        d = new Date(value);
+        if (isValid(d)) return d;
+    }
+    return null;
+};
 
+const processDataForForm = (data: any): any => {
+  const transform = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj;
+    if (Array.isArray(obj)) return obj.map(transform);
+    if (typeof obj === 'object') {
+      const maybeDate = toDateOrNull(obj);
+      if (maybeDate) return format(maybeDate, 'yyyy-MM-dd');
+      const newObj: { [key: string]: any } = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const value = obj[key];
+          if (key.toLowerCase().includes('date')) {
+            const date = toDateOrNull(value);
+            newObj[key] = date && isValid(date) ? format(date, 'yyyy-MM-dd') : "";
+          } else {
+            newObj[key] = transform(value);
+          }
+        }
+      }
+      return newObj;
+    }
+    return obj;
+  };
+  return transform(data);
+};
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
     if (!payment) return 0;
@@ -844,7 +881,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         if (originalData.index !== undefined) {
             updateRemittance(originalData.index, remittanceData);
         } else {
-            appendRemittance(remittanceData);
+            appendRemittance(remiittanceData);
         }
         if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
             const newPaymentEntry: PaymentDetailFormData = {

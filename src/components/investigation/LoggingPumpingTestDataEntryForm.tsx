@@ -83,9 +83,25 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/comp
 
 const db = getFirestore(app);
 
+const toDateOrNull = (value: any): Date | null => {
+    if (value === null || value === undefined || value === '') return null;
+    if (value instanceof Date && isValid(value)) return value;
+    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
+        const d = new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+        if (isValid(d)) return d;
+    }
+    if (typeof value === 'string') {
+        let d = parseISO(value); 
+        if (isValid(d)) return d;
+        d = new Date(value);
+        if (isValid(d)) return d;
+    }
+    return null;
+};
+
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
 const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
-const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", vesRequired: "No", feasibility: "No", nameOfInvestigator: undefined, vesInvestigator: undefined, hydrogeologicalRemarks: "", geophysicalRemarks: "" });
+const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", vesRequired: "No", feasibility: "No", nameOfInvestigator: undefined, vesInvestigator: undefined, hydrogeologicalRemarks: "", geophysicalRemarks: "", workImages: [], workVideos: [] });
 
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
@@ -464,11 +480,16 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
         ...defaults, 
         dateOfCompletion: formatDateForInput(defaults.dateOfCompletion),
         dateOfInvestigation: formatDateForInput(defaults.dateOfInvestigation),
-        vesDate: formatDateForInput(defaults.vesDate)
+        vesDate: formatDateForInput(defaults.vesDate),
+        workImages: defaults.workImages || [],
+        workVideos: defaults.workVideos || []
       },
     });
     
     const { control, setValue, trigger, handleSubmit, getValues } = form;
+
+    const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
+    const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
 
     const watchedLsg = useWatch({ control, name: "localSelfGovt" });
     const watchedTypeOfWell = useWatch({ control, name: 'typeOfWell' });
@@ -643,11 +664,36 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, allLs
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            <Card>
+                                <CardHeader><CardTitle>Media Gallery</CardTitle></CardHeader>
+                                <CardContent className="space-y-6">
+                                    <MediaManager
+                                      title="Work Images"
+                                      type="image"
+                                      fields={imageFields}
+                                      append={appendImage}
+                                      remove={removeImage}
+                                      update={updateImage}
+                                      isReadOnly={isReadOnly}
+                                    />
+                                    <Separator />
+                                    <MediaManager
+                                      title="Work Videos"
+                                      type="video"
+                                      fields={videoFields}
+                                      append={appendVideo}
+                                      remove={removeVideo}
+                                      update={updateVideo}
+                                      isReadOnly={isReadOnly}
+                                    />
+                                </CardContent>
+                            </Card>
                         </form>
                     </Form>
                 </ScrollArea>
             </div>
-            <DialogFooter className="p-6 pt-4 shrink-0">
+            <DialogFooter className="p-6 pt-4 shrink-0 border-t">
                 <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
                 {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save</Button>}
             </DialogFooter>

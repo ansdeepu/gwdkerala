@@ -25,7 +25,6 @@ import type { PendingUpdate, DataEntryFormData, SiteDetailFormData, ArsEntryForm
 
 const db = getFirestore(app);
 const PENDING_UPDATES_COLLECTION = 'pendingUpdates';
-const FILE_ENTRIES_COLLECTION = 'fileEntries';
 
 const convertTimestampToDate = (data: DocumentData): PendingUpdate => {
   return {
@@ -34,6 +33,27 @@ const convertTimestampToDate = (data: DocumentData): PendingUpdate => {
     submittedAt: data.submittedAt instanceof Timestamp ? data.submittedAt.toDate() : new Date(),
     reviewedAt: data.reviewedAt instanceof Timestamp ? data.reviewedAt.toDate() : undefined,
   } as PendingUpdate;
+};
+
+// Helper function to recursively remove `undefined` values, replacing them with `null`.
+const sanitizeDataForFirestore = (data: any): any => {
+    if (data === undefined) {
+        return null;
+    }
+    if (Array.isArray(data)) {
+        return data.map(item => sanitizeDataForFirestore(item));
+    }
+    if (data && typeof data === 'object' && !(data instanceof Date) && !(data instanceof Timestamp)) {
+        const sanitized: { [key: string]: any } = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                const value = data[key];
+                sanitized[key] = sanitizeDataForFirestore(value);
+            }
+        }
+        return sanitized;
+    }
+    return data;
 };
 
 interface PendingUpdatesState {
@@ -127,6 +147,7 @@ export function usePendingUpdates(): PendingUpdatesState {
     const existingUpdatesQuery = query(
       collection(db, collectionPath),
       where('fileNo', '==', fileNo),
+      where('status', '==', 'pending'),
       where('submittedByUid', '==', currentUser.uid)
     );
     const existingUpdatesSnapshot = await getDocs(existingUpdatesQuery);
@@ -145,7 +166,9 @@ export function usePendingUpdates(): PendingUpdatesState {
       isArsUpdate: false,
       submittedAt: serverTimestamp(),
     };
-    batch.set(newUpdateRef, newUpdateData);
+    
+    const sanitizedPayload = sanitizeDataForFirestore(newUpdateData);
+    batch.set(newUpdateRef, sanitizedPayload);
 
     await batch.commit();
 
@@ -172,7 +195,8 @@ export function usePendingUpdates(): PendingUpdatesState {
       submittedAt: serverTimestamp(),
     };
 
-    await addDoc(collection(db, collectionPath), newUpdate);
+    const sanitizedPayload = sanitizeDataForFirestore(newUpdate);
+    await addDoc(collection(db, collectionPath), sanitizedPayload);
   }, []);
   
   const getPendingUpdateById = useCallback(async (updateId: string): Promise<PendingUpdate | null> => {
