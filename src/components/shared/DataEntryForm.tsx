@@ -55,6 +55,8 @@ import {
   PLAN_FUND_APPLICATION_TYPES,
   type Bidder,
   type MediaItem,
+  ReappropriationDetailSchema,
+  type ReappropriationDetailFormData,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -95,6 +97,7 @@ const toDateOrNull = (value: any): Date | null => {
 };
 
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
+const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Inward", refFileNo: "", amount: undefined, date: "", remarks: "" });
 const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
 const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: undefined, estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", workImages: [], workVideos: [] });
 
@@ -119,6 +122,7 @@ const getFormattedErrorMessages = (errors: FieldErrors<any>): string[] => {
   const processPath = (path: string, index: number): string => {
     if (path === 'siteDetails') return `Site #${index + 1}`;
     if (path === 'remittanceDetails') return `Remittance #${index + 1}`;
+    if (path === 'reappropriationDetails') return `Re-appropriation #${index + 1}`;
     if (path === 'paymentDetails') return `Payment #${index + 1}`;
     return path;
   };
@@ -368,6 +372,51 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
                     )}
                 </div>
                 <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{isDeferredFunding ? 'AS Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
+            </div>
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+                <Button type="submit">Save</Button>
+            </DialogFooter>
+        </form>
+    </Form>
+    );
+};
+
+const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void }) => {
+    const form = useForm<ReappropriationDetailFormData>({
+      resolver: zodResolver(z.object({
+          type: z.enum(["Inward", "Outward"]),
+          refFileNo: z.string().min(1, "Reference File No. is required."),
+          amount: z.coerce.number().min(0.01, "Amount must be greater than zero."),
+          date: z.string().min(1, "Date is required."),
+          remarks: z.string().optional(),
+      })),
+      defaultValues: {
+          ...createDefaultReappropriationDetail(),
+          ...initialData,
+          date: formatDateForInput(initialData?.date),
+      },
+    });
+
+    const handleConfirmSubmit = (data: ReappropriationDetailFormData) => {
+        onConfirm(data);
+    };
+
+    return (
+      <Form {...form}>
+        <form onSubmit={(e) => { e.stopPropagation(); e.preventDefault(); form.handleSubmit(handleConfirmSubmit)(e); }}>
+            <DialogHeader>
+                <DialogTitle>Re-appropriation Details</DialogTitle>
+                <DialogDescription>Track funds transferred from or to another file.</DialogDescription>
+            </DialogHeader>
+            <div className="p-6 pt-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField name="type" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Type <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Inward">Inward (From another file)</SelectItem><SelectItem value="Outward">Outward (To another file)</SelectItem></SelectContent></Select><FormMessage /></FormItem> )}/>
+                    <FormField name="refFileNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Reference File No. <span className="text-destructive">*</span></FormLabel><FormControl><Input placeholder="e.g., GWD/KLM/123" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField name="date" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Date <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                </div>
+                <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any specific reasons or notes..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
@@ -1011,7 +1060,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                                 <CardHeader><CardTitle>Work Status</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <FormField name="workStatus" control={control} render={({ field }) => <FormItem><FormLabel>Work Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{(isSupervisor ? SUPERVISOR_WORK_STATUS_OPTIONS : SITE_DIALOG_WORK_STATUS_OPTIONS).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                        <FormField name="workStatus" control={control} render={({ field }) => <FormItem><FormLabel>Work Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{(isSupervisor ? SUPERVISOR_ONGOING_STATUSES : SITE_DIALOG_WORK_STATUS_OPTIONS).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                         <FormField name="dateOfCompletion" control={control} render={({ field }) => <FormItem><FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                                         {!isSupervisor && <FormField name="totalExpenditure" control={control} render={({ field }) => <FormItem><FormLabel>Total Expenditure (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />}
                                         <FormField name="workRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Work Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
@@ -1069,8 +1118,8 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
-  const [dialogState, setDialogState] = useState<{ type: null | 'application' | 'remittance' | 'payment' | 'site' | 'reorderSite' | 'viewSite'; data: any, isView?: boolean }>({ type: null, data: null, isView: false });
-  const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'payment' | 'site'; index: number } | null>(null);
+  const [dialogState, setDialogState] = useState<{ type: null | 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite'; data: any, isView?: boolean }>({ type: null, data: null, isView: false });
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'reappropriation' | 'payment' | 'site'; index: number } | null>(null);
   const [siteToCopy, setSiteToCopy] = useState<number | null>(null);
 
   const isEditor = userRole === 'admin' || userRole === 'scientist' || userRole === 'engineer';
@@ -1107,10 +1156,12 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const applicationTypeOptionsForForm = getApplicationTypeOptions();
 
   const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
+  const { fields: reappropriationFields, append: appendReappropriation, remove: removeReappropriation, update: updateReappropriation } = useFieldArray({ control, name: "reappropriationDetails" });
   const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
   const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment } = useFieldArray({ control, name: "paymentDetails" });
 
   const watchedRemittanceDetails = watch("remittanceDetails");
+  const watchedReappropriationDetails = watch("reappropriationDetails");
   const watchedPaymentDetails = watch("paymentDetails");
   const watchedSiteDetails = watch("siteDetails");
 
@@ -1119,6 +1170,12 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         return sum + (Number(item.amountRemitted) || 0);
     }, 0) || 0;
     setValue("totalRemittance", totalRemittance);
+
+    const totalReapp = watchedReappropriationDetails?.reduce((sum, item) => {
+        const amount = Number(item.amount) || 0;
+        return item.type === 'Inward' ? sum + amount : sum - amount;
+    }, 0) || 0;
+    setValue("totalReappropriation", totalReapp);
 
     const spendableRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
         if (item.remittedAccount !== 'Revenue Head') {
@@ -1134,7 +1191,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         return sum + (Number(item.contractorsPayment) || 0) + (Number(item.gst) || 0) + (Number(item.incomeTax) || 0) + (Number(item.kbcwb) || 0);
     }, 0) || 0;
 
-    setValue("overallBalance", spendableRemittance - projectExpenses);
+    setValue("overallBalance", spendableRemittance + totalReapp - projectExpenses);
     
     const supervisorUids = new Set<string>();
     watchedSiteDetails?.forEach(site => {
@@ -1144,7 +1201,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     });
     setValue("assignedSupervisorUids", Array.from(supervisorUids));
 
-  }, [watchedRemittanceDetails, watchedPaymentDetails, watchedSiteDetails, setValue]);
+  }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, watchedSiteDetails, setValue]);
 
   const totalEstimate = useMemo(() => {
     return watchedSiteDetails?.reduce((sum, site) => sum + (Number(site.estimateAmount) || 0), 0) || 0;
@@ -1195,7 +1252,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     };
 
 
-  const openDialog = (type: 'application' | 'remittance' | 'payment' | 'site' | 'reorderSite' | 'viewSite', data: any, isView: boolean = false) => {
+  const openDialog = (type: 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite', data: any, isView: boolean = false) => {
     setDialogState({ type, data, isView });
   };
   
@@ -1253,6 +1310,12 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 description: "An automatic payment entry was created for the Revenue Head remittance.",
             });
         }
+    } else if (type === 'reappropriation') {
+        if (originalData.index !== undefined) {
+            updateReappropriation(originalData.index, data);
+        } else {
+            appendReappropriation(data);
+        }
     } else if (type === 'payment') {
         const paymentData = { ...data, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal(data) };
         if (originalData.index !== undefined) {
@@ -1277,6 +1340,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     if (!itemToDelete) return;
     const { type, index } = itemToDelete;
     if (type === 'remittance') removeRemittance(index);
+    if (type === 'reappropriation') removeReappropriation(index);
     if (type === 'payment') removePayment(index);
     if (type === 'site') removeSite(index);
     
@@ -1305,6 +1369,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   };
 
   const totalRemittanceWatched = watch('totalRemittance');
+  const totalReappropriationWatched = watch('totalReappropriation');
   const totalPaymentWatched = watch('totalPaymentAllEntries');
 
   return (
@@ -1363,6 +1428,49 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                 <TableCell className="font-bold">
                                     ₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}
                                 </TableCell></TableRow></TableFooterComponent>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader className="flex flex-row justify-between items-start">
+                <div><CardTitle className="text-xl">Re-appropriation Details</CardTitle></div>
+                {isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('reappropriation', createDefaultReappropriationDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}
+            </CardHeader>
+            <CardContent>
+                <div className="relative max-h-[400px] overflow-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Ref. File No.</TableHead>
+                                <TableHead>Amount (₹)</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Remarks</TableHead>
+                                {isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {reappropriationFields.length > 0 ? reappropriationFields.map((item, index) => (
+                                <TableRow key={item.id}>
+                                    <TableCell><Badge variant={item.type === 'Inward' ? 'default' : 'outline'}>{item.type}</Badge></TableCell>
+                                    <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
+                                    <TableCell className={cn("font-bold", item.type === 'Inward' ? 'text-green-600' : 'text-red-600')}>{item.type === 'Outward' ? '-' : '+'}{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell>
+                                    <TableCell>{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                    <TableCell className="text-xs italic">{item.remarks}</TableCell>
+                                    {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index, ...item })} disabled={isSupervisor || isViewer}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+                                </TableRow>
+                            )) : <TableRow><TableCell colSpan={6} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
+                        </TableBody>
+                        <TableFooterComponent>
+                            <TableRow>
+                                <TableCell colSpan={isEditor && !isFormDisabled ? 5 : 4} className="text-right font-bold">Net Re-appropriation Amount</TableCell>
+                                <TableCell className={cn("font-bold", totalReappropriationWatched >= 0 ? "text-green-600" : "text-red-600")}>
+                                    ₹{totalReappropriationWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}
+                                </TableCell>
+                            </TableRow>
+                        </TableFooterComponent>
                     </Table>
                 </div>
             </CardContent>
@@ -1488,7 +1596,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
         <Card>
             <CardHeader><CardTitle className="text-xl">5. Final Details</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Re-appropriation amount</dt><dd className={cn("font-mono font-bold", totalReappropriationWatched >= 0 ? "text-green-600" : "text-red-600")}>₹{totalReappropriationWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent>
         </Card>
 
         {!(isViewer || isFormDisabled) && (
@@ -1518,6 +1626,15 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                   onConfirm={handleDialogConfirm}
                   onCancel={closeDialog}
                   isDeferredFunding={isDeferredFunding}
+              />
+          </DialogContent>
+      </Dialog>
+      <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}>
+          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl">
+              <ReappropriationDialogContent
+                  initialData={dialogState.data}
+                  onConfirm={handleDialogConfirm}
+                  onCancel={closeDialog}
               />
           </DialogContent>
       </Dialog>

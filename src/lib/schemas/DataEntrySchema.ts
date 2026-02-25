@@ -212,6 +212,19 @@ export const RemittanceDetailSchema = z.object({
 });
 export type RemittanceDetailFormData = z.infer<typeof RemittanceDetailSchema>;
 
+export const reappropriationTypeOptions = ["Inward", "Outward"] as const;
+export type ReappropriationType = typeof reappropriationTypeOptions[number];
+
+export const ReappropriationDetailSchema = z.object({
+  id: z.string().optional(),
+  type: z.enum(reappropriationTypeOptions, { required_error: "Type is required." }),
+  refFileNo: z.string().min(1, "Reference File No. is required."),
+  amount: optionalNumber("Amount must be a valid number.").refine(val => val !== undefined && val > 0, "Amount must be greater than zero."),
+  date: z.string().min(1, "Date is required."),
+  remarks: z.string().optional(),
+});
+export type ReappropriationDetailFormData = z.infer<typeof ReappropriationDetailSchema>;
+
 
 export const paymentAccountOptions = [
   "Bank",
@@ -509,6 +522,9 @@ export const DataEntrySchema = z.object({
     .min(1, "At least one remittance detail is required.")
     .max(10, "You can add a maximum of 10 remittance details."),
   totalRemittance: z.coerce.number().optional(),
+
+  reappropriationDetails: z.array(ReappropriationDetailSchema).optional().default([]),
+  totalReappropriation: z.coerce.number().optional().default(0),
 
   siteDetails: z.array(SiteDetailSchema).optional(),
 
