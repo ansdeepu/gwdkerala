@@ -217,7 +217,7 @@ export type ReappropriationType = typeof reappropriationTypeOptions[number];
 
 export const ReappropriationDetailSchema = z.object({
   id: z.string().optional(),
-  type: z.enum(reappropriationTypeOptions, { required_error: "Type is required." }),
+  type: z.enum(reappropriationTypeOptions, { required_error: "Type is required." }).default("Outward"),
   pageType: z.string().optional(),
   refFileNo: z.string().min(1, "Reference File No. is required."),
   fileDetails: z.string().optional(),

@@ -101,9 +101,9 @@ const toDateOrNull = (value: any): Date | null => {
 };
 
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
-const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Inward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "", fileDetails: "" });
+const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "", fileDetails: "" });
 const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
-const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", nameOfInvestigator: undefined, vesInvestigator: undefined, hydrogeologicalRemarks: "", geophysicalRemarks: "", workImages: [], workVideos: [] });
+const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", nameOfInvestigator: undefined, vesInvestigator: undefined, hydrogeologicalRemarks: "", geophysicalRemarks: "", workImages: [], workVideos: [] });
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
     if (!payment) return 0;
@@ -312,18 +312,18 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, isEditing 
              <div className="grid grid-cols-3 gap-4 items-start">
                 <div className="space-y-2 col-span-1">
                     <Label htmlFor="fileNo">File No *</Label>
-                    <Input id="fileNo" value={data.fileNo || ''} onChange={(e) => handleChange('fileNo', e.target.value)} />
+                    <Input id="fileNo" value={data.fileNo || ''} onChange={(e) => handleChange('fileNo', e.target.value)} disabled={isChecking}/>
                     {errors.fileNo && <p className="text-xs text-destructive mt-1">{errors.fileNo}</p>}
                 </div>
                 <div className="space-y-2 col-span-2">
                     <Label htmlFor="applicantName">Name &amp; Address of Institution/Applicant *</Label>
-                    <Textarea id="applicantName" value={data.applicantName || ''} onChange={(e) => handleChange('applicantName', e.target.value)} className="min-h-[40px]"/>
+                    <Textarea id="applicantName" value={data.applicantName || ''} onChange={(e) => handleChange('applicantName', e.target.value)} className="min-h-[40px]" disabled={isChecking}/>
                     {errors.applicantName && <p className="text-xs text-destructive mt-1">{errors.applicantName}</p>}
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo || ''} onChange={(e) => handleChange('phoneNo', e.target.value)} /></div>
-                <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo || ''} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} /></div>
+                <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo || ''} onChange={(e) => handleChange('phoneNo', e.target.value)} disabled={isChecking} /></div>
+                <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo || ''} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} disabled={isChecking}/></div>
                 
                 <div className="space-y-2">
                     <Label>Category *</Label>
@@ -340,7 +340,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, isEditing 
 
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={!data.category}>
+                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={!data.category || isChecking}>
                         <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
                         <SelectContent className="max-h-80">
                             {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
@@ -407,6 +407,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
 };
 
 const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void }) => {
+    const { allFileEntries, allArsEntries } = useDataStore();
     const form = useForm<ReappropriationDetailFormData>({
       resolver: zodResolver(ReappropriationDetailSchema),
       defaultValues: {
@@ -420,13 +421,43 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
         onConfirm(data);
     };
 
+    const watchedPageType = useWatch({ control: form.control, name: "pageType" });
+    const watchedFileNo = useWatch({ control: form.control, name: "refFileNo" });
+
+    useEffect(() => {
+        if (!watchedPageType || !watchedFileNo) {
+            form.setValue('fileDetails', '');
+            return;
+        }
+
+        let foundEntry: any = null;
+        if (watchedPageType === 'ARS') {
+            foundEntry = allArsEntries.find(e => e.fileNo?.toLowerCase().trim() === watchedFileNo.toLowerCase().trim());
+        } else {
+            foundEntry = allFileEntries.find(e => e.fileNo?.toLowerCase().trim() === watchedFileNo.toLowerCase().trim());
+        }
+
+        if (foundEntry) {
+            let details = '';
+            if (watchedPageType === 'ARS') {
+                details = `Site: ${foundEntry.nameOfSite || 'N/A'}\nScheme: ${foundEntry.arsTypeOfScheme || 'N/A'}`;
+            } else {
+                details = (foundEntry.siteDetails || []).map((s: any) => `Site: ${s.nameOfSite || 'N/A'} (${s.purpose || 'N/A'})`).join('\n');
+            }
+            form.setValue('fileDetails', details || 'No site details found.');
+        } else {
+            form.setValue('fileDetails', 'File not found in database.');
+        }
+    }, [watchedPageType, watchedFileNo, allFileEntries, allArsEntries, form]);
+
     const pageTypeOptions = [
         "Deposit Work",
         "Private Deposit Work",
         "Collector's Deposit Work",
         "Plan Fund Work",
         "GW Investigation",
-        "Logging & Pumping Test"
+        "Logging & Pumping Test",
+        "ARS"
     ];
 
     return (
@@ -434,7 +465,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
         <form onSubmit={(e) => { e.stopPropagation(); e.preventDefault(); form.handleSubmit(handleConfirmSubmit)(e); }}>
             <DialogHeader>
                 <DialogTitle>Re-appropriation Details</DialogTitle>
-                <DialogDescription>Track funds transferred from or to another file.</DialogDescription>
+                <DialogDescription>Track funds transferred from this file to another file.</DialogDescription>
             </DialogHeader>
             <div className="p-6 pt-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -452,10 +483,15 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                         </FormItem> 
                     )}/>
                     <FormField name="refFileNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>File No. <span className="text-destructive">*</span></FormLabel><FormControl><Input placeholder="e.g., GWD/KLM/123" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                    <FormField name="fileDetails" control={form.control} render={({ field }) => ( <FormItem><FormLabel>File Details</FormLabel><FormControl><Input placeholder="e.g., Project Name" {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem> )}/>
-                    <FormField name="type" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Transaction Type <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Inward">Inward (Credit)</SelectItem><SelectItem value="Outward">Outward (Debit)</SelectItem></SelectContent></Select><FormMessage /></FormItem> )}/>
                     <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
                 </div>
+                <FormField name="fileDetails" control={form.control} render={({ field }) => ( 
+                    <FormItem>
+                        <FormLabel>File Details</FormLabel>
+                        <FormControl><Textarea {...field} className="bg-muted resize-none" value={field.value || ""} readOnly disabled/></FormControl>
+                        <FormMessage />
+                    </FormItem> 
+                )}/>
                 <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any specific reasons or notes..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
             <DialogFooter>
@@ -859,7 +895,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
 
     const totalReapp = watchedReappropriationDetails?.reduce((sum, item) => {
         const amount = Number(item.amount) || 0;
-        return item.type === 'Inward' ? sum + amount : sum - amount;
+        return sum + amount; // All are debits (transfers out)
     }, 0) || 0;
     setValue("totalReappropriation", totalReapp);
 
@@ -873,9 +909,8 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
 
-    const projectExpenses = 0;
-
-    setValue("overallBalance", spendableRemittance + totalReapp - projectExpenses);
+    // Subtraction logic: Balance = Remittance - Payments - Reappropriations
+    setValue("overallBalance", spendableRemittance - totalReapp - totalPayment);
     
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, setValue]);
 
@@ -1015,11 +1050,9 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
                                     <TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell>
                                     <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
                                     <TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell>
-                                    <TableCell className={cn("text-right font-bold", item.type === 'Inward' ? 'text-green-600' : '')}>
-                                        {item.type === 'Inward' ? (Number(item.amount) || 0).toLocaleString('en-IN') : '-'}
-                                    </TableCell>
-                                    <TableCell className={cn("text-right font-bold", item.type === 'Outward' ? 'text-red-600' : '')}>
-                                        {item.type === 'Outward' ? (Number(item.amount) || 0).toLocaleString('en-IN') : '-'}
+                                    <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                    <TableCell className="text-right font-bold text-red-600">
+                                        {(Number(item.amount) || 0).toLocaleString('en-IN')}
                                     </TableCell>
                                     <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
                                     {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index, ...item })} disabled={isSupervisor || isViewer}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
@@ -1028,8 +1061,8 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
                         </TableBody>
                         <TableFooterComponent>
                             <TableRow>
-                                <TableCell colSpan={isEditor && !isFormDisabled ? 7 : 6} className="text-right font-bold">Net Re-appropriation Amount (Balance)</TableCell>
-                                <TableCell className={cn("font-bold text-right whitespace-nowrap", (watch('totalReappropriation') || 0) >= 0 ? "text-green-600" : "text-red-600")}>
+                                <TableCell colSpan={isEditor && !isFormDisabled ? 7 : 6} className="text-right font-bold">Total Re-appropriated Amount (Transferred Out)</TableCell>
+                                <TableCell className="font-bold text-right text-red-600">
                                     ₹{(watch('totalReappropriation') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                 </TableCell>
                             </TableRow>
@@ -1044,7 +1077,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Card><CardHeader><CardTitle className="text-xl">6. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2">
             <div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN') || '0.00'}</dd></div>
             <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN') || '0.00'}</dd></div>
-            <div className="flex justify-between items-baseline"><dt>Total Re-appropriation amount</dt><dd className={cn("font-mono font-bold", (watch('totalReappropriation') || 0) >= 0 ? "text-green-600" : "text-red-600")}>₹{(watch('totalReappropriation') || 0).toLocaleString('en-IN') || '0.00'}</dd></div>
+            <div className="flex justify-between items-baseline"><dt>Total Re-appropriation amount</dt><dd className="font-mono font-bold text-red-600">₹{(watch('totalReappropriation') || 0).toLocaleString('en-IN') || '0.00'}</dd></div>
             <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN') || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isEditing={isEditing} /></DialogContent></Dialog>
