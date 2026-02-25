@@ -57,6 +57,7 @@ import {
   type MediaItem,
   ReappropriationDetailSchema,
   type ReappropriationDetailFormData,
+  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -401,6 +402,33 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
     const watchedPageType = useWatch({ control: form.control, name: "pageType" });
     const watchedFileNo = useWatch({ control: form.control, name: "refFileNo" });
 
+    const suggestions = useMemo(() => {
+        if (!watchedPageType) return [];
+        
+        let filtered: string[] = [];
+        if (watchedPageType === 'ARS') {
+            filtered = allArsEntries.map(e => e.fileNo).filter(Boolean);
+        } else {
+            const source = allFileEntries.filter(entry => {
+                const appType = entry.applicationType as any;
+                if (watchedPageType === "Deposit Work") return PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(appType);
+                if (watchedPageType === "Private Deposit Work") return PRIVATE_APPLICATION_TYPES.includes(appType);
+                if (watchedPageType === "Collector's Deposit Work") return COLLECTOR_APPLICATION_TYPES.includes(appType);
+                if (watchedPageType === "Plan Fund Work") return PLAN_FUND_APPLICATION_TYPES.includes(appType);
+                
+                const hasInvestigation = entry.siteDetails?.some(s => s.purpose === 'GW Investigation');
+                const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
+                
+                if (watchedPageType === "GW Investigation") return hasInvestigation && !hasLoggingPumping;
+                if (watchedPageType === "Logging & Pumping Test") return hasLoggingPumping && !hasInvestigation;
+                
+                return false;
+            });
+            filtered = source.map(e => e.fileNo).filter(Boolean);
+        }
+        return Array.from(new Set(filtered)).sort();
+    }, [watchedPageType, allFileEntries, allArsEntries]);
+
     useEffect(() => {
         if (!watchedPageType || !watchedFileNo) {
             form.setValue('fileDetails', '');
@@ -459,7 +487,18 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                             <FormMessage />
                         </FormItem> 
                     )}/>
-                    <FormField name="refFileNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>File No. <span className="text-destructive">*</span></FormLabel><FormControl><Input placeholder="e.g., GWD/KLM/123" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField name="refFileNo" control={form.control} render={({ field }) => ( 
+                        <FormItem>
+                            <FormLabel>File No. <span className="text-destructive">*</span></FormLabel>
+                            <FormControl>
+                                <Input list="file-no-suggestions" placeholder="e.g., GWD/KLM/123" {...field} />
+                            </FormControl>
+                            <datalist id="file-no-suggestions">
+                                {suggestions.map(no => <option key={no} value={no} />)}
+                            </datalist>
+                            <FormMessage />
+                        </FormItem> 
+                    )}/>
                     <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
                 </div>
                 <FormField name="fileDetails" control={form.control} render={({ field }) => ( 
@@ -1654,7 +1693,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
         <Card>
             <CardHeader><CardTitle className="text-xl">6. Final Details</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{watch('totalRemittance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{watch('totalPaymentAllEntries')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Re-appropriation amount</dt><dd className="font-mono font-bold text-red-600">₹{totalReappropriationWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Re-appropriation amount</dt><dd className="font-mono font-bold text-red-600">₹{totalReappropriationWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent>
         </Card>
 
         {!(isViewer || isFormDisabled) && (

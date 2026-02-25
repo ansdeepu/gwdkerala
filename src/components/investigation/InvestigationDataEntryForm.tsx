@@ -60,6 +60,10 @@ import {
   type Designation,
   type ReappropriationDetailFormData,
   ReappropriationDetailSchema,
+  PUBLIC_DEPOSIT_APPLICATION_TYPES,
+  PRIVATE_APPLICATION_TYPES,
+  COLLECTOR_APPLICATION_TYPES,
+  PLAN_FUND_APPLICATION_TYPES,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -424,6 +428,33 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
     const watchedPageType = useWatch({ control: form.control, name: "pageType" });
     const watchedFileNo = useWatch({ control: form.control, name: "refFileNo" });
 
+    const suggestions = useMemo(() => {
+        if (!watchedPageType) return [];
+        
+        let filtered: string[] = [];
+        if (watchedPageType === 'ARS') {
+            filtered = allArsEntries.map(e => e.fileNo).filter(Boolean);
+        } else {
+            const source = allFileEntries.filter(entry => {
+                const appType = entry.applicationType as any;
+                if (watchedPageType === "Deposit Work") return PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(appType);
+                if (watchedPageType === "Private Deposit Work") return PRIVATE_APPLICATION_TYPES.includes(appType);
+                if (watchedPageType === "Collector's Deposit Work") return COLLECTOR_APPLICATION_TYPES.includes(appType);
+                if (watchedPageType === "Plan Fund Work") return PLAN_FUND_APPLICATION_TYPES.includes(appType);
+                
+                const hasInvestigation = entry.siteDetails?.some(s => s.purpose === 'GW Investigation');
+                const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
+                
+                if (watchedPageType === "GW Investigation") return hasInvestigation && !hasLoggingPumping;
+                if (watchedPageType === "Logging & Pumping Test") return hasLoggingPumping && !hasInvestigation;
+                
+                return false;
+            });
+            filtered = source.map(e => e.fileNo).filter(Boolean);
+        }
+        return Array.from(new Set(filtered)).sort();
+    }, [watchedPageType, allFileEntries, allArsEntries]);
+
     useEffect(() => {
         if (!watchedPageType || !watchedFileNo) {
             form.setValue('fileDetails', '');
@@ -482,7 +513,18 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                             <FormMessage />
                         </FormItem> 
                     )}/>
-                    <FormField name="refFileNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>File No. <span className="text-destructive">*</span></FormLabel><FormControl><Input placeholder="e.g., GWD/KLM/123" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField name="refFileNo" control={form.control} render={({ field }) => ( 
+                        <FormItem>
+                            <FormLabel>File No. <span className="text-destructive">*</span></FormLabel>
+                            <FormControl>
+                                <Input list="file-no-suggestions" placeholder="e.g., GWD/KLM/123" {...field} />
+                            </FormControl>
+                            <datalist id="file-no-suggestions">
+                                {suggestions.map(no => <option key={no} value={no} />)}
+                            </datalist>
+                            <FormMessage />
+                        </FormItem> 
+                    )}/>
                     <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
                 </div>
                 <FormField name="fileDetails" control={form.control} render={({ field }) => ( 
