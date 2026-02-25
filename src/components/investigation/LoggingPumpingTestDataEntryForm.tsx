@@ -61,6 +61,7 @@ import {
   LOGGING_PUMPING_TEST_GOVT_TYPES,
   LOGGING_PUMPING_TEST_PRIVATE_TYPES,
   type ReappropriationDetailFormData,
+  ReappropriationDetailSchema,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -101,94 +102,10 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
 };
 
-const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({
-  amountRemitted: undefined,
-  dateOfRemittance: "",
-  remittedAccount: "Bank",
-  remittanceRemarks: ""
-});
-
-const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Inward", refFileNo: "", amount: undefined, date: "", remarks: "" });
-
-const createDefaultPaymentDetail = (): PaymentDetailFormData => ({
-  dateOfPayment: "",
-  paymentAccount: "Bank",
-  revenueHead: undefined,
-  contractorsPayment: undefined,
-  gst: undefined,
-  incomeTax: undefined,
-  kbcwb: undefined,
-  refundToParty: undefined,
-  totalPaymentPerEntry: 0,
-  paymentRemarks: ""
-});
-
-const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({
-  nameOfSite: "",
-  localSelfGovt: "",
-  constituency: undefined,
-  latitude: undefined,
-  longitude: undefined,
-  purpose: "Geological logging",
-  estimateAmount: undefined,
-  remittedAmount: undefined,
-  siteConditions: undefined,
-  tsAmount: undefined,
-  tenderNo: "",
-  diameter: undefined,
-  totalDepth: undefined,
-  casingPipeUsed: "",
-  outerCasingPipe: "",
-  innerCasingPipe: "",
-  yieldDischarge: "",
-  zoneDetails: "",
-  waterLevel: "",
-  drillingRemarks: "",
-  developingRemarks: "",
-  schemeRemarks: "",
-  pumpDetails: "",
-  waterTankCapacity: "",
-  noOfTapConnections: undefined,
-  noOfBeneficiary: "",
-  dateOfCompletion: "",
-  typeOfRig: undefined,
-  contractorName: "",
-  supervisorUid: undefined,
-  supervisorName: undefined,
-  supervisorDesignation: undefined,
-  totalExpenditure: undefined,
-  workStatus: undefined,
-  workRemarks: "",
-  surveyOB: "",
-  surveyLocation: "",
-  surveyPlainPipe: "",
-  surveySlottedPipe: "",
-  surveyRemarks: "",
-  surveyRecommendedDiameter: "",
-  surveyRecommendedTD: "",
-  surveyRecommendedOB: "",
-  surveyRecommendedCasingPipe: "",
-  surveyRecommendedPlainPipe: "",
-  surveyRecommendedSlottedPipe: "",
-  surveyRecommendedMsCasingPipe: "",
-  arsTypeOfScheme: undefined,
-  arsPanchayath: undefined,
-  arsBlock: undefined,
-  arsAsTsDetails: undefined,
-  arsSanctionedDate: "",
-  arsTenderedAmount: undefined,
-  arsAwardedAmount: undefined,
-  arsNumberOfStructures: undefined,
-  arsStorageCapacity: undefined,
-  arsNumberOfFillings: undefined,
-  isArsImport: false,
-  pilotDrillingDepth: "",
-  pumpingLineLength: "",
-  deliveryLineLength: "",
-  implementationRemarks: "",
-  workImages: [],
-  workVideos: []
-});
+const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
+const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Inward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "", fileDetails: "" });
+const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
+const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "Geological logging", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyPlainPipe: "", surveySlottedPipe: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", workImages: [], workVideos: [] });
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
     if (!payment) return 0;
@@ -506,13 +423,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
 
 const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void }) => {
     const form = useForm<ReappropriationDetailFormData>({
-      resolver: zodResolver(z.object({
-          type: z.enum(["Inward", "Outward"]),
-          refFileNo: z.string().min(1, "Reference File No. is required."),
-          amount: z.coerce.number().min(0.01, "Amount must be greater than zero."),
-          date: z.string().min(1, "Date is required."),
-          remarks: z.string().optional(),
-      })),
+      resolver: zodResolver(ReappropriationDetailSchema),
       defaultValues: {
           ...createDefaultReappropriationDetail(),
           ...initialData,
@@ -524,6 +435,15 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
         onConfirm(data);
     };
 
+    const pageTypeOptions = [
+        "Deposit Work",
+        "Private Deposit Work",
+        "Collector's Deposit Work",
+        "Plan Fund Work",
+        "GW Investigation",
+        "Logging & Pumping Test"
+    ];
+
     return (
       <Form {...form}>
         <form onSubmit={(e) => { e.stopPropagation(); e.preventDefault(); form.handleSubmit(handleConfirmSubmit)(e); }}>
@@ -533,10 +453,23 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
             </DialogHeader>
             <div className="p-6 pt-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField name="type" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Type <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Inward">Inward (From another file)</SelectItem><SelectItem value="Outward">Outward (To another file)</SelectItem></SelectContent></Select><FormMessage /></FormItem> )}/>
-                    <FormField name="refFileNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Reference File No. <span className="text-destructive">*</span></FormLabel><FormControl><Input placeholder="e.g., GWD/KLM/123" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                    <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
                     <FormField name="date" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Date <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField name="pageType" control={form.control} render={({ field }) => ( 
+                        <FormItem>
+                            <FormLabel>Type of Page</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {pageTypeOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem> 
+                    )}/>
+                    <FormField name="refFileNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>File No. <span className="text-destructive">*</span></FormLabel><FormControl><Input placeholder="e.g., GWD/KLM/123" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField name="fileDetails" control={form.control} render={({ field }) => ( <FormItem><FormLabel>File Details</FormLabel><FormControl><Input placeholder="e.g., Project Name" {...field} value={field.value || ""} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField name="type" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Transaction Type <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Inward">Inward (Credit)</SelectItem><SelectItem value="Outward">Outward (Debit)</SelectItem></SelectContent></Select><FormMessage /></FormItem> )}/>
+                    <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
                 </div>
                 <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any specific reasons or notes..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
@@ -915,7 +848,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         if (originalData.index !== undefined) {
             updateRemittance(originalData.index, remittanceData);
         } else {
-            appendRemittance(remittanceData);
+            appendRemittance(reappropriationData);
         }
         if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
             const newPaymentEntry: PaymentDetailFormData = {
@@ -942,7 +875,13 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
             appendPayment(paymentData);
         }
     } else if (type === 'site') {
-        if (originalData.index !== undefined) updateSite(originalData.index, data); else appendSite(data);
+        if (originalData.index !== undefined) {
+            updateSite(originalData.index, data);
+        } else {
+            appendSite(data);
+        }
+    } else if (type === 'reorderSite') {
+        moveSite(data.from, data.to);
     }
     closeDialog();
   };
@@ -967,6 +906,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     <FormProvider {...form}>
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. {pageTitle} Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isViewer}><Edit className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
+        
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">{remittanceTitle}</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('remittance', createDefaultRemittanceDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount (₹)</TableHead><TableHead>Account</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{remittanceFields.length > 0 ? remittanceFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell>{(Number(item.amountRemitted) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.remittedAccount}</TableCell><TableCell>{item.remittanceRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold">₹{watch('totalRemittance')?.toLocaleString('en-IN')}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         
         <Card>
@@ -975,38 +915,48 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                 {isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('reappropriation', createDefaultReappropriationDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}
             </CardHeader>
             <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Ref. File No.</TableHead>
-                            <TableHead>Amount (₹)</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Remarks</TableHead>
-                            {isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {reappropriationFields.length > 0 ? reappropriationFields.map((item, index) => (
-                            <TableRow key={item.id}>
-                                <TableCell><Badge variant={item.type === 'Inward' ? 'default' : 'outline'}>{item.type}</Badge></TableCell>
-                                <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
-                                <TableCell className={cn("font-bold", item.type === 'Inward' ? 'text-green-600' : 'text-red-600')}>{item.type === 'Outward' ? '-' : '+'}{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell>
-                                <TableCell>{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                                <TableCell className="text-xs italic">{item.remarks}</TableCell>
-                                {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index, ...item })} disabled={isSupervisor || isViewer}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+                <div className="relative max-h-[400px] overflow-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Type of Page</TableHead>
+                                <TableHead>File No</TableHead>
+                                <TableHead>File Details</TableHead>
+                                <TableHead className="text-right">Credit</TableHead>
+                                <TableHead className="text-right">Debit</TableHead>
+                                <TableHead>Remarks</TableHead>
+                                {isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}
                             </TableRow>
-                        )) : <TableRow><TableCell colSpan={6} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
-                    </TableBody>
-                    <TableFooterComponent>
-                        <TableRow>
-                            <TableCell colSpan={isEditor && !isFormDisabled ? 5 : 4} className="text-right font-bold">Net Re-appropriation Amount</TableCell>
-                            <TableCell className={cn("font-bold", (watch('totalReappropriation') || 0) >= 0 ? "text-green-600" : "text-red-600")}>
-                                ₹{(watch('totalReappropriation') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                            </TableCell>
-                        </TableRow>
-                    </TableFooterComponent>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {reappropriationFields.length > 0 ? reappropriationFields.map((item, index) => (
+                                <TableRow key={item.id}>
+                                    <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                    <TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell>
+                                    <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
+                                    <TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell>
+                                    <TableCell className={cn("text-right font-bold", item.type === 'Inward' ? 'text-green-600' : '')}>
+                                        {item.type === 'Inward' ? (Number(item.amount) || 0).toLocaleString('en-IN') : '-'}
+                                    </TableCell>
+                                    <TableCell className={cn("text-right font-bold", item.type === 'Outward' ? 'text-red-600' : '')}>
+                                        {item.type === 'Outward' ? (Number(item.amount) || 0).toLocaleString('en-IN') : '-'}
+                                    </TableCell>
+                                    <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                    {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index, ...item })} disabled={isSupervisor || isViewer}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+                                </TableRow>
+                            )) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
+                        </TableBody>
+                        <TableFooterComponent>
+                            <TableRow>
+                                <TableCell colSpan={isEditor && !isFormDisabled ? 7 : 6} className="text-right font-bold">Net Re-appropriation Amount (Balance)</TableCell>
+                                <TableCell className={cn("font-bold text-right whitespace-nowrap", (watch('totalReappropriation') || 0) >= 0 ? "text-green-600" : "text-red-600")}>
+                                    ₹{(watch('totalReappropriation') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                </TableCell>
+                            </TableRow>
+                        </TableFooterComponent>
+                    </Table>
+                </div>
             </CardContent>
         </Card>
 

@@ -218,7 +218,9 @@ export type ReappropriationType = typeof reappropriationTypeOptions[number];
 export const ReappropriationDetailSchema = z.object({
   id: z.string().optional(),
   type: z.enum(reappropriationTypeOptions, { required_error: "Type is required." }),
+  pageType: z.string().optional(),
   refFileNo: z.string().min(1, "Reference File No. is required."),
+  fileDetails: z.string().optional(),
   amount: optionalNumber("Amount must be a valid number.").refine(val => val !== undefined && val > 0, "Amount must be greater than zero."),
   date: z.string().min(1, "Date is required."),
   remarks: z.string().optional(),
@@ -468,7 +470,7 @@ export const SiteDetailSchema = z.object({
   arsNumberOfStructures: optionalNumber("Number of Structures must be a valid number."),
   arsStorageCapacity: optionalNumber("Storage Capacity must be a valid number."),
   arsNumberOfFillings: optionalNumber("Number of Fillings must be a valid number."),
-  isArsImport: z.boolean().optional(),
+  isArsImport: false,
   isPending: z.boolean().optional(), // Internal state, not part of form
 
   // Investigation specific fields
@@ -553,3 +555,32 @@ export const DataEntrySchema = z.object({
     }
 });
 export type DataEntryFormData = z.infer<typeof DataEntrySchema>;
+
+export const reportableFields = [
+    { id: 'fileNo', label: 'File No', accessor: (e: any) => e.fileNo },
+    { id: 'applicantName', label: 'Applicant Name', accessor: (e: any) => e.applicantName },
+    { id: 'phoneNo', label: 'Phone No', accessor: (e: any) => e.phoneNo },
+    { id: 'appType', label: 'App Type', accessor: (e: any) => applicationTypeDisplayMap[e.applicationType as ApplicationType] || e.applicationType },
+    { id: 'remittance', label: 'Remittance (₹)', accessor: (e: any) => e.totalRemittance },
+    { id: 'reappropriation', label: 'Re-appropriation (₹)', accessor: (e: any) => e.totalReappropriation },
+    { id: 'expenditure', label: 'Expenditure (₹)', accessor: (e: any) => e.totalPaymentAllEntries },
+    { id: 'balance', label: 'Balance (₹)', accessor: (e: any) => e.overallBalance },
+    { id: 'siteName', label: 'Site Name', accessor: (e: any) => e.nameOfSite },
+    { id: 'purpose', label: 'Purpose', accessor: (e: any) => e.purpose },
+    { id: 'lsg', label: 'LSG', accessor: (e: any) => e.localSelfGovt },
+    { id: 'constituency', label: 'Constituency', accessor: (e: any) => e.constituency },
+    { id: 'workStatus', label: 'Work Status', accessor: (e: any) => e.workStatus },
+    { id: 'completionDate', label: 'Completion Date', accessor: (e: any) => e.dateOfCompletion },
+    { id: 'yield', label: 'Yield (LPH)', accessor: (e: any) => e.yieldDischarge, purpose: ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme"] },
+    { id: 'depth', label: 'Depth (m)', accessor: (e: any) => e.totalDepth, purpose: ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "HPS", "HPR"] },
+    { id: 'diameter', label: 'Diameter (mm)', accessor: (e: any) => e.diameter, purpose: ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev"] },
+    { id: 'contractor', label: 'Contractor', accessor: (e: any) => e.contractorName },
+    { id: 'supervisor', label: 'Supervisor', accessor: (e: any) => e.supervisorName },
+    { id: 'investigator', label: 'Investigator', accessor: (e: any) => e.nameOfInvestigator, purpose: ["GW Investigation"] },
+    { id: 'vesInvestigator', label: 'VES Investigator', accessor: (e: any) => e.vesInvestigator, purpose: ["GW Investigation", "VES"] },
+    { id: 'arsStructures', label: '# ARS Structures', accessor: (e: any) => e.arsNumberOfStructures, arsApplicable: true },
+    { id: 'arsCapacity', label: 'ARS Capacity', accessor: (e: any) => e.arsStorageCapacity, arsApplicable: true },
+    { id: 'arsFillings', label: 'ARS Fillings', accessor: (e: any) => e.arsNumberOfFillings, arsApplicable: true },
+    { id: 'arsType', label: 'ARS Type', accessor: (e: any) => e.arsTypeOfScheme, arsOnly: true, arsApplicable: true },
+    { id: 'officeLocation', label: 'Office', accessor: (e: any) => e.officeLocationFromPath || e.officeLocation },
+];
