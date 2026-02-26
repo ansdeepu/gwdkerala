@@ -498,12 +498,8 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
 
     const pageTypeOptions = [
         "Deposit Work",
-        "Private Deposit Work",
-        "Collector's Deposit Work",
-        "Plan Fund Work",
         "GW Investigation",
-        "Logging & Pumping Test",
-        "ARS"
+        "Logging & Pumping Test"
     ];
 
     return (
@@ -874,7 +870,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
 
-    // Subtraction logic: Balance = Remittance - Payments - Reappropriations
+    // Subtraction logic: Balance = Total Remittance - Total Payment - Total Re-appropriation
     setValue("overallBalance", spendableRemittance - totalReapp - totalPayment);
     
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, setValue]);
@@ -1047,7 +1043,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>
     </FormProvider>
   );

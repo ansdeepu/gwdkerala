@@ -363,7 +363,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
         >
             <DialogHeader>
                 <DialogTitle>{isDeferredFunding ? 'Administrative Sanction Details' : 'Remittance Details'}</DialogTitle>
-                {isDeferredFunding && <DialogDescription className="text-amber-700 bg-amber-50 p-2 rounded-md border border-amber-200">The amount entered here is the deferred amount, which the department has already received for this scheme.</DialogDescription>}
+                {isDeferredFunding && <DialogDescription className="text-amber-700 bg-amber-100/50 border border-amber-200 rounded-md">The amount entered here is the deferred amount, which the department has already received for this scheme.</DialogDescription>}
             </DialogHeader>
             <div className="p-6 pt-4 space-y-4">
                 <div className={cn("grid grid-cols-1 gap-4", isDeferredFunding ? "md:grid-cols-2" : "md:grid-cols-3")}>
@@ -457,12 +457,8 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
 
     const pageTypeOptions = [
         "Deposit Work",
-        "Private Deposit Work",
-        "Collector's Deposit Work",
-        "Plan Fund Work",
         "GW Investigation",
-        "Logging & Pumping Test",
-        "ARS"
+        "Logging & Pumping Test"
     ];
 
     return (
@@ -1229,6 +1225,10 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     return workTypeContext === 'planFund' || workTypeContext === 'collector';
   }, [workTypeContext, fileIdToEdit, getValues]);
 
+  const showReappropriation = !['private', 'collector', 'planFund'].includes(workTypeContext || '');
+  const siteSectionNum = showReappropriation ? "4" : "3";
+  const paymentSectionNum = showReappropriation ? "5" : "4";
+  const finalSectionNum = showReappropriation ? "6" : "5";
 
   const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction Details" : "2. Remittance Details";
 
@@ -1524,58 +1524,60 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             </CardContent>
         </Card>
 
-        <Card>
-            <CardHeader className="flex flex-row justify-between items-start">
-                <div><CardTitle className="text-xl">3. Re-appropriation Details</CardTitle></div>
-                {isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('reappropriation', createDefaultReappropriationDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}
-            </CardHeader>
-            <CardContent>
-                <div className="relative max-h-[400px] overflow-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Type of Page</TableHead>
-                                <TableHead>File No</TableHead>
-                                <TableHead>File Details</TableHead>
-                                <TableHead className="text-right">Credit</TableHead>
-                                <TableHead className="text-right">Debit</TableHead>
-                                <TableHead>Remarks</TableHead>
-                                {isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {reappropriationFields.length > 0 ? reappropriationFields.map((item, index) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                                    <TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell>
-                                    <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
-                                    <TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell>
-                                    <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
-                                    <TableCell className="text-right font-bold text-red-600">
-                                        {(Number(item.amount) || 0).toLocaleString('en-IN')}
-                                    </TableCell>
-                                    <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
-                                    {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index, ...item })} disabled={isSupervisor || isViewer}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+        {showReappropriation && (
+            <Card>
+                <CardHeader className="flex flex-row justify-between items-start">
+                    <div><CardTitle className="text-xl">3. Re-appropriation Details</CardTitle></div>
+                    {isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('reappropriation', createDefaultReappropriationDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}
+                </CardHeader>
+                <CardContent>
+                    <div className="relative max-h-[400px] overflow-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Type of Page</TableHead>
+                                    <TableHead>File No</TableHead>
+                                    <TableHead>File Details</TableHead>
+                                    <TableHead className="text-right">Credit</TableHead>
+                                    <TableHead className="text-right">Debit</TableHead>
+                                    <TableHead>Remarks</TableHead>
+                                    {isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}
                                 </TableRow>
-                            )) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
-                        </TableBody>
-                        <TableFooterComponent>
-                            <TableRow>
-                                <TableCell colSpan={isEditor && !isFormDisabled ? 7 : 6} className="text-right font-bold">Total Re-appropriated Amount (Transferred Out)</TableCell>
-                                <TableCell className="font-bold text-right text-red-600">
-                                    ₹{totalReappropriationWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}
-                                </TableCell>
-                            </TableRow>
-                        </TableFooterComponent>
-                    </Table>
-                </div>
-            </CardContent>
-        </Card>
+                            </TableHeader>
+                            <TableBody>
+                                {reappropriationFields.length > 0 ? reappropriationFields.map((item, index) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                        <TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell>
+                                        <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
+                                        <TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell>
+                                        <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                        <TableCell className="text-right font-bold text-red-600">
+                                            {(Number(item.amount) || 0).toLocaleString('en-IN')}
+                                        </TableCell>
+                                        <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                        {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index, ...item })} disabled={isSupervisor || isViewer}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+                                    </TableRow>
+                                )) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
+                            </TableBody>
+                            <TableFooterComponent>
+                                <TableRow>
+                                    <TableCell colSpan={isEditor && !isFormDisabled ? 7 : 6} className="text-right font-bold">Total Re-appropriated Amount (Transferred Out)</TableCell>
+                                    <TableCell className="font-bold text-right text-red-600">
+                                        ₹{totalReappropriationWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}
+                                    </TableCell>
+                                </TableRow>
+                            </TableFooterComponent>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+        )}
 
         <Card>
             <CardHeader className="flex flex-row justify-between items-start">
-                <div><CardTitle className="text-xl">4. Site Details</CardTitle></div>
+                <div><CardTitle className="text-xl">{siteSectionNum}. Site Details</CardTitle></div>
                 {isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}
             </CardHeader>
             <CardContent>
@@ -1662,7 +1664,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         
         <Card>
             <CardHeader className="flex flex-row justify-between items-start">
-                <div><CardTitle className="text-xl">5. Payment Details</CardTitle></div>
+                <div><CardTitle className="text-xl">{paymentSectionNum}. Payment Details</CardTitle></div>
                  {isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}
             </CardHeader>
             <CardContent>
@@ -1692,92 +1694,26 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         </Card>
 
         <Card>
-            <CardHeader><CardTitle className="text-xl">6. Final Details</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Re-appropriation amount</dt><dd className="font-mono font-bold text-red-600">₹{totalReappropriationWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent>
+            <CardHeader><CardTitle className="text-xl">{finalSectionNum}. Final Details</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>{showReappropriation && <div className="flex justify-between items-baseline"><dt>Total Re-appropriation amount</dt><dd className="font-mono font-bold text-red-600">₹{totalReappropriationWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>}<Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent>
         </Card>
 
         {!(isViewer || isFormDisabled) && (
-            <CardFooter className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button>
-                <Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : (fileIdToEdit ? 'Save Changes & Exit' : 'Save New File & Exit')}</Button>
-            </CardFooter>
+            <CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : (fileIdToEdit ? 'Save Changes & Exit' : 'Save New File & Exit')}</Button></CardFooter>
         )}
         
       </form>
 
-      <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}>
-          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl">
-              <ApplicationDialogContent 
-                  initialData={dialogState.data} 
-                  onConfirm={handleDialogConfirm} 
-                  onCancel={closeDialog} 
-                  formOptions={applicationTypeOptionsForForm}
-                  isEditing={!!fileIdToEdit}
-              />
-          </DialogContent>
-      </Dialog>
-      <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}>
-          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl">
-              <RemittanceDialogContent
-                  initialData={dialogState.data}
-                  onConfirm={handleDialogConfirm}
-                  onCancel={closeDialog}
-                  isDeferredFunding={isDeferredFunding}
-              />
-          </DialogContent>
-      </Dialog>
-      <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}>
-          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl">
-              <ReappropriationDialogContent
-                  initialData={dialogState.data}
-                  onConfirm={handleDialogConfirm}
-                  onCancel={closeDialog}
-              />
-          </DialogContent>
-      </Dialog>
-       <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}>
-          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0">
-            <SiteDialogContent 
-              initialData={dialogState.data} 
-              onConfirm={handleDialogConfirm} 
-              onCancel={closeDialog} 
-              supervisorList={supervisorList} 
-              isReadOnly={dialogState.isView || isViewer} 
-              isSupervisor={isSupervisor} 
-              allLsgConstituencyMaps={allLsgConstituencyMaps} 
-              allE_tenders={allE_tenders}
-            />
-          </DialogContent>
-      </Dialog>
-       <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}>
-          <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0">
-            <PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} />
-          </DialogContent>
-      </Dialog>
-      {dialogState.type === 'reorderSite' && dialogState.data && (
-          <Dialog open={true} onOpenChange={closeDialog}>
-              <ReorderSiteDialog fromIndex={dialogState.data.from} siteCount={siteFields.length} onConfirm={handleDialogConfirm} onCancel={closeDialog} />
-          </Dialog>
-      )}
+      <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} isEditing={!!fileIdToEdit} /></DialogContent></Dialog>
+      <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
+      <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
+       <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} supervisorList={supervisorList} isReadOnly={dialogState.isView || isViewer} isSupervisor={isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders}/></DialogContent></Dialog>
+       <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
+      {dialogState.type === 'reorderSite' && dialogState.data && (<Dialog open={true} onOpenChange={closeDialog}><ReorderSiteDialog fromIndex={dialogState.data.from} siteCount={siteFields.length} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></Dialog>) }
      
       <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove the selected {itemToDelete?.type} entry from this file.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
 
-      <AlertDialog open={siteToCopy !== null} onOpenChange={() => setSiteToCopy(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Copy</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to create a copy of this site?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSiteToCopy(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmCopySite}>
-              Yes, Copy
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AlertDialog open={siteToCopy !== null} onOpenChange={() => setSiteToCopy(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Confirm Copy</AlertDialogTitle><AlertDialogDescription>Are you sure you want to create a copy of this site?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setSiteToCopy(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmCopySite}>Yes, Copy</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </FormProvider>
   );
 }
