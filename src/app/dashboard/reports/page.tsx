@@ -724,6 +724,7 @@ export default function ReportsPage() {
                                 {renderDetail("Zone Details (m)", site.zoneDetails)}
                                 {renderDetail("Static Water Level (m)", site.waterLevel)}
                                 {renderDetail("Type of Rig Used", site.typeOfRig)}
+                                {renderDetail("Type of Rig Used", site.typeOfRig)}
                                 {renderDetail("Drilling Remarks", site.drillingRemarks)}
                               </>}
 
