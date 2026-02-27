@@ -7,7 +7,7 @@ export const optionalNumber = (errorMessage: string = "Must be a valid number.")
     if (val === null || val === undefined || val === "") return undefined;
     if (typeof val === 'string' && isNaN(Number(val))) return undefined;
     return val;
-}, z.coerce.number({ invalid_type_error: errorMessage }).min(0, "Cannot be negative.").optional());
+}, z.number({ coerce: true, invalid_type_error: errorMessage }).min(0, "Cannot be negative.").optional());
 
 // Use 'yyyy-MM-dd' for native date pickers
 const nativeDateSchema = z.preprocess(
@@ -402,6 +402,7 @@ export const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Com
 export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
 
 export const SiteDetailSchema = z.object({
+  id: z.string().optional(),
   nameOfSite: z.string().min(1, "Name of Site is required."),
   localSelfGovt: z.string().optional(),
   constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
@@ -470,7 +471,7 @@ export const SiteDetailSchema = z.object({
   arsNumberOfStructures: optionalNumber("Number of Structures must be a valid number."),
   arsStorageCapacity: optionalNumber("Storage Capacity must be a valid number."),
   arsNumberOfFillings: optionalNumber("Number of Fillings must be a valid number."),
-  isArsImport: false,
+  isArsImport: z.boolean().optional().default(false),
   isPending: z.boolean().optional(), // Internal state, not part of form
 
   // Investigation specific fields
