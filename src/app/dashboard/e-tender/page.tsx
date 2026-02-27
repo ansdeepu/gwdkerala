@@ -184,24 +184,9 @@ export default function ETenderListPage() {
         if (!tenderToCopy) return;
         setIsCopying(true);
         try {
-            const newTenderData: Partial<E_tender> = {
-                // Copy basic details
+            const newTenderId = await addTender({
+                ...tenderToCopy,
                 eTenderNo: `${tenderToCopy.eTenderNo}-COPY`,
-                tenderDate: tenderToCopy.tenderDate,
-                fileNo: tenderToCopy.fileNo,
-                nameOfWork: tenderToCopy.nameOfWork,
-                nameOfWorkMalayalam: tenderToCopy.nameOfWorkMalayalam,
-                location: tenderToCopy.location,
-                estimateAmount: tenderToCopy.estimateAmount,
-                tenderFormFee: tenderToCopy.tenderFormFee,
-                emd: tenderToCopy.emd,
-                periodOfCompletion: tenderToCopy.periodOfCompletion,
-                dateTimeOfReceipt: tenderToCopy.dateTimeOfReceipt,
-                dateTimeOfOpening: tenderToCopy.dateTimeOfOpening,
-                tenderType: tenderToCopy.tenderType,
-                tenderFeeDescription: tenderToCopy.tenderFeeDescription,
-                emdDescription: tenderToCopy.emdDescription,
-                // Reset other fields
                 presentStatus: 'Tender Process',
                 bidders: [],
                 corrigendums: [],
@@ -222,8 +207,7 @@ export default function ETenderListPage() {
                 supervisor2Id: null, supervisor2Name: null, supervisor2Phone: null,
                 supervisor3Id: null, supervisor3Name: null, supervisor3Phone: null,
                 remarks: '',
-            };
-            const newTenderId = await addTender(newTenderData as any);
+            });
             toast({ title: "Tender Copied", description: "A new tender has been created. Redirecting to edit..." });
             router.push(`/dashboard/e-tender/${newTenderId}`);
         } catch (error: any) {

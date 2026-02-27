@@ -256,7 +256,7 @@ export default function ArsPage() {
     }, null as Date | null);
 
     return { filteredSites: sites, lastCreatedDate: lastCreated };
-  }, [arsEntries, searchTerm, startDate, endDate, schemeTypeFilter, constituencyFilter, user]);
+  }, [arsEntries, searchTerm, startDate, endDate, schemeTypeFilter, constituencyFilter]);
 
   useEffect(() => {
     const pageFromUrl = searchParams?.get('page');
@@ -522,7 +522,9 @@ export default function ArsPage() {
               noOfBeneficiary: String((rowData as any)['No. of Beneficiaries'] || ''),
               workRemarks: String((rowData as any)['Remarks'] || ''),
               supervisorName: null,
-              supervisorUid: null
+              supervisorUid: null,
+              workImages: [],
+              workVideos: []
             };
 
             await addArsEntry(newEntry);
