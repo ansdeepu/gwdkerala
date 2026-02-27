@@ -1,3 +1,4 @@
+
 // src/app/dashboard/gw-investigation/page.tsx
 "use client";
 
