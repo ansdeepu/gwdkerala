@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
 
@@ -528,6 +529,7 @@ export const DataEntrySchema = z.object({
 
   reappropriationDetails: z.array(ReappropriationDetailSchema).optional().default([]),
   totalReappropriation: z.coerce.number().optional().default(0),
+  totalReappropriationCredit: z.coerce.number().optional().default(0),
 
   siteDetails: z.array(SiteDetailSchema).optional(),
 

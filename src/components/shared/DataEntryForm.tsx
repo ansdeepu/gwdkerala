@@ -1203,7 +1203,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const { createPendingUpdate } = usePendingUpdates();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { allLsgConstituencyMaps, allE_tenders } = useDataStore();
+  const { allLsgConstituencyMaps, allE_tenders, allFileEntries } = useDataStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
@@ -1257,6 +1257,27 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const watchedReappropriationDetails = watch("reappropriationDetails");
   const watchedPaymentDetails = watch("paymentDetails");
   const watchedSiteDetails = watch("siteDetails");
+  const currentFileNo = watch("fileNo");
+
+  const autoCredits = useMemo(() => {
+    if (!currentFileNo) return [];
+    const normalizedFileNo = currentFileNo.toLowerCase().trim();
+    const credits: any[] = [];
+    allFileEntries.forEach(entry => {
+        if (entry.fileNo?.toLowerCase().trim() === normalizedFileNo) return; // Skip self
+        entry.reappropriationDetails?.forEach(reapp => {
+            if (reapp.refFileNo?.toLowerCase().trim() === normalizedFileNo) {
+                credits.push({
+                    ...reapp,
+                    sourceFileNo: entry.fileNo,
+                    sourceApplicantName: entry.applicantName,
+                    sourcePageType: entry.applicationType ? (applicationTypeDisplayMap[entry.applicationType as ApplicationType] || entry.applicationType) : 'Deposit Work'
+                });
+            }
+        });
+    });
+    return credits;
+  }, [currentFileNo, allFileEntries]);
 
   useEffect(() => {
     const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
@@ -1264,11 +1285,15 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     }, 0) || 0;
     setValue("totalRemittance", totalRemittance);
 
-    const totalReapp = watchedReappropriationDetails?.reduce((sum, item) => {
-        const amount = Number(item.amount) || 0;
-        return sum + amount; // All are debits (transfers out)
+    const totalReappDebit = watchedReappropriationDetails?.reduce((sum, item) => {
+        return sum + (Number(item.amount) || 0);
     }, 0) || 0;
-    setValue("totalReappropriation", totalReapp);
+    setValue("totalReappropriation", totalReappDebit);
+
+    const totalReappCredit = autoCredits.reduce((sum, item) => {
+        return sum + (Number(item.amount) || 0);
+    }, 0);
+    setValue("totalReappropriationCredit", totalReappCredit);
 
     const spendableRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
         if (item.remittedAccount !== 'Revenue Head') {
@@ -1280,10 +1305,8 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
     
-    // Subtraction logic: Balance = Remittance - Payments - Reappropriations
-    const projectExpenses = totalPayment;
-
-    setValue("overallBalance", spendableRemittance - totalReapp - projectExpenses);
+    // Overall Balance = Total Remittance + Total Re-appropriation Credit - Total Payment - Total Re-appropriation Debit
+    setValue("overallBalance", spendableRemittance + totalReappCredit - totalPayment - totalReappDebit);
     
     const supervisorUids = new Set<string>();
     watchedSiteDetails?.forEach(site => {
@@ -1293,7 +1316,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     });
     setValue("assignedSupervisorUids", Array.from(supervisorUids));
 
-  }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, watchedSiteDetails, setValue]);
+  }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, watchedSiteDetails, autoCredits, setValue]);
 
   const totalEstimate = useMemo(() => {
     return watchedSiteDetails?.reduce((sum, site) => sum + (Number(site.estimateAmount) || 0), 0) || 0;
@@ -1462,6 +1485,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
   const totalRemittanceWatched = watch('totalRemittance');
   const totalReappropriationWatched = watch('totalReappropriation');
+  const totalReappropriationCreditWatched = watch('totalReappropriationCredit');
   const totalPaymentWatched = watch('totalPaymentAllEntries');
 
   return (
@@ -1547,6 +1571,20 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
+                                {autoCredits.length > 0 && autoCredits.map((item, index) => (
+                                    <TableRow key={`credit-${index}`} className="bg-green-50/50">
+                                        <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                        <TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell>
+                                        <TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell>
+                                        <TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell>
+                                        <TableCell className="text-right font-bold text-green-600">
+                                            {(Number(item.amount) || 0).toLocaleString('en-IN')}
+                                        </TableCell>
+                                        <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                        <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                        {isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}
+                                    </TableRow>
+                                ))}
                                 {reappropriationFields.length > 0 ? reappropriationFields.map((item, index) => (
                                     <TableRow key={item.id}>
                                         <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
@@ -1560,7 +1598,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                         <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
                                         {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index, ...item })} disabled={isSupervisor || isViewer}><Edit className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
                                     </TableRow>
-                                )) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
+                                )) : autoCredits.length === 0 && <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
                             </TableBody>
                             <TableFooterComponent>
                                 <TableRow>
@@ -1608,7 +1646,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEyeIconClick(site, index); }}>
+                                                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}>
                                                             <Eye className="h-4 w-4"/>
                                                         </Button>
                                                     </TooltipTrigger>
@@ -1641,20 +1679,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                     </div>
                                 </AccordionTrigger>
                                 <AccordionContent className="p-6 pt-0">
-                                    <div className="border-t pt-6 space-y-4">
-                                        <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4">
-                                            <DetailRow label="Purpose" value={site.purpose} />
-                                            <DetailRow label="Work Status" value={site.workStatus} />
-                                            <DetailRow label="Site Estimate (₹)" value={site.estimateAmount} />
-                                            <DetailRow label="Remitted for Site (₹)" value={site.remittedAmount} />
-                                            <DetailRow label="Total Expenditure (₹)" value={site.totalExpenditure} />
-                                            <DetailRow label="Contractor" value={site.contractorName} />
-                                            <DetailRow label="Supervisor" value={site.supervisorName} />
-                                            <DetailRow label="Designation" value={site.supervisorDesignation} />
-                                            <DetailRow label="Completion Date" value={site.dateOfCompletion ? format(new Date(site.dateOfCompletion), 'dd/MM/yyyy') : 'N/A'} />
-                                            <div className="md:col-span-4"><DetailRow label="Work Remarks" value={site.workRemarks} /></div>
-                                        </dl>
-                                    </div>
+                                    <div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Work Status" value={site.workStatus} /><DetailRow label="Site Estimate (₹)" value={site.estimateAmount} /><DetailRow label="Remitted for Site (₹)" value={site.remittedAmount} /><DetailRow label="Total Expenditure (₹)" value={site.totalExpenditure} /><DetailRow label="Contractor" value={site.contractorName} /><DetailRow label="Supervisor" value={site.supervisorName} /><DetailRow label="Designation" value={site.supervisorDesignation} /><DetailRow label="Completion Date" value={site.dateOfCompletion ? format(new Date(site.dateOfCompletion), 'dd/MM/yyyy') : 'N/A'} /><div className="md:col-span-4"><DetailRow label="Work Remarks" value={site.workRemarks} /></div></dl></div>
                                 </AccordionContent>
                             </AccordionItem>
                         );
@@ -1696,7 +1721,11 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
         <Card>
             <CardHeader><CardTitle className="text-xl">{finalSectionNum}. Final Details</CardTitle></CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>{showReappropriation && <div className="flex justify-between items-baseline"><dt>Total Re-appropriation amount</dt><dd className="font-mono font-bold text-red-600">₹{totalReappropriationWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>}<Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{watch('overallBalance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
+            {showReappropriation && <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>}
+            <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
+            {showReappropriation && <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>}
+            <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent>
         </Card>
 
         {!(isViewer || isFormDisabled) && (
