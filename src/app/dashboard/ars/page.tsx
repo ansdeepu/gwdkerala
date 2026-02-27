@@ -565,13 +565,21 @@ export default function ArsPage() {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="relative w-full sm:flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="search" placeholder="Search across all fields..." className="w-full rounded-lg bg-background pl-10 shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    <Input 
+                        type="search" 
+                        id="ars-search"
+                        name="arsSearch"
+                        placeholder="Search across all fields..." 
+                        className="w-full rounded-lg bg-background pl-10 shadow-sm" 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)} 
+                    />
                 </div>
                 <div className="flex items-center flex-wrap sm:flex-nowrap justify-end gap-2">
                   {canEdit && <Button size="sm" onClick={handleAddNewClick} className="shrink-0"> <PlusCircle className="mr-2 h-4 w-4" /> Add New ARS </Button>}
                   <Button variant="outline" onClick={handleExportExcel} size="sm" className="shrink-0"> <FileDown className="mr-2 h-4 w-4" /> Export Excel </Button>
                   {canEdit && ( <> 
-                      <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".xlsx, .xls" /> 
+                      <input type="file" id="ars-excel-upload" name="arsExcelUpload" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".xlsx, .xls" /> 
                       <Button onClick={() => fileInputRef.current?.click()} disabled={isUploading} size="sm" className="shrink-0"> 
                           {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
                           {isUploading ? 'Importing...' : 'Import Excel'}
@@ -585,6 +593,8 @@ export default function ArsPage() {
               <div className="flex flex-wrap items-center gap-2">
                   <Input
                       type="date"
+                      id="ars-filter-start-date"
+                      name="arsFilterStartDate"
                       placeholder="dd-mm-yyyy"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
@@ -592,12 +602,14 @@ export default function ArsPage() {
                   />
                   <Input
                       type="date"
+                      id="ars-filter-end-date"
+                      name="arsFilterEndDate"
                       placeholder="dd-mm-yyyy"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       className="w-auto"
                   />
-                  <Select value={schemeTypeFilter} onValueChange={setSchemeTypeFilter}>
+                  <Select value={schemeTypeFilter} onValueChange={setSchemeTypeFilter} name="arsSchemeTypeFilter">
                       <SelectTrigger className="w-auto min-w-[200px]">
                           <SelectValue placeholder="Filter by Type of Scheme" />
                       </SelectTrigger>
@@ -608,7 +620,7 @@ export default function ArsPage() {
                           ))}
                       </SelectContent>
                   </Select>
-                  <Select value={constituencyFilter} onValueChange={setConstituencyFilter}>
+                  <Select value={constituencyFilter} onValueChange={setConstituencyFilter} name="arsConstituencyFilter">
                       <SelectTrigger className="w-auto min-w-[200px]">
                           <SelectValue placeholder="Filter by Constituency" />
                       </SelectTrigger>
@@ -634,7 +646,7 @@ export default function ArsPage() {
                         </div>
                         {lastCreatedDate && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                                <Clock className="h-4 w-4"/>
+                                <Clock className="h-3.5 w-3.5"/>
                                 Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                             </div>
                         )}

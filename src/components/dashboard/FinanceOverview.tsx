@@ -21,7 +21,7 @@ interface FinancialSummary {
   totalCompleted: number;
   totalPayment: number;
   applicationData: DataEntryFormData[]; 
-  completedData: DataEntryFormData[];
+  completedData: SiteDetailWithFileContext[];
 }
 type FinancialSummaryReport = Record<string, FinancialSummary>;
 
@@ -308,8 +308,22 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 pt-4 border-t mt-4">
-                    <Input type="date" className="w-[240px]" value={dates.start ? format(dates.start, 'yyyy-MM-dd') : ''} onChange={(e) => onSetDates({...dates, start: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined})}/>
-                    <Input type="date" className="w-[240px]" value={dates.end ? format(dates.end, 'yyyy-MM-dd') : ''} onChange={(e) => onSetDates({...dates, end: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined})}/>
+                    <Input 
+                        type="date" 
+                        id="finance-start-date"
+                        name="financeStartDate"
+                        className="w-[240px]" 
+                        value={dates.start ? format(dates.start, 'yyyy-MM-dd') : ''} 
+                        onChange={(e) => onSetDates({...dates, start: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined})}
+                    />
+                    <Input 
+                        type="date" 
+                        id="finance-end-date"
+                        name="financeEndDate"
+                        className="w-[240px]" 
+                        value={dates.end ? format(dates.end, 'yyyy-MM-dd') : ''} 
+                        onChange={(e) => onSetDates({...dates, end: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined})}
+                    />
                     <Button onClick={handleClearFinanceDates} variant="ghost" className="h-9 px-3"><XCircle className="mr-2 h-4 w-4"/>Clear Dates</Button>
                 </div>
             </CardHeader>
@@ -419,4 +433,3 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
         </Card>
     );
 }
-

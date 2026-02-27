@@ -1,3 +1,4 @@
+
 // src/components/dashboard/ConstituencyWiseOverview.tsx
 "use client";
 
@@ -201,12 +202,16 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
         <div className="flex flex-wrap items-center gap-2 pt-4 border-t mt-4">
             <Input
                 type="date"
+                id="constituency-start-date"
+                name="constituencyStartDate"
                 className="w-auto"
                 value={dates.start ? format(dates.start, 'yyyy-MM-dd') : ''}
                 onChange={(e) => onSetDates({ ...dates, start: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined })}
             />
             <Input
                 type="date"
+                id="constituency-end-date"
+                name="constituencyEndDate"
                 className="w-auto"
                 value={dates.end ? format(dates.end, 'yyyy-MM-dd') : ''}
                 onChange={(e) => onSetDates({ ...dates, end: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined })}

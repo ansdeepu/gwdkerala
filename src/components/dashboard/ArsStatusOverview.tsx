@@ -150,7 +150,7 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 pt-4 border-t mt-4">
-            <Select value={schemeTypeFilter} onValueChange={setSchemeTypeFilter}>
+            <Select value={schemeTypeFilter} onValueChange={setSchemeTypeFilter} name="arsSchemeFilter">
               <SelectTrigger className="w-[240px]">
                 <SelectValue placeholder="Filter by Type of Scheme" />
               </SelectTrigger>
@@ -163,12 +163,16 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
             </Select>
             <Input
                 type="date"
+                id="ars-overview-start-date"
+                name="arsOverviewStartDate"
                 className="w-[240px]"
                 value={dates.start ? format(dates.start, 'yyyy-MM-dd') : ''}
                 onChange={(e) => onSetDates({ ...dates, start: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined })}
             />
             <Input
                 type="date"
+                id="ars-overview-end-date"
+                name="arsOverviewEndDate"
                 className="w-[240px]"
                 value={dates.end ? format(dates.end, 'yyyy-MM-dd') : ''}
                 onChange={(e) => onSetDates({ ...dates, end: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined })}

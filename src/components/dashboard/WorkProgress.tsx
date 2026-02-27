@@ -279,7 +279,14 @@ export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser
             <CardDescription>Summary of completed and ongoing work by category.</CardDescription>
           </div>
           <div className="shrink-0">
-             <Input type="month" className="w-full sm:w-[200px]" value={format(workReportMonth, 'yyyy-MM')} onChange={handleMonthChange} />
+             <Input 
+                type="month" 
+                id="work-report-month"
+                name="workReportMonth"
+                className="w-full sm:w-[200px]" 
+                value={format(workReportMonth, 'yyyy-MM')} 
+                onChange={handleMonthChange} 
+            />
           </div>
         </div>
       </CardHeader>

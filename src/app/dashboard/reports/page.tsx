@@ -528,15 +528,15 @@ export default function ReportsPage() {
       <Card className="shadow-lg no-print">
         <CardContent className="p-4 space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Select value={applicationTypeFilter} onValueChange={setApplicationTypeFilter}>
-                    <SelectTrigger><SelectValue placeholder="Filter by Application Type" /></SelectTrigger>
+                <Select value={applicationTypeFilter} onValueChange={setApplicationTypeFilter} name="appTypeFilter">
+                    <SelectTrigger id="report-app-type-trigger"><SelectValue placeholder="Filter by Application Type" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Application Types</SelectItem>
                         {applicationTypeOptions.map((type) => (<SelectItem key={type} value={type}>{applicationTypeDisplayMap[type as ApplicationType] || type.replace(/_/g, " ")}</SelectItem>))}
                     </SelectContent>
                 </Select>
-                 <Select value={dateFilterType} onValueChange={(value) => setDateFilterType(value as any)}>
-                    <SelectTrigger><SelectValue placeholder="Select Date Type for Range" /></SelectTrigger>
+                 <Select value={dateFilterType} onValueChange={(value) => setDateFilterType(value as any)} name="dateTypeFilter">
+                    <SelectTrigger id="report-date-type-trigger"><SelectValue placeholder="Select Date Type for Range" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">-- Clear Date Type --</SelectItem>
                         <SelectItem value="remittance">Date of Remittance</SelectItem>
@@ -544,33 +544,33 @@ export default function ReportsPage() {
                         <SelectItem value="payment">Date of Payment</SelectItem>
                     </SelectContent>
                 </Select>
-                <Input type="date" placeholder="From Date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                <Input type="date" placeholder="To Date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <Input type="date" id="report-start-date" name="reportStartDate" placeholder="From Date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <Input type="date" id="report-end-date" name="reportEndDate" placeholder="To Date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Select value={serviceTypeFilter} onValueChange={setServiceTypeFilter}>
-                    <SelectTrigger><SelectValue placeholder="Filter by Site Service Type" /></SelectTrigger>
+                <Select value={serviceTypeFilter} onValueChange={setServiceTypeFilter} name="serviceTypeFilter">
+                    <SelectTrigger id="report-service-type-trigger"><SelectValue placeholder="Filter by Site Service Type" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Site Service Types</SelectItem>
                         {sitePurposeOptions.map((purpose) => (<SelectItem key={purpose} value={purpose}>{purpose}</SelectItem>))}
                     </SelectContent>
                 </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger><SelectValue placeholder="Filter by File Status" /></SelectTrigger>
+                <Select value={statusFilter} onValueChange={setStatusFilter} name="fileStatusFilter">
+                    <SelectTrigger id="report-file-status-trigger"><SelectValue placeholder="Filter by File Status" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All File Statuses</SelectItem>
                         {fileStatusOptions.map((status) => (<SelectItem key={status} value={status}>{status}</SelectItem>))}
                     </SelectContent>
                 </Select>
-                <Select value={typeOfRigFilter} onValueChange={setTypeOfRigFilter}>
-                    <SelectTrigger><SelectValue placeholder="Filter by Site Type of Rig" /></SelectTrigger>
+                <Select value={typeOfRigFilter} onValueChange={setTypeOfRigFilter} name="rigTypeFilter">
+                    <SelectTrigger id="report-rig-type-trigger"><SelectValue placeholder="Filter by Site Type of Rig" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Site Rig Types</SelectItem>
                         {siteTypeOfRigOptions.map((rig) => (<SelectItem key={rig} value={rig}>{rig}</SelectItem>))}
                     </SelectContent>
                 </Select>
-                 <Select value={workCategoryFilter} onValueChange={setWorkCategoryFilter}>
-                    <SelectTrigger><SelectValue placeholder="Filter by Site Work Category" /></SelectTrigger>
+                 <Select value={workCategoryFilter} onValueChange={setWorkCategoryFilter} name="workCategoryFilter">
+                    <SelectTrigger id="report-work-category-trigger"><SelectValue placeholder="Filter by Site Work Category" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Site Work Categories</SelectItem>
                         {siteWorkStatusOptions.map((category) => (<SelectItem key={category} value={category}>{category}</SelectItem>))}
@@ -578,8 +578,8 @@ export default function ReportsPage() {
                 </Select>
             </div>
              <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 border-t mt-4">
-                <Select value={constituencyFilter} onValueChange={setConstituencyFilter}>
-                  <SelectTrigger className="w-full sm:w-[250px]">
+                <Select value={constituencyFilter} onValueChange={setConstituencyFilter} name="constituencyFilter">
+                  <SelectTrigger id="report-constituency-trigger" className="w-full sm:w-[250px]">
                     <SelectValue placeholder="Filter by Constituency" />
                   </SelectTrigger>
                   <SelectContent>
@@ -591,7 +591,7 @@ export default function ReportsPage() {
                 </Select>
                 <div className="relative flex-grow w-full">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input placeholder="Global text search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                    <Input id="report-search" name="reportSearch" placeholder="Global text search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Button variant="secondary" onClick={handleResetFilters} className="w-full sm:w-auto"><RotateCcw className="mr-2 h-4 w-4" />Reset</Button>

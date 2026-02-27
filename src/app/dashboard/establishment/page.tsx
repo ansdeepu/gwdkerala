@@ -230,6 +230,8 @@ export default function EstablishmentPage() {
             <div className="relative flex-grow w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                id="staff-search"
+                name="staffSearch"
                 placeholder="Search staff members..."
                 className="w-full pl-10"
                 value={searchTerm}

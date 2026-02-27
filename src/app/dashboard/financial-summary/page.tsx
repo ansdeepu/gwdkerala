@@ -197,12 +197,28 @@ export default function FinancialSummaryPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2 pt-4 border-t mt-4">
               <div className="space-y-1">
-                <Label>From Date</Label>
-                <Input type="date" placeholder="From: yyyy-mm-dd" className="w-[180px]" value={financeStartDate ? format(financeStartDate, "yyyy-MM-dd") : ''} onChange={(e) => setFinanceStartDate(e.target.value ? new Date(e.target.value) : undefined)} />
+                <Label htmlFor="finance-start-date">From Date</Label>
+                <Input 
+                    type="date" 
+                    id="finance-start-date"
+                    name="financeStartDate"
+                    placeholder="From: yyyy-mm-dd" 
+                    className="w-[180px]" 
+                    value={financeStartDate ? format(financeStartDate, "yyyy-MM-dd") : ''} 
+                    onChange={(e) => setFinanceStartDate(e.target.value ? new Date(e.target.value) : undefined)} 
+                />
               </div>
               <div className="space-y-1">
-                <Label>To Date</Label>
-                <Input type="date" placeholder="To: yyyy-mm-dd" className="w-[180px]" value={financeEndDate ? format(financeEndDate, "yyyy-MM-dd") : ''} onChange={(e) => setFinanceEndDate(e.target.value ? new Date(e.target.value) : undefined)} />
+                <Label htmlFor="finance-end-date">To Date</Label>
+                <Input 
+                    type="date" 
+                    id="finance-end-date"
+                    name="financeEndDate"
+                    placeholder="To: yyyy-mm-dd" 
+                    className="w-[180px]" 
+                    value={financeEndDate ? format(financeEndDate, "yyyy-MM-dd") : ''} 
+                    onChange={(e) => setFinanceEndDate(e.target.value ? new Date(e.target.value) : undefined)} 
+                />
               </div>
               <div className="self-end">
                 <Button onClick={handleClearFinanceDates} variant="ghost" className="h-9 px-3"><XCircle className="mr-2 h-4 w-4"/>Clear Dates</Button>

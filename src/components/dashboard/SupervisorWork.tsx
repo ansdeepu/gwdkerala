@@ -1,3 +1,4 @@
+
 // src/components/dashboard/SupervisorWork.tsx
 "use client";
 
@@ -112,8 +113,8 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
       </CardHeader>
       <CardContent className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
-          <Select onValueChange={setSelectedSupervisorId} value={selectedSupervisorId}>
-            <SelectTrigger><SelectValue placeholder="Select a Staff Member" /></SelectTrigger>
+          <Select onValueChange={setSelectedSupervisorId} value={selectedSupervisorId} name="supervisorFilter">
+            <SelectTrigger id="supervisor-select-trigger"><SelectValue placeholder="Select a Staff Member" /></SelectTrigger>
             <SelectContent>
               {supervisorList.length > 0 ? (
                 supervisorList.map(s => <SelectItem key={s.uid} value={s.uid}>{s.name}</SelectItem>)
