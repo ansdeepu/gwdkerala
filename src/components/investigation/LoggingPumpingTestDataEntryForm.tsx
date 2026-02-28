@@ -108,7 +108,7 @@ const toDateOrNull = (value: any): Date | null => {
 };
 
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
-const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "", fileDetails: "" });
+const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "Logging & Pumping Test", fileDetails: "" });
 const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
 const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "Geological logging", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", workImages: [], workVideos: [] });
 
@@ -453,10 +453,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
         } else {
             const source = allFileEntries.filter(entry => {
                 const appType = entry.applicationType as any;
-                if (watchedPageType === "Deposit Work") return PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(appType);
-                if (watchedPageType === "Private Deposit Work") return PRIVATE_APPLICATION_TYPES.includes(appType);
-                if (watchedPageType === "Collector's Deposit Work") return COLLECTOR_APPLICATION_TYPES.includes(appType);
-                if (watchedPageType === "Plan Fund Work") return PLAN_FUND_APPLICATION_TYPES.includes(appType);
+                if (watchedPageType === "Deposit Work") return PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(appType) || PRIVATE_APPLICATION_TYPES.includes(appType) || COLLECTOR_APPLICATION_TYPES.includes(appType) || PLAN_FUND_APPLICATION_TYPES.includes(appType);
                 
                 const hasInvestigation = entry.siteDetails?.some(s => s.purpose === 'GW Investigation');
                 const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
@@ -843,11 +840,18 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         if (entry.fileNo?.toLowerCase().trim() === normalizedFileNo) return;
         entry.reappropriationDetails?.forEach(reapp => {
             if (reapp.refFileNo?.toLowerCase().trim() === normalizedFileNo) {
+                // Determine source page type
+                const hasInvestigation = entry.siteDetails?.some(s => s.purpose === 'GW Investigation');
+                const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
+                let sourcePageType = "Deposit Work";
+                if (hasInvestigation && !hasLoggingPumping) sourcePageType = "GW Investigation";
+                else if (hasLoggingPumping && !hasInvestigation) sourcePageType = "Logging & Pumping Test";
+
                 credits.push({
                     ...reapp,
                     sourceFileNo: entry.fileNo,
                     sourceApplicantName: entry.applicantName,
-                    sourcePageType: entry.applicationType ? (applicationTypeDisplayMap[entry.applicationType as ApplicationType] || entry.applicationType) : 'Deposit Work'
+                    sourcePageType: sourcePageType
                 });
             }
         });
