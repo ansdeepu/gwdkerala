@@ -1,4 +1,3 @@
-
 // src/app/dashboard/file-room/page.tsx
 "use client";
 
@@ -23,7 +22,7 @@ import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { parseISO, isValid, format } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { usePageNavigation } from '@/hooks/usePageNavigation';
-import { useFileEntries } from '@/hooks/useFileEntries'; // Correctly import useFileEntries
+import { useFileEntries } from '@/hooks/useFileEntries'; 
 import { useDataStore } from '@/hooks/use-data-store';
 import PaginationControls from '@/components/shared/PaginationControls';
 
@@ -42,7 +41,6 @@ const Clock = (props: React.SVGProps<SVGSVGElement>) => (
 const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig"];
 
 
-// Helper function to safely parse dates, whether they are strings or Date objects
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
   if (dateValue instanceof Date && isValid(dateValue)) {
@@ -52,7 +50,6 @@ const safeParseDate = (dateValue: any): Date | null => {
     const parsed = parseISO(dateValue);
     if (isValid(parsed)) return parsed;
   }
-  // Fallback for other potential date-like objects from Firestore
   if (typeof dateValue === 'object' && dateValue.toDate) {
     const parsed = dateValue.toDate();
     if (isValid(parsed)) return parsed;
@@ -64,7 +61,7 @@ const safeParseDate = (dateValue: any): Date | null => {
 export default function FileManagerPage() {
   const { setHeader } = usePageHeader();
   const { user } = useAuth();
-  const { fileEntries, isLoading } = useFileEntries(); // Use the hook which handles filtering
+  const { fileEntries, isLoading } = useFileEntries(); 
   
   useEffect(() => {
     const description = 'List of all public and government deposit works in the system, sorted by most recent remittance.';
@@ -79,7 +76,6 @@ export default function FileManagerPage() {
   
   const { depositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => {
-        // A file is NOT a deposit work if it has any investigation-related purposes.
         const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
         const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
         
@@ -87,7 +83,6 @@ export default function FileManagerPage() {
             return false;
         }
 
-        // Exclude other specific work types that have their own pages.
         if (entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)) {
             return false;
         }
@@ -98,11 +93,9 @@ export default function FileManagerPage() {
             return false;
         }
         
-        // If it's none of the above, it belongs in Deposit Works.
         return true;
     });
     
-    // Sort all entries by the first remittance date, newest first.
     entries.sort((a, b) => {
       const dateAValue = a.remittanceDetails?.[0]?.dateOfRemittance;
       const dateBValue = b.remittanceDetails?.[0]?.dateOfRemittance;
@@ -212,10 +205,12 @@ export default function FileManagerPage() {
     <div className="space-y-6">
        <Card>
         <CardContent className="p-4 space-y-4">
-           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+           <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
               <div className="relative flex-grow w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
+                  id="file-room-search"
+                  name="fileRoomSearch"
                   type="search"
                   placeholder="Search all fields..."
                   className="w-full rounded-lg bg-background pl-10 shadow-sm"
@@ -223,21 +218,21 @@ export default function FileManagerPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-               <div className="flex items-center gap-4 w-full sm:w-auto">
-                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+               <div className="flex items-center gap-4 shrink-0 whitespace-nowrap overflow-x-auto no-scrollbar py-1">
+                 <div className="text-sm font-medium text-muted-foreground">
                     Total Files: <span className="font-bold text-primary">{filteredEntries.length}</span>
                 </div>
-                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                 <div className="text-sm font-medium text-muted-foreground">
                     Total Sites: <span className="font-bold text-primary">{totalSites}</span>
                 </div>
                 {lastCreatedDate && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                     </div>
                 )}
                 {canCreate && (
-                    <Button onClick={handleAddNewClick} size="sm" className="w-full sm:w-auto shrink-0">
+                    <Button onClick={handleAddNewClick} size="sm" className="shrink-0">
                         <FilePlus2 className="mr-2 h-4 w-4" /> New File
                     </Button>
                 )}

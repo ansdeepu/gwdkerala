@@ -38,39 +38,38 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
 
   return (
-    <div className="flex flex-col w-full">
-      <div className="flex items-center justify-between gap-4 px-6 pt-4 pb-2">
-        <div className="flex items-center gap-4">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <SidebarTrigger />
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Toggle Sidebar (Ctrl+B)</p>
-            </TooltipContent>
-          </Tooltip>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-            {description && <p className="text-sm text-muted-foreground">{description}</p>}
-          </div>
+    <div className="flex items-center justify-between w-full gap-4 px-6 py-3">
+      <div className="flex items-center gap-4 flex-1 min-w-0">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <SidebarTrigger />
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            <p>Toggle Sidebar (Ctrl+B)</p>
+          </TooltipContent>
+        </Tooltip>
+        <div className="flex flex-col min-w-0">
+          <h1 className="text-xl font-bold tracking-tight truncate">{title}</h1>
+          {description && <p className="text-xs text-muted-foreground truncate hidden lg:block">{description}</p>}
         </div>
-        <div className={cn("flex items-center gap-4")}>
-           {isSuperAdmin ? (
-                <OfficeSwitcher />
-            ) : user?.officeLocation ? (
-                <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Building className="h-4 w-4 text-primary" />
-                    <span>{user.officeLocation.charAt(0).toUpperCase() + user.officeLocation.slice(1).toLowerCase()}</span>
-                </div>
-            ) : null}
-          <div className={cn("flex items-center gap-2 text-sm font-medium text-primary")}>
-            <Clock className="h-4 w-4" />
-            {currentTime ? (
-              <span>{format(currentTime, 'dd/MM/yyyy, hh:mm:ss a')}</span>
-            ) : (
-              <span className="w-40 h-4 bg-muted-foreground/20 rounded-md animate-pulse" />
-            )}
-          </div>
+      </div>
+      
+      <div className="flex items-center gap-4 shrink-0">
+         {isSuperAdmin ? (
+              <OfficeSwitcher />
+          ) : user?.officeLocation ? (
+              <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Building className="h-4 w-4 text-primary" />
+                  <span className="whitespace-nowrap">{user.officeLocation.charAt(0).toUpperCase() + user.officeLocation.slice(1).toLowerCase()}</span>
+              </div>
+          ) : null}
+        <div className={cn("flex items-center gap-2 text-sm font-medium text-primary whitespace-nowrap")}>
+          <Clock className="h-4 w-4" />
+          {currentTime ? (
+            <span>{format(currentTime, 'dd/MM/yyyy, hh:mm:ss a')}</span>
+          ) : (
+            <span className="w-40 h-4 bg-muted-foreground/20 rounded-md animate-pulse" />
+          )}
         </div>
       </div>
     </div>
@@ -183,7 +182,7 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
           <AppSidebar />
           <SidebarInset className="flex flex-col flex-1 overflow-hidden">
             <FirebaseErrorListener />
-            <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background/95 backdrop-blur-sm">
+            <header className="sticky top-0 z-30 flex items-center border-b bg-background/95 backdrop-blur-sm w-full min-h-[64px]">
                   <HeaderContent user={user} />
               </header>
             <main className={cn(

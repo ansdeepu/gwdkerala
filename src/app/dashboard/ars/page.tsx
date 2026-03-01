@@ -1,4 +1,3 @@
-
 // src/app/dashboard/ars/page.tsx
 "use client";
 
@@ -21,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePageHeader } from "@/hooks/usePageHeader";
 import type { ArsEntryFormData, SiteWorkStatus } from "@/lib/schemas";
-import { arsTypeOfSchemeOptions, constituencyOptions, arsWorkStatusOptions } from "@/lib/schemas";
+import { arsTypeOfSchemeOptions, constituencyOptions } from "@/lib/schemas";
 import { usePageNavigation } from "@/hooks/usePageNavigation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -46,20 +45,11 @@ const Download = (props: React.SVGProps<SVGSVGElement>) => (
 const Eye = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
 );
-const Edit = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-);
 const Trash2 = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
 );
 const XCircle = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
-);
-const CalendarIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
-);
-const ShieldAlert = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
 );
 const Clock = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -94,7 +84,6 @@ const formatDateSafe = (dateInput: any): string => {
   return date ? format(date, 'dd/MM/yyyy') : '';
 };
 
-// New helper function for color coding
 const getStatusRowClass = (status: SiteWorkStatus | undefined | null): string => {
     if (!status) return "";
     
@@ -562,8 +551,8 @@ export default function ArsPage() {
       <TooltipProvider>
        <Card>
         <CardContent className="p-4 space-y-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="relative w-full sm:flex-1">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+                <div className="relative w-full lg:flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
                         type="search" 
@@ -575,7 +564,7 @@ export default function ArsPage() {
                         onChange={(e) => setSearchTerm(e.target.value)} 
                     />
                 </div>
-                <div className="flex items-center flex-wrap sm:flex-nowrap justify-end gap-2">
+                <div className="flex items-center gap-2 shrink-0 whitespace-nowrap overflow-x-auto no-scrollbar py-1">
                   {canEdit && <Button size="sm" onClick={handleAddNewClick} className="shrink-0"> <PlusCircle className="mr-2 h-4 w-4" /> Add New ARS </Button>}
                   <Button variant="outline" onClick={handleExportExcel} size="sm" className="shrink-0"> <FileDown className="mr-2 h-4 w-4" /> Export Excel </Button>
                   {canEdit && ( <> 
@@ -640,12 +629,12 @@ export default function ArsPage() {
                         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-yellow-500/80"></div><span>To be Refunded</span></div>
                         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-red-500/80"></div><span>Completed / Failed</span></div>
                    </div>
-                   <div className="flex items-center gap-4">
-                        <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                   <div className="flex items-center gap-4 shrink-0 whitespace-nowrap">
+                        <div className="text-sm font-medium text-muted-foreground">
                             Total Sites: <span className="font-bold text-primary">{filteredSites.length}</span>
                         </div>
                         {lastCreatedDate && (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Clock className="h-3.5 w-3.5"/>
                                 Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                             </div>
