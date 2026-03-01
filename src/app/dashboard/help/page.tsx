@@ -20,6 +20,12 @@ import {
     Bot,
     Palette,
     Database,
+    ShieldCheck,
+    UserPlus,
+    RefreshCw,
+    TestTube2,
+    Droplets,
+    Waves,
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -46,200 +52,157 @@ export default function HelpPage() {
             An overview of the department and the purpose of this application.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 text-justify">
           <div>
-            <h3 className="font-semibold text-foreground mb-2">Ground Water Department, {user?.officeLocation || 'Directorate'}</h3>
+            <h3 className="font-semibold text-foreground mb-2">Ground Water Department, {user?.officeLocation ? capitalize(user.officeLocation) : 'Directorate'}</h3>
             <p className="text-sm text-muted-foreground">
               The Ground Water Department is the state-level agency entrusted with the development, management, conservation, and regulation of precious ground water resources. The department provides technical guidance for various schemes, including well construction, groundwater recharge projects, and water supply systems for both government and private sectors. Its key services involve hydrogeological surveys, drilling, and monitoring to ensure the sustainable use of groundwater for drinking, agriculture, and industrial purposes.
             </p>
           </div>
            <div className="pt-4 border-t">
-            <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2"><Server className="h-4 w-4" /> Purpose of This Web Application</h3>
+            <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2"><Server className="h-4 w-4" /> Digital Transformation</h3>
             <p className="text-sm text-muted-foreground">
-              This digital dashboard is designed to streamline the operations of the Ground Water Department. It serves as a centralized platform for managing file entries, tracking the progress of various projects, overseeing staff accounts, and generating detailed reports. By digitizing these workflows, the application aims to enhance efficiency, improve data accuracy, and provide a clear, real-time overview of all departmental activities.
+              This centralized dashboard digitizes departmental workflows to enhance efficiency, accuracy, and real-time monitoring across all district offices. It manages the entire project lifecycle—from investigation and tendering to implementation and financial closure.
             </p>
           </div>
         </CardContent>
       </Card>
-      
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" />Office Onboarding Guide</CardTitle>
+                <CardDescription>Essential first steps for new Sub-Office Administrators.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+                <p>When an office is first activated, the Office Admin should perform these actions in order:</p>
+                <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
+                    <li><strong>Configure Office Details:</strong> Go to the <strong>Settings</strong> page and fill in the office address (English & Malayalam), bank account details, and the District Officer's name. This information is used for auto-generating PDF reports.</li>
+                    <li><strong>Register Staff:</strong> Go to the <strong>Establishment</strong> page and add all employees. Ensure accurate designations and PEN numbers.</li>
+                    <li><strong>Create User Accounts:</strong> While adding or editing a staff member, check the <strong>"Create User Account"</strong> box to provide them with dashboard access (e.g., for Supervisors or Investigators).</li>
+                </ol>
+            </CardContent>
+        </Card>
+
+        <Card className="border-amber-200 bg-amber-50/30">
+            <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><UserPlus className="h-5 w-5 text-amber-600" />Super Admin Functions</CardTitle>
+                <CardDescription>Management of sub-offices and global settings.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+                <ul className="list-disc pl-5 space-y-2">
+                    <li><strong>Sub-Office Setup:</strong> Super Admins can create new office locations. This automatically provisions three core accounts: <strong>Admin, Scientist, and Engineer</strong> with a default password of "123456".</li>
+                    <li><strong>Global Data:</strong> Super Admins manage departmental drilling rates and global user accounts across the entire state.</li>
+                    <li><strong>Transfer Approval:</strong> When an Office Admin initiates a staff transfer, it must be approved by the Super Admin to move the record to the target office.</li>
+                </ul>
+            </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
-           <div className="flex items-center space-x-3">
-            <Code className="h-5 w-5 text-primary" />
-            <CardTitle>Technology Stack</CardTitle>
-          </div>
-          <CardDescription>
-            This application is built with a modern, high-performance tech stack.
-          </CardDescription>
+          <CardTitle>Key Features & Modules</CardTitle>
+          <CardDescription>Understanding the specialized sections of the application.</CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30">
-                <Code className="h-6 w-6 text-sky-600"/>
-                <div>
-                    <h4 className="font-semibold">Next.js (v14) & React (v18)</h4>
-                    <p className="text-xs text-muted-foreground">For a fast, server-rendered user interface.</p>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="investigation">
+              <AccordionTrigger>GW Investigation & Logging/Pumping Modules</AccordionTrigger>
+              <AccordionContent className="space-y-4">
+                 <div className="flex gap-4">
+                    <div className="shrink-0"><TestTube2 className="h-10 w-10 text-primary" /></div>
+                    <div>
+                        <h4 className="font-semibold text-foreground">GW Investigation</h4>
+                        <p className="text-sm text-muted-foreground">Dedicated to hydrogeological and geophysical surveys. Features include feasibility tracking, recommended well measurements, and investigator assignments.</p>
+                    </div>
+                 </div>
+                 <div className="flex gap-4 pt-2">
+                    <div className="shrink-0"><Droplets className="h-10 w-10 text-primary" /></div>
+                    <div>
+                        <h4 className="font-semibold text-foreground">Logging & Pumping Test</h4>
+                        <p className="text-sm text-muted-foreground">Captures technical data for geological/geophysical logging and various pumping tests. Focuses on borehole characteristics and yield analysis.</p>
+                    </div>
+                 </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="reappropriation">
+              <AccordionTrigger>Re-appropriation & Fund Transfers</AccordionTrigger>
+              <AccordionContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">The system allows for seamless movement of funds between project files. This is essential for managing excess remittances or adjusting project budgets.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-3 border rounded-md bg-secondary/20">
+                        <h5 className="font-semibold text-xs uppercase text-primary mb-1">Debits (Transfers Out)</h5>
+                        <p className="text-xs text-muted-foreground">Created manually in the source file. You must select the target "Type of Page" and start typing the File No. to see suggestions.</p>
+                    </div>
+                    <div className="p-3 border rounded-md bg-secondary/20">
+                        <h5 className="font-semibold text-xs uppercase text-primary mb-1">Credits (Transfers In)</h5>
+                        <p className="text-xs text-muted-foreground">Automatically detected. If File A transfers funds to File B, File B will automatically show a corresponding "Credit" entry in its table.</p>
+                    </div>
                 </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30">
-                <Palette className="h-6 w-6 text-teal-600"/>
-                <div>
-                    <h4 className="font-semibold">Tailwind & ShadCN</h4>
-                    <p className="text-xs text-muted-foreground">For modern styling and accessible components.</p>
+                <div className="p-3 rounded-md bg-primary/10 border border-primary/20">
+                    <p className="text-xs font-bold text-primary">Balance Formula:</p>
+                    <p className="text-sm font-mono text-primary">Balance = Total Remittance + Total Credit - Total Payment - Total Debit</p>
                 </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30">
-                 <Database className="h-6 w-6 text-amber-600"/>
-                <div>
-                    <h4 className="font-semibold">Firebase (v12)</h4>
-                    <p className="text-xs text-muted-foreground">Powers the database, authentication, and backend.</p>
-                </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30">
-                <Bot className="h-6 w-6 text-purple-600"/>
-                <div>
-                    <h4 className="font-semibold">Genkit AI</h4>
-                    <p className="text-xs text-muted-foreground">Drives intelligent features and suggestions.</p>
-                </div>
-            </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="media">
+              <AccordionTrigger>Image & Video Gallery</AccordionTrigger>
+              <AccordionContent>
+                <p className="text-sm text-muted-foreground">Every site includes a media section for visual documentation. You can add links to photos or videos (including YouTube/Vimeo embeds). The system provides a light-box viewer for full-screen inspection of images and playback of videos.</p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="etender">
+              <AccordionTrigger>e-Tender Management</AccordionTrigger>
+              <AccordionContent>
+                <p className="text-sm text-muted-foreground">A complete lifecycle manager for electronic tenders. It handles fee calculations, bidder ranking (L1 detection), and one-click PDF generation for NIT, Selection Notices, and Work/Supply Orders.</p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="ars">
+              <AccordionTrigger>ARS (Artificial Recharge Schemes)</AccordionTrigger>
+              <AccordionContent>
+                <p className="text-sm text-muted-foreground">A specialized module for check dams, recharge pits, and ponds. Includes bulk Excel import/export capabilities specifically designed for large-scale ARS data sets.</p>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>Frequently Asked Questions (FAQ)</CardTitle>
-          <CardDescription>Common questions about using the GWD Dashboard.</CardDescription>
+          <CardDescription>Quick answers to common procedural questions.</CardDescription>
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-8">
-              <AccordionTrigger>What do the 'Important Updates' and 'Notice Board' cards on the Dashboard show?</AccordionTrigger>
-              <AccordionContent className="space-y-4">
-                 <div>
-                    <h4 className="font-medium text-foreground mb-1 flex items-center gap-2"><ScrollText className="h-4 w-4" />Important Updates</h4>
-                    <p className="text-sm text-muted-foreground">This card is an automated "To-Do" list that highlights files needing attention. It scans for files with statuses like "To be Tendered," "TS Pending," etc. For Supervisors, it also shows any updates that an admin has rejected, so they can be corrected. The list auto-scrolls, and you can pause it by hovering over it.</p>
-                 </div>
-                 <div>
-                    <h4 className="font-medium text-foreground mb-1 flex items-center gap-2"><LayoutDashboard className="h-4 w-4" />Notice Board</h4>
-                    <p className="text-sm text-muted-foreground">This card shows birthday reminders for staff members. It displays today's birthdays and a scrolling list of upcoming birthdays for the rest of the month. You can click on a birthday notice to see a celebratory message.</p>
-                 </div>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-1">
-              <AccordionTrigger>What are the different user roles?</AccordionTrigger>
-              <AccordionContent>
-                There are three main roles in this application, each with different permissions:
-                <ul className="list-disc pl-6 mt-2 space-y-2 text-sm">
-                  <li><strong>Editor:</strong> Has full, unrestricted access to all features. Editors can create, edit, and delete all file entries, manage staff and user accounts, approve pending updates from supervisors, and set GWD rates. This role is for administrators.</li>
-                  <li><strong>Supervisor:</strong> Has restricted, site-level editing rights. Supervisors can only see and edit their assigned sites from the 'Deposit Works' and 'ARS' pages. Their changes must be approved by an Editor. They cannot create new files or edit file-level details.</li>
-                  <li><strong>Viewer:</strong> Has read-only access across the entire application. Viewers can see all data, reports, and user lists but cannot make any changes. This role is for observation and monitoring purposes.</li>
+            <AccordionItem value="faq-1">
+              <AccordionTrigger>How are new users created?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                <ul className="list-disc pl-5 space-y-2">
+                    <li><strong>Sub-Office Accounts:</strong> Initial Admin, Scientist, and Engineer accounts are created by the Super Admin using the "Office Management" tool.</li>
+                    <li><strong>Staff Logins:</strong> Office Admins create accounts for other staff (like Supervisors) by registering them in the **Establishment** module and checking the "Create User Account" option.</li>
                 </ul>
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-11">
-                <AccordionTrigger>How do I add a photo for a staff member?</AccordionTrigger>
-                <AccordionContent>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                        <p className="flex items-start gap-2"><ImageUp className="h-4 w-4 mt-1 shrink-0"/> Direct file uploading is not supported. To add a staff photo, you must use a public URL of an image that is already online.</p>
-                        <p>Follow these steps:</p>
-                        <ol className="list-decimal pl-6 space-y-1">
-                            <li>Upload the staff photo to a public image hosting service (like Imgur or Postimages).</li>
-                            <li>Get the "direct link" to the image. This link should end in an image format like `.jpg` or `.png`.</li>
-                            <li>Go to the **Establishment** page and click "Edit" on the desired staff member.</li>
-                            <li>Paste the direct image URL into the "Staff Photo URL" field.</li>
-                            <li>A preview of the image will appear. If it looks correct, save the form.</li>
-                        </ol>
-                    </div>
-                </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-10">
-                <AccordionTrigger>How does the Local Self Govt (LSG) and Constituency mapping work?</AccordionTrigger>
-                <AccordionContent>
-                    The relationship between Local Self Governments and Constituencies is managed in the **Settings** page.
-                    <ul className="list-disc pl-6 mt-2 space-y-2 text-sm">
-                        <li>An Editor can bulk-import an Excel file to define which constituencies belong to each LSG. An LSG can be associated with one or more constituencies.</li>
-                        <li>When editing a Site, selecting an LSG will automatically filter the "Constituency" dropdown to show only relevant options.</li>
-                        <li>If an LSG is associated with only **one** constituency, the "Constituency" field will be automatically selected and disabled to ensure data accuracy.</li>
-                    </ul>
-                </AccordionContent>
-            </AccordionItem>
-             <AccordionItem value="item-12">
-              <AccordionTrigger>What is the e-Tender module for?</AccordionTrigger>
-              <AccordionContent>
-                The e-Tender module is a complete system for managing the tendering process electronically.
-                 <ul className="list-disc pl-6 mt-2 space-y-2 text-sm">
-                  <li><strong>Tender Creation:</strong> Editors can create new tenders, inputting all basic details, financial information, and key dates.</li>
-                  <li><strong>Bidder Management:</strong> Add and manage bidders for each tender, including their quoted amounts and status.</li>
-                  <li><strong>Automated Fee Calculation:</strong> Tender Fees and EMD are automatically calculated based on the tender amount and type (Work or Purchase).</li>
-                  <li><strong>PDF Generation:</strong> The system can generate all necessary documents, such as the Notice Inviting Tender (NIT), Selection Notices, and Work/Supply Orders, with all data pre-filled.</li>
-                  <li><strong>Status Tracking:</strong> The present status of each tender can be updated throughout its lifecycle, from "Tender Process" to "Work Order Issued".</li>
-                 </ul>
+            <AccordionItem value="faq-2">
+              <AccordionTrigger>What does the 'Eye' icon do?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                The **Eye** icon is the standard "View/Edit" action button. Clicking it opens the details of a record. Depending on your permissions, you will either see a read-only view or a form where you can make changes.
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-13">
-              <AccordionTrigger>What is the Vehicle & Rig Management page for?</AccordionTrigger>
-              <AccordionContent>
-                The Vehicle & Rig Management page is a centralized module for tracking all vehicles and heavy machinery operated by the department. It is divided into three main sections:
-                <ul className="list-disc pl-6 mt-2 space-y-2 text-sm">
-                  <li><strong>Department Vehicles:</strong> Manages vehicles owned by the department. Tracks details like model, registration, and expiry dates for fitness, tax, insurance, and pollution certificates.</li>
-                  <li><strong>Hired Vehicles:</strong> Manages vehicles hired from external agencies. Tracks agreement validity, hire charges, and certificate expiries.</li>
-                  <li><strong>Rig & Compressor Units:</strong> Manages departmental rigs, compressors, and their associated vehicles.</li>
-                </ul>
-                The module also includes an "Expiry Alerts" feature to proactively notify about certificates that are expired or expiring soon.
+            <AccordionItem value="faq-3">
+              <AccordionTrigger>How do I add a photo for a staff member?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground text-justify">
+                Direct file uploading is not supported to ensure performance. You must provide a **direct public link** to an image hosted on a service like Imgur or Postimages. The URL must end in an image extension like `.jpg` or `.png`. A preview will appear if the link is valid.
               </AccordionContent>
             </AccordionItem>
-            <AccordionItem value="item-5">
-              <AccordionTrigger>How do supervisors submit updates?</AccordionTrigger>
-              <AccordionContent>
-                Supervisors can edit their assigned sites through the 'Deposit Works' or 'ARS' pages by clicking the "Edit" button on a file. After making changes to the site-specific fields and clicking "Save Changes", the update is submitted for review. It does not change the data directly. An Editor must then go to the "Pending Actions" page to approve or reject the submission. The site will be locked from further edits by the supervisor until the update is reviewed.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-3">
-              <AccordionTrigger>Why can't I edit a file or site?</AccordionTrigger>
-              <AccordionContent>
-                Editing permissions are based on your role:
-                 <ul className="list-disc pl-6 mt-2 space-y-1 text-sm">
-                  <li><strong>Editors</strong> can edit anything.</li>
-                  <li><strong>Supervisors</strong> can only edit sites they are assigned to, and only if the site's work status is "Work Order Issued", "Work Initiated", or "Work in Progress". If an update has already been submitted, the site is locked until an Editor reviews it.</li>
-                   <li><strong>Viewers</strong> cannot edit anything.</li>
-                </ul>
-                 If you believe you should have editing rights, please contact an administrator.
-              </AccordionContent>
-            </AccordionItem>
-             <AccordionItem value="item-6">
-              <AccordionTrigger>What is the difference between 'Deposit Works' and 'ARS'?</AccordionTrigger>
-              <AccordionContent>
-                The application separates projects into two main categories for specialized management:
-                 <ul className="list-disc pl-6 mt-2 space-y-2 text-sm">
-                  <li><strong>Deposit Works:</strong> Found in the "File Room", this section is for all standard departmental projects like Borewell Construction (BWC), Tube Well Construction (TWC), etc. It uses a comprehensive data entry form that handles all aspects of these complex files.</li>
-                  <li><strong>ARS (Artificial Recharge Schemes):</strong> This is a dedicated module for managing ARS projects like check dams and recharge pits. It has its own simplified data entry form and a bulk Excel import/export feature specifically tailored for ARS data. ARS entries are managed separately and will not appear in the main Deposit Works list.</li>
-                </ul>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-9">
-              <AccordionTrigger>What are the 'Rig Registration' and 'GWD Rates' pages for?</AccordionTrigger>
-              <AccordionContent>
-                 <ul className="list-disc pl-6 mt-2 space-y-2 text-sm">
-                   <li><strong>Rig Registration:</strong> This module is for managing the registration and renewal of all drilling rigs operated by private agencies. It tracks agency details, owner information, and the status of each individual rig, including its registration validity and renewal history.</li>
-                   <li><strong>GWD Rates:</strong> This page serves as a master list for all standard departmental items and their approved rates (e.g., drilling rates per meter). This data is planned to be used for automated estimate generation in the future.</li>
-                 </ul>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-7">
-              <AccordionTrigger>How can I export data to Excel?</AccordionTrigger>
-              <AccordionContent>
-                On pages like Establishment, ARS, GWD Rates, and Reports, you will find an "Export Excel" button. Clicking this button will generate and download an XLSX file containing the data currently visible on that page. If you have applied any filters (like a date range or search term), the exported file will only contain the filtered results.
-              </AccordionContent>
-            </AccordionItem>
-              <AccordionItem value="item-4">
-              <AccordionTrigger>What does 'Pending Approval' mean on my user account?</AccordionTrigger>
-              <AccordionContent>
-                For security, all new user accounts must be manually approved by an Editor. If your account is pending approval, you will not be able to log in. Please contact the administrator to have your account activated.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger>How do I reset my password?</AccordionTrigger>
-              <AccordionContent>
-                You can change your password from your Profile page. Click on your name in the sidebar at the bottom-left, select "Profile", and use the "Change Password" form. If you have forgotten your password entirely, please contact the administrator for a reset.
+            <AccordionItem value="faq-4">
+              <AccordionTrigger>How does the LSG and Constituency mapping work?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                Admins can import an Excel mapping file in **Settings**. Once mapped, selecting an LSG in any project form will automatically filter the "Constituency" dropdown to show only the LACs associated with that LSG.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -253,7 +216,7 @@ export default function HelpPage() {
             <CardTitle>Contact for Support</CardTitle>
           </div>
           <CardDescription>
-            If you encounter technical issues or have questions not covered in the FAQ, please contact the administrator.
+            If you encounter technical issues or have questions not covered in the documentation, please contact the administrator.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -269,4 +232,8 @@ export default function HelpPage() {
       </Card>
     </div>
   );
+}
+
+function capitalize(s: string) {
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
