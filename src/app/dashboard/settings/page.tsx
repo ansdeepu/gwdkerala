@@ -227,7 +227,7 @@ export default function SettingsPage() {
     const { setHeader } = usePageHeader();
     const { user, isLoading: authLoading } = useAuth();
     const { toast } = useToast();
-    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, allOfficeAddresses, selectedOffice } = useDataStore();
+    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, allOfficeAddresses, setSelectedOffice, selectedOffice } = useDataStore();
     const isAdmin = user?.role === 'admin';
     const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
     const canManage = isAdmin || isSuperAdmin;

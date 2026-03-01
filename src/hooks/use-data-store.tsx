@@ -237,7 +237,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
           if (!snapshot.empty) {
-              // Merge all documents in the sub-collection to ensure all details are captured
+              // CRITICAL FIX: Merge all documents found in the sub-collection
+              // This handles cases where data is split between a "metadata" doc and a "details" doc
               let mergedSubData: any = {};
               snapshot.docs.forEach(d => {
                   const data = processFirestoreDoc(d) as any;
