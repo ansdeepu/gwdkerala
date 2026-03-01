@@ -17,7 +17,7 @@ import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy
 import { app } from "@/lib/firebase";
 import { useDataStore, type OfficeAddress } from '@/hooks/use-data-store';
 import { useAuth, type UserProfile } from '@/hooks/useAuth';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -29,11 +29,13 @@ import type { LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { Loader2, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X, Eye } from 'lucide-react';
+import { Loader2, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X, Info, PlusCircle, Eye } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { getInitials } from '@/lib/utils';
 
 const db = getFirestore(app);
+
+const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate"];
 
 const OfficeAddressSchema = z.object({
   officeName: z.string().min(1, "Office Name is required."),
@@ -63,14 +65,12 @@ const officerDesignations: Designation[] = [
     "Executive Engineer", "Senior Hydrogeologist", "Assistant Executive Engineer", "Hydrogeologist"
 ];
 
-const DetailRow = ({ label, value, isPlaceholder = false }: { label: string, value?: string | number | null, isPlaceholder?: boolean }) => {
-    const isEmpty = value === null || value === undefined || value === '';
+const DetailRow = ({ label, value }: { label: string, value?: string | number | null }) => {
+    if (value === null || value === undefined || value === '') return null;
     return (
         <div className="text-sm">
             <span className="font-medium text-muted-foreground">{label}:</span>{" "}
-            <span className={cn(isEmpty && "text-muted-foreground/50 italic font-normal")}>
-                {isEmpty ? "Not Configured" : value}
-            </span>
+            <span className="font-semibold text-foreground">{value}</span>
         </div>
     );
 };
@@ -424,6 +424,11 @@ export default function SettingsPage() {
         }
     };
 
+    const hasBankDetails = useMemo(() => {
+        if (!officeAddress) return false;
+        return !!(officeAddress.stsbAccountNo || officeAddress.nameOfTreasury || officeAddress.bankAccountNo || officeAddress.nameOfBank || officeAddress.bankBranch || officeAddress.bankIfsc);
+    }, [officeAddress]);
+
 
     if (authLoading) {
         return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -460,9 +465,9 @@ export default function SettingsPage() {
                             <div className="flex flex-col md:flex-row md:items-start gap-4">
                                 <div className="flex-1">
                                     <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName || "Office Name Pending"}, <span className="text-primary">{capitalize(officeAddress.officeLocation)}</span></h3>
-                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.address || "Address Not Provided"}</p>
-                                    <p className="text-md text-muted-foreground mt-2 whitespace-pre-wrap">{officeAddress.officeNameMalayalam || "മലയാളം പേര് ചേർത്തിട്ടില്ല"}</p>
-                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.addressMalayalam || "മലയാളം വിലാസം ചേർത്തിട്ടില്ല"}</p>
+                                    {officeAddress.address && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.address}</p>}
+                                    {officeAddress.officeNameMalayalam && <p className="text-md text-muted-foreground mt-2 whitespace-pre-wrap">{officeAddress.officeNameMalayalam}</p>}
+                                    {officeAddress.addressMalayalam && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.addressMalayalam}</p>}
                                 </div>
                                 <div className="flex items-center gap-3">
                                     {officeAddress.districtOfficerPhotoUrl && (
@@ -478,17 +483,25 @@ export default function SettingsPage() {
                                 <DetailRow label="GST No." value={officeAddress.gstNo} />
                                 <DetailRow label="PAN No." value={officeAddress.panNo} />
                             </div>
-                            <Separator className="my-4"/>
-                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Treasury & Bank Details</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                                <DetailRow label="STSB Account No." value={officeAddress.stsbAccountNo} />
-                                <DetailRow label="Name of Treasury" value={officeAddress.nameOfTreasury} />
-                                <DetailRow label="Bank Account No." value={officeAddress.bankAccountNo} />
-                                <DetailRow label="Name of Bank" value={officeAddress.nameOfBank} />
-                                <DetailRow label="Branch" value={officeAddress.bankBranch} />
-                                <DetailRow label="IFSC" value={officeAddress.bankIfsc} />
-                            </div>
-                            <div className="pt-3 border-t"><DetailRow label="Other Details" value={officeAddress.otherDetails} /></div>
+                            
+                            {hasBankDetails && (
+                                <>
+                                    <Separator className="my-4"/>
+                                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">Treasury & Bank Details</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                                        <DetailRow label="STSB Account No." value={officeAddress.stsbAccountNo} />
+                                        <DetailRow label="Name of Treasury" value={officeAddress.nameOfTreasury} />
+                                        <DetailRow label="Bank Account No." value={officeAddress.bankAccountNo} />
+                                        <DetailRow label="Name of Bank" value={officeAddress.nameOfBank} />
+                                        <DetailRow label="Branch" value={officeAddress.bankBranch} />
+                                        <DetailRow label="IFSC" value={officeAddress.bankIfsc} />
+                                    </div>
+                                </>
+                            )}
+                            
+                            {officeAddress.otherDetails && (
+                                <div className="pt-3 border-t"><DetailRow label="Other Details" value={officeAddress.otherDetails} /></div>
+                            )}
                         </div>
                     ) : (
                         <div className="text-center py-8 text-muted-foreground">
