@@ -1,10 +1,11 @@
+
 // src/components/vehicles/VehicleTables.tsx
 "use client";
 
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Eye, Building, Truck, AlertTriangle, Loader2 } from "lucide-react";
+import { Eye, Trash2, Building, Truck, AlertTriangle, Loader2 } from "lucide-react";
 import type { DepartmentVehicle, HiredVehicle, RigCompressor } from "@/lib/schemas";
 import { format, isValid, isBefore, addDays } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -271,7 +272,7 @@ export function DepartmentVehicleTable({ data, onEdit, onDelete, canEdit, onView
                                 <TableCell className="text-right p-1">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" onClick={() => onEdit(v)}><Edit className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => onEdit(v)}><Eye className="h-4 w-4"/></Button>
                                         </TooltipTrigger>
                                         <TooltipContent><p>Edit</p></TooltipContent>
                                     </Tooltip>
@@ -310,7 +311,7 @@ export function HiredVehicleTable({ data, onEdit, onDelete, canEdit, onView }: H
                 <TableHeader>
                     <TableRow>
                         <TableHead className="p-2 text-sm">Sl. No</TableHead>
-                        <TableHead className="p-2 text-sm min-w-[200px]">Vehicle Details</TableHead>
+                        <TableHead className="p-2 text-sm min-w-[250px]">Vehicle Details</TableHead>
                         <TableHead className="p-2 text-sm">Agreement Validity</TableHead>
                         <TableHead className="p-2 text-sm">Hire Charges</TableHead>
                         <TableHead className="p-2 text-sm">Fitness</TableHead>
@@ -346,7 +347,7 @@ export function HiredVehicleTable({ data, onEdit, onDelete, canEdit, onView }: H
                                 <TableCell className="text-right p-1">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" onClick={() => onEdit(v)}><Edit className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => onEdit(v)}><Eye className="h-4 w-4"/></Button>
                                         </TooltipTrigger>
                                         <TooltipContent><p>Edit</p></TooltipContent>
                                     </Tooltip>
@@ -410,7 +411,7 @@ export function RigCompressorTable({ data, onEdit, onDelete, canEdit, onView }: 
                                 <TableCell className="text-right p-1">
                                     <Tooltip>
                                         <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" onClick={() => onEdit(u)}><Edit className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" onClick={() => onEdit(u)}><Eye className="h-4 w-4"/></Button>
                                         </TooltipTrigger>
                                         <TooltipContent><p>Edit</p></TooltipContent>
                                     </Tooltip>

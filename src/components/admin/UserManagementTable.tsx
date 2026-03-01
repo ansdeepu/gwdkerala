@@ -1,3 +1,4 @@
+
 // src/components/admin/UserManagementTable.tsx
 "use client";
 
@@ -13,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ShieldCheck, ShieldAlert, Trash2, Edit, UserCog } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldAlert, Trash2, Eye, UserCog } from "lucide-react";
 import type { UserProfile } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { userRoleOptions, type UserRole, type StaffMember } from "@/lib/schemas";
@@ -297,7 +298,7 @@ export default function UserManagementTable({
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <div className="flex items-center justify-center gap-1 opacity-50 cursor-not-allowed">
-                                            <Button variant="ghost" size="icon" disabled><Edit className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" disabled><Eye className="h-4 w-4" /></Button>
                                             <Button variant="ghost" size="icon" disabled className="text-destructive"><Trash2 className="h-4 w-4" /></Button>
                                         </div>
                                     </TooltipTrigger>
@@ -311,7 +312,7 @@ export default function UserManagementTable({
                                         <Tooltip>
                                             <TooltipTrigger asChild>
                                                 <Button variant="ghost" size="icon" onClick={() => onEditUser(userRow)} disabled={disableActions || isDeletingUser}>
-                                                    <Edit className="h-4 w-4" />
+                                                    <Eye className="h-4 w-4" />
                                                 </Button>
                                             </TooltipTrigger>
                                             <TooltipContent><p>Edit User Details</p></TooltipContent>

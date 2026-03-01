@@ -65,7 +65,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useDataStore, type RateDescriptionId } from "@/hooks/use-data-store";
 import { useRouter } from "next/navigation";
-import { DollarSign, PlusCircle, Edit, Trash2, Loader2, Save, X, ShieldAlert } from 'lucide-react';
+import { DollarSign, PlusCircle, Trash2, Loader2, Save, X, ShieldAlert, Eye } from 'lucide-react';
 
 
 export const dynamic = 'force-dynamic';
@@ -437,7 +437,7 @@ export default function GwdRatesPage() {
                             <TableCell className="text-center py-2 px-4">
                               {canManage ? (
                                 <div className="flex items-center justify-center space-x-1">
-                                  <Button variant="ghost" size="icon" onClick={() => handleOpenItemForm(item)}><Edit className="h-4 w-4" /></Button>
+                                  <Button variant="ghost" size="icon" onClick={() => handleOpenItemForm(item)}><Eye className="h-4 w-4" /></Button>
                                   <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setItemToDelete(item)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
                               ) : (
@@ -568,7 +568,7 @@ const RateDescriptionCard = ({ title, description, onEditClick }: { title: strin
     <div className="border rounded-lg p-4 bg-background">
         <div className="flex flex-row items-start justify-between mb-2">
             <h4 className="text-lg font-semibold text-foreground">{title}</h4>
-            {onEditClick && <Button variant="outline" size="sm" onClick={onEditClick}><Edit className="mr-2 h-4 w-4"/>Update Rate</Button>}
+            {onEditClick && <Button variant="outline" size="sm" onClick={onEditClick}><Eye className="mr-2 h-4 w-4"/>Update Rate</Button>}
         </div>
         <div className="border-t pt-3">
              <p className="text-sm text-muted-foreground whitespace-pre-wrap" style={{ textAlign: 'justify' }}>{description || "No description provided."}</p>

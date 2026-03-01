@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDataStore } from '@/hooks/use-data-store';
 import { designationOptions } from '@/lib/schemas';
-import { Edit, Save, PlusCircle, Trash2, Search, FileDown, Loader2, Briefcase, Users, UserMinus, X } from 'lucide-react';
+import { Eye, Save, PlusCircle, Trash2, Search, FileDown, Loader2, Briefcase, Users, UserMinus, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -290,7 +290,7 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
                                 {canManage && (
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="icon" onClick={() => handleEdit(row.designation, row.sanctioned)}>
-                                            <Edit className="h-4 w-4" />
+                                            <Eye className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
                                 )}

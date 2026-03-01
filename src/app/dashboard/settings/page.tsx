@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc, where, serverTimestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useDataStore, type OfficeAddress } from '@/hooks/use-data-store';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth, type UserProfile } from '@/hooks/useAuth';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
@@ -29,7 +29,7 @@ import type { LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { Loader2, Edit, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X } from 'lucide-react';
+import { Loader2, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X, Eye } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { getInitials } from '@/lib/utils';
 
@@ -436,7 +436,7 @@ export default function SettingsPage() {
                         </div>
                         {canManage && (
                             <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={handleOpenEditDialog} disabled={!officeAddress}><Edit className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}</Button>
+                            <Button variant="outline" size="sm" onClick={handleOpenEditDialog} disabled={!officeAddress}><Eye className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}</Button>
                                 {isSuperAdmin && officeAddress && <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isDeleting}>{isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete</Button>}
                             </div>
                         )}

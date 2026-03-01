@@ -36,7 +36,7 @@ import ExcelJS from "exceljs";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAgencyApplications } from '@/hooks/useAgencyApplications';
 import { useDataStore } from '@/hooks/use-data-store';
-import { Loader2, Search, PlusCircle, Save, X, Edit, Trash2, ShieldAlert, UserPlus, FilePlus, ChevronsUpDown, RotateCcw, RefreshCw, CheckCircle, Info, Ban, Edit2, FileUp, MoreVertical, ArrowLeft, Eye, FileDown, Clock } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Save, X, Trash2, ShieldAlert, UserPlus, FilePlus, ChevronsUpDown, RotateCcw, RefreshCw, CheckCircle, Info, Ban, FileUp, MoreVertical, ArrowLeft, Eye, FileDown, Clock } from 'lucide-react';
 
 
 export const dynamic = 'force-dynamic';
@@ -319,7 +319,7 @@ const RigAccordionItem = ({
                 </div>
                  {!isReadOnly && (
                     <div className="flex items-center space-x-1 mr-2">
-                         <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('editRigDetails', { rigIndex: index }); }}><Edit className="h-4 w-4" /></Button>
+                         <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('editRigDetails', { rigIndex: index }); }}><Eye className="h-4 w-4" /></Button>
                          {field.status === 'Active' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('renew', { rigIndex: index }); }}><RefreshCw className="h-4 w-4" /></Button>}
                          {field.status === 'Active' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('cancel', { rigIndex: index }); }}><Ban className="h-4 w-4" /></Button>}
                          {field.status === 'Cancelled' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('activate', { rigIndex: index }); }}><CheckCircle className="h-4 w-4" /></Button>}
@@ -336,7 +336,7 @@ const RigAccordionItem = ({
                 <p className="font-medium text-base text-primary">Registration Details</p>
                 {!isReadOnly && (
                     <Button type="button" variant="outline" size="sm" onClick={() => openDialog('editRigDetails', { rigIndex: index })}>
-                        <Edit className="mr-2 h-4 w-4" /> Edit Details
+                        <Eye className="mr-2 h-4 w-4" /> Edit Details
                     </Button>
                 )}
             </div>
@@ -397,7 +397,7 @@ const RigAccordionItem = ({
                      {!isReadOnly && (
                         <div className="flex items-center space-x-1">
                             <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/20" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('cancel', { rigIndex: index }); }}>
-                                <Edit2 className="h-4 w-4" />
+                                <Eye className="h-4 w-4" />
                             </Button>
                             <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/20" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('activate', { rigIndex: index }); }}>
                                 <RotateCcw className="h-4 w-4" />
@@ -452,7 +452,7 @@ const RigAccordionItem = ({
                             {!isReadOnly && (
                                 <TableCell className="text-center">
                                     <div className="flex justify-center space-x-1">
-                                    <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditRenewal(index, renewal); }}><Edit className="h-4 w-4"/></Button>
+                                    <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditRenewal(index, renewal); }}><Eye className="h-4 w-4"/></Button>
                                     <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeleteRenewal(index, renewal.id); }}><Trash2 className="h-4 w-4"/></Button>
                                     </div>
                                 </TableCell>
@@ -1263,7 +1263,7 @@ export default function AgencyRegistrationPage() {
                                                     </div>
                                                     {!isReadOnly && (
                                                         <div className="flex items-center gap-1">
-                                                            <Button type="button" variant="ghost" size="icon" onClick={() => openDialog('editPartner', { index, partner: field })}><Edit className="h-4 w-4"/></Button>
+                                                            <Button type="button" variant="ghost" size="icon" onClick={() => openDialog('editPartner', { index, partner: field })}><Eye className="h-4 w-4"/></Button>
                                                             <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setDeletingPartnerIndex(index)}><Trash2 className="h-4 w-4"/></Button>
                                                         </div>
                                                     )}
@@ -1294,7 +1294,7 @@ export default function AgencyRegistrationPage() {
                                     {!isReadOnly && (
                                         <div className="flex items-center gap-1">
                                             <Button type="button" variant="ghost" size="icon" onClick={() => openDialog('editFee', { index, fee: field })}>
-                                                <Edit className="h-4 w-4" />
+                                                <Eye className="h-4 w-4" />
                                             </Button>
                                             <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setDeletingFeeIndex(index)}>
                                                 <Trash2 className="h-4 w-4" />
@@ -1319,7 +1319,7 @@ export default function AgencyRegistrationPage() {
                             <h2 className="text-xl font-semibold text-primary flex-1">3. Agency Registration</h2>
                             {!isReadOnly && (
                                 <Button type="button" variant="outline" size="sm" onClick={() => openDialog('editAgencyReg', { regData: form.getValues() })}>
-                                    <Edit className="mr-2 h-4 w-4" /> Add
+                                    <Eye className="mr-2 h-4 w-4" /> Add
                                 </Button>
                             )}
                         </div>

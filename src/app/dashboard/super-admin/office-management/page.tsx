@@ -29,7 +29,7 @@ import type { LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { Loader2, Edit, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X, Info, PlusCircle } from 'lucide-react';
+import { Loader2, Trash2, Building, FileUp, Download, ShieldAlert, MapPin, Save, X, Info, PlusCircle, Eye } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { getInitials } from '@/lib/utils';
 import UserManagementTable from '@/components/admin/UserManagementTable';
@@ -350,7 +350,7 @@ export default function OfficeManagementPage() {
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => setUserToEdit(null)} disabled={isSubmitting}>Cancel</Button>
                             <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="h-4 w-4 mr-2" />}
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Eye className="h-4 w-4 mr-2" />}
                                 Save Changes
                             </Button>
                         </DialogFooter>
