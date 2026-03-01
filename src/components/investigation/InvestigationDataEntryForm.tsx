@@ -1070,6 +1070,9 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     setItemToDelete(null);
   };
   
+  const totalReappropriationWatched = watch('totalReappropriation');
+  const totalReappropriationCreditWatched = watch('totalReappropriationCredit');
+
   return (
     <FormProvider {...form}>
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
@@ -1133,10 +1136,14 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
                             )) : autoCredits.length === 0 && <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
                         </TableBody>
                         <TableFooterComponent>
-                            <TableRow>
-                                <TableCell colSpan={isEditor && !isFormDisabled ? 7 : 6} className="text-right font-bold">Total Re-appropriated Amount (Transferred Out)</TableCell>
-                                <TableCell className="font-bold text-right text-red-600">
-                                    ₹{watch('totalReappropriation')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}
+                            <TableRow className="bg-muted/50 font-bold">
+                                <TableCell colSpan={4} className="text-right">Totals</TableCell>
+                                <TableCell className="text-right text-green-600">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+                                <TableCell className="text-right text-red-600">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+                                <TableCell colSpan={isEditor && !isFormDisabled ? 2 : 1} className="text-right">
+                                    Balance: <span className={cn((totalReappropriationCreditWatched - totalReappropriationWatched) >= 0 ? "text-green-600" : "text-red-600")}>
+                                        ₹{Math.abs(totalReappropriationCreditWatched - totalReappropriationWatched).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                    </span>
                                 </TableCell>
                             </TableRow>
                         </TableFooterComponent>
