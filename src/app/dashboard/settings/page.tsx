@@ -38,7 +38,7 @@ const db = getFirestore(app);
 const OfficeAddressSchema = z.object({
   officeName: z.string().min(1, "Office Name is required."),
   officeLocation: z.string().min(1, "Office Location is required."),
-  officeCode: z.string().optional(), // Now optional and read-only in the form
+  officeCode: z.string().optional(),
   officeNameMalayalam: z.string().optional(),
   address: z.string().optional(),
   addressMalayalam: z.string().optional(),
@@ -63,9 +63,17 @@ const officerDesignations: Designation[] = [
     "Executive Engineer", "Senior Hydrogeologist", "Assistant Executive Engineer", "Hydrogeologist"
 ];
 
-const DetailRow = ({ label, value }: { label: string, value?: string | null }) => (
-    (value || value === '') ? <div className="text-sm"><span className="font-medium text-muted-foreground">{label}:</span> {value}</div> : null
-);
+const DetailRow = ({ label, value, isPlaceholder = false }: { label: string, value?: string | number | null, isPlaceholder?: boolean }) => {
+    const isEmpty = value === null || value === undefined || value === '';
+    return (
+        <div className="text-sm">
+            <span className="font-medium text-muted-foreground">{label}:</span>{" "}
+            <span className={cn(isEmpty && "text-muted-foreground/50 italic font-normal")}>
+                {isEmpty ? "Not Configured" : value}
+            </span>
+        </div>
+    );
+};
 
 const capitalize = (str?: string | null) => {
     if (!str) return '';
@@ -73,8 +81,6 @@ const capitalize = (str?: string | null) => {
 };
 
 const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialData, staffMembers }: { isOpen: boolean; onClose: () => void; onSubmit: (data: OfficeAddressFormData) => void; isSubmitting: boolean; initialData?: Partial<OfficeAddress> | null; staffMembers: StaffMember[]; }) => {
-    const { user } = useAuth();
-    const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
     const officerList = staffMembers.filter(s => 
         officerDesignations.includes(s.designation as Designation) && s.status === 'Active'
     );
@@ -165,7 +171,13 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                                 <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]" value={field.value ?? ''}/></FormControl><FormMessage /></FormItem> )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField name="districtOfficerStaffId" control={form.control} render={({ field }) => (<FormItem><FormLabel>Name of District Officer</FormLabel><Select onValueChange={(value) => handleOfficerChange(value)} value={field.value ?? ''}><FormControl><SelectTrigger><SelectValue placeholder="Select an Officer" /></SelectTrigger></FormControl><SelectContent position="popper"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); handleOfficerChange(''); }}>-- Clear Selection --</SelectItem>{officerList.map(officer => <SelectItem key={officer.id} value={officer.id}>{officer.name} ({officer.designation})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                                <FormField name="districtOfficerStaffId" control={form.control} render={({ field }) => (<FormItem><FormLabel>Name of District Officer</FormLabel><Select onValueChange={(value) => handleOfficerChange(value)} value={field.value || ""}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select an Officer" /></SelectTrigger></FormControl>
+                                    <SelectContent position="popper">
+                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                        {officerList.map(officer => <SelectItem key={officer.id} value={officer.id}>{officer.name} ({officer.designation})</SelectItem>)}
+                                    </SelectContent>
+                                </Select><FormMessage /></FormItem>)}/>
                                 <FormField name="phoneNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Phone No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -211,12 +223,11 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
     );
 };
 
-// Main Page Component
 export default function SettingsPage() {
     const { setHeader } = usePageHeader();
     const { user, isLoading: authLoading } = useAuth();
     const { toast } = useToast();
-    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, allOfficeAddresses, selectedOffice, refetchRateDescriptions } = useDataStore();
+    const { allLsgConstituencyMaps, allStaffMembers, officeAddress, allOfficeAddresses, selectedOffice } = useDataStore();
     const isAdmin = user?.role === 'admin';
     const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
     const canManage = isAdmin || isSuperAdmin;
@@ -250,7 +261,7 @@ export default function SettingsPage() {
 
 
     const handleOfficeSubmit = async (data: OfficeAddressFormData) => {
-        if (!canManage || !officeAddress || !officeAddress.id) return;
+        if (!canManage || !officeAddress) return;
         
         setIsSubmitting(true);
         try {
@@ -259,10 +270,11 @@ export default function SettingsPage() {
             delete payload.officeLocation;
             Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });
 
-            const docRef = doc(db, `offices/${officeAddress.officeLocation.toLowerCase()}/officeAddresses`, officeAddress.id);
+            const docId = officeAddress.id || "default";
+            const docRef = doc(db, `offices/${officeAddress.officeLocation.toLowerCase()}/officeAddresses`, docId);
             payload.updatedAt = serverTimestamp();
             
-            await updateDoc(docRef, payload);
+            await setDoc(docRef, payload, { merge: true });
             
             toast({ title: 'Office Address Saved', description: 'The office details have been updated.' });
             setIsOfficeDialogOpen(false);
@@ -436,7 +448,7 @@ export default function SettingsPage() {
                         </div>
                         {canManage && (
                             <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={handleOpenEditDialog} disabled={!officeAddress}><Eye className="h-4 w-4 mr-2" /> {officeAddress ? 'Edit Details' : 'Add Details'}</Button>
+                            <Button variant="outline" size="sm" onClick={handleOpenEditDialog} disabled={!officeAddress}><Eye className="h-4 w-4 mr-2" /> {officeAddress?.id ? 'Edit Details' : 'Add Details'}</Button>
                                 {isSuperAdmin && officeAddress && <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isDeleting}>{isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete</Button>}
                             </div>
                         )}
@@ -447,10 +459,10 @@ export default function SettingsPage() {
                         <div className="space-y-3 p-4 border rounded-lg bg-secondary/30">
                             <div className="flex flex-col md:flex-row md:items-start gap-4">
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName}, <span className="text-primary">{capitalize(officeAddress.officeLocation)}</span></h3>
-                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.address}</p>
-                                    {officeAddress.officeNameMalayalam && <p className="text-md text-muted-foreground mt-2 whitespace-pre-wrap">{officeAddress.officeNameMalayalam}</p>}
-                                    {officeAddress.addressMalayalam && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.addressMalayalam}</p>}
+                                    <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName || "Office Name Pending"}, <span className="text-primary">{capitalize(officeAddress.officeLocation)}</span></h3>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.address || "Address Not Provided"}</p>
+                                    <p className="text-md text-muted-foreground mt-2 whitespace-pre-wrap">{officeAddress.officeNameMalayalam || "മലയാളം പേര് ചേർത്തിട്ടില്ല"}</p>
+                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.addressMalayalam || "മലയാളം വിലാസം ചേർത്തിട്ടില്ല"}</p>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     {officeAddress.districtOfficerPhotoUrl && (
@@ -466,29 +478,17 @@ export default function SettingsPage() {
                                 <DetailRow label="GST No." value={officeAddress.gstNo} />
                                 <DetailRow label="PAN No." value={officeAddress.panNo} />
                             </div>
-                            {(officeAddress.stsbAccountNo || officeAddress.nameOfTreasury) && (
-                                <>
-                                    <Separator className="my-4"/>
-                                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">Special Treasury Savings Account</h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                                        <DetailRow label="STSB Account No." value={officeAddress.stsbAccountNo} />
-                                        <DetailRow label="Name of Treasury" value={officeAddress.nameOfTreasury} />
-                                    </div>
-                                </>
-                            )}
-                            {(officeAddress.bankAccountNo || officeAddress.nameOfBank || officeAddress.bankBranch || officeAddress.bankIfsc) && (
-                                <>
-                                    <Separator className="my-4"/>
-                                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">Bank Account</h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
-                                        <DetailRow label="Bank Account No." value={officeAddress.bankAccountNo} />
-                                        <DetailRow label="Name of Bank" value={officeAddress.nameOfBank} />
-                                        <DetailRow label="Branch" value={officeAddress.bankBranch} />
-                                        <DetailRow label="IFSC" value={officeAddress.bankIfsc} />
-                                    </div>
-                                </>
-                            )}
-                            {officeAddress.otherDetails && <div className="pt-3 border-t"><p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.otherDetails}</p></div>}
+                            <Separator className="my-4"/>
+                            <h4 className="text-sm font-semibold text-muted-foreground mb-2">Treasury & Bank Details</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
+                                <DetailRow label="STSB Account No." value={officeAddress.stsbAccountNo} />
+                                <DetailRow label="Name of Treasury" value={officeAddress.nameOfTreasury} />
+                                <DetailRow label="Bank Account No." value={officeAddress.bankAccountNo} />
+                                <DetailRow label="Name of Bank" value={officeAddress.nameOfBank} />
+                                <DetailRow label="Branch" value={officeAddress.bankBranch} />
+                                <DetailRow label="IFSC" value={officeAddress.bankIfsc} />
+                            </div>
+                            <div className="pt-3 border-t"><DetailRow label="Other Details" value={officeAddress.otherDetails} /></div>
                         </div>
                     ) : (
                         <div className="text-center py-8 text-muted-foreground">
