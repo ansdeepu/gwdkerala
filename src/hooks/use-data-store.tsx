@@ -237,14 +237,26 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
           if (!snapshot.empty) {
-              const subOfficeDoc = processFirestoreDoc(snapshot.docs[0]);
+              // Merge all documents in the sub-collection to ensure all details are captured
+              let mergedSubData: any = {};
+              snapshot.docs.forEach(d => {
+                  const data = processFirestoreDoc(d) as any;
+                  mergedSubData = { ...mergedSubData, ...data };
+              });
+
               setOfficeAddress({
-                  ...subOfficeDoc as any,
-                  officeCode: globalOffice?.officeCode || '',
+                  ...mergedSubData,
+                  officeCode: globalOffice?.officeCode || mergedSubData.officeCode || '',
+                  officeLocation: officeLocation, // Ensure location is consistent
               });
           } else {
+              // If empty, falls back to global configuration
               if (globalOffice) {
-                  setOfficeAddress({ ...globalOffice, officeName: '', id: globalOffice.id });
+                  setOfficeAddress({ 
+                      ...globalOffice, 
+                      officeName: `Ground Water Department, ${officeLocation}`, 
+                      id: globalOffice.id 
+                  });
               } else {
                   setOfficeAddress(null);
               }
