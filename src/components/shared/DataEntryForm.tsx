@@ -97,9 +97,9 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
 };
 
-const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
+const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ id: uuidv4(), amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
 const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "Deposit Work", fileDetails: "" });
-const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
+const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ id: uuidv4(), remittanceId: null, dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
 const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: undefined, estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", workImages: [], workVideos: [] });
 
 
@@ -815,12 +815,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
 
     const form = useForm<SiteDetailFormData>({
       resolver: zodResolver(SiteDetailSchema),
-      defaultValues: { 
-        ...defaults, 
-        dateOfCompletion: formatDateForInput(defaults.dateOfCompletion),
-        workImages: defaults.workImages || [],
-        workVideos: defaults.workVideos || []
-      },
+      defaultValues: { ...defaults, dateOfCompletion: formatDateForInput(defaults.dateOfCompletion) },
     });
     
     const { control, setValue, trigger, watch, handleSubmit, getValues } = form;
@@ -1350,20 +1345,31 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         setValue("applicationType", data.applicationType, { shouldDirty: true });
     } else if (type === 'remittance') {
         const remittanceData = data as RemittanceDetailFormData;
-        if (originalData.index !== undefined) {
-            updateRemittance(originalData.index, remittanceData);
+        const isEditingRemittance = originalData.index !== undefined;
+        if (isEditingRemittance) {
+            const originalRemittance = remittanceFields[originalData.index];
+            const linkedPaymentIndex = paymentFields.findIndex(p => p.remittanceId === originalRemittance.id);
+            const wasRevenueHead = originalRemittance?.remittedAccount === 'Revenue Head';
+            const isNowRevenueHead = remittanceData.remittedAccount === 'Revenue Head';
+            
+            updateRemittance(originalData.index, { ...remittanceData, id: originalRemittance.id });
+
+            if (wasRevenueHead && !isNowRevenueHead && linkedPaymentIndex > -1) {
+                removePayment(linkedPaymentIndex);
+                toast({ title: "Auto-Payment Removed" });
+            } else if (wasRevenueHead && isNowRevenueHead && linkedPaymentIndex > -1) {
+                updatePayment(linkedPaymentIndex, { ...paymentFields[linkedPaymentIndex], dateOfPayment: remittanceData.dateOfRemittance, revenueHead: remittanceData.amountRemitted, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }) });
+                toast({ title: "Auto-Payment Updated" });
+            } else if (!wasRevenueHead && isNowRevenueHead) {
+                appendPayment({ id: uuidv4(), remittanceId: originalRemittance.id, dateOfPayment: remittanceData.dateOfRemittance, paymentAccount: "Bank", revenueHead: remittanceData.amountRemitted, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }), paymentRemarks: "Auto-entry for remittance to Revenue Head." });
+                toast({ title: "Auto-Payment Added" });
+            }
         } else {
-            appendRemittance(remittanceData);
-            if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
-                const newPaymentEntry: PaymentDetailFormData = {
-                    dateOfPayment: remittanceData.dateOfRemittance,
-                    paymentAccount: "Bank",
-                    revenueHead: remittanceData.amountRemitted,
-                    totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
-                    paymentRemarks: "Auto-entry for remittance to Revenue Head.",
-                };
-                appendPayment(newPaymentEntry);
-                toast({ title: "Payment Entry Added", description: "An automatic payment entry was created for the Revenue Head remittance." });
+            const newRemittance = { ...remittanceData, id: uuidv4() };
+            appendRemittance(newRemittance);
+            if (newRemittance.remittedAccount === 'Revenue Head' && newRemittance.amountRemitted && newRemittance.amountRemitted > 0) {
+                appendPayment({ id: uuidv4(), remittanceId: newRemittance.id, dateOfPayment: newRemittance.dateOfRemittance, paymentAccount: "Bank", revenueHead: newRemittance.amountRemitted, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: newRemittance.amountRemitted }), paymentRemarks: "Auto-entry for remittance to Revenue Head." });
+                toast({ title: "Payment Entry Added", description: "An automatic payment entry was created." });
             }
         }
     } else if (type === 'reappropriation') {
@@ -1388,7 +1394,16 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const handleDeleteItem = async () => {
     if (!itemToDelete) return;
     const { type, index } = itemToDelete;
-    if (type === 'remittance') removeRemittance(index); 
+    if (type === 'remittance') {
+        const remittanceToDelete = remittanceFields[index];
+        if (remittanceToDelete.remittedAccount === 'Revenue Head' && remittanceToDelete.id) {
+            const linkedPaymentIndex = paymentFields.findIndex(p => p.remittanceId === remittanceToDelete.id);
+            if (linkedPaymentIndex > -1) {
+                removePayment(linkedPaymentIndex);
+            }
+        }
+        removeRemittance(index);
+    } 
     else if (type === 'reappropriation') removeReappropriation(index);
     else if (type === 'payment') removePayment(index); 
     else if (type === 'site') removeSite(index);

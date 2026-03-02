@@ -101,9 +101,9 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
 };
 
-const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
+const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ id: uuidv4(), amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
 const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "Logging & Pumping Test", fileDetails: "" });
-const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
+const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ id: uuidv4(), remittanceId: null, dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
 const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "Geological logging", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", workImages: [], workVideos: [] });
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
@@ -371,7 +371,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     );
 };
 
-const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category, isDeferredFunding }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void, category?: string | null, isDeferredFunding: boolean; }) => {
+const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void, category?: string | null }) => {
     const form = useForm<RemittanceDetailFormData>({
       resolver: zodResolver(RemittanceDetailSchema),
       defaultValues: {
@@ -385,12 +385,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category, i
         onConfirm(data);
     };
     
-    const availableRemittanceAccounts = useMemo(() => {
-        if (isDeferredFunding) {
-            return remittedAccountOptions.filter(o => o === "Plan Fund");
-        }
-        return remittedAccountOptions.filter(o => o !== 'Plan Fund');
-    }, [isDeferredFunding]);
+    const availableRemittanceAccounts = ["Bank", "STSB", "Revenue Head"];
 
     return (
       <Form {...form}>
@@ -414,9 +409,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category, i
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField name="dateOfRemittance" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Date <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     <FormField name="amountRemitted" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
-                    {!isDeferredFunding && (
-                        <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl><SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
-                    )}
+                    <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl><SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
                 </div>
                 <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{category === 'Complaints' ? 'Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
@@ -559,7 +552,9 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
     );
 };
 
-const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFunding }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isDeferredFunding: boolean }) => {
+const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, workTypeContext: string | null }) => {
+    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
+
     const form = useForm<PaymentDetailFormData>({
       resolver: zodResolver(PaymentDetailSchema),
       defaultValues: {
@@ -573,12 +568,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
         onConfirm(data);
     };
 
-    const availablePaymentAccounts = useMemo(() => {
-        if (isDeferredFunding) {
-            return paymentAccountOptions.filter(o => o === "Plan Fund");
-        }
-        return paymentAccountOptions.filter(o => o !== "Plan Fund");
-    }, [isDeferredFunding]);
+    const availablePaymentAccounts = ["Bank", "STSB"];
 
     return (
         <Form {...form}>
@@ -591,9 +581,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                       <div className="space-y-4">
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
-                              {!isDeferredFunding && (
-                                <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-                              )}
+                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                           </div>
                           <Separator/>
                           <FormField name="revenueHead" control={form.control} render={({ field }) => <FormItem><FormLabel>Revenue Head (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
@@ -609,232 +597,6 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
             </form>
         </Form>
     );
-};
-
-const MediaManager = ({
-  title,
-  type,
-  fields,
-  append,
-  remove,
-  update,
-  isReadOnly,
-}: {
-  title: string;
-  type: 'image' | 'video';
-  fields: any[];
-  append: (item: any) => void;
-  remove: (index: number) => void;
-  update: (index: number, item: any) => void;
-  isReadOnly: boolean;
-}) => {
-  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
-  const [editingMedia, setEditingMedia] = useState<{ index: number; data: any } | null>(null);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-
-  const handleAddClick = () => {
-    setEditingMedia(null);
-    setIsMediaModalOpen(true);
-  };
-
-  const handleEditClick = (index: number, data: any) => {
-    setEditingMedia({ index, data });
-    setIsMediaModalOpen(true);
-  };
-
-  const handleMediaSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    e.stopPropagation(); 
-    const formData = new FormData(e.currentTarget);
-    const url = formData.get('url') as string;
-    const description = formData.get('description') as string;
-
-    if (!url) return;
-
-    if (editingMedia) {
-      update(editingMedia.index, { ...editingMedia.data, url, description });
-    } else {
-      append({ id: uuidv4(), url, description });
-    }
-    setIsMediaModalOpen(false);
-  };
-
-  const getEmbedUrl = (url: string) => {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      const id = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
-      return `https://www.youtube.com/embed/${id}`;
-    }
-    if (url.includes('vimeo.com')) {
-      const id = url.split('/').pop();
-      return `https://player.vimeo.com/video/${id}`;
-    }
-    return null;
-  };
-
-  const getYouTubeThumbnail = (url: string) => {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      const id = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
-      return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-    }
-    return null;
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="font-semibold text-sm flex items-center gap-2">
-          {type === 'image' ? <ImagePlus className="h-4 w-4" /> : <Video className="h-4 w-4" />}
-          {title}
-        </h4>
-        {!isReadOnly && (
-          <Button type="button" variant="outline" size="sm" onClick={handleAddClick}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add {type === 'image' ? 'Image' : 'Video'} Link
-          </Button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {fields.map((field, index) => (
-          <div key={field.id} className="flex flex-col gap-1 group">
-            <div className="relative aspect-square rounded-lg border overflow-hidden bg-muted">
-              <button
-                type="button"
-                onClick={() => setLightboxIndex(index)}
-                className="w-full h-full flex items-center justify-center hover:opacity-80 transition-opacity"
-              >
-                {type === 'image' ? (
-                  <img src={field.url} alt={field.description || ''} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full relative">
-                    {getYouTubeThumbnail(field.url) ? (
-                      <img src={getYouTubeThumbnail(field.url)!} className="w-full h-full object-cover" />
-                    ) : (
-                      <video src={field.url} className="w-full h-full object-cover" preload="metadata" />
-                    )}
-                  </div>
-                )}
-              </button>
-              {!isReadOnly && (
-                <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button type="button" variant="secondary" size="icon" className="h-7 w-7 shadow-sm" onClick={() => handleEditClick(index, field)}>
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button type="button" variant="destructive" size="icon" className="h-7 w-7 shadow-sm" onClick={() => remove(index)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              )}
-            </div>
-            {field.description && (
-              <p className="text-xs font-semibold text-primary/80 line-clamp-2 px-1 py-1 mt-1.5 rounded">
-                {field.description}
-              </p>
-            )}
-          </div>
-        ))}
-        {fields.length === 0 && (
-          <div className="col-span-full py-8 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
-            <p className="text-xs italic">No {type}s added yet.</p>
-          </div>
-        )}
-      </div>
-
-      <Dialog open={isMediaModalOpen} onOpenChange={setIsMediaModalOpen}>
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-md p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-4 border-b">
-            <DialogTitle>{editingMedia ? 'Edit' : 'Add'} {type === 'image' ? 'Image' : 'Video'} Link</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleMediaSubmit} className="p-6 space-y-4">
-            <div className="space-y-2">
-              <Label>Media Link (URL)</Label>
-              <Input name="url" defaultValue={editingMedia?.data?.url || ''} placeholder="https://..." required />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea name="description" defaultValue={editingMedia?.data?.description || ''} placeholder="Enter a brief description..." className="min-h-[100px]" />
-            </div>
-            <DialogFooter className="pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setIsMediaModalOpen(false)}>Cancel</Button>
-              <Button type="submit">Save</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={lightboxIndex !== null} onOpenChange={() => setLightboxIndex(null)}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-none">
-          <div className="relative flex flex-col h-[80vh]">
-            <div className="flex-1 relative flex items-center justify-center p-4">
-              {lightboxIndex !== null && fields[lightboxIndex] && (
-                <>
-                  {type === 'image' ? (
-                    <img
-                      src={fields[lightboxIndex].url}
-                      alt={fields[lightboxIndex].description || ''}
-                      className="max-w-full max-h-full object-contain shadow-2xl"
-                    />
-                  ) : (
-                    <div className="w-full aspect-video bg-black flex items-center justify-center overflow-hidden rounded-lg shadow-2xl">
-                      {getEmbedUrl(fields[lightboxIndex].url) ? (
-                        <iframe
-                          src={getEmbedUrl(fields[lightboxIndex].url)}
-                          className="w-full h-full border-none"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <video
-                          src={fields[lightboxIndex].url}
-                          controls
-                          className="w-full h-full"
-                        />
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {fields.length > 1 && (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute left-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white"
-                    onClick={() => setLightboxIndex(prev => (prev! - 1 + fields.length) % fields.length)}
-                  >
-                    <ChevronLeft className="h-8 w-8" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white"
-                    onClick={() => setLightboxIndex(prev => (prev! + 1) % fields.length)}
-                  >
-                    <ChevronRight className="h-8 w-8" />
-                  </Button>
-                </>
-              )}
-            </div>
-            {lightboxIndex !== null && fields[lightboxIndex]?.description && (
-              <div className="p-6 bg-black/80 text-white border-t border-white/10">
-                <p className="text-sm font-medium">{fields[lightboxIndex].description}</p>
-              </div>
-            )}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 text-white/70 hover:text-white"
-              onClick={() => setLightboxIndex(null)}
-            >
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
 };
 
 const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, allLsgConstituencyMaps, allStaffMembers, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isReadOnly: boolean, isSupervisor: boolean, allLsgConstituencyMaps: any[], allStaffMembers: StaffMember[], workTypeContext: string | null }) => {
@@ -865,6 +627,8 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSup
     const watchedWorkStatus = watch('workStatus');
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
+    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
+    
     const workStatusOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS : INVESTIGATION_WORK_STATUS_OPTIONS;
     const purposeOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_PURPOSE_OPTIONS : ['GW Investigation'];
 
@@ -1238,20 +1002,31 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         setValue("category", data.category, { shouldDirty: true });
     } else if (type === 'remittance') {
         const remittanceData = data as RemittanceDetailFormData;
-        if (originalData.index !== undefined) {
-            updateRemittance(originalData.index, remittanceData);
+        const isEditingRemittance = originalData.index !== undefined;
+        if (isEditingRemittance) {
+            const originalRemittance = remittanceFields[originalData.index];
+            const linkedPaymentIndex = paymentFields.findIndex(p => p.remittanceId === originalRemittance.id);
+            const wasRevenueHead = originalRemittance?.remittedAccount === 'Revenue Head';
+            const isNowRevenueHead = remittanceData.remittedAccount === 'Revenue Head';
+            
+            updateRemittance(originalData.index, { ...remittanceData, id: originalRemittance.id });
+
+            if (wasRevenueHead && !isNowRevenueHead && linkedPaymentIndex > -1) {
+                removePayment(linkedPaymentIndex);
+                toast({ title: "Auto-Payment Removed" });
+            } else if (wasRevenueHead && isNowRevenueHead && linkedPaymentIndex > -1) {
+                updatePayment(linkedPaymentIndex, { ...paymentFields[linkedPaymentIndex], dateOfPayment: remittanceData.dateOfRemittance, revenueHead: remittanceData.amountRemitted, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }) });
+                toast({ title: "Auto-Payment Updated" });
+            } else if (!wasRevenueHead && isNowRevenueHead) {
+                appendPayment({ id: uuidv4(), remittanceId: originalRemittance.id, dateOfPayment: remittanceData.dateOfRemittance, paymentAccount: "Bank", revenueHead: remittanceData.amountRemitted, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }), paymentRemarks: "Auto-entry for remittance to Revenue Head." });
+                toast({ title: "Auto-Payment Added" });
+            }
         } else {
-            appendRemittance(remittanceData);
-            if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
-                const newPaymentEntry: PaymentDetailFormData = {
-                    dateOfPayment: remittanceData.dateOfRemittance,
-                    paymentAccount: "Bank",
-                    revenueHead: remittanceData.amountRemitted,
-                    totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
-                    paymentRemarks: "Auto-entry for remittance to Revenue Head.",
-                };
-                appendPayment(newPaymentEntry);
-                toast({ title: "Payment Entry Added", description: "An automatic payment entry was created for the Revenue Head remittance." });
+            const newRemittance = { ...remittanceData, id: uuidv4() };
+            appendRemittance(newRemittance);
+            if (newRemittance.remittedAccount === 'Revenue Head' && newRemittance.amountRemitted && newRemittance.amountRemitted > 0) {
+                appendPayment({ id: uuidv4(), remittanceId: newRemittance.id, dateOfPayment: newRemittance.dateOfRemittance, paymentAccount: "Bank", revenueHead: newRemittance.amountRemitted, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: newRemittance.amountRemitted }), paymentRemarks: "Auto-entry for remittance to Revenue Head." });
+                toast({ title: "Payment Entry Added", description: "An automatic payment entry was created." });
             }
         }
     } else if (type === 'reappropriation') {
@@ -1276,7 +1051,16 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const handleDeleteItem = async () => {
     if (!itemToDelete) return;
     const { type, index } = itemToDelete;
-    if (type === 'remittance') removeRemittance(index); 
+    if (type === 'remittance') {
+        const remittanceToDelete = remittanceFields[index];
+        if (remittanceToDelete.remittedAccount === 'Revenue Head' && remittanceToDelete.id) {
+            const linkedPaymentIndex = paymentFields.findIndex(p => p.remittanceId === remittanceToDelete.id);
+            if (linkedPaymentIndex > -1) {
+                removePayment(linkedPaymentIndex);
+            }
+        }
+        removeRemittance(index);
+    } 
     else if (type === 'reappropriation') removeReappropriation(index);
     else if (type === 'payment') removePayment(index); 
     else if (type === 'site') removeSite(index);
@@ -1387,12 +1171,11 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
             <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
             <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
-        
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={watch('category')} isDeferredFunding={false} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>
     </FormProvider>

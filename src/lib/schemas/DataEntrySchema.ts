@@ -193,6 +193,7 @@ export const remittedAccountOptions = [
 export type RemittedAccount = typeof remittedAccountOptions[number];
 
 export const RemittanceDetailSchema = z.object({
+  id: z.string().optional(),
   amountRemitted: optionalNumber("Amount Remitted must be a valid number."),
   dateOfRemittance: z.string().optional(),
   remittedAccount: z.enum(remittedAccountOptions),
@@ -237,6 +238,8 @@ export const paymentAccountOptions = [
 export type PaymentAccount = typeof paymentAccountOptions[number];
 
 export const PaymentDetailSchema = z.object({
+  id: z.string().optional(),
+  remittanceId: z.string().optional().nullable(),
   dateOfPayment: z.string().optional(),
   paymentAccount: z.enum(paymentAccountOptions),
   revenueHead: optionalNumber("Revenue Head must be a valid number."),

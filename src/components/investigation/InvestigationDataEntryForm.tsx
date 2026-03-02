@@ -100,9 +100,9 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
 };
 
-const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
+const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ id: uuidv4(), amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
 const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "GW Investigation", fileDetails: "" });
-const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
+const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ id: uuidv4(), remittanceId: null, dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
 const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", nameOfInvestigator: undefined, vesInvestigator: undefined, hydrogeologicalRemarks: "", geophysicalRemarks: "", workImages: [], workVideos: [] });
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
@@ -594,17 +594,22 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSup
         ...defaults, 
         dateOfCompletion: formatDateForInput(defaults.dateOfCompletion),
         dateOfInvestigation: formatDateForInput(defaults.dateOfInvestigation),
-        vesDate: formatDateForInput(defaults.vesDate)
+        vesDate: formatDateForInput(defaults.vesDate),
+        workImages: defaults.workImages || [],
+        workVideos: defaults.workVideos || []
       },
     });
     
-    const { control, setValue, trigger, handleSubmit, getValues } = form;
+    const { control, setValue, trigger, watch, handleSubmit, getValues } = form;
 
-    const watchedLsg = useWatch({ control, name: "localSelfGovt" });
-    const watchedTypeOfWell = useWatch({ control, name: 'typeOfWell' });
-    const watchedVesRequired = useWatch({ control, name: 'vesRequired' });
-    const watchedWorkStatus = useWatch({ control, name: 'workStatus' });
-    const watchedFeasibility = useWatch({ control, name: 'feasibility' });
+    const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
+    const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
+
+    const watchedLsg = watch("localSelfGovt");
+    const watchedTypeOfWell = watch('typeOfWell');
+    const watchedVesRequired = watch('vesRequired');
+    const watchedWorkStatus = watch('workStatus');
+    const watchedFeasibility = watch('feasibility');
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
     const pageTitle = 'GW Investigation';
@@ -670,7 +675,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSup
     return (
         <div className="flex flex-col h-full overflow-hidden">
             <DialogHeader className="p-6 pb-4 shrink-0">
-                <DialogTitle>{initialData?.nameOfSite ? `Edit Site` : `Add New Site`}</DialogTitle>
+                <DialogTitle>{initialData?.nameOfSite ? `Edit ${pageTitle} Site` : `Add New ${pageTitle} Site`}</DialogTitle>
             </DialogHeader>
             <div className="flex-1 min-h-0">
                 <ScrollArea className="h-full px-6 py-4">
@@ -1060,20 +1065,31 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         setValue("category", data.category, { shouldDirty: true });
     } else if (type === 'remittance') {
         const remittanceData = data as RemittanceDetailFormData;
-        if (originalData.index !== undefined) {
-            updateRemittance(originalData.index, remittanceData);
+        const isEditingRemittance = originalData.index !== undefined;
+        if (isEditingRemittance) {
+            const originalRemittance = remittanceFields[originalData.index];
+            const linkedPaymentIndex = paymentFields.findIndex(p => p.remittanceId === originalRemittance.id);
+            const wasRevenueHead = originalRemittance?.remittedAccount === 'Revenue Head';
+            const isNowRevenueHead = remittanceData.remittedAccount === 'Revenue Head';
+            
+            updateRemittance(originalData.index, { ...remittanceData, id: originalRemittance.id });
+
+            if (wasRevenueHead && !isNowRevenueHead && linkedPaymentIndex > -1) {
+                removePayment(linkedPaymentIndex);
+                toast({ title: "Auto-Payment Removed" });
+            } else if (wasRevenueHead && isNowRevenueHead && linkedPaymentIndex > -1) {
+                updatePayment(linkedPaymentIndex, { ...paymentFields[linkedPaymentIndex], dateOfPayment: remittanceData.dateOfRemittance, revenueHead: remittanceData.amountRemitted, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }) });
+                toast({ title: "Auto-Payment Updated" });
+            } else if (!wasRevenueHead && isNowRevenueHead) {
+                appendPayment({ id: uuidv4(), remittanceId: originalRemittance.id, dateOfPayment: remittanceData.dateOfRemittance, paymentAccount: "Bank", revenueHead: remittanceData.amountRemitted, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }), paymentRemarks: "Auto-entry for remittance to Revenue Head." });
+                toast({ title: "Auto-Payment Added" });
+            }
         } else {
-            appendRemittance(remittanceData);
-            if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
-                const newPaymentEntry: PaymentDetailFormData = {
-                    dateOfPayment: remittanceData.dateOfRemittance,
-                    paymentAccount: "Bank",
-                    revenueHead: remittanceData.amountRemitted,
-                    totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
-                    paymentRemarks: "Auto-entry for remittance to Revenue Head.",
-                };
-                appendPayment(newPaymentEntry);
-                toast({ title: "Payment Entry Added", description: "An automatic payment entry was created for the Revenue Head remittance." });
+            const newRemittance = { ...remittanceData, id: uuidv4() };
+            appendRemittance(newRemittance);
+            if (newRemittance.remittedAccount === 'Revenue Head' && newRemittance.amountRemitted && newRemittance.amountRemitted > 0) {
+                appendPayment({ id: uuidv4(), remittanceId: newRemittance.id, dateOfPayment: newRemittance.dateOfRemittance, paymentAccount: "Bank", revenueHead: newRemittance.amountRemitted, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: newRemittance.amountRemitted }), paymentRemarks: "Auto-entry for remittance to Revenue Head." });
+                toast({ title: "Payment Entry Added", description: "An automatic payment entry was created." });
             }
         }
     } else if (type === 'reappropriation') {
@@ -1098,7 +1114,16 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const handleDeleteItem = async () => {
     if (!itemToDelete) return;
     const { type, index } = itemToDelete;
-    if (type === 'remittance') removeRemittance(index); 
+    if (type === 'remittance') {
+        const remittanceToDelete = remittanceFields[index];
+        if (remittanceToDelete.remittedAccount === 'Revenue Head' && remittanceToDelete.id) {
+            const linkedPaymentIndex = paymentFields.findIndex(p => p.remittanceId === remittanceToDelete.id);
+            if (linkedPaymentIndex > -1) {
+                removePayment(linkedPaymentIndex);
+            }
+        }
+        removeRemittance(index);
+    } 
     else if (type === 'reappropriation') removeReappropriation(index);
     else if (type === 'payment') removePayment(index); 
     else if (type === 'site') removeSite(index);
@@ -1209,9 +1234,8 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
             <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
             <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
-        
-        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isEditing={isEditing} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={watch('category')} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={watch('category')} isDeferredFunding={false} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} /></DialogContent></Dialog>
