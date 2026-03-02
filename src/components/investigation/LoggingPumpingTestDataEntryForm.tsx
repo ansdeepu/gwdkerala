@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -61,6 +60,7 @@ import {
   LOGGING_PUMPING_TEST_PRIVATE_TYPES,
   type ReappropriationDetailFormData,
   ReappropriationDetailSchema,
+  INVESTIGATION_WORK_STATUS_OPTIONS,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -215,7 +215,6 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
     try { return format(new Date(date), 'yyyy-MM-dd'); } catch { return ""; }
 };
 
-// Dialog Content Components
 const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeContext, isEditing }: { 
     initialData: any, 
     onConfirm: (data: any) => void, 
@@ -364,7 +363,10 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                 </div>
             </div>
         </div>
-        <DialogFooter className="px-6 pb-6"><Button variant="outline" onClick={onCancel} disabled={isChecking}>Cancel</Button><Button onClick={handleSave} disabled={isChecking}>{isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save</Button></DialogFooter>
+        <DialogFooter className="px-6 pb-6">
+            <Button variant="outline" onClick={onCancel} disabled={isChecking}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isChecking}>{isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save</Button>
+        </DialogFooter>
       </div>
     );
 };
@@ -642,7 +644,7 @@ const MediaManager = ({
 
   const handleMediaSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    e.stopPropagation(); // Stop event from bubbling to parent forms
+    e.stopPropagation(); 
     const formData = new FormData(e.currentTarget);
     const url = formData.get('url') as string;
     const description = formData.get('description') as string;
@@ -847,7 +849,9 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSup
         ...defaults, 
         dateOfCompletion: formatDateForInput(defaults.dateOfCompletion),
         dateOfInvestigation: formatDateForInput(defaults.dateOfInvestigation),
-        vesDate: formatDateForInput(defaults.vesDate)
+        vesDate: formatDateForInput(defaults.vesDate),
+        workImages: defaults.workImages || [],
+        workVideos: defaults.workVideos || []
       },
     });
     
@@ -861,19 +865,13 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSup
     const watchedWorkStatus = watch('workStatus');
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
-    
     const workStatusOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS : INVESTIGATION_WORK_STATUS_OPTIONS;
     const purposeOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_PURPOSE_OPTIONS : ['GW Investigation'];
 
     const isFieldReadOnly = (isSupervisorEditable: boolean) => {
-        if (isReadOnly) { // Global readonly (viewer)
-            return true;
-        }
-        if (isSupervisor) {
-            return !isSupervisorEditable;
-        }
-        return false; // Editor can edit everything
+        if (isReadOnly) return true;
+        if (isSupervisor) return !isSupervisorEditable;
+        return false;
     };
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
@@ -1121,7 +1119,6 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         if (entry.fileNo?.toLowerCase().trim() === normalizedFileNo) return;
         entry.reappropriationDetails?.forEach(reapp => {
             if (reapp.refFileNo?.toLowerCase().trim() === normalizedFileNo) {
-                // Determine source page type
                 const hasInvestigation = entry.siteDetails?.some(s => s.purpose === 'GW Investigation');
                 const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
                 let sourcePageType = "Deposit Work";
@@ -1149,7 +1146,6 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const watchedReappropriationDetails = watch("reappropriationDetails");
   const watchedPaymentDetails = watch("paymentDetails");
 
-  // Combined and sorted reappropriations for display
   const sortedCombinedReappropriations = useMemo(() => {
     const manual = reappropriationFields.map((field, index) => ({
         ...field,
@@ -1165,7 +1161,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     return [...manual, ...auto].sort((a, b) => {
         const timeA = a.dateObj?.getTime() ?? 0;
         const timeB = b.dateObj?.getTime() ?? 0;
-        return timeB - timeA; // Descending (most recent first)
+        return timeB - timeA; 
     });
   }, [reappropriationFields, autoCredits]);
 
@@ -1195,7 +1191,6 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
 
-    // Overall Balance = Total Remittance + Total Re-appropriation Credit - Total Payment - Total Re-appropriation Debit
     setValue("overallBalance", spendableRemittance + totalReappCredit - totalPayment - totalReappDebit);
     
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
@@ -1247,7 +1242,6 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
             updateRemittance(originalData.index, remittanceData);
         } else {
             appendRemittance(remittanceData);
-            // Only auto-append payment for NEW Revenue Head remittances
             if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
                 const newPaymentEntry: PaymentDetailFormData = {
                     dateOfPayment: remittanceData.dateOfRemittance,
@@ -1393,245 +1387,14 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
             <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
             <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
-        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isEditing={isEditing} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={watch('category')} /></DialogContent></Dialog>
+        
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={watch('category')} isDeferredFunding={false} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>
     </FormProvider>
   );
 }
-
-const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, allLsgConstituencyMaps, allStaffMembers, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isReadOnly: boolean, isSupervisor: boolean, allLsgConstituencyMaps: any[], allStaffMembers: StaffMember[], workTypeContext: string | null }) => {
-    
-    const defaults = {
-        ...(initialData?.nameOfSite ? initialData : createDefaultSiteDetail()),
-    };
-
-    const form = useForm<SiteDetailFormData>({
-      resolver: zodResolver(SiteDetailSchema),
-      defaultValues: { 
-        ...defaults, 
-        dateOfCompletion: formatDateForInput(defaults.dateOfCompletion),
-        dateOfInvestigation: formatDateForInput(defaults.dateOfInvestigation),
-        vesDate: formatDateForInput(defaults.vesDate)
-      },
-    });
-    
-    const { control, setValue, trigger, handleSubmit, getValues } = form;
-
-    const watchedLsg = useWatch({ control, name: "localSelfGovt" });
-    const watchedTypeOfWell = useWatch({ control, name: 'typeOfWell' });
-    const watchedVesRequired = useWatch({ control, name: 'vesRequired' });
-    const watchedWorkStatus = useWatch({ control, name: 'workStatus' });
-    const watchedFeasibility = useWatch({ control, name: 'feasibility' });
-    const isCompletionDateRequired = watchedWorkStatus === 'Completed';
-
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
-    
-    const workStatusOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS : INVESTIGATION_WORK_STATUS_OPTIONS;
-    const purposeOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_PURPOSE_OPTIONS : ['GW Investigation'];
-
-    const handleDialogSubmit = (data: SiteDetailFormData) => {
-        onConfirm(data);
-    };
-    
-    const sortedLsgMaps = useMemo(() => {
-        return [...allLsgConstituencyMaps].sort((a, b) => a.name.localeCompare(b.name));
-    }, [allLsgConstituencyMaps]);
-
-    const constituencyOptionsForLsg = useMemo(() => {
-        if (!watchedLsg) return [];
-        const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
-        if (!map || !map.constituencies) return [];
-        return [...map.constituencies].sort((a,b) => a.localeCompare(b));
-    }, [watchedLsg, allLsgConstituencyMaps]);
-
-    const handleLsgChange = useCallback((lsgName: string) => {
-        setValue('localSelfGovt', lsgName);
-        const map = allLsgConstituencyMaps.find(m => m.name === lsgName);
-        const constituencies = map?.constituencies || [];
-        setValue('constituency', undefined, { shouldValidate: true });
-        if (constituencies.length === 1) {
-            setValue('constituency', constituencies[0] as Constituency, { shouldValidate: true });
-        }
-        trigger('constituency');
-    }, [setValue, allLsgConstituencyMaps, trigger]);
-
-    useEffect(() => {
-        if (!watchedLsg) return;
-
-        const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
-        const constituencies = map?.constituencies || [];
-        
-        if (constituencies.length === 1 && getValues("constituency") !== constituencies[0]) {
-            setValue('constituency', constituencies[0] as Constituency);
-        }
-    }, [watchedLsg, allLsgConstituencyMaps, setValue, getValues]);
-
-    const hydroStaff = useMemo(() => {
-        const hydroDesignations: Designation[] = ["Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant"];
-        return allStaffMembers.filter(s => s.designation && hydroDesignations.includes(s.designation) && s.status === 'Active');
-    }, [allStaffMembers]);
-
-    const geophysStaff = useMemo(() => {
-        const geophysDesignations: Designation[] = ["Geophysicist", "Junior Geophysicist", "Geophysical Assistant"];
-        return allStaffMembers.filter(s => s.designation && geophysDesignations.includes(s.designation) && s.status === 'Active');
-    }, [allStaffMembers]);
-
-    const isFieldReadOnly = (isSupervisorEditable: boolean) => {
-        if (isReadOnly) { // Global readonly (viewer)
-            return true;
-        }
-        if (isSupervisor) {
-            return !isSupervisorEditable;
-        }
-        return false; // Editor can edit everything
-    };
-
-    return (
-        <div className="flex flex-col h-full overflow-hidden">
-            <DialogHeader className="p-6 pb-4 shrink-0">
-                <DialogTitle>{initialData?.nameOfSite ? `Edit Site` : `Add New Site`}</DialogTitle>
-            </DialogHeader>
-            <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full px-6 py-4">
-                    <Form {...form}>
-                        <form id="investigation-site-dialog-form" onSubmit={(e) => { e.stopPropagation(); handleSubmit(handleDialogSubmit)(e); }} className="space-y-6">
-                            <Card>
-                                <CardHeader><CardTitle>Main Details</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="purpose" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
-                                                {isFieldReadOnly(false) ? (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>) : (
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        {purposeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                                )}
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField name="localSelfGovt" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Local Self Govt.</FormLabel>
-                                                {isFieldReadOnly(false) ? (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>) : (
-                                                <Select onValueChange={(value) => handleLsgChange(value)} value={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl>
-                                                    <SelectContent className="max-h-80">
-                                                        <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>
-                                                        {sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                                )}
-                                                <FormMessage/>
-                                            </FormItem>
-                                        )} />
-                                        <FormField name="constituency" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Constituency (LAC)</FormLabel>
-                                                {isFieldReadOnly(false) ? (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>) : (
-                                                <Select onValueChange={field.onChange} value={field.value} disabled={constituencyOptionsForLsg.length <= 1}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Constituency"/></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>
-                                                        {constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                                )}
-                                                <FormMessage/>
-                                            </FormItem>
-                                        )} />
-                                        <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            
-                            <Card>
-                                <CardHeader><CardTitle>Work Details</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <FormField name="typeOfWell" control={control} render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Type of Well <span className="text-destructive">*</span></FormLabel>
-                                            {isFieldReadOnly(false) ? (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>) : (
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder="Select Well Type" /></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    {typeOfWellOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                            )}
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                    <FormField name="hydrogeologicalRemarks" control={form.control} render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Description of Work</FormLabel>
-                                            <FormControl><Textarea {...field} value={field.value || ""} placeholder="Add a description of the work performed..." readOnly={isFieldReadOnly(true)} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                    <FormField name="geophysicalRemarks" control={form.control} render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Remarks</FormLabel>
-                                            <FormControl><Textarea {...field} value={field.value || ""} placeholder="Add any additional remarks..." readOnly={isFieldReadOnly(true)} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader><CardTitle>Work Status</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField name="workStatus" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
-                                                {isFieldReadOnly(true) ? (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>) : (
-                                                <Select onValueChange={field.onChange} value={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        {workStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                                )}
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField name="dateOfCompletion" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel>
-                                                <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField name="workRemarks" control={control} render={({ field }) => (
-                                            <FormItem className="md:col-span-2">
-                                                <FormLabel>Status Remarks</FormLabel>
-                                                <FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Add status-related remarks..." readOnly={isFieldReadOnly(true)} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </form>
-                    </Form>
-                </ScrollArea>
-            </div>
-            <DialogFooter className="p-6 pt-4 shrink-0 border-t">
-                <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
-                {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save</Button>}
-            </DialogFooter>
-        </div>
-    );
-};

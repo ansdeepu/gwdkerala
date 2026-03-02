@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -52,8 +51,6 @@ import {
   INVESTIGATION_GOVT_TYPES,
   INVESTIGATION_PRIVATE_TYPES,
   INVESTIGATION_COMPLAINT_TYPES,
-  LOGGING_PUMPING_TEST_TYPES,
-  GW_INVESTIGATION_TYPES,
   LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
   type Bidder,
   typeOfWellOptions,
@@ -79,7 +76,6 @@ import { useDataStore } from "@/hooks/use-data-store";
 import { ScrollArea } from "../ui/scroll-area";
 import { format, isValid, parseISO } from "date-fns";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as TableFooterComponent } from "@/components/ui/table";
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -113,9 +109,6 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
     if (!payment) return 0;
     return (Number(payment.revenueHead) || 0);
 };
-
-const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
-const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
 
 const investigationFileStatusOptions = [
     "File Under Process",
@@ -218,7 +211,6 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
     try { return format(new Date(date), 'yyyy-MM-dd'); } catch { return ""; }
 };
 
-// Dialog Content Components
 const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, isEditing }: { 
     initialData: any, 
     onConfirm: (data: any) => void, 
@@ -354,7 +346,10 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, isEditing 
                 </div>
             </div>
         </div>
-        <DialogFooter className="px-6 pb-6"><Button variant="outline" onClick={onCancel} disabled={isChecking}>Cancel</Button><Button onClick={handleSave} disabled={isChecking}>{isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save</Button></DialogFooter>
+        <DialogFooter className="px-6 pb-6">
+            <Button variant="outline" onClick={onCancel} disabled={isChecking}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isChecking}>{isChecking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}Save</Button>
+        </DialogFooter>
       </div>
     );
 };
@@ -675,7 +670,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSup
     return (
         <div className="flex flex-col h-full overflow-hidden">
             <DialogHeader className="p-6 pb-4 shrink-0">
-                <DialogTitle>{initialData?.nameOfSite ? `Edit ${pageTitle} Site` : `Add New ${pageTitle} Site`}</DialogTitle>
+                <DialogTitle>{initialData?.nameOfSite ? `Edit Site` : `Add New Site`}</DialogTitle>
             </DialogHeader>
             <div className="flex-1 min-h-0">
                 <ScrollArea className="h-full px-6 py-4">
@@ -946,7 +941,6 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         if (entry.fileNo?.toLowerCase().trim() === normalizedFileNo) return;
         entry.reappropriationDetails?.forEach(reapp => {
             if (reapp.refFileNo?.toLowerCase().trim() === normalizedFileNo) {
-                // Determine source page type
                 const hasInvestigation = entry.siteDetails?.some(s => s.purpose === 'GW Investigation');
                 const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
                 let sourcePageType = "Deposit Work";
@@ -974,7 +968,6 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const watchedReappropriationDetails = watch("reappropriationDetails");
   const watchedPaymentDetails = watch("paymentDetails");
 
-  // Combined and sorted reappropriations for display
   const sortedCombinedReappropriations = useMemo(() => {
     const manual = reappropriationFields.map((field, index) => ({
         ...field,
@@ -990,7 +983,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     return [...manual, ...auto].sort((a, b) => {
         const timeA = a.dateObj?.getTime() ?? 0;
         const timeB = b.dateObj?.getTime() ?? 0;
-        return timeB - timeA; // Descending (most recent first)
+        return timeB - timeA; 
     });
   }, [reappropriationFields, autoCredits]);
 
@@ -1020,7 +1013,6 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
 
-    // Overall Balance = Total Remittance + Total Re-appropriation Credit - Total Payment - Total Re-appropriation Debit
     setValue("overallBalance", spendableRemittance + totalReappCredit - totalPayment - totalReappDebit);
     
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
@@ -1072,7 +1064,6 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
             updateRemittance(originalData.index, remittanceData);
         } else {
             appendRemittance(remittanceData);
-            // Only auto-append payment for NEW Revenue Head remittances
             if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
                 const newPaymentEntry: PaymentDetailFormData = {
                     dateOfPayment: remittanceData.dateOfRemittance,
@@ -1218,6 +1209,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
             <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
             <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{investigationFileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
+        
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isEditing={isEditing} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={watch('category')} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
