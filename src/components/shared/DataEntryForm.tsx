@@ -507,7 +507,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                 <Button type="submit">Save</Button>
             </DialogFooter>
         </form>
-    </Form>
+      </Form>
     );
 };
 
@@ -544,10 +544,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
                               {!isDeferredFunding && (
-                                <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl>
-                                    <SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
-                                </Select><FormMessage /></FormItem>} />
+                                <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                               )}
                           </div>
                           <Separator/>

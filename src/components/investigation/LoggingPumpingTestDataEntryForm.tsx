@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, Info, ImagePlus, Video, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, Info, ImagePlus, Video, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import {
   DataEntrySchema,
   type DataEntryFormData,
@@ -546,7 +546,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                 <Button type="submit">Save</Button>
             </DialogFooter>
         </form>
-    </Form>
+      </Form>
     );
 };
 
@@ -1008,7 +1008,6 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         const remittanceData = data as RemittanceDetailFormData;
         const allPayments = getValues('paymentDetails') || [];
         
-        // If we are editing, find and remove the old associated auto-payment
         if (originalData.index !== undefined && originalData.id) {
             const paymentIndexToRemove = allPayments.findIndex(p => p.remittanceId === originalData.id);
             if (paymentIndexToRemove !== -1) {
@@ -1018,22 +1017,18 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         
         let finalRemittanceData: RemittanceDetailFormData;
 
-        // Add or Update remittance
         if (originalData.index !== undefined) {
-            // Preserve the original ID on update
             finalRemittanceData = { ...remittanceData, id: originalData.id };
             updateRemittance(originalData.index, finalRemittanceData);
         } else {
-            // This is a new entry, ensure it has an ID
             finalRemittanceData = { ...remittanceData, id: remittanceData.id || uuidv4() };
             appendRemittance(finalRemittanceData);
         }
         
-        // Re-add payment entry if the new/updated remittance is for Revenue Head
         if (finalRemittanceData.remittedAccount === 'Revenue Head' && finalRemittanceData.amountRemitted && finalRemittanceData.amountRemitted > 0) {
             const newPaymentEntry: PaymentDetailFormData = {
                 id: uuidv4(),
-                remittanceId: finalRemittanceData.id, // Use the stable ID
+                remittanceId: finalRemittanceData.id,
                 dateOfPayment: finalRemittanceData.dateOfRemittance,
                 paymentAccount: "Bank",
                 revenueHead: finalRemittanceData.amountRemitted,
@@ -1197,3 +1192,4 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     </FormProvider>
   );
 }
+
