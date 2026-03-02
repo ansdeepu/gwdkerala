@@ -1,5 +1,4 @@
 
-// src/components/shared/DataEntryForm.tsx
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -320,7 +319,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                     <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType} disabled={isChecking}>
                         <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                         <SelectContent className="max-h-80">
-                            {formOptions.map(o => <SelectItem key={o as any} value={o as any}>{applicationTypeDisplayMap[o as any] || o}</SelectItem>)}
+                            {formOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o] || o}</SelectItem>)}
                         </SelectContent>
                     </Select>
                      {errors?.applicationType && <p className="text-xs text-destructive mt-1">{errors.applicationType}</p>}
@@ -481,19 +480,21 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                             <FormMessage />
                         </FormItem> 
                     )}/>
-                    <FormField name="refFileNo" control={form.control} render={({ field }) => ( 
-                        <FormItem>
-                            <FormLabel>File No. <span className="text-destructive">*</span></FormLabel>
-                            <FormControl>
-                                <Input list="file-no-suggestions" placeholder="e.g., GWD/KLM/123" {...field} />
-                            </FormControl>
-                            <datalist id="file-no-suggestions">
-                                {suggestions.map(no => <option key={no} value={no} />)}
-                            </datalist>
-                            <FormMessage />
-                        </FormItem> 
-                    )}/>
-                    <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
+                    <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField name="refFileNo" control={form.control} render={({ field }) => ( 
+                            <FormItem>
+                                <FormLabel>File No. <span className="text-destructive">*</span></FormLabel>
+                                <FormControl>
+                                    <Input list="file-no-suggestions" placeholder="e.g., GWD/KLM/123" {...field} />
+                                </FormControl>
+                                <datalist id="file-no-suggestions">
+                                    {suggestions.map(no => <option key={no} value={no} />)}
+                                </datalist>
+                                <FormMessage />
+                            </FormItem> 
+                        )}/>
+                        <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
+                    </div>
                 </div>
                 <FormField name="fileDetails" control={form.control} render={({ field }) => ( 
                     <FormItem>
@@ -1017,7 +1018,9 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                             <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
                             <FormField name="purpose" control={control} render={({ field }) => <FormItem><FormLabel>Purpose <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(false)}><FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl><SelectContent><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{sitePurposeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                             <FormField name="localSelfGovt" control={control} render={({ field }) => <FormItem><FormLabel>Local Self Govt.</FormLabel>{isFieldReadOnly(false) ? (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>) : (<Select onValueChange={(value) => handleLsgChange(value)} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}</SelectContent></Select>)}<FormMessage/></FormItem>} />
-                            <FormField name="constituency" control={control} render={({ field }) => <FormItem><FormLabel>Constituency (LAC)</FormLabel>{isFieldReadOnly(false) ? (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>) : (<Select onValueChange={field.onChange} value={field.value} disabled={constituencyOptionsForLsg.length <= 1}><FormControl><SelectTrigger><SelectValue placeholder="Select Constituency"/></SelectTrigger></FormControl><SelectContent><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select>)}<FormMessage/></FormItem>} />
+                            <FormField name="constituency" control={control} render={({ field }) => <FormItem><FormLabel>Constituency (LAC)</FormLabel>{isFieldReadOnly(false) ? (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>) : (
+                                <Select onValueChange={field.onChange} value={field.value} disabled={constituencyOptionsForLsg.length <= 1}><FormControl><SelectTrigger><SelectValue placeholder="Select Constituency"/></SelectTrigger></FormControl><SelectContent><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select>
+                            )}<FormMessage/></FormItem>} />
                             <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                             <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                         </div>
@@ -1502,11 +1505,6 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   
   const closeDialog = () => setDialogState({ type: null, data: null, isView: false });
   
-
-  const handleEyeIconClick = (site: SiteDetailFormData, index: number) => {
-    openDialog('site', { index, ...site });
-  };
-
   const totalRemittanceWatched = watch('totalRemittance');
   const totalReappropriationWatched = watch('totalReappropriation');
   const totalReappropriationCreditWatched = watch('totalReappropriationCredit');
@@ -1565,7 +1563,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                         <TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? (!isDeferredFunding ? 4 : 3) : (!isDeferredFunding ? 3 : 2)} className="text-right font-bold">
                                     Total Remittance
                                 </TableCell>
-                                <TableCell className="font-bold">
+                                <TableCell className="font-bold text-right">
                                     ₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}
                                 </TableCell></TableRow></TableFooterComponent>
                     </Table>
