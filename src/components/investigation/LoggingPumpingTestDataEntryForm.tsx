@@ -844,6 +844,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSup
         </div>
     );
 };
+
 export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit, initialData, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps, allStaffMembers }: DataEntryFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -861,7 +862,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const [dialogState, setDialogState] = useState<{ type: null | 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite'; data: any, isView?: boolean }>({ type: null, data: null, isView: false });
   const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'reappropriation' | 'payment' | 'site'; index: number } | null>(null);
 
-  const isEditor = userRole === 'admin' || userRole === 'scientist' || userRole === 'engineer';
+  const isEditor = userRole === 'admin' || userRole === 'scientist' || userRole === 'investigator';
   const isSupervisor = userRole === 'supervisor';
   const isViewer = userRole === 'viewer';
   const isEditing = !!fileIdToEdit;
@@ -1007,30 +1008,36 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         const remittanceData = data as RemittanceDetailFormData;
         const allPayments = getValues('paymentDetails') || [];
         
-        // Always remove the old one if it exists
-        if (originalData.id) {
+        // If we are editing, find and remove the old associated auto-payment
+        if (originalData.index !== undefined && originalData.id) {
             const paymentIndexToRemove = allPayments.findIndex(p => p.remittanceId === originalData.id);
             if (paymentIndexToRemove !== -1) {
                 removePayment(paymentIndexToRemove);
             }
         }
+        
+        let finalRemittanceData: RemittanceDetailFormData;
 
         // Add or Update remittance
         if (originalData.index !== undefined) {
-            updateRemittance(originalData.index, remittanceData);
+            // Preserve the original ID on update
+            finalRemittanceData = { ...remittanceData, id: originalData.id };
+            updateRemittance(originalData.index, finalRemittanceData);
         } else {
-            appendRemittance(remittanceData);
+            // This is a new entry, ensure it has an ID
+            finalRemittanceData = { ...remittanceData, id: remittanceData.id || uuidv4() };
+            appendRemittance(finalRemittanceData);
         }
         
-        // Re-add payment entry if applicable
-        if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
+        // Re-add payment entry if the new/updated remittance is for Revenue Head
+        if (finalRemittanceData.remittedAccount === 'Revenue Head' && finalRemittanceData.amountRemitted && finalRemittanceData.amountRemitted > 0) {
             const newPaymentEntry: PaymentDetailFormData = {
                 id: uuidv4(),
-                remittanceId: remittanceData.id,
-                dateOfPayment: remittanceData.dateOfRemittance,
+                remittanceId: finalRemittanceData.id, // Use the stable ID
+                dateOfPayment: finalRemittanceData.dateOfRemittance,
                 paymentAccount: "Bank",
-                revenueHead: remittanceData.amountRemitted,
-                totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
+                revenueHead: finalRemittanceData.amountRemitted,
+                totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: finalRemittanceData.amountRemitted }),
                 paymentRemarks: "Auto-entry for remittance to Revenue Head.",
             };
             appendPayment(newPaymentEntry);
@@ -1061,7 +1068,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     
     if (type === 'remittance') {
         const remittanceToDelete = getValues(`remittanceDetails.${index}`);
-        if (remittanceToDelete && remittanceToDelete.remittedAccount === 'Revenue Head') {
+        if (remittanceToDelete && remittanceToDelete.id) {
             const allPayments = getValues('paymentDetails') || [];
             const paymentIndexToRemove = allPayments.findIndex(p => p.remittanceId === remittanceToDelete.id);
             if (paymentIndexToRemove !== -1) {
@@ -1073,7 +1080,6 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     else if (type === 'reappropriation') removeReappropriation(index);
     else if (type === 'payment') removePayment(index); 
     else if (type === 'site') removeSite(index);
-    
     if (isEditor && fileIdToEdit) {
         setIsSubmitting(true);
         try { await updateFileEntry(fileIdToEdit, getValues()); toast({ title: "Item Removed" }); } 

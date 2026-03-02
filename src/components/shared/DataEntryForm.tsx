@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, Info, ImagePlus, Video, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, Info, ImagePlus, Video, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import {
   DataEntrySchema,
   type DataEntryFormData,
@@ -53,10 +53,11 @@ import {
   PRIVATE_APPLICATION_TYPES,
   COLLECTOR_APPLICATION_TYPES,
   PLAN_FUND_APPLICATION_TYPES,
+  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
   type Bidder,
   type MediaItem,
   ReappropriationDetailSchema,
-  type ReappropriationDetailFormData,
+  type ReappropriationDetailFormData
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -193,7 +194,7 @@ interface DataEntryFormProps {
     initialData: DataEntryFormData;
     supervisorList: (StaffMember & { uid: string; name: string })[];
     userRole?: UserRole;
-    workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | null;
+    workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | 'gwInvestigation' | 'loggingPumpingTest' | null;
     returnPath: string; 
     pageToReturnTo: string | null;
     isFormDisabled?: boolean;
