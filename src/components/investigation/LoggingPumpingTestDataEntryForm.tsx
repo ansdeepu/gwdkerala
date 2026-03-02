@@ -578,7 +578,9 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContex
                       <div className="space-y-4">
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                              {!isDeferredFunding && (
+                                <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                              )}
                           </div>
                           <Separator/>
                           <FormField name="revenueHead" control={form.control} render={({ field }) => <FormItem><FormLabel>Revenue Head (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
@@ -863,6 +865,26 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const watchedReappropriationDetails = watch("reappropriationDetails");
   const watchedPaymentDetails = watch("paymentDetails");
 
+  // Combined and sorted reappropriations for display
+  const sortedCombinedReappropriations = useMemo(() => {
+    const manual = reappropriationFields.map((field, index) => ({
+        ...field,
+        _originalIndex: index,
+        _source: 'manual' as const,
+        dateObj: toDateOrNull(field.date)
+    }));
+    const auto = autoCredits.map((credit) => ({
+        ...credit,
+        _source: 'auto' as const,
+        dateObj: toDateOrNull(credit.date)
+    }));
+    return [...manual, ...auto].sort((a, b) => {
+        const timeA = a.dateObj?.getTime() ?? 0;
+        const timeB = b.dateObj?.getTime() ?? 0;
+        return timeB - timeA; // Descending (most recent first)
+    });
+  }, [reappropriationFields, autoCredits]);
+
   useEffect(() => {
     const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
         return sum + (Number(item.amountRemitted) || 0);
@@ -940,7 +962,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         if (originalData.index !== undefined) {
             updateRemittance(originalData.index, remittanceData);
         } else {
-            appendRemittance(remittanceData);
+            appendRemittance(reappropriationData);
         }
         if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
             const newPaymentEntry: PaymentDetailFormData = {
@@ -1002,7 +1024,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. {pageTitle} Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
         
-        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">{remittanceTitle}</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('remittance', createDefaultRemittanceDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount (₹)</TableHead><TableHead>Account</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{remittanceFields.length > 0 ? remittanceFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell>{(Number(item.amountRemitted) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.remittedAccount}</TableCell><TableCell>{item.remittanceRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold">₹{watch('totalRemittance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">{remittanceTitle}</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('remittance', createDefaultRemittanceDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount (₹)</TableHead><TableHead>Account</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{remittanceFields.length > 0 ? remittanceFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell>{(Number(item.amountRemitted) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.remittedAccount}</TableCell><TableCell>{item.remittanceRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{watch('totalRemittance')?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         
         <Card>
             <CardHeader className="flex flex-row justify-between items-start">
@@ -1025,32 +1047,37 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {autoCredits.length > 0 && autoCredits.map((item, index) => (
-                                <TableRow key={`credit-${index}`} className="bg-green-50/50">
-                                    <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                                    <TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell>
-                                    <TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell>
-                                    <TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell>
-                                    <TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell>
-                                    <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
-                                    <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
-                                    {isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}
-                                </TableRow>
-                            ))}
-                            {reappropriationFields.length > 0 ? reappropriationFields.map((item, index) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                                    <TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell>
-                                    <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
-                                    <TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell>
-                                    <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
-                                    <TableCell className="text-right font-bold text-red-600">
-                                        {(Number(item.amount) || 0).toLocaleString('en-IN')}
-                                    </TableCell>
-                                    <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
-                                    {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index, ...item })} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
-                                </TableRow>
-                            )) : autoCredits.length === 0 && <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
+                            {sortedCombinedReappropriations.length > 0 ? sortedCombinedReappropriations.map((item, index) => {
+                                if (item._source === 'auto') {
+                                    return (
+                                        <TableRow key={`credit-${index}`} className="bg-green-50/50">
+                                            <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                            <TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell>
+                                            <TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell>
+                                            <TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell>
+                                            <TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                            <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                            {isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}
+                                        </TableRow>
+                                    );
+                                } else {
+                                    return (
+                                        <TableRow key={item.id}>
+                                            <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                            <TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell>
+                                            <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
+                                            <TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell>
+                                            <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                            <TableCell className="text-right font-bold text-red-600">
+                                                {(Number(item.amount) || 0).toLocaleString('en-IN')}
+                                            </TableCell>
+                                            <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                            {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index: item._originalIndex, ...item })} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index: item._originalIndex})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+                                        </TableRow>
+                                    );
+                                }
+                            }) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
                         </TableBody>
                         <TableFooterComponent>
                             <TableRow className="bg-muted/50 font-bold">

@@ -1283,6 +1283,26 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     return credits;
   }, [currentFileNo, allFileEntries]);
 
+  // Combined and sorted reappropriations for display
+  const sortedCombinedReappropriations = useMemo(() => {
+    const manual = reappropriationFields.map((field, index) => ({
+        ...field,
+        _originalIndex: index,
+        _source: 'manual' as const,
+        dateObj: toDateOrNull(field.date)
+    }));
+    const auto = autoCredits.map((credit) => ({
+        ...credit,
+        _source: 'auto' as const,
+        dateObj: toDateOrNull(credit.date)
+    }));
+    return [...manual, ...auto].sort((a, b) => {
+        const timeA = a.dateObj?.getTime() ?? 0;
+        const timeB = b.dateObj?.getTime() ?? 0;
+        return timeB - timeA; // Descending (most recent first)
+    });
+  }, [reappropriationFields, autoCredits]);
+
   useEffect(() => {
     const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
         return sum + (Number(item.amountRemitted) || 0);
@@ -1575,34 +1595,37 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {autoCredits.length > 0 && autoCredits.map((item, index) => (
-                                    <TableRow key={`credit-${index}`} className="bg-green-50/50">
-                                        <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                                        <TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell>
-                                        <TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell>
-                                        <TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell>
-                                        <TableCell className="text-right font-bold text-green-600">
-                                            {(Number(item.amount) || 0).toLocaleString('en-IN')}
-                                        </TableCell>
-                                        <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
-                                        <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
-                                        {isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}
-                                    </TableRow>
-                                ))}
-                                {reappropriationFields.length > 0 ? reappropriationFields.map((item, index) => (
-                                    <TableRow key={item.id}>
-                                        <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                                        <TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell>
-                                        <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
-                                        <TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell>
-                                        <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
-                                        <TableCell className="text-right font-bold text-red-600">
-                                            {(Number(item.amount) || 0).toLocaleString('en-IN')}
-                                        </TableCell>
-                                        <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
-                                        {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index, ...item })} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
-                                    </TableRow>
-                                )) : autoCredits.length === 0 && <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
+                                {sortedCombinedReappropriations.length > 0 ? sortedCombinedReappropriations.map((item, index) => {
+                                    if (item._source === 'auto') {
+                                        return (
+                                            <TableRow key={`credit-${index}`} className="bg-green-50/50">
+                                                <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                                <TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell>
+                                                <TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell>
+                                                <TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell>
+                                                <TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell>
+                                                <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                                <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                                {isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}
+                                            </TableRow>
+                                        );
+                                    } else {
+                                        return (
+                                            <TableRow key={item.id}>
+                                                <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                                <TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell>
+                                                <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
+                                                <TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell>
+                                                <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                                <TableCell className="text-right font-bold text-red-600">
+                                                    {(Number(item.amount) || 0).toLocaleString('en-IN')}
+                                                </TableCell>
+                                                <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                                {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index: item._originalIndex, ...item })} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index: item._originalIndex})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+                                            </TableRow>
+                                        );
+                                    }
+                                }) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
                             </TableBody>
                             <TableFooterComponent>
                                 <TableRow className="bg-muted/50 font-bold">
