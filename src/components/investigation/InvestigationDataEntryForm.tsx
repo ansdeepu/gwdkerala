@@ -854,7 +854,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSup
                                                     </>
                                                 )}
                                                 <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Location of well</FormLabel><FormControl><Textarea {...field} value={field.value || ''} className="min-h-[40px]" readOnly={isFieldReadOnly(false)}/></FormControl><FormMessage /></FormItem>} />
-                                                <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem className="md:col-span-3"><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Recommended measurements remarks..." readOnly={isFieldReadOnly(false)}/></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem className="md:col-span-3"><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} readOnly={isFieldReadOnly(false)}/></FormControl><FormMessage /></FormItem>} />
                                             </div>
                                         </div>
                                     )}
@@ -1072,17 +1072,18 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
             updateRemittance(originalData.index, remittanceData);
         } else {
             appendRemittance(remittanceData);
-        }
-        if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
-            const newPaymentEntry: PaymentDetailFormData = {
-                dateOfPayment: remittanceData.dateOfRemittance,
-                paymentAccount: "Bank",
-                revenueHead: remittanceData.amountRemitted,
-                totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
-                paymentRemarks: "Auto-entry for remittance to Revenue Head.",
-            };
-            appendPayment(newPaymentEntry);
-            toast({ title: "Payment Entry Added", description: "An automatic payment entry was created for the Revenue Head remittance." });
+            // Only auto-append payment for NEW Revenue Head remittances
+            if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
+                const newPaymentEntry: PaymentDetailFormData = {
+                    dateOfPayment: remittanceData.dateOfRemittance,
+                    paymentAccount: "Bank",
+                    revenueHead: remittanceData.amountRemitted,
+                    totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
+                    paymentRemarks: "Auto-entry for remittance to Revenue Head.",
+                };
+                appendPayment(newPaymentEntry);
+                toast({ title: "Payment Entry Added", description: "An automatic payment entry was created for the Revenue Head remittance." });
+            }
         }
     } else if (type === 'reappropriation') {
         if (originalData.index !== undefined) {

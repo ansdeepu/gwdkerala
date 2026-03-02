@@ -53,11 +53,11 @@ import {
   PRIVATE_APPLICATION_TYPES,
   COLLECTOR_APPLICATION_TYPES,
   PLAN_FUND_APPLICATION_TYPES,
+  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
   type Bidder,
   type MediaItem,
   ReappropriationDetailSchema,
   type ReappropriationDetailFormData,
-  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
 } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -989,7 +989,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
         }
     }, [watchedTenderNo, allE_tenders, setValue, tenderSupervisors]);
 
-    const handleSupervisorDropdownChange = (uid: string) => {
+    const handleSupervisorChange = (uid: string) => {
         const staff = supervisorList.find(s => s.uid === uid);
         setValue('supervisorUid', uid);
         setValue('supervisorName', staff?.name || '');
@@ -1055,7 +1055,7 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, supervisorList, i
                                         <FormField name="supervisorUid" control={form.control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Supervisor</FormLabel>
-                                                <Select onValueChange={(uid) => handleSupervisorDropdownChange(uid)} value={field.value || ""}>
+                                                <Select onValueChange={(uid) => handleSupervisorChange(uid)} value={field.value || ""}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select a Supervisor" /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         {tenderSupervisors.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name} ({s.designation})</SelectItem>))}
@@ -1433,24 +1433,26 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             updateRemittance(originalData.index, remittanceData);
         } else {
             appendRemittance(remittanceData);
-        }
-        if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
-            const newPaymentEntry: PaymentDetailFormData = {
-                dateOfPayment: remittanceData.dateOfRemittance,
-                paymentAccount: "Bank",
-                revenueHead: remittanceData.amountRemitted,
-                contractorsPayment: undefined,
-                gst: undefined,
-                incomeTax: undefined,
-                kbcwb: undefined, refundToParty: undefined,
-                totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
-                paymentRemarks: "Auto-entry for remittance to Revenue Head.",
-            };
-            appendPayment(newPaymentEntry);
-            toast({
-                title: "Payment Entry Added",
-                description: "An automatic payment entry was created for the Revenue Head remittance.",
-            });
+            // Only auto-append payment for NEW Revenue Head remittances
+            if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
+                const newPaymentEntry: PaymentDetailFormData = {
+                    dateOfPayment: remittanceData.dateOfRemittance,
+                    paymentAccount: "Bank",
+                    revenueHead: remittanceData.amountRemitted,
+                    contractorsPayment: undefined,
+                    gst: undefined,
+                    incomeTax: undefined,
+                    kbcwb: undefined, 
+                    refundToParty: undefined,
+                    totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
+                    paymentRemarks: "Auto-entry for remittance to Revenue Head.",
+                };
+                appendPayment(newPaymentEntry);
+                toast({
+                    title: "Payment Entry Added",
+                    description: "An automatic payment entry was created for the Revenue Head remittance.",
+                });
+            }
         }
     } else if (type === 'reappropriation') {
         if (originalData.index !== undefined) {
@@ -1505,11 +1507,6 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   
   const closeDialog = () => setDialogState({ type: null, data: null, isView: false });
   
-  const totalRemittanceWatched = watch('totalRemittance');
-  const totalReappropriationWatched = watch('totalReappropriation');
-  const totalReappropriationCreditWatched = watch('totalReappropriationCredit');
-  const totalPaymentWatched = watch('totalPaymentAllEntries');
-
   return (
     <FormProvider {...form}>
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
@@ -1738,8 +1735,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                     <TableCell className="p-2 text-right text-sm">{(Number(item.kbcwb) || 0).toLocaleString('en-IN')}</TableCell>
                                     <TableCell className="p-2 text-right text-sm">{(Number(item.refundToParty) || 0).toLocaleString('en-IN')}</TableCell>
                                     <TableCell className="p-2 text-right text-sm font-semibold">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell>
-                                    {isEditor && !isFormDisabled && <TableCell className="p-1"><div className="flex"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item })} disabled={isSupervisor || isViewer}><Eye className="h-3 w-3"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-3 w-3"/></Button></div></TableCell>}
-                                </TableRow>
+                                    {isEditor && !isFormDisabled && <TableCell className="p-1"><div className="flex"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item })} disabled={isSupervisor || isViewer}><Eye className="h-3 w-3"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-3 w-3"/></Button></div></TableCell>}</TableRow>
                             )) : <TableRow><TableCell colSpan={10} className="text-center h-24">No payment details added yet.</TableCell></TableRow>}
                         </TableBody>
                          <TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 9 : 8} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent>
@@ -1753,7 +1749,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2"><div className="flex justify-between items-baseline"><dt>Total Estimate (Sites)</dt><dd className="font-mono">₹{totalEstimate.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div><Separator /><div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
             {showReappropriation && <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>}
             <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-            {showReappropriation && <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>}
+            {showReappropriation && <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>}
             <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any final remarks for this file..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent>
         </Card>
 
@@ -1761,18 +1757,17 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             <CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : (fileIdToEdit ? 'Save Changes & Exit' : 'Save New File & Exit')}</Button></CardFooter>
         )}
         
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} isEditing={!!fileIdToEdit} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} supervisorList={supervisorList} isReadOnly={dialogState.isView || isViewer} isSupervisor={isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders}/></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
+        {dialogState.type === 'reorderSite' && dialogState.data && (<Dialog open={true} onOpenChange={closeDialog}><ReorderSiteDialog fromIndex={dialogState.data.from} siteCount={siteFields.length} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></Dialog>) }
+      
+        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove the selected {itemToDelete?.type} entry from this file.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+
+        <AlertDialog open={siteToCopy !== null} onOpenChange={() => setSiteToCopy(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Confirm Copy</AlertDialogTitle><AlertDialogDescription>Are you sure you want to create a copy of this site?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setSiteToCopy(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmCopySite}>Yes, Copy</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </form>
-
-      <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={applicationTypeOptionsForForm} isEditing={!!fileIdToEdit} /></DialogContent></Dialog>
-      <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
-      <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
-       <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} supervisorList={supervisorList} isReadOnly={dialogState.isView || isViewer} isSupervisor={isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders}/></DialogContent></Dialog>
-       <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
-      {dialogState.type === 'reorderSite' && dialogState.data && (<Dialog open={true} onOpenChange={closeDialog}><ReorderSiteDialog fromIndex={dialogState.data.from} siteCount={siteFields.length} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></Dialog>) }
-     
-      <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This will permanently remove the selected {itemToDelete?.type} entry from this file.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-
-      <AlertDialog open={siteToCopy !== null} onOpenChange={() => setSiteToCopy(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Confirm Copy</AlertDialogTitle><AlertDialogDescription>Are you sure you want to create a copy of this site?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel onClick={() => setSiteToCopy(null)}>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmCopySite}>Yes, Copy</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </FormProvider>
   );
 }
