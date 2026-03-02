@@ -235,7 +235,7 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
                           <Button variant="link" className="text-xl font-bold p-0 h-auto" onClick={() => handleCellClick(data.allWorks, `All Works in ${constituency}`)} disabled={data.totalCount === 0}>
                             {data.totalCount} <span className="text-sm font-normal text-muted-foreground ml-1">Works</span>
                           </Button>
-                          <p className="text-sm font-semibold text-primary/80">₹{data.totalExpenditure.toLocaleString('en-IN')}</p>
+                          <p className="text-sm font-semibold text-primary/80 font-mono">₹{data.totalExpenditure.toLocaleString('en-IN')}</p>
                         </div>
                       </div>
 

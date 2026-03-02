@@ -1,3 +1,4 @@
+
 // src/app/dashboard/file-room/page.tsx
 "use client";
 
@@ -228,7 +229,7 @@ export default function FileManagerPage() {
                 {lastCreatedDate && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Clock className="h-4 w-4" />
-                        Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                        Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                     </div>
                 )}
                 {canCreate && (

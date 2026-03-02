@@ -719,7 +719,7 @@ export default function AgencyRegistrationPage() {
   };
 
 
-  const handleAddNew = () => {
+  const handleAddNew() => {
     setIsNavigating(true);
     setSelectedApplicationId('new');
   }
@@ -1542,8 +1542,8 @@ export default function AgencyRegistrationPage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                       <Button variant="outline" onClick={() => setDeletingRenewal(null)}>Cancel</Button>
-                       <Button variant="destructive" onClick={handleConfirmDeleteRenewal}>Delete</Button>
+                        <Button variant="outline" onClick={() => setDeletingRenewal(null)}>Cancel</Button>
+                        <Button variant="destructive" onClick={handleConfirmDeleteRenewal}>Delete</Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -1583,7 +1583,7 @@ export default function AgencyRegistrationPage() {
                  {lastCreatedDate && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                         <Clock className="h-3.5 w-3.5"/>
-                        Last created: <span className="font-semibold text-primary/90">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                        Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                     </div>
                 )}
                 {canEdit && (

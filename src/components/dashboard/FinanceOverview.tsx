@@ -358,7 +358,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
                                             <TableCell className="text-right font-mono font-bold">{transformedFinanceMetrics.stsbBalance.toLocaleString('en-IN')}</TableCell>
                                         </TableRow>
                                     </TableBody>
-                                    <TableFooter><TableRow className="bg-muted"><TableCell className="font-bold">Total Balance</TableCell><TableCell colSpan={3} className="text-right font-bold text-lg text-primary">₹{(transformedFinanceMetrics.sbiBalance + transformedFinanceMetrics.stsbBalance).toLocaleString('en-IN')}</TableCell></TableRow></TableFooter>
+                                    <TableFooter><TableRow className="bg-muted"><TableCell className="font-bold">Total Balance</TableCell><TableCell colSpan={3} className="text-right font-bold text-lg text-primary font-mono">₹{(transformedFinanceMetrics.sbiBalance + transformedFinanceMetrics.stsbBalance).toLocaleString('en-IN')}</TableCell></TableRow></TableFooter>
                                 </Table>
                             </CardContent>
                         </Card>

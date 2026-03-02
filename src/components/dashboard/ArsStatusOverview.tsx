@@ -191,7 +191,7 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
                     </button>
                     <div className="p-4 border rounded-lg bg-green-500/10 text-center">
                         <p className="text-sm font-medium text-green-600">Total Expenditure</p>
-                        <p className="text-3xl font-bold text-green-700">₹{(arsDashboardData?.totalArsExpenditure ?? 0).toLocaleString('en-IN')}</p>
+                        <p className="text-3xl font-bold text-green-700 font-mono">₹{(arsDashboardData?.totalArsExpenditure ?? 0).toLocaleString('en-IN')}</p>
                     </div>
                 </div>
                 {arsDashboardData && arsDashboardData.arsStatusCountsData.length > 0 ? (

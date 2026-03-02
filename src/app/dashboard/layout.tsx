@@ -66,7 +66,7 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
         <div className={cn("flex items-center gap-2 text-sm font-medium text-primary whitespace-nowrap")}>
           <Clock className="h-4 w-4" />
           {currentTime ? (
-            <span>{format(currentTime, 'dd/MM/yyyy, hh:mm:ss a')}</span>
+            <span className="font-mono">{format(currentTime, 'dd/MM/yyyy, hh:mm:ss a')}</span>
           ) : (
             <span className="w-40 h-4 bg-muted-foreground/20 rounded-md animate-pulse" />
           )}
