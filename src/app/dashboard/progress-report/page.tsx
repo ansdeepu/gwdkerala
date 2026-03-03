@@ -324,7 +324,7 @@ export default function ProgressReportPage() {
         
         let summaryPurposeKey: SitePurpose | null = null;
         if (purpose && PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose)) {
-            summaryPurposeKey = 'Pumping Test';
+            summaryPurposeKey = 'Pumping test';
         } else if (purpose && REPORTING_PURPOSE_ORDER.includes(purpose)) {
             summaryPurposeKey = purpose;
         }
@@ -485,7 +485,7 @@ export default function ProgressReportPage() {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
                                 return (
                                     <TableRow key={purpose}>
-                                        <TableCell className="border p-2 font-medium">{purpose === 'Pumping Test' ? 'Pumping Test (Agg.)' : purpose}</TableCell>
+                                        <TableCell className="border p-2 font-medium">{purpose === 'Pumping test' ? 'Pumping Test (Agg.)' : purpose}</TableCell>
                                         <TableCell className="border p-2 text-center"><Button variant="link" className="p-0 h-auto" disabled={stats?.previousBalance === 0} onClick={() => handleCountClick(stats.previousBalanceData, `${purpose} - Previous Balance`)}>{stats?.previousBalance || 0}</Button></TableCell>
                                         <TableCell className="border p-2 text-center"><Button variant="link" className="p-0 h-auto" disabled={stats?.currentApplications === 0} onClick={() => handleCountClick(stats.currentApplicationsData, `${purpose} - Current Applications`)}>{stats?.currentApplications || 0}</Button></TableCell>
                                         <TableCell className="border p-2 text-center"><Button variant="link" className="p-0 h-auto" disabled={stats?.toBeRefunded === 0} onClick={() => handleCountClick(stats.toBeRefundedData, `${purpose} - To be Refunded`)}>{stats?.toBeRefunded || 0}</Button></TableCell>

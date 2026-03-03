@@ -130,7 +130,7 @@ export const INVESTIGATION_GOVT_TYPES = [
 ] as const;
 
 export const INVESTIGATION_PRIVATE_TYPES = [
-  "Private Domestic", "Private Irrigation", "Private Institution", "Private Infra structure", "Private Industry"
+  "Private Individuals", "Private Institution", "Private Infra structure", "Private Industry"
 ] as const;
 
 export const INVESTIGATION_COMPLAINT_TYPES = [
@@ -315,6 +315,7 @@ export type FileStatus = typeof fileStatusOptions[number];
 export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = [
   "Geological logging",
   "Geophysical Logging",
+  "Pumping test",
   "Industry Pumping test",
   "MWSS Pumping test",
   "Pumping Test Others",
@@ -347,10 +348,13 @@ export const sitePurposeOptions = [
 export type SitePurpose = typeof sitePurposeOptions[number];
 
 export const REPORTING_PURPOSE_ORDER: SitePurpose[] = [
+  "GW Investigation",
+  "VES",
+  "Geological logging",
+  "Geophysical Logging",
+  "Pumping test",
   "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev",
   "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR",
-  "GW Investigation", "VES", "Geological logging", "Geophysical Logging",
-  "Pumping test", "Industry Pumping test", "MWSS Pumping test", "Pumping Test Others",
   "ARS",
   "Others"
 ];
