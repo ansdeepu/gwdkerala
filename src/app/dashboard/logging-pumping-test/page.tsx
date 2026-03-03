@@ -36,7 +36,7 @@ const safeParseDate = (dateValue: any): Date | null => {
 
 const ITEMS_PER_PAGE = 50;
 
-const PUMPING_TEST_PURPOSES: SitePurpose[] = ["Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others"];
+const PUMPING_TEST_PURPOSES: SitePurpose[] = ["Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others", "Pumping Test Others"];
 
 export default function LoggingPumpingTestPage() {
   const { setHeader } = usePageHeader();
@@ -207,3 +207,5 @@ export default function LoggingPumpingTestPage() {
     </div>
   );
 }
+
+    

@@ -315,11 +315,9 @@ export type FileStatus = typeof fileStatusOptions[number];
 export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = [
   "Geological logging",
   "Geophysical Logging",
-  "VES",
-  "Pumping test",
   "Industry Pumping test",
   "MWSS Pumping test",
-  "Others",
+  "Pumping Test Others",
 ] as const;
 
 export const sitePurposeOptions = [
@@ -344,6 +342,7 @@ export const sitePurposeOptions = [
   "Industry Pumping test",
   "MWSS Pumping test",
   "Others",
+  "Pumping Test Others",
 ] as const;
 export type SitePurpose = typeof sitePurposeOptions[number];
 
@@ -351,13 +350,13 @@ export const REPORTING_PURPOSE_ORDER: SitePurpose[] = [
   "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev",
   "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR",
   "GW Investigation", "VES", "Geological logging", "Geophysical Logging",
-  "Pumping test", "Industry Pumping test", "MWSS Pumping test",
+  "Pumping test", "Industry Pumping test", "MWSS Pumping test", "Pumping Test Others",
   "ARS",
   "Others"
 ];
 
 export const PUMPING_TEST_AGGREGATE_PURPOSES: SitePurpose[] = [
-    "Pumping test", "Industry Pumping test", "MWSS Pumping test"
+    "Pumping test", "Industry Pumping test", "MWSS Pumping test", "Pumping Test Others"
 ];
 
 export const INVESTIGATION_APP_TYPE_PURPOSES: SitePurpose[] = ["Geological logging", "Geophysical Logging"];
@@ -590,3 +589,5 @@ export const reportableFields = [
     { id: 'arsType', label: 'ARS Type', accessor: (e: any) => e.arsTypeOfScheme, arsOnly: true, arsApplicable: true },
     { id: 'officeLocation', label: 'Office', accessor: (e: any) => e.officeLocationFromPath || e.officeLocation },
 ];
+
+    
