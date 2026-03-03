@@ -105,7 +105,7 @@ const MediaManager = ({
                 ) : (
                   <div className="w-full h-full relative">
                     {getYouTubeThumbnail(field.url) ? (
-                      <img src={getYouTubeThumbnail(field.url)!} className="w-full h-full object-cover" />
+                      <img src={getYouTubeThumbnail(field.url)!} alt={field.description || ''} className="w-full h-full object-cover" />
                     ) : (
                       <video src={field.url} className="w-full h-full object-cover" preload="metadata" />
                     )}
@@ -175,9 +175,10 @@ const MediaManager = ({
                     <div className="w-full aspect-video bg-black flex items-center justify-center overflow-hidden rounded-lg shadow-2xl">
                       {getEmbedUrl(fields[lightboxIndex].url) ? (
                         <iframe
-                          src={getEmbedUrl(fields[lightboxIndex].url)}
+                          src={getEmbedUrl(fields[lightboxIndex].url)!}
                           className="w-full h-full border-none"
                           allowFullScreen
+                          title={fields[lightboxIndex].description || 'Video'}
                         />
                       ) : (
                         <video
@@ -234,4 +235,5 @@ const MediaManager = ({
     </div>
   );
 };
-export default MediaManager;
+
+    

@@ -1075,10 +1075,10 @@ const handleDeleteItem = async () => {
         removeReappropriation(index);
     } else if (type === 'payment') {
         const paymentToDelete = paymentFields[index];
-        if(paymentToDelete.remittanceId) {
-             toast({ title: "Action Blocked", description: "This payment entry is linked to a 'Revenue Head' remittance and cannot be deleted directly. Delete the remittance entry instead.", variant: "destructive" });
-             setItemToDelete(null);
-             return;
+        if (paymentToDelete.remittanceId) {
+            toast({ title: "Action Blocked", description: "This payment entry is linked to a 'Revenue Head' remittance and cannot be deleted directly. Delete the remittance entry instead.", variant: "destructive" });
+            setItemToDelete(null);
+            return;
         }
         removePayment(index);
     } else if (type === 'site') {
@@ -1196,3 +1196,5 @@ const handleDeleteItem = async () => {
     </FormProvider>
   );
 }
+
+    
