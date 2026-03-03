@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -525,6 +524,8 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
         onConfirm(data);
     };
 
+    const isLinkedToRemittance = !!initialData?.remittanceId;
+
     const availablePaymentAccounts = useMemo(() => {
         if (isDeferredFunding) {
             return paymentAccountOptions.filter(o => o === "Plan Fund");
@@ -549,7 +550,26 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                           </div>
                           <Separator/>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                              <FormField name="revenueHead" control={form.control} render={({ field }) => <FormItem><FormLabel>Revenue Head (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
+                              <FormField 
+                                  name="revenueHead" 
+                                  control={form.control} 
+                                  render={({ field }) => (
+                                      <FormItem>
+                                          <FormLabel>Revenue Head (₹)</FormLabel>
+                                          <FormControl>
+                                              <Input 
+                                                  type="number" 
+                                                  {...field} 
+                                                  onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} 
+                                                  readOnly={isLinkedToRemittance}
+                                                  className={isLinkedToRemittance ? 'bg-muted/50' : ''}
+                                              />
+                                          </FormControl>
+                                          {isLinkedToRemittance && <FormDescription className="text-xs">Auto-managed by a 'Revenue Head' remittance.</FormDescription>}
+                                          <FormMessage />
+                                      </FormItem>
+                                  )}
+                              />
                               <FormField name="contractorsPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Contractor's Payment (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
                               <FormField name="gst" control={form.control} render={({ field }) => <FormItem><FormLabel>GST (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
                               <FormField name="incomeTax" control={form.control} render={({ field }) => <FormItem><FormLabel>Income Tax (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem>} />
@@ -570,228 +590,362 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
     );
 };
 
-const MediaManager = ({
-  title,
-  type,
-  fields,
-  append,
-  remove,
-  update,
-  isReadOnly,
-}: {
-  title: string;
-  type: 'image' | 'video';
-  fields: any[];
-  append: (item: any) => void;
-  remove: (index: number) => void;
-  update: (index: number, item: any) => void;
-  isReadOnly: boolean;
-}) => {
-  const [isMediaModalOpen, setIsMediaModalOpen] = useState(false);
-  const [editingMedia, setEditingMedia] = useState<{ index: number; data: any } | null>(null);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+export default function DataEntryFormComponent({ fileNoToEdit, initialData, supervisorList, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false }: DataEntryFormProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const fileIdToEdit = searchParams.get("id");
+  const approveUpdateId = searchParams.get("approveUpdateId");
 
-  const handleAddClick = () => {
-    setEditingMedia(null);
-    setIsMediaModalOpen(true);
+  const { addFileEntry, updateFileEntry } = useFileEntries();
+  const { createPendingUpdate } = usePendingUpdates();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const { allFileEntries, allArsEntries, allLsgConstituencyMaps, allE_tenders } = useDataStore();
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
+  const [dialogState, setDialogState] = useState<{ type: null | 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite'; data: any, isView?: boolean }>({ type: null, data: null, isView: false });
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'reappropriation' | 'payment' | 'site'; index: number } | null>(null);
+
+  const isEditor = userRole === 'admin' || userRole === 'engineer' || userRole === 'scientist';
+  const isSupervisor = userRole === 'supervisor';
+  const isViewer = userRole === 'viewer';
+  const isEditing = !!fileIdToEdit;
+
+  const isDeferredFunding = useMemo(() => {
+    return workTypeContext === 'planFund' || workTypeContext === 'collector';
+  }, [workTypeContext]);
+
+  const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction Details" : "2. Remittance Details";
+  const formOptions = useMemo(() => {
+    if (workTypeContext === 'public') return PUBLIC_DEPOSIT_APPLICATION_TYPES;
+    if (workTypeContext === 'private') return PRIVATE_APPLICATION_TYPES;
+    if (workTypeContext === 'collector') return COLLECTOR_APPLICATION_TYPES;
+    if (workTypeContext === 'planFund') return PLAN_FUND_APPLICATION_TYPES;
+    return applicationTypeOptions;
+  }, [workTypeContext]);
+  
+  const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
+  const { control, handleSubmit, setValue, getValues, watch } = form;
+  
+  const currentFileNo = watch("fileNo");
+
+  const autoCredits = useMemo(() => {
+    if (!currentFileNo) return [];
+    const normalizedFileNo = currentFileNo.toLowerCase().trim();
+    const credits: any[] = [];
+    allFileEntries.forEach(entry => {
+        if (entry.fileNo?.toLowerCase().trim() === normalizedFileNo) return;
+        entry.reappropriationDetails?.forEach(reapp => {
+            if (reapp.refFileNo?.toLowerCase().trim() === normalizedFileNo) {
+                // Determine source page type
+                const hasInvestigation = entry.siteDetails?.some(s => s.purpose === 'GW Investigation');
+                const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
+                let sourcePageType = "Deposit Work";
+                if (hasInvestigation && !hasLoggingPumping) sourcePageType = "GW Investigation";
+                else if (hasLoggingPumping && !hasInvestigation) sourcePageType = "Logging & Pumping Test";
+
+                credits.push({
+                    ...reapp,
+                    sourceFileNo: entry.fileNo,
+                    sourceApplicantName: entry.applicantName,
+                    sourcePageType: sourcePageType
+                });
+            }
+        });
+    });
+    return credits;
+  }, [currentFileNo, allFileEntries]);
+
+  const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
+  const { fields: reappropriationFields, append: appendReappropriation, remove: removeReappropriation, update: updateReappropriation } = useFieldArray({ control, name: "reappropriationDetails" });
+  const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
+  const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment } = useFieldArray({ control, name: "paymentDetails" });
+
+  const watchedRemittanceDetails = watch("remittanceDetails");
+  const watchedReappropriationDetails = watch("reappropriationDetails");
+  const watchedPaymentDetails = watch("paymentDetails");
+
+  // Combined and sorted reappropriations for display
+  const sortedCombinedReappropriations = useMemo(() => {
+    const manual = reappropriationFields.map((field, index) => ({
+        ...field,
+        _originalIndex: index,
+        _source: 'manual' as const,
+        dateObj: toDateOrNull(field.date)
+    }));
+    const auto = autoCredits.map((credit) => ({
+        ...credit,
+        _source: 'auto' as const,
+        dateObj: toDateOrNull(credit.date)
+    }));
+    return [...manual, ...auto].sort((a, b) => {
+        const timeA = a.dateObj?.getTime() ?? 0;
+        const timeB = b.dateObj?.getTime() ?? 0;
+        return timeB - timeA; // Descending (most recent first)
+    });
+  }, [reappropriationFields, autoCredits]);
+
+  useEffect(() => {
+    const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
+        return sum + (Number(item.amountRemitted) || 0);
+    }, 0) || 0;
+    setValue("totalRemittance", totalRemittance);
+
+    const totalReappDebit = watchedReappropriationDetails?.reduce((sum, item) => {
+        return sum + (Number(item.amount) || 0);
+    }, 0) || 0;
+    setValue("totalReappropriation", totalReappDebit);
+
+    const totalReappCredit = autoCredits.reduce((sum, item) => {
+        return sum + (Number(item.amount) || 0);
+    }, 0);
+    setValue("totalReappropriationCredit", totalReappCredit);
+
+    const spendableRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
+        if (item.remittedAccount !== 'Revenue Head') {
+            return sum + (Number(item.amountRemitted) || 0);
+        }
+        return sum;
+    }, 0) || 0;
+    
+    const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
+    setValue("totalPaymentAllEntries", totalPayment);
+
+    // Overall Balance = Total Remittance + Total Re-appropriation Credit - Total Payment - Total Re-appropriation Debit
+    setValue("overallBalance", spendableRemittance + totalReappCredit - totalPayment - totalReappDebit);
+    
+  }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
+
+  const onInvalid = (errors: FieldErrors<DataEntryFormData>) => {
+    const messages = getFormattedErrorMessages(errors);
+    toast({ title: "Validation Error", description: (<ul className="list-disc pl-5 mt-2 space-y-1">{messages.map((msg, i) => <li key={i} className="text-xs">{msg}</li>)}</ul>), variant: "destructive", duration: 10000 });
+  };
+  
+  const onSubmit = async (data: DataEntryFormData) => {
+    setIsSubmitting(true);
+    try {
+        const sanitizedData = {
+          ...data,
+          constituency: data.constituency === undefined ? null : data.constituency,
+        };
+
+        if (!user) throw new Error("Authentication error.");
+        if (isSupervisor) {
+            await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
+            toast({ title: "Update Submitted" });
+        } else if (fileIdToEdit) {
+            await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
+            toast({ title: "File Updated" });
+        } else {
+            await addFileEntry(sanitizedData);
+            toast({ title: "File Created" });
+        }
+        router.push(returnPath);
+    } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
   };
 
-  const handleEditClick = (index: number, data: any) => {
-    setEditingMedia({ index, data });
-    setIsMediaModalOpen(true);
-  };
+  const openDialog = (type: 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite', data: any, isView: boolean = false) => setDialogState({ type, data, isView });
+  const closeDialog = () => setDialogState({ type: null, data: null, isView: false });
 
-  const handleMediaSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    e.stopPropagation(); 
-    const formData = new FormData(e.currentTarget);
-    const url = formData.get('url') as string;
-    const description = formData.get('description') as string;
+  const handleDialogConfirm = (data: any) => {
+    const { type, data: originalData } = dialogState;
+    if (!type) return;
 
-    if (!url) return;
+    if (type === 'application') {
+        setValue("fileNo", data.fileNo, { shouldDirty: true });
+        setValue("applicantName", data.applicantName, { shouldDirty: true });
+        setValue("phoneNo", data.phoneNo, { shouldDirty: true });
+        setValue("secondaryMobileNo", data.secondaryMobileNo, { shouldDirty: true });
+        setValue("applicationType", data.applicationType, { shouldDirty: true });
+    } else if (type === 'remittance') {
+        const remittanceData = data as RemittanceDetailFormData;
+        const newRemittanceId = remittanceData.id || uuidv4();
+        remittanceData.id = newRemittanceId;
 
-    if (editingMedia) {
-      update(editingMedia.index, { ...editingMedia.data, url, description });
-    } else {
-      append({ id: uuidv4(), url, description });
+        // If editing an existing remittance
+        if (originalData.index !== undefined) {
+            const oldRemittance = remittanceFields[originalData.index];
+            const paymentIndex = paymentFields.findIndex(p => p.remittanceId === oldRemittance.id);
+            
+            // Delete any existing linked payment first to handle all cases (edit, account change)
+            if (paymentIndex !== -1) {
+                removePayment(paymentIndex);
+            }
+            updateRemittance(originalData.index, remittanceData);
+        } else {
+            // If adding a new remittance
+            appendRemittance(remittanceData);
+        }
+
+        // If the new or updated remittance is "Revenue Head", create a new payment entry
+        if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
+            const newPaymentEntry: PaymentDetailFormData = {
+                id: uuidv4(),
+                remittanceId: newRemittanceId,
+                dateOfPayment: remittanceData.dateOfRemittance,
+                paymentAccount: "Bank", // Default, can be changed by user later
+                revenueHead: remittanceData.amountRemitted,
+                totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
+                paymentRemarks: "Auto-entry for remittance to Revenue Head.",
+            };
+            appendPayment(newPaymentEntry);
+            toast({ title: "Payment Entry Synced", description: "Payment details updated for Revenue Head remittance." });
+        }
+    } else if (type === 'reappropriation') {
+        if (originalData.index !== undefined) {
+            updateReappropriation(originalData.index, data);
+        } else {
+            appendReappropriation(data);
+        }
+    } else if (type === 'payment') {
+        const paymentData = { ...data, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal(data) };
+        if (originalData.index !== undefined) {
+            updatePayment(originalData.index, paymentData);
+        } else {
+            appendPayment(paymentData);
+        }
+    } else if (type === 'site') {
+        if (originalData.index !== undefined) updateSite(originalData.index, data); else appendSite(data);
     }
-    setIsMediaModalOpen(false);
-  };
+    closeDialog();
+};
 
-  const getEmbedUrl = (url: string) => {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      const id = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
-      return `https://www.youtube.com/embed/${id}`;
-    }
-    if (url.includes('vimeo.com')) {
-      const id = url.split('/').pop();
-      return `https://player.vimeo.com/video/${id}`;
-    }
-    return null;
-  };
+const handleDeleteItem = () => {
+    if (!itemToDelete) return;
+    const { type, index } = itemToDelete;
 
-  const getYouTubeThumbnail = (url: string) => {
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      const id = url.split('v=')[1]?.split('&')[0] || url.split('/').pop();
-      return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+    if (type === 'remittance') {
+        const remittanceToDelete = remittanceFields[index];
+        if (remittanceToDelete.remittedAccount === 'Revenue Head' && remittanceToDelete.id) {
+            const paymentIndex = paymentFields.findIndex(p => p.remittanceId === remittanceToDelete.id);
+            if (paymentIndex !== -1) {
+                removePayment(paymentIndex);
+            }
+        }
+        removeRemittance(index);
+    } else if (type === 'reappropriation') {
+        removeReappropriation(index);
+    } else if (type === 'payment') {
+        const paymentToDelete = paymentFields[index];
+        if(paymentToDelete.remittanceId) {
+             toast({ title: "Action Blocked", description: "This payment entry is linked to a 'Revenue Head' remittance and cannot be deleted directly.", variant: "destructive" });
+             setItemToDelete(null);
+             return;
+        }
+        removePayment(index);
+    } else if (type === 'site') {
+        removeSite(index);
     }
-    return null;
-  };
+    toast({ title: "Removed locally" });
+    setItemToDelete(null);
+};
+  
+  const totalRemittanceWatched = watch('totalRemittance');
+  const totalReappropriationWatched = watch('totalReappropriation');
+  const totalReappropriationCreditWatched = watch('totalReappropriationCredit');
+  const totalPaymentWatched = watch('totalPaymentAllEntries');
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="font-semibold text-sm flex items-center gap-2">
-          {type === 'image' ? <ImagePlus className="h-4 w-4" /> : <Video className="h-4 w-4" />}
-          {title}
-        </h4>
-        {!isReadOnly && (
-          <Button type="button" variant="outline" size="sm" onClick={handleAddClick}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add {type === 'image' ? 'Image' : 'Video'} Link
-          </Button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {fields.map((field, index) => (
-          <div key={field.id} className="flex flex-col gap-1 group">
-            <div className="relative aspect-square rounded-lg border overflow-hidden bg-muted">
-              <button
-                type="button"
-                onClick={() => setLightboxIndex(index)}
-                className="w-full h-full flex items-center justify-center hover:opacity-80 transition-opacity"
-              >
-                {type === 'image' ? (
-                  <img src={field.url} alt={field.description || ''} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full relative">
-                    {getYouTubeThumbnail(field.url) ? (
-                      <img src={getYouTubeThumbnail(field.url)!} className="w-full h-full object-cover" />
-                    ) : (
-                      <video src={field.url} className="w-full h-full object-cover" preload="metadata" />
-                    )}
-                  </div>
-                )}
-              </button>
-              {!isReadOnly && (
-                <div className="absolute top-1 right-1 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button type="button" variant="secondary" size="icon" className="h-7 w-7 shadow-sm" onClick={() => handleEditClick(index, field)}>
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button type="button" variant="destructive" size="icon" className="h-7 w-7 shadow-sm" onClick={() => remove(index)}>
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+    <FormProvider {...form}>
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. Application Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
+        
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">{remittanceTitle}</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('remittance', createDefaultRemittanceDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount (₹)</TableHead><TableHead>Account</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{remittanceFields.length > 0 ? remittanceFields.map((item, index) => (
+            <TableRow key={item.id}>
+                <TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                <TableCell>{(Number(item.amountRemitted) || 0).toLocaleString('en-IN')}</TableCell>
+                <TableCell>{item.remittedAccount}</TableCell>
+                <TableCell>{item.remittanceRemarks}</TableCell>
+                {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+            </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
+        
+        <Card>
+            <CardHeader className="flex flex-row justify-between items-start">
+                <div><CardTitle className="text-xl">3. Re-appropriation Details</CardTitle></div>
+                {isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('reappropriation', createDefaultReappropriationDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}
+            </CardHeader>
+            <CardContent>
+                <div className="relative max-h-[400px] overflow-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Type of Page</TableHead>
+                                <TableHead>File No</TableHead>
+                                <TableHead>File Details</TableHead>
+                                <TableHead className="text-right">Credit</TableHead>
+                                <TableHead className="text-right">Debit</TableHead>
+                                <TableHead>Remarks</TableHead>
+                                {isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedCombinedReappropriations.length > 0 ? sortedCombinedReappropriations.map((item, index) => {
+                                if (item._source === 'auto') {
+                                    return (
+                                        <TableRow key={`credit-${index}`} className="bg-green-50/50">
+                                            <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                            <TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell>
+                                            <TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell>
+                                            <TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell>
+                                            <TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                            <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                            {isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}
+                                        </TableRow>
+                                    );
+                                } else {
+                                    return (
+                                        <TableRow key={item.id}>
+                                            <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                            <TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell>
+                                            <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
+                                            <TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell>
+                                            <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                            <TableCell className="text-right font-bold text-red-600">
+                                                {(Number(item.amount) || 0).toLocaleString('en-IN')}
+                                            </TableCell>
+                                            <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                            {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index: item._originalIndex, ...item })} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index: item._originalIndex})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+                                        </TableRow>
+                                    );
+                                }
+                            }) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
+                        </TableBody>
+                        <TableFooterComponent>
+                            <TableRow className="bg-muted/50 font-bold">
+                                <TableCell colSpan={4} className="text-right">Totals</TableCell>
+                                <TableCell className="text-right text-green-600">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+                                <TableCell className="text-right text-red-600">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+                                <TableCell colSpan={isEditor && !isFormDisabled ? 2 : 1} className="text-right">
+                                    Balance: <span className={cn((totalReappropriationCreditWatched - totalReappropriationWatched) >= 0 ? "text-green-600" : "text-red-600")}>
+                                        ₹{Math.abs(totalReappropriationCreditWatched - totalReappropriationWatched).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                    </span>
+                                </TableCell>
+                            </TableRow>
+                        </TableFooterComponent>
+                    </Table>
                 </div>
-              )}
-            </div>
-            {field.description && (
-              <p className="text-xs font-semibold text-primary/80 line-clamp-2 px-1 py-1 mt-1.5 rounded">
-                {field.description}
-              </p>
-            )}
-          </div>
-        ))}
-        {fields.length === 0 && (
-          <div className="col-span-full py-8 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
-            <p className="text-xs italic">No {type}s added yet.</p>
-          </div>
-        )}
-      </div>
+            </CardContent>
+        </Card>
 
-      <Dialog open={isMediaModalOpen} onOpenChange={setIsMediaModalOpen}>
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-md p-0 overflow-hidden">
-          <DialogHeader className="p-6 pb-4 border-b">
-            <DialogTitle>{editingMedia ? 'Edit' : 'Add'} {type === 'image' ? 'Image' : 'Video'} Link</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleMediaSubmit} className="p-6 space-y-4">
-            <div className="space-y-2">
-              <Label>Media Link (URL)</Label>
-              <Input name="url" defaultValue={editingMedia?.data?.url || ''} placeholder="https://..." required />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea name="description" defaultValue={editingMedia?.data?.description || ''} placeholder="Enter a brief description..." className="min-h-[100px]" />
-            </div>
-            <DialogFooter className="pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => setIsMediaModalOpen(false)}>Cancel</Button>
-              <Button type="submit">Save</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={lightboxIndex !== null} onOpenChange={() => setLightboxIndex(null)}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black/95 border-none">
-          <div className="relative flex flex-col h-[80vh]">
-            <div className="flex-1 relative flex items-center justify-center p-4">
-              {lightboxIndex !== null && fields[lightboxIndex] && (
-                <>
-                  {type === 'image' ? (
-                    <img
-                      src={fields[lightboxIndex].url}
-                      alt={fields[lightboxIndex].description || ''}
-                      className="max-w-full max-h-full object-contain shadow-2xl"
-                    />
-                  ) : (
-                    <div className="w-full aspect-video bg-black flex items-center justify-center overflow-hidden rounded-lg shadow-2xl">
-                      {getEmbedUrl(fields[lightboxIndex].url) ? (
-                        <iframe
-                          src={getEmbedUrl(fields[lightboxIndex].url)}
-                          className="w-full h-full border-none"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <video
-                          src={fields[lightboxIndex].url}
-                          controls
-                          className="w-full h-full"
-                        />
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {fields.length > 1 && (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute left-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white"
-                    onClick={() => setLightboxIndex(prev => (prev! - 1 + fields.length) % fields.length)}
-                  >
-                    <ChevronLeft className="h-8 w-8" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-4 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 text-white"
-                    onClick={() => setLightboxIndex(prev => (prev! + 1) % fields.length)}
-                  >
-                    <ChevronRight className="h-8 w-8" />
-                  </Button>
-                </>
-              )}
-            </div>
-            {lightboxIndex !== null && fields[lightboxIndex]?.description && (
-              <div className="p-6 bg-black/80 text-white border-t border-white/10">
-                <p className="text-sm font-medium">{fields[lightboxIndex].description}</p>
-              </div>
-            )}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 text-white/70 hover:text-white"
-              onClick={() => setLightboxIndex(null)}
-            >
-              <X className="h-6 w-6" />
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group"><div className="flex justify-between items-center w-full"><div>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"}</div><div className="flex items-center space-x-1 mr-2"><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button>{isEditor && !isFormDisabled && (<><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /><DetailRow label="Contractor" value={site.contractorName} /><DetailRow label="Supervisor" value={site.supervisorName} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">5. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Contractor's (₹)</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell><TableCell>{item.paymentAccount}</TableCell><TableCell className="text-right">{(Number(item.contractorsPayment) || 0).toLocaleString('en-IN')}</TableCell><TableCell className="text-right">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.paymentRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})} disabled={item.remittanceId ? true : isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={6} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 5 : 4} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-xl">6. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2">
+            <div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
+            <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>
+            <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
+            <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
+            <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
+        {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={formOptions} isEditing={isEditing} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} supervisorList={supervisorList} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
+        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
+      </form>
+    </FormProvider>
   );
-};
+}
