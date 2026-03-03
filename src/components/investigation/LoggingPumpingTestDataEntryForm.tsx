@@ -623,9 +623,6 @@ const LoggingPumpingTestSiteDialog = ({ initialData, onConfirm, onCancel, isRead
     
     const { control, setValue, trigger, watch, handleSubmit, getValues } = form;
 
-    const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
-    const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
-
     const watchedLsg = watch("localSelfGovt");
     const watchedPurpose = watch('purpose');
     const watchedWorkStatus = watch('workStatus');
@@ -674,7 +671,6 @@ const LoggingPumpingTestSiteDialog = ({ initialData, onConfirm, onCancel, isRead
 
     useEffect(() => {
         if (!watchedLsg) return;
-
         const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
         const constituencies = map?.constituencies || [];
         
@@ -814,31 +810,6 @@ const LoggingPumpingTestSiteDialog = ({ initialData, onConfirm, onCancel, isRead
                                             </FormItem>
                                         )} />
                                     </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader><CardTitle>Media Gallery</CardTitle></CardHeader>
-                                <CardContent className="space-y-6">
-                                    <MediaManager
-                                      title="Work Images"
-                                      type="image"
-                                      fields={imageFields}
-                                      append={appendImage}
-                                      remove={removeImage}
-                                      update={updateImage}
-                                      isReadOnly={isFieldReadOnly(true)}
-                                    />
-                                    <Separator />
-                                    <MediaManager
-                                      title="Work Videos"
-                                      type="video"
-                                      fields={videoFields}
-                                      append={appendVideo}
-                                      remove={removeVideo}
-                                      update={updateVideo}
-                                      isReadOnly={isFieldReadOnly(true)}
-                                    />
                                 </CardContent>
                             </Card>
                         </form>
