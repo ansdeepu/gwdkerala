@@ -968,19 +968,12 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         return sum + (Number(item.amount) || 0);
     }, 0);
     setValue("totalReappropriationCredit", totalReappCredit);
-
-    const spendableRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
-        if (item.remittedAccount !== 'Revenue Head') {
-            return sum + (Number(item.amountRemitted) || 0);
-        }
-        return sum;
-    }, 0) || 0;
     
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
 
-    // Overall Balance = Total Remittance + Total Re-appropriation Credit - Total Payment - Total Re-appropriation Debit
-    setValue("overallBalance", spendableRemittance + totalReappCredit - totalPayment - totalReappDebit);
+    // Corrected Balance Calculation
+    setValue("overallBalance", totalRemittance + totalReappCredit - totalPayment - totalReappDebit);
     
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
 
@@ -1214,3 +1207,4 @@ const handleDeleteItem = () => {
     
 
     
+
