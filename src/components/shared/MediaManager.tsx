@@ -235,5 +235,4 @@ const MediaManager = ({
     </div>
   );
 };
-
-    
+export default MediaManager;
