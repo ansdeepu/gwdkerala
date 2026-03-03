@@ -76,6 +76,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from "@/components/ui/badge";
+import SiteDialogContent from "./SiteDialogContent";
 
 
 const db = getFirestore(app);
@@ -106,14 +107,6 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
   if (!payment) return 0;
   return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0);
 };
-
-const PURPOSES_REQUIRING_DIAMETER: SitePurpose[] = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev"];
-const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed'];
-const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
-const SITE_DIALOG_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
-    (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued"].includes(status)
-);
-
 
 const getFormattedErrorMessages = (errors: FieldErrors<any>): string[] => {
   const messages = new Set<string>();
@@ -759,38 +752,31 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         setValue("secondaryMobileNo", data.secondaryMobileNo, { shouldDirty: true });
         setValue("applicationType", data.applicationType, { shouldDirty: true });
     } else if (type === 'remittance') {
-        const remittanceData = data as RemittanceDetailFormData;
-        const newRemittanceId = remittanceData.id || uuidv4();
-        remittanceData.id = newRemittanceId;
-
-        // If editing an existing remittance
-        if (originalData.index !== undefined) {
+        const remittanceData = { ...data, id: data.id || uuidv4() } as RemittanceDetailFormData;
+        const isEditingRemittance = originalData.index !== undefined;
+        
+        if (isEditingRemittance) {
             const oldRemittance = remittanceFields[originalData.index];
-            const paymentIndex = paymentFields.findIndex(p => p.remittanceId === oldRemittance.id);
-            
-            // Delete any existing linked payment first to handle all cases (edit, account change)
-            if (paymentIndex !== -1) {
-                removePayment(paymentIndex);
+            if (oldRemittance?.id) {
+                const paymentIndex = paymentFields.findIndex(p => p.remittanceId === oldRemittance.id);
+                if (paymentIndex !== -1) removePayment(paymentIndex);
             }
             updateRemittance(originalData.index, remittanceData);
         } else {
-            // If adding a new remittance
             appendRemittance(remittanceData);
         }
 
-        // If the new or updated remittance is "Revenue Head", create a new payment entry
         if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
-            const newPaymentEntry: PaymentDetailFormData = {
+            appendPayment({
                 id: uuidv4(),
-                remittanceId: newRemittanceId,
+                remittanceId: remittanceData.id,
                 dateOfPayment: remittanceData.dateOfRemittance,
-                paymentAccount: "Bank", // Default, can be changed by user later
+                paymentAccount: "Bank",
                 revenueHead: remittanceData.amountRemitted,
                 totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
                 paymentRemarks: "Auto-entry for remittance to Revenue Head.",
-            };
-            appendPayment(newPaymentEntry);
-            toast({ title: "Payment Entry Synced", description: "Payment details updated for Revenue Head remittance." });
+            });
+            toast({ title: "Payment Entry Synced" });
         }
     } else if (type === 'reappropriation') {
         if (originalData.index !== undefined) {
@@ -829,7 +815,7 @@ const handleDeleteItem = () => {
     } else if (type === 'payment') {
         const paymentToDelete = paymentFields[index];
         if(paymentToDelete.remittanceId) {
-             toast({ title: "Action Blocked", description: "This payment entry is linked to a 'Revenue Head' remittance and cannot be deleted directly.", variant: "destructive" });
+             toast({ title: "Action Blocked", description: "This payment entry is linked to a 'Revenue Head' remittance and cannot be deleted directly. Delete the remittance entry instead.", variant: "destructive" });
              setItemToDelete(null);
              return;
         }

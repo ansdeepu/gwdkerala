@@ -24,46 +24,46 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, Info, ImagePlus, Video, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import {
-  DataEntrySchema,
-  type DataEntryFormData,
-  siteWorkStatusOptions,
-  sitePurposeOptions,
-  type SitePurpose,
-  siteDiameterOptions,
-  siteTypeOfRigOptions,
-  fileStatusOptions,
-  remittedAccountOptions,
-  paymentAccountOptions,
-  type RemittanceDetailFormData,
-  RemittanceDetailSchema,
-  type PaymentDetailFormData,
-  PaymentDetailSchema,
-  SiteDetailSchema,
-  type SiteDetailFormData,
-  applicationTypeOptions,
-  applicationTypeDisplayMap,
-  type ApplicationType,
-  siteConditionsOptions,
-  type UserRole,
-  type SiteWorkStatus,
-  constituencyOptions,
-  type Constituency,
-  INVESTIGATION_GOVT_TYPES,
-  INVESTIGATION_PRIVATE_TYPES,
-  INVESTIGATION_COMPLAINT_TYPES,
-  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
-  type Bidder,
-  type MediaItem,
-  typeOfWellOptions,
-  type Designation,
-  type ReappropriationDetailFormData,
-  ReappropriationDetailSchema,
-  PUBLIC_DEPOSIT_APPLICATION_TYPES,
-  PRIVATE_APPLICATION_TYPES,
-  COLLECTOR_APPLICATION_TYPES,
-  PLAN_FUND_APPLICATION_TYPES,
-  INVESTIGATION_WORK_STATUS_OPTIONS,
-} from "@/lib/schemas";
+    DataEntrySchema,
+    type DataEntryFormData,
+    siteWorkStatusOptions,
+    sitePurposeOptions,
+    type SitePurpose,
+    siteDiameterOptions,
+    siteTypeOfRigOptions,
+    fileStatusOptions,
+    remittedAccountOptions,
+    paymentAccountOptions,
+    type RemittanceDetailFormData,
+    RemittanceDetailSchema,
+    type PaymentDetailFormData,
+    PaymentDetailSchema,
+    SiteDetailSchema,
+    type SiteDetailFormData,
+    applicationTypeOptions,
+    applicationTypeDisplayMap,
+    type ApplicationType,
+    siteConditionsOptions,
+    type UserRole,
+    type SiteWorkStatus,
+    constituencyOptions,
+    type Constituency,
+    INVESTIGATION_GOVT_TYPES,
+    INVESTIGATION_PRIVATE_TYPES,
+    INVESTIGATION_COMPLAINT_TYPES,
+    LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
+    type Bidder,
+    type MediaItem,
+    typeOfWellOptions,
+    type Designation,
+    type ReappropriationDetailFormData,
+    ReappropriationDetailSchema,
+    PUBLIC_DEPOSIT_APPLICATION_TYPES,
+    PRIVATE_APPLICATION_TYPES,
+    COLLECTOR_APPLICATION_TYPES,
+    PLAN_FUND_APPLICATION_TYPES,
+    INVESTIGATION_WORK_STATUS_OPTIONS,
+} from '@/lib/schemas';
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useFileEntries } from "@/hooks/useFileEntries";
@@ -606,8 +606,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContex
 };
 
 const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, allLsgConstituencyMaps, allStaffMembers, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isReadOnly: boolean, isSupervisor: boolean, allLsgConstituencyMaps: any[], allStaffMembers: StaffMember[], workTypeContext: string | null }) => {
-    // This is the correct definition of the component
-    // ... all the logic for the dialog is here ...
+    
     const defaults = {
         ...(initialData?.nameOfSite ? initialData : createDefaultSiteDetail()),
     };
@@ -1014,39 +1013,31 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         setValue("applicationType", data.applicationType, { shouldDirty: true });
         setValue("category", data.category, { shouldDirty: true });
     } else if (type === 'remittance') {
-        const remittanceData = data as RemittanceDetailFormData;
+        const remittanceData = { ...data, id: data.id || uuidv4() } as RemittanceDetailFormData;
         const isEditingRemittance = originalData.index !== undefined;
         
-        let existingPaymentIndex = -1;
         if (isEditingRemittance) {
             const oldRemittance = remittanceFields[originalData.index];
             if (oldRemittance?.id) {
-                existingPaymentIndex = paymentFields.findIndex(p => p.remittanceId === oldRemittance.id);
+                const paymentIndex = paymentFields.findIndex(p => p.remittanceId === oldRemittance.id);
+                if (paymentIndex !== -1) removePayment(paymentIndex);
             }
-        }
-        
-        if (existingPaymentIndex !== -1) {
-            removePayment(existingPaymentIndex);
-        }
-
-        if (isEditingRemittance) {
             updateRemittance(originalData.index, remittanceData);
         } else {
             appendRemittance(remittanceData);
         }
 
         if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
-            const newPaymentEntry: PaymentDetailFormData = {
+            appendPayment({
                 id: uuidv4(),
-                remittanceId: remittanceData.id || originalData.id, // Ensure we have an ID to link
+                remittanceId: remittanceData.id,
                 dateOfPayment: remittanceData.dateOfRemittance,
                 paymentAccount: "Bank",
                 revenueHead: remittanceData.amountRemitted,
                 totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
                 paymentRemarks: "Auto-entry for remittance to Revenue Head.",
-            };
-            appendPayment(newPaymentEntry);
-            toast({ title: "Payment Entry Synced", description: "Payment details updated for Revenue Head remittance." });
+            });
+            toast({ title: "Payment Entry Synced" });
         }
     } else if (type === 'reappropriation') {
         if (originalData.index !== undefined) {
@@ -1073,7 +1064,6 @@ const handleDeleteItem = async () => {
 
     if (type === 'remittance') {
         const remittanceToDelete = remittanceFields[index];
-        // If the remittance to be deleted is a "Revenue Head" one, also find and delete the linked payment
         if (remittanceToDelete.remittedAccount === 'Revenue Head' && remittanceToDelete.id) {
             const paymentIndex = paymentFields.findIndex(p => p.remittanceId === remittanceToDelete.id);
             if (paymentIndex !== -1) {
@@ -1086,7 +1076,7 @@ const handleDeleteItem = async () => {
     } else if (type === 'payment') {
         const paymentToDelete = paymentFields[index];
         if(paymentToDelete.remittanceId) {
-             toast({ title: "Action Blocked", description: "This payment entry is linked to a 'Revenue Head' remittance and cannot be deleted directly.", variant: "destructive" });
+             toast({ title: "Action Blocked", description: "This payment entry is linked to a 'Revenue Head' remittance and cannot be deleted directly. Delete the remittance entry instead.", variant: "destructive" });
              setItemToDelete(null);
              return;
         }

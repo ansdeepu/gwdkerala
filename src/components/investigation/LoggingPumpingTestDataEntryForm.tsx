@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -83,7 +82,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from "@/components/ui/badge";
-import MediaManager from "../shared/MediaManager";
+import MediaManager from '@/components/shared/MediaManager';
 
 
 const db = getFirestore(app);
@@ -1014,39 +1013,31 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         setValue("applicationType", data.applicationType, { shouldDirty: true });
         setValue("category", data.category, { shouldDirty: true });
     } else if (type === 'remittance') {
-        const remittanceData = data as RemittanceDetailFormData;
+        const remittanceData = { ...data, id: data.id || uuidv4() } as RemittanceDetailFormData;
         const isEditingRemittance = originalData.index !== undefined;
         
-        let existingPaymentIndex = -1;
         if (isEditingRemittance) {
             const oldRemittance = remittanceFields[originalData.index];
             if (oldRemittance?.id) {
-                existingPaymentIndex = paymentFields.findIndex(p => p.remittanceId === oldRemittance.id);
+                const paymentIndex = paymentFields.findIndex(p => p.remittanceId === oldRemittance.id);
+                if (paymentIndex !== -1) removePayment(paymentIndex);
             }
-        }
-        
-        if (existingPaymentIndex !== -1) {
-            removePayment(existingPaymentIndex);
-        }
-
-        if (isEditingRemittance) {
             updateRemittance(originalData.index, remittanceData);
         } else {
             appendRemittance(remittanceData);
         }
 
         if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
-            const newPaymentEntry: PaymentDetailFormData = {
+            appendPayment({
                 id: uuidv4(),
-                remittanceId: remittanceData.id || originalData.id, // Ensure we have an ID to link
+                remittanceId: remittanceData.id,
                 dateOfPayment: remittanceData.dateOfRemittance,
                 paymentAccount: "Bank",
                 revenueHead: remittanceData.amountRemitted,
                 totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
                 paymentRemarks: "Auto-entry for remittance to Revenue Head.",
-            };
-            appendPayment(newPaymentEntry);
-            toast({ title: "Payment Entry Synced", description: "Payment details updated for Revenue Head remittance." });
+            });
+            toast({ title: "Payment Entry Synced" });
         }
     } else if (type === 'reappropriation') {
         if (originalData.index !== undefined) {
@@ -1067,13 +1058,12 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     closeDialog();
 };
 
-const handleDeleteItem = async () => {
+const handleDeleteItem = () => {
     if (!itemToDelete) return;
     const { type, index } = itemToDelete;
 
     if (type === 'remittance') {
         const remittanceToDelete = remittanceFields[index];
-        // If the remittance to be deleted is a "Revenue Head" one, also find and delete the linked payment
         if (remittanceToDelete.remittedAccount === 'Revenue Head' && remittanceToDelete.id) {
             const paymentIndex = paymentFields.findIndex(p => p.remittanceId === remittanceToDelete.id);
             if (paymentIndex !== -1) {
@@ -1094,20 +1084,7 @@ const handleDeleteItem = async () => {
     } else if (type === 'site') {
         removeSite(index);
     }
-
-    if (isEditor && fileIdToEdit) {
-        setIsSubmitting(true);
-        try {
-            await updateFileEntry(fileIdToEdit, getValues());
-            toast({ title: "Item Removed" });
-        } catch (error: any) {
-            toast({ title: "Error", description: error.message, variant: "destructive" });
-        } finally {
-            setIsSubmitting(false);
-        }
-    } else {
-        toast({ title: "Removed locally" });
-    }
+    toast({ title: "Removed locally" });
     setItemToDelete(null);
 };
   
