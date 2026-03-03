@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -439,7 +440,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                 const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
                 
                 if (watchedPageType === "GW Investigation") return hasInvestigation && !hasLoggingPumping;
-                if (watchedPageType === "Logging & Pumping Test") return hasLoggingPumping && !hasInvestigation;
+                if (watchedPageType === "Logging & Pumping Test") return hasLoggingPumping && !hasLoggingPumping;
                 
                 return false;
             });
@@ -558,7 +559,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContex
 
     return (
         <Form {...form}>
-             <form onSubmit={(e) => e.preventDefault()} className="flex flex-col h-full">
+             <form onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); form.handleSubmit(handleConfirmSubmit)(e); }}>
                 <DialogHeader className="p-6 pb-4 shrink-0">
                     <DialogTitle>Payment Details</DialogTitle>
                 </DialogHeader>
@@ -597,7 +598,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContex
                 </div>
                 <DialogFooter className="p-6 pt-4 shrink-0">
                     <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-                    <Button type="button" onClick={form.handleSubmit(handleConfirmSubmit)}>Save</Button>
+                    <Button type="submit">Save</Button>
                 </DialogFooter>
             </form>
         </Form>
@@ -635,16 +636,21 @@ const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly,
     const workStatusOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS : INVESTIGATION_WORK_STATUS_OPTIONS;
     const purposeOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_PURPOSE_OPTIONS : ['GW Investigation'];
 
-    const investigatorDesignations: Designation[] = [
-        "Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant", 
-        "Geophysicist", "Junior Geophysicist", "Geophysical Assistant", "Senior Hydrogeologist", "Executive Engineer"
-    ];
+    const hydrogeologicalDesignations: Designation[] = ["Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant"];
+    const geophysicalDesignations: Designation[] = ["Geophysicist", "Junior Geophysicist", "Geophysical Assistant"];
 
-    const investigatorList = useMemo(() => {
+    const hydrogeologicalInvestigators = useMemo(() => {
         return allStaffMembers
-            .filter(staff => investigatorDesignations.includes(staff.designation as Designation) && staff.status === 'Active')
+            .filter(staff => hydrogeologicalDesignations.includes(staff.designation as Designation) && staff.status === 'Active')
             .sort((a, b) => a.name.localeCompare(b.name));
     }, [allStaffMembers]);
+    
+    const geophysicalInvestigators = useMemo(() => {
+        return allStaffMembers
+            .filter(staff => geophysicalDesignations.includes(staff.designation as Designation) && staff.status === 'Active')
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }, [allStaffMembers]);
+
 
     const isFieldReadOnly = (isSupervisorEditable: boolean) => {
         if (isReadOnly) { // Global readonly (viewer)
@@ -745,7 +751,6 @@ const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly,
                                         <FormField name="constituency" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Constituency (LAC)</FormLabel>
-                                                {isFieldReadOnly(false) ? (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>) : (
                                                 <Select onValueChange={field.onChange} value={field.value} disabled={isConstituencyDisabled}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl>
                                                     <SelectContent>
@@ -753,7 +758,6 @@ const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly,
                                                         {constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
-                                                )}
                                                 <FormMessage/>
                                             </FormItem>
                                         )} />
@@ -768,7 +772,7 @@ const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly,
                                 <CardContent className="space-y-4">
                                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         <FormField name="dateOfInvestigation" control={control} render={({ field }) => ( <FormItem><FormLabel>Date of Investigation</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem> )}/>
-                                        <FormField name="nameOfInvestigator" control={control} render={({ field }) => ( <FormItem><FormLabel>Investigator (Hydrogeological)</FormLabel><Select onValueChange={field.onChange} value={field.value || undefined} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select an Investigator" /></SelectTrigger></FormControl><SelectContent>{investigatorList.map(s => (<SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                                        <FormField name="nameOfInvestigator" control={control} render={({ field }) => ( <FormItem><FormLabel>Investigator (Hydrogeological)</FormLabel><Select onValueChange={field.onChange} value={field.value || undefined} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select an Investigator" /></SelectTrigger></FormControl><SelectContent>{hydrogeologicalInvestigators.map(s => (<SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
                                         <FormField name="typeOfWell" control={control} render={({ field }) => ( <FormItem><FormLabel>Type of Well</FormLabel><Select onValueChange={field.onChange} value={field.value || undefined} disabled={isFieldReadOnly(false)}><FormControl><SelectTrigger><SelectValue placeholder="Select Well Type" /></SelectTrigger></FormControl><SelectContent>{typeOfWellOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
                                         <FormField name="hydrogeologicalRemarks" control={form.control} render={({ field }) => ( <FormItem className="md:col-span-3"><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the hydrogeological investigation..." readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem> )}/>
                                         <FormField name="vesRequired" control={control} render={({ field }) => ( <FormItem><FormLabel>VES Required</FormLabel><Select onValueChange={field.onChange} value={field.value || undefined} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Option" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent></Select><FormMessage /></FormItem> )}/>
@@ -778,7 +782,7 @@ const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly,
                                      {watchedVesRequired === 'Yes' && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                                              <FormField name="vesDate" control={control} render={({ field }) => ( <FormItem><FormLabel>Date of VES conducted</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem> )}/>
-                                             <FormField name="vesInvestigator" control={control} render={({ field }) => ( <FormItem><FormLabel>Name of Investigator (Geophysical)</FormLabel><Select onValueChange={field.onChange} value={field.value || undefined} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select an Investigator" /></SelectTrigger></FormControl><SelectContent>{investigatorList.map(s => (<SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                                             <FormField name="vesInvestigator" control={control} render={({ field }) => ( <FormItem><FormLabel>Name of Investigator (Geophysical)</FormLabel><Select onValueChange={field.onChange} value={field.value || undefined} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select an Investigator" /></SelectTrigger></FormControl><SelectContent>{geophysicalInvestigators.map(s => (<SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)}/>
                                              <FormField name="geophysicalRemarks" control={form.control} render={({ field }) => ( <FormItem className="md:col-span-2"><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ""} placeholder="Add specific remarks for the VES..." readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem> )}/>
                                         </div>
                                     )}
@@ -891,7 +895,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const pageTitle = 'GW Investigation';
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
-  const { control, handleSubmit, setValue, getValues, watch, trigger } = form;
+  const { control, handleSubmit, setValue, getValues, watch } = form;
   
   const currentFileNo = watch("fileNo");
 
@@ -953,43 +957,50 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
 
    useEffect(() => {
     const currentRemittances = getValues('remittanceDetails') || [];
-    const manualPayments = getValues('paymentDetails').filter(p => !p.remittanceId);
+    const manualPayments = getValues('paymentDetails').filter(p => !p.remittanceId) || [];
+    
+    const autoGeneratedPayments: PaymentDetailFormData[] = [];
+    
+    currentRemittances.forEach(remittance => {
+        if (remittance.remittedAccount === 'Revenue Head' && remittance.id) {
+            const amount = Number(remittance.amountRemitted) || 0;
+            if (amount > 0) {
+                autoGeneratedPayments.push({
+                    id: uuidv4(),
+                    remittanceId: remittance.id,
+                    dateOfPayment: remittance.dateOfRemittance,
+                    paymentAccount: 'Bank',
+                    revenueHead: amount,
+                    totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: amount }),
+                    paymentRemarks: "Auto-entry from remittance to Revenue Head.",
+                });
+            }
+        }
+    });
+    
+    const newPayments = [...manualPayments, ...autoGeneratedPayments];
 
-    const newAutoPayments = currentRemittances
-        .filter(rem => rem.remittedAccount === 'Revenue Head' && rem.id)
-        .map(rem => ({
-            id: uuidv4(),
-            remittanceId: rem.id!,
-            dateOfPayment: rem.dateOfRemittance,
-            paymentAccount: 'Bank' as const,
-            revenueHead: Number(rem.amountRemitted) || 0,
-            totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: Number(rem.amountRemitted) || 0 }),
-            paymentRemarks: "Auto-entry from remittance to Revenue Head.",
-        }));
-
-    const finalPayments = [...manualPayments, ...newAutoPayments];
-    replacePayments(finalPayments);
-  }, [watchedRemittanceDetails, getValues, replacePayments]);
+    if (JSON.stringify(getValues('paymentDetails').map(p => ({...p, id: ''}))) !== JSON.stringify(newPayments.map(p => ({...p, id: ''})))) {
+         replacePayments(newPayments);
+    }
+}, [watchedRemittanceDetails, getValues, replacePayments]);
 
 
   useEffect(() => {
     const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
         return sum + (Number(item.amountRemitted) || 0);
     }, 0) || 0;
-
     const totalReappCredit = autoCredits.reduce((sum, item) => {
         return sum + (Number(item.amount) || 0);
     }, 0);
-
+    const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     const totalReappDebit = watchedReappropriationDetails?.reduce((sum, item) => {
         return sum + (Number(item.amount) || 0);
     }, 0) || 0;
 
-    const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
-
     setValue("totalRemittance", totalRemittance);
-    setValue("totalReappropriationCredit", totalReappCredit);
     setValue("totalReappropriation", totalReappDebit);
+    setValue("totalReappropriationCredit", totalReappCredit);
     setValue("totalPaymentAllEntries", totalPayment);
     setValue("overallBalance", totalRemittance + totalReappCredit - totalPayment - totalReappDebit);
     
@@ -1221,3 +1232,4 @@ const handleDeleteItem = () => {
     </FormProvider>
   );
 }
+
