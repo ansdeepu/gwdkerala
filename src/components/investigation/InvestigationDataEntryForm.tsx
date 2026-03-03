@@ -82,6 +82,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from "@/components/ui/badge";
+import MediaManager from '@/components/shared/MediaManager';
 
 
 const db = getFirestore(app);
@@ -604,8 +605,9 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContex
     );
 };
 
-const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, allLsgConstituencyMaps, allStaffMembers, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isReadOnly: boolean, isSupervisor: boolean, allLsgConstituencyMaps: any[], allStaffMembers: StaffMember[], workTypeContext: string | null }) => {
-    
+const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, allLsgConstituencyMaps, allStaffMembers, workTypeContext }: { initialData: any, onConfirm: (data: any) => void, onCancel: () => void, isReadOnly: boolean, isSupervisor: boolean, allLsgConstituencyMaps: any[], allStaffMembers: StaffMember[], workTypeContext: string | null }) => {
+    // This is the correct definition of the component
+    // ... all the logic for the dialog is here ...
     const defaults = {
         ...(initialData?.nameOfSite ? initialData : createDefaultSiteDetail()),
     };
@@ -851,3 +853,356 @@ const SiteDialogContent = ({ initialData, onConfirm, onCancel, isReadOnly, isSup
         </div>
     );
 };
+
+export default function InvestigationDataEntryFormComponent({ fileNoToEdit, initialData, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps, allStaffMembers }: DataEntryFormProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const fileIdToEdit = searchParams.get("id");
+  const approveUpdateId = searchParams.get("approveUpdateId");
+
+  const { addFileEntry, updateFileEntry } = useFileEntries();
+  const { createPendingUpdate } = usePendingUpdates();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const { allFileEntries } = useDataStore();
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
+  const [dialogState, setDialogState] = useState<{ type: null | 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite'; data: any, isView?: boolean }>({ type: null, data: null, isView: false });
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'reappropriation' | 'payment' | 'site'; index: number } | null>(null);
+
+  const isEditor = userRole === 'admin' || userRole === 'scientist' || userRole === 'engineer';
+  const isSupervisor = userRole === 'supervisor';
+  const isViewer = userRole === 'viewer';
+  const isEditing = !!fileIdToEdit;
+
+  const remittanceTitle = "2. Remittance Details";
+  const pageTitle = 'GW Investigation';
+  
+  const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
+  const { control, handleSubmit, setValue, getValues, watch } = form;
+  
+  const currentFileNo = watch("fileNo");
+
+  const autoCredits = useMemo(() => {
+    if (!currentFileNo) return [];
+    const normalizedFileNo = currentFileNo.toLowerCase().trim();
+    const credits: any[] = [];
+    allFileEntries.forEach(entry => {
+        if (entry.fileNo?.toLowerCase().trim() === normalizedFileNo) return;
+        entry.reappropriationDetails?.forEach(reapp => {
+            if (reapp.refFileNo?.toLowerCase().trim() === normalizedFileNo) {
+                // Determine source page type
+                const hasInvestigation = entry.siteDetails?.some(s => s.purpose === 'GW Investigation');
+                const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
+                let sourcePageType = "Deposit Work";
+                if (hasInvestigation && !hasLoggingPumping) sourcePageType = "GW Investigation";
+                else if (hasLoggingPumping && !hasInvestigation) sourcePageType = "Logging & Pumping Test";
+
+                credits.push({
+                    ...reapp,
+                    sourceFileNo: entry.fileNo,
+                    sourceApplicantName: entry.applicantName,
+                    sourcePageType: sourcePageType
+                });
+            }
+        });
+    });
+    return credits;
+  }, [currentFileNo, allFileEntries]);
+
+  const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
+  const { fields: reappropriationFields, append: appendReappropriation, remove: removeReappropriation, update: updateReappropriation } = useFieldArray({ control, name: "reappropriationDetails" });
+  const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
+  const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment } = useFieldArray({ control, name: "paymentDetails" });
+
+  const watchedRemittanceDetails = watch("remittanceDetails");
+  const watchedReappropriationDetails = watch("reappropriationDetails");
+  const watchedPaymentDetails = watch("paymentDetails");
+
+  // Combined and sorted reappropriations for display
+  const sortedCombinedReappropriations = useMemo(() => {
+    const manual = reappropriationFields.map((field, index) => ({
+        ...field,
+        _originalIndex: index,
+        _source: 'manual' as const,
+        dateObj: toDateOrNull(field.date)
+    }));
+    const auto = autoCredits.map((credit) => ({
+        ...credit,
+        _source: 'auto' as const,
+        dateObj: toDateOrNull(credit.date)
+    }));
+    return [...manual, ...auto].sort((a, b) => {
+        const timeA = a.dateObj?.getTime() ?? 0;
+        const timeB = b.dateObj?.getTime() ?? 0;
+        return timeB - timeA; // Descending (most recent first)
+    });
+  }, [reappropriationFields, autoCredits]);
+
+  useEffect(() => {
+    const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
+        return sum + (Number(item.amountRemitted) || 0);
+    }, 0) || 0;
+    setValue("totalRemittance", totalRemittance);
+
+    const totalReappDebit = watchedReappropriationDetails?.reduce((sum, item) => {
+        return sum + (Number(item.amount) || 0);
+    }, 0) || 0;
+    setValue("totalReappropriation", totalReappDebit);
+
+    const totalReappCredit = autoCredits.reduce((sum, item) => {
+        return sum + (Number(item.amount) || 0);
+    }, 0);
+    setValue("totalReappropriationCredit", totalReappCredit);
+
+    const spendableRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
+        if (item.remittedAccount !== 'Revenue Head') {
+            return sum + (Number(item.amountRemitted) || 0);
+        }
+        return sum;
+    }, 0) || 0;
+    
+    const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
+    setValue("totalPaymentAllEntries", totalPayment);
+
+    // Overall Balance = Total Remittance + Total Re-appropriation Credit - Total Payment - Total Re-appropriation Debit
+    setValue("overallBalance", spendableRemittance + totalReappCredit - totalPayment - totalReappDebit);
+    
+  }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
+
+  const onInvalid = (errors: FieldErrors<DataEntryFormData>) => {
+    const messages = getFormattedErrorMessages(errors);
+    toast({ title: "Validation Error", description: (<ul className="list-disc pl-5 mt-2 space-y-1">{messages.map((msg, i) => <li key={i} className="text-xs">{msg}</li>)}</ul>), variant: "destructive", duration: 10000 });
+  };
+  
+  const onSubmit = async (data: DataEntryFormData) => {
+    setIsSubmitting(true);
+    try {
+        const sanitizedData = {
+          ...data,
+          constituency: data.constituency === undefined ? null : data.constituency,
+        };
+
+        if (!user) throw new Error("Authentication error.");
+        if (isSupervisor) {
+            await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
+            toast({ title: "Update Submitted" });
+        } else if (fileIdToEdit) {
+            await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
+            toast({ title: "File Updated" });
+        } else {
+            await addFileEntry(sanitizedData);
+            toast({ title: "File Created" });
+        }
+        router.push(returnPath);
+    } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
+  };
+
+  const openDialog = (type: 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite', data: any, isView: boolean = false) => setDialogState({ type, data, isView });
+  const closeDialog = () => setDialogState({ type: null, data: null, isView: false });
+
+  const handleDialogConfirm = (data: any) => {
+    const { type, data: originalData } = dialogState;
+    if (!type) return;
+
+    if (type === 'application') {
+        setValue("fileNo", data.fileNo, { shouldDirty: true });
+        setValue("applicantName", data.applicantName, { shouldDirty: true });
+        setValue("phoneNo", data.phoneNo, { shouldDirty: true });
+        setValue("secondaryMobileNo", data.secondaryMobileNo, { shouldDirty: true });
+        setValue("applicationType", data.applicationType, { shouldDirty: true });
+        setValue("category", data.category, { shouldDirty: true });
+    } else if (type === 'remittance') {
+        const remittanceData = data as RemittanceDetailFormData;
+        const isEditingRemittance = originalData.index !== undefined;
+        
+        let existingPaymentIndex = -1;
+        if (isEditingRemittance) {
+            const oldRemittance = remittanceFields[originalData.index];
+            if (oldRemittance?.id) {
+                existingPaymentIndex = paymentFields.findIndex(p => p.remittanceId === oldRemittance.id);
+            }
+        }
+        
+        if (existingPaymentIndex !== -1) {
+            removePayment(existingPaymentIndex);
+        }
+
+        if (isEditingRemittance) {
+            updateRemittance(originalData.index, remittanceData);
+        } else {
+            appendRemittance(remittanceData);
+        }
+
+        if (remittanceData.remittedAccount === 'Revenue Head' && remittanceData.amountRemitted && remittanceData.amountRemitted > 0) {
+            const newPaymentEntry: PaymentDetailFormData = {
+                id: uuidv4(),
+                remittanceId: remittanceData.id || originalData.id, // Ensure we have an ID to link
+                dateOfPayment: remittanceData.dateOfRemittance,
+                paymentAccount: "Bank",
+                revenueHead: remittanceData.amountRemitted,
+                totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: remittanceData.amountRemitted }),
+                paymentRemarks: "Auto-entry for remittance to Revenue Head.",
+            };
+            appendPayment(newPaymentEntry);
+            toast({ title: "Payment Entry Synced", description: "Payment details updated for Revenue Head remittance." });
+        }
+    } else if (type === 'reappropriation') {
+        if (originalData.index !== undefined) {
+            updateReappropriation(originalData.index, data);
+        } else {
+            appendReappropriation(data);
+        }
+    } else if (type === 'payment') {
+        const paymentData = { ...data, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal(data) };
+        if (originalData.index !== undefined) {
+            updatePayment(originalData.index, paymentData);
+        } else {
+            appendPayment(paymentData);
+        }
+    } else if (type === 'site') {
+        if (originalData.index !== undefined) updateSite(originalData.index, data); else appendSite(data);
+    }
+    closeDialog();
+};
+
+const handleDeleteItem = async () => {
+    if (!itemToDelete) return;
+    const { type, index } = itemToDelete;
+
+    if (type === 'remittance') {
+        const remittanceToDelete = remittanceFields[index];
+        // If the remittance to be deleted is a "Revenue Head" one, also find and delete the linked payment
+        if (remittanceToDelete.remittedAccount === 'Revenue Head' && remittanceToDelete.id) {
+            const paymentIndex = paymentFields.findIndex(p => p.remittanceId === remittanceToDelete.id);
+            if (paymentIndex !== -1) {
+                removePayment(paymentIndex);
+            }
+        }
+        removeRemittance(index);
+    } else if (type === 'reappropriation') {
+        removeReappropriation(index);
+    } else if (type === 'payment') {
+        const paymentToDelete = paymentFields[index];
+        if(paymentToDelete.remittanceId) {
+             toast({ title: "Action Blocked", description: "This payment entry is linked to a 'Revenue Head' remittance and cannot be deleted directly.", variant: "destructive" });
+             setItemToDelete(null);
+             return;
+        }
+        removePayment(index);
+    } else if (type === 'site') {
+        removeSite(index);
+    }
+    toast({ title: "Removed locally" });
+    setItemToDelete(null);
+};
+  
+  const totalRemittanceWatched = watch('totalRemittance');
+  const totalReappropriationWatched = watch('totalReappropriation');
+  const totalReappropriationCreditWatched = watch('totalReappropriationCredit');
+  const totalPaymentWatched = watch('totalPaymentAllEntries');
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. {pageTitle} Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
+        
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">{remittanceTitle}</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('remittance', createDefaultRemittanceDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount (₹)</TableHead><TableHead>Account</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{remittanceFields.length > 0 ? remittanceFields.map((item, index) => (
+            <TableRow key={item.id}>
+                <TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                <TableCell>{(Number(item.amountRemitted) || 0).toLocaleString('en-IN')}</TableCell>
+                <TableCell>{item.remittedAccount}</TableCell>
+                <TableCell>{item.remittanceRemarks}</TableCell>
+                {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+            </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
+        
+        <Card>
+            <CardHeader className="flex flex-row justify-between items-start">
+                <div><CardTitle className="text-xl">3. Re-appropriation Details</CardTitle></div>
+                {isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('reappropriation', createDefaultReappropriationDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}
+            </CardHeader>
+            <CardContent>
+                <div className="relative max-h-[400px] overflow-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Type of Page</TableHead>
+                                <TableHead>File No</TableHead>
+                                <TableHead>File Details</TableHead>
+                                <TableHead className="text-right">Credit</TableHead>
+                                <TableHead className="text-right">Debit</TableHead>
+                                <TableHead>Remarks</TableHead>
+                                {isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedCombinedReappropriations.length > 0 ? sortedCombinedReappropriations.map((item, index) => {
+                                if (item._source === 'auto') {
+                                    return (
+                                        <TableRow key={`credit-${index}`} className="bg-green-50/50">
+                                            <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                            <TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell>
+                                            <TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell>
+                                            <TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell>
+                                            <TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell>
+                                            <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                            <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                            {isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}
+                                        </TableRow>
+                                    );
+                                } else {
+                                    return (
+                                        <TableRow key={item.id}>
+                                            <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                                            <TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell>
+                                            <TableCell className="font-mono text-xs">{item.refFileNo}</TableCell>
+                                            <TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell>
+                                            <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
+                                            <TableCell className="text-right font-bold text-red-600">
+                                                {(Number(item.amount) || 0).toLocaleString('en-IN')}
+                                            </TableCell>
+                                            <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
+                                            {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index: item._originalIndex, ...item })} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index: item._originalIndex})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+                                        </TableRow>
+                                    );
+                                }
+                            }) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}
+                        </TableBody>
+                        <TableFooterComponent>
+                            <TableRow className="bg-muted/50 font-bold">
+                                <TableCell colSpan={4} className="text-right">Totals</TableCell>
+                                <TableCell className="text-right text-green-600">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+                                <TableCell className="text-right text-red-600">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+                                <TableCell colSpan={isEditor && !isFormDisabled ? 2 : 1} className="text-right">
+                                    Balance: <span className={cn((totalReappropriationCreditWatched - totalReappropriationWatched) >= 0 ? "text-green-600" : "text-red-600")}>
+                                        ₹{Math.abs(totalReappropriationCreditWatched - totalReappropriationWatched).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                    </span>
+                                </TableCell>
+                            </TableRow>
+                        </TableFooterComponent>
+                    </Table>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. {pageTitle} Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group"><div className="flex justify-between items-center w-full"><div>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"}</div><div className="flex items-center space-x-1 mr-2"><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button>{isEditor && !isFormDisabled && (<><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /><DetailRow label="Investigator" value={site.nameOfInvestigator} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">5. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (<TableRow key={item.id}><TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell><TableCell>{item.paymentAccount}</TableCell><TableCell className="text-right">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell><TableCell>{item.paymentRemarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('payment', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'payment', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-xl">6. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2">
+            <div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
+            <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>
+            <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
+            <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
+            <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{INVESTIGATION_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
+        {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={watch('category')} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><InvestigationSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} /></DialogContent></Dialog>
+        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
+      </form>
+    </FormProvider>
+  );
+}
