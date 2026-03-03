@@ -333,6 +333,11 @@ export default function ProgressReportPage() {
             updateStats(progressSummaryData[summaryPurposeKey]);
         }
         
+        // If a GW Investigation required VES, count it for VES as well.
+        if (purpose === 'GW Investigation' && site.vesRequired === 'Yes' && progressSummaryData['VES']) {
+            updateStats(progressSummaryData['VES']);
+        }
+        
         if (purpose === 'BWC' && diameter && BWC_DIAMETERS.includes(diameter) && applicationType) {
           if (bwcData[applicationType]?.[diameter]) { updateStats(bwcData[applicationType][diameter]); }
         } else if (purpose === 'TWC' && diameter && TWC_DIAMETERS.includes(diameter) && applicationType) {
