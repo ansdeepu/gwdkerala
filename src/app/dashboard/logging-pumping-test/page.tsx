@@ -35,7 +35,7 @@ const safeParseDate = (dateValue: any): Date | null => {
 };
 
 const ITEMS_PER_PAGE = 50;
-const LOGGING_PURPOSES: SitePurpose[] = ["Geological logging", "Geophysical Logging"];
+
 const PUMPING_TEST_PURPOSES: SitePurpose[] = ["Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others"];
 
 export default function LoggingPumpingTestPage() {
@@ -43,7 +43,7 @@ export default function LoggingPumpingTestPage() {
   const { user } = useAuth();
   const { fileEntries, isLoading } = useFileEntries();
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("Logging");
+  const [activeTab, setActiveTab] = useState("Geological");
   const router = useRouter();
   const { setIsNavigating } = usePageNavigation();
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,7 +52,7 @@ export default function LoggingPumpingTestPage() {
 
   const canCreate = user?.role === 'admin' || user?.role === 'scientist' || user?.role === 'investigator';
 
-  const { loggingEntries, pumpingTestEntries, lastCreatedDate } = useMemo(() => {
+  const { geologicalLoggingEntries, geophysicalLoggingEntries, pumpingTestEntries, lastCreatedDate } = useMemo(() => {
     const allLoggingAndPumpingEntries = fileEntries.filter(entry => {
         const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
         const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
@@ -77,8 +77,11 @@ export default function LoggingPumpingTestPage() {
           return dateB.getTime() - dateA.getTime();
     });
     
-    const logging = allLoggingAndPumpingEntries.filter(entry => 
-        entry.siteDetails?.some(site => site.purpose && LOGGING_PURPOSES.includes(site.purpose as any))
+    const geological = allLoggingAndPumpingEntries.filter(entry => 
+        entry.siteDetails?.some(site => site.purpose === 'Geological logging')
+    );
+    const geophysical = allLoggingAndPumpingEntries.filter(entry => 
+        entry.siteDetails?.some(site => site.purpose === 'Geophysical Logging')
     );
     const pumping = allLoggingAndPumpingEntries.filter(entry =>
         entry.siteDetails?.some(site => site.purpose && PUMPING_TEST_PURPOSES.includes(site.purpose as any))
@@ -89,20 +92,29 @@ export default function LoggingPumpingTestPage() {
         return (createdAt && (!latest || createdAt > latest)) ? createdAt : latest;
     }, null as Date | null);
 
-    return { loggingEntries: logging, pumpingTestEntries: pumping, lastCreatedDate: lastCreated };
+    return { geologicalLoggingEntries: geological, geophysicalLoggingEntries: geophysical, pumpingTestEntries: pumping, lastCreatedDate: lastCreated };
   }, [fileEntries]);
 
   const { filteredEntries, totalSites } = useMemo(() => {
-    const sourceEntries = activeTab === 'Logging' ? loggingEntries : pumpingTestEntries;
+    let sourceEntries;
+    if (activeTab === 'Geological') {
+        sourceEntries = geologicalLoggingEntries;
+    } else if (activeTab === 'Geophysical') {
+        sourceEntries = geophysicalLoggingEntries;
+    } else {
+        sourceEntries = pumpingTestEntries;
+    }
+
     if (!searchTerm) {
         const sites = sourceEntries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
         return { filteredEntries: sourceEntries, totalSites: sites };
     }
+
     const lowerSearchTerm = searchTerm.toLowerCase();
     const filtered = sourceEntries.filter(entry => [entry.fileNo, entry.applicantName].some(v => v?.toLowerCase().includes(lowerSearchTerm)));
     const sites = filtered.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
     return { filteredEntries: filtered, totalSites: sites };
-  }, [activeTab, loggingEntries, pumpingTestEntries, searchTerm]);
+  }, [activeTab, geologicalLoggingEntries, geophysicalLoggingEntries, pumpingTestEntries, searchTerm]);
   
   useEffect(() => {
     setCurrentPage(1);
@@ -151,8 +163,9 @@ export default function LoggingPumpingTestPage() {
            
            <div className="flex justify-between items-center gap-4 pt-4 border-t">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
-                    <TabsList className="grid w-full grid-cols-2 sm:w-auto">
-                        <TabsTrigger value="Logging">Logging <Badge variant="secondary" className="ml-2">{loggingEntries.length}</Badge></TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-3 sm:w-auto">
+                        <TabsTrigger value="Geological">Geological logging <Badge variant="secondary" className="ml-2">{geologicalLoggingEntries.length}</Badge></TabsTrigger>
+                        <TabsTrigger value="Geophysical">Geophysical Logging <Badge variant="secondary" className="ml-2">{geophysicalLoggingEntries.length}</Badge></TabsTrigger>
                         <TabsTrigger value="PumpingTest">Pumping Test <Badge variant="secondary" className="ml-2">{pumpingTestEntries.length}</Badge></TabsTrigger>
                     </TabsList>
                 </Tabs>
