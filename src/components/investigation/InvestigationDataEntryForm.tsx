@@ -558,7 +558,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContex
 
     return (
         <Form {...form}>
-             <form onSubmit={(e) => { e.preventDefault(); form.handleSubmit(handleConfirmSubmit)(e); }}>
+             <form onSubmit={(e) => e.preventDefault()} className="flex flex-col h-full">
                 <DialogHeader className="p-6 pb-4 shrink-0">
                     <DialogTitle>Payment Details</DialogTitle>
                 </DialogHeader>
@@ -626,6 +626,8 @@ const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly,
     const watchedPurpose = watch('purpose');
     const watchedWorkStatus = watch('workStatus');
     const watchedVesRequired = watch('vesRequired');
+    const watchedFeasibility = watch('feasibility');
+    const watchedTypeOfWell = watch('typeOfWell');
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
     const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
@@ -783,19 +785,38 @@ const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly,
                                 </CardContent>
                             </Card>
 
-                            <Card>
-                                <CardHeader><CardTitle>Recommended Measurements</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => ( <FormItem><FormLabel>Diameter (mm)</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl><SelectContent>{siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
-                                        <FormField name="surveyRecommendedTD" control={control} render={({ field }) => <FormItem><FormLabel>TD (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                    </div>
-                                    <FormField name="surveyLocation" control={control} render={({ field }) => ( <FormItem><FormLabel>Location of well</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[60px]" /></FormControl><FormMessage /></FormItem> )}/>
-                                    <FormField name="surveyRemarks" control={control} render={({ field }) => ( <FormItem><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[60px]" /></FormControl><FormMessage /></FormItem> )}/>
-                                </CardContent>
-                            </Card>
+                             {watchedFeasibility === 'Yes' && (
+                                <Card>
+                                    <CardHeader><CardTitle>Recommended Measurements</CardTitle></CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                            <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => ( <FormItem><FormLabel>Diameter (mm)</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl><SelectContent>{siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
+                                            <FormField name="surveyRecommendedTD" control={control} render={({ field }) => <FormItem><FormLabel>TD (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+
+                                            {watchedTypeOfWell === 'Bore Well' && (
+                                                <>
+                                                    <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                </>
+                                            )}
+
+                                            {watchedTypeOfWell === 'Tube Well' && (
+                                                <>
+                                                     <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                     <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                     <FormField name="surveyRecommendedMsCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                </>
+                                            )}
+
+                                            {watchedTypeOfWell === 'Filter Point Well' && (
+                                                <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                            )}
+                                        </div>
+                                        <FormField name="surveyLocation" control={control} render={({ field }) => ( <FormItem><FormLabel>Location of well</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[60px]" /></FormControl><FormMessage /></FormItem> )}/>
+                                        <FormField name="surveyRemarks" control={control} render={({ field }) => ( <FormItem><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[60px]" /></FormControl><FormMessage /></FormItem> )}/>
+                                    </CardContent>
+                                </Card>
+                            )}
 
                             <Card>
                                 <CardHeader><CardTitle>Work Status</CardTitle></CardHeader>
@@ -870,7 +891,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const pageTitle = 'GW Investigation';
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
-  const { control, handleSubmit, setValue, getValues, watch } = form;
+  const { control, handleSubmit, setValue, getValues, watch, trigger } = form;
   
   const currentFileNo = watch("fileNo");
 
@@ -931,51 +952,44 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   }, [reappropriationFields, autoCredits]);
 
    useEffect(() => {
-        const currentRemittances = getValues('remittanceDetails') || [];
-        const manualPayments = getValues('paymentDetails').filter(p => !p.remittanceId) || [];
-        
-        const autoGeneratedPayments: PaymentDetailFormData[] = [];
-        
-        currentRemittances.forEach(remittance => {
-            if (remittance.remittedAccount === 'Revenue Head' && remittance.id) {
-                const amount = Number(remittance.amountRemitted) || 0;
-                if (amount > 0) {
-                    autoGeneratedPayments.push({
-                        id: uuidv4(),
-                        remittanceId: remittance.id,
-                        dateOfPayment: remittance.dateOfRemittance,
-                        paymentAccount: 'Bank',
-                        revenueHead: amount,
-                        totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: amount }),
-                        paymentRemarks: "Auto-entry from remittance to Revenue Head.",
-                    });
-                }
-            }
-        });
-        
-        const newPayments = [...manualPayments, ...autoGeneratedPayments];
+    const currentRemittances = getValues('remittanceDetails') || [];
+    const manualPayments = getValues('paymentDetails').filter(p => !p.remittanceId);
 
-        if (JSON.stringify(getValues('paymentDetails').map(p => ({...p, id: ''}))) !== JSON.stringify(newPayments.map(p => ({...p, id: ''})))) {
-             replacePayments(newPayments);
-        }
-    }, [watchedRemittanceDetails, getValues, replacePayments]);
+    const newAutoPayments = currentRemittances
+        .filter(rem => rem.remittedAccount === 'Revenue Head' && rem.id)
+        .map(rem => ({
+            id: uuidv4(),
+            remittanceId: rem.id!,
+            dateOfPayment: rem.dateOfRemittance,
+            paymentAccount: 'Bank' as const,
+            revenueHead: Number(rem.amountRemitted) || 0,
+            totalPaymentPerEntry: calculatePaymentEntryTotalGlobal({ revenueHead: Number(rem.amountRemitted) || 0 }),
+            paymentRemarks: "Auto-entry from remittance to Revenue Head.",
+        }));
+
+    const finalPayments = [...manualPayments, ...newAutoPayments];
+    replacePayments(finalPayments);
+  }, [watchedRemittanceDetails, getValues, replacePayments]);
 
 
   useEffect(() => {
     const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
         return sum + (Number(item.amountRemitted) || 0);
     }, 0) || 0;
+
     const totalReappCredit = autoCredits.reduce((sum, item) => {
         return sum + (Number(item.amount) || 0);
     }, 0);
-    const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
+
     const totalReappDebit = watchedReappropriationDetails?.reduce((sum, item) => {
         return sum + (Number(item.amount) || 0);
     }, 0) || 0;
 
+    const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
+
     setValue("totalRemittance", totalRemittance);
-    setValue("totalReappropriation", totalReappDebit);
     setValue("totalReappropriationCredit", totalReappCredit);
+    setValue("totalReappropriation", totalReappDebit);
     setValue("totalPaymentAllEntries", totalPayment);
     setValue("overallBalance", totalRemittance + totalReappCredit - totalPayment - totalReappDebit);
     
