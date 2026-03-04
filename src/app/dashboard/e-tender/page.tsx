@@ -58,16 +58,16 @@ const StatCard = ({ title, count, onClick, colorClass, icon: Icon }: { title: st
         onClick={onClick}
         disabled={count === 0}
         className={cn(
-            "p-2 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full h-full flex items-center justify-between shadow-sm min-h-[4.5rem]",
+            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full h-full flex flex-col justify-between shadow-sm min-h-[5rem]",
             colorClass,
             "hover:bg-opacity-20"
         )}
     >
         <div className="flex items-center gap-1.5">
           {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
-          <p className="text-xs font-semibold text-muted-foreground whitespace-normal leading-tight max-w-24">{title}</p>
+          <p className="text-xs font-semibold text-muted-foreground whitespace-normal leading-tight">{title}</p>
         </div>
-        <p className="text-3xl font-bold ml-2 pl-2">{count}</p>
+        <p className="text-3xl font-bold self-end">{count}</p>
     </button>
 );
 
@@ -415,7 +415,7 @@ export default function ETenderListPage() {
                         </div>
                     </div>
                      <div className="border-t pt-4 mt-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
                             {dashboardStats.map(stat => (
                                 <StatCard
                                     key={stat.type}
@@ -435,7 +435,7 @@ export default function ETenderListPage() {
                             />
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[11px] mt-2 pt-2 border-t">
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[10px] mt-2 pt-2 border-t">
                         <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-muted-foreground">
                             <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div><span>Tender Process</span></div>
                             <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-orange-400"></div><span>Bid Opened</span></div>
