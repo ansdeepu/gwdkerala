@@ -1,3 +1,5 @@
+
+      
 "use client";
 
 import { useForm, FormProvider, useWatch } from "react-hook-form";
@@ -39,7 +41,7 @@ const formatDateForInput = (date: any): string => {
 };
 
 const SITE_DIALOG_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
-    (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued"].includes(status)
+    (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending"].includes(status)
 );
 
 // Component
@@ -228,3 +230,5 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
       </div>
     );
 }
+      
+    
