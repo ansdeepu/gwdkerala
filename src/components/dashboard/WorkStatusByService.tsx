@@ -31,6 +31,17 @@ const depositWorkHeaderLabels: Record<string, string> = {
     'MWSS Pump Reno': 'MWSS<br/>Pump<br/>Reno', 'HPS': 'HPS', 'HPR': 'HPR',
 };
 
+// New filtered status options for Deposit Works tab
+const DEPOSIT_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
+    status => ![
+        "Bill Prepared", 
+        "Payment Completed", 
+        "Utilization Certificate Issued", 
+        "Pending", 
+        "VES Pending"
+    ].includes(status)
+);
+
 interface WorkStatusRow {
   statusCategory: string;
   total: { count: number; data: any[] };
@@ -162,7 +173,7 @@ export default function WorkStatusByService({ allFileEntries, onOpenDialog, curr
         };
         
         return {
-            depositWorksData: processData(depositWorkEntries, depositWorkServiceOrder, siteWorkStatusOptions, 'purpose'),
+            depositWorksData: processData(depositWorkEntries, depositWorkServiceOrder, DEPOSIT_WORK_STATUS_OPTIONS, 'purpose'),
             gwInvestigationData: processData(gwInvestigationEntries, gwInvestigationServiceOrder, INVESTIGATION_WORK_STATUS_OPTIONS, 'typeOfWell'),
             loggingPumpingTestData: processData(loggingPumpingTestEntries, loggingPumpingTestServiceOrder, LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS, 'purpose'),
         };
