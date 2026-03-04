@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Save, X } from 'lucide-react';
-import { WorkOrderDetailsSchema, type E_tenderFormData, type WorkOrderDetailsFormData, type Designation, designationOptions } from '@/lib/schemas/eTenderSchema';
+import { WorkOrderDetailsSchema, type E_tenderFormData, type WorkOrderDetailsFormData, type Designation, designationOptions } from '@/lib/schemas';
 import { formatDateForInput } from './utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useDataStore } from '@/hooks/use-data-store';
@@ -34,7 +34,7 @@ export default function WorkOrderDetailsForm({ initialData, onSubmit, onCancel, 
 
     const getSortedStaffList = (designations: Designation[]) => {
         return allStaffMembers
-            .filter(staff => designations.includes(staff.designation as Designation) && staff.status === 'Active')
+            .filter(staff => staff.designation && designations.includes(staff.designation as Designation) && staff.status === 'Active')
             .sort((a, b) => {
                 const orderA = designationOptions.indexOf(a.designation as Designation);
                 const orderB = designationOptions.indexOf(b.designation as Designation);
