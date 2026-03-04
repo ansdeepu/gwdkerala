@@ -368,7 +368,7 @@ export default function ETenderListPage() {
       { type: 'tenderProcess', label: 'Tender Process', data: categorizedTenders.tenderProcess, colorClass: 'border-blue-500/50 bg-blue-500/5', icon: Clock },
       { type: 'bidsSubmitted', label: 'Bids Submitted', data: categorizedTenders.bidsSubmitted, colorClass: 'border-amber-500/50 bg-amber-500/5', icon: Users },
       { type: 'toBeOpened', label: 'To Be Opened', data: categorizedTenders.toBeOpened, colorClass: 'border-sky-500/50 bg-sky-500/5', icon: FolderOpen },
-      { type: 'pendingSelection', label: 'Pending Selection', data: categorizedTenders.pendingSelection, colorClass: 'border-indigo-500/50 bg-indigo-500/5', icon: Bell },
+      { type: 'pendingSelection', label: 'Pending Selection Notice', data: categorizedTenders.pendingSelection, colorClass: 'border-indigo-500/50 bg-indigo-500/5', icon: Bell },
       { type: 'pendingWorkOrder', label: 'Pending Work Order', data: categorizedTenders.pendingWorkOrder, colorClass: 'border-emerald-500/50 bg-emerald-500/5', icon: Hammer },
     ];
 
