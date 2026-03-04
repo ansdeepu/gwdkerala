@@ -413,7 +413,7 @@ export default function ETenderListPage() {
                         </div>
                     </div>
                      <div className="border-t pt-4 mt-4">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                             {dashboardStats.map(stat => (
                                 <StatCard
                                     key={stat.title}
@@ -462,7 +462,7 @@ export default function ETenderListPage() {
                                     <TableRow>
                                         <TableHead>Sl. No.</TableHead>
                                         <TableHead>eTender Ref. No.</TableHead>
-                                        <TableHead className="min-w-[350px]">Name of Work</TableHead>
+                                        <TableHead>Name of Work</TableHead>
                                         <TableHead>Last Date of Receipt</TableHead>
                                         <TableHead>Date of Opening</TableHead>
                                         <TableHead>Status</TableHead>
@@ -488,7 +488,7 @@ export default function ETenderListPage() {
                                                             {hasRetenders && <Badge variant="secondary" className="mt-1 w-fit bg-yellow-200 text-yellow-800">Re-tender</Badge>}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top min-w-[350px]">{tender.nameOfWork}</TableCell>
+                                                    <TableCell className="whitespace-normal break-words align-top">{tender.nameOfWork}</TableCell>
                                                     <TableCell className="whitespace-normal break-words align-top">{formatDateSafe(lastDateOfReceipt, true)}</TableCell>
                                                     <TableCell className="whitespace-normal break-words align-top">{formatDateSafe(dateOfOpening, true)}</TableCell>
                                                     <TableCell className="align-top">
