@@ -219,8 +219,6 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
         category: initialData?.category || undefined,
     });
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; category?: string; }>({});
-
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
     
     const filteredAppTypeOptions = useMemo(() => {
         if (workTypeContext === 'loggingPumpingTest') {
@@ -309,7 +307,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     return (
       <div className="flex flex-col h-auto">
         <DialogHeader>
-          <DialogTitle>{pageTitle} Application Details</DialogTitle>
+          <DialogTitle>Application Details</DialogTitle>
         </DialogHeader>
         <div className="p-6 pt-0 space-y-4 flex-1">
              <div className="grid grid-cols-3 gap-4 items-start">
@@ -328,7 +326,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                 <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo || ''} onChange={(e) => handleChange('phoneNo', e.target.value)} disabled={isChecking} /></div>
                 <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo || ''} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} disabled={isChecking}/></div>
                 
-                 <div className="space-y-2">
+                <div className="space-y-2">
                     <Label>Category *</Label>
                     <Select onValueChange={(value) => handleChange('category', value)} value={data.category}>
                         <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
@@ -628,8 +626,6 @@ const LoggingPumpingTestSiteDialog = ({ initialData, onConfirm, onCancel, isRead
     const watchedWorkStatus = watch('workStatus');
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
-    const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
-    
     const workStatusOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS : INVESTIGATION_WORK_STATUS_OPTIONS;
     const purposeOptions = workTypeContext === 'loggingPumpingTest' ? LOGGING_PUMPING_TEST_PURPOSE_OPTIONS : ['GW Investigation'];
 
@@ -655,7 +651,7 @@ const LoggingPumpingTestSiteDialog = ({ initialData, onConfirm, onCancel, isRead
         if (!watchedLsg) return [];
         const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
         if (!map || !map.constituencies) return [];
-        return [...map.constituencies].sort((a,b) => a.localeCompare(b));
+        return [...map.constituencies].sort((a, b) => a.localeCompare(b));
     }, [watchedLsg, allLsgConstituencyMaps]);
     
     const isConstituencyDisabled = useMemo(() => {
@@ -854,7 +850,6 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const isEditing = !!fileIdToEdit;
 
   const remittanceTitle = "2. Remittance Details";
-  const pageTitle = 'Logging & Pumping Test';
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
   const { control, handleSubmit, setValue, getValues, watch } = form;
@@ -952,22 +947,18 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
         return sum + (Number(item.amountRemitted) || 0);
     }, 0) || 0;
-    setValue("totalRemittance", totalRemittance);
-
-    const totalReappDebit = watchedReappropriationDetails?.reduce((sum, item) => {
-        return sum + (Number(item.amount) || 0);
-    }, 0) || 0;
-    setValue("totalReappropriation", totalReappDebit);
-
     const totalReappCredit = autoCredits.reduce((sum, item) => {
         return sum + (Number(item.amount) || 0);
     }, 0);
-    setValue("totalReappropriationCredit", totalReappCredit);
-    
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
-    setValue("totalPaymentAllEntries", totalPayment);
+    const totalReappDebit = watchedReappropriationDetails?.reduce((sum, item) => {
+        return sum + (Number(item.amount) || 0);
+    }, 0) || 0;
 
-    // Corrected Balance Calculation
+    setValue("totalRemittance", totalRemittance);
+    setValue("totalReappropriation", totalReappDebit);
+    setValue("totalReappropriationCredit", totalReappCredit);
+    setValue("totalPaymentAllEntries", totalPayment);
     setValue("overallBalance", totalRemittance + totalReappCredit - totalPayment - totalReappDebit);
     
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
@@ -1071,7 +1062,7 @@ const handleDeleteItem = () => {
   return (
     <FormProvider {...form}>
       <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
-        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. {pageTitle} Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. Application Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
         
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">{remittanceTitle}</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('remittance', createDefaultRemittanceDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount (₹)</TableHead><TableHead>Account</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{remittanceFields.length > 0 ? remittanceFields.map((item, index) => (
             <TableRow key={item.id}>
@@ -1152,7 +1143,7 @@ const handleDeleteItem = () => {
             </CardContent>
         </Card>
 
-        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. {pageTitle} Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group"><div className="flex justify-between items-center w-full"><div>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"}</div><div className="flex items-center space-x-1 mr-2"><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button>{isEditor && !isFormDisabled && (<><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group"><div className="flex justify-between items-center w-full"><div>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"}</div><div className="flex items-center space-x-1 mr-2"><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button>{isEditor && !isFormDisabled && (<><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">5. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (
             <TableRow key={item.id} className={item.remittanceId ? 'bg-muted/50' : ''}>
                 <TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell>
