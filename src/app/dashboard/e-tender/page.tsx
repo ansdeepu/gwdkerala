@@ -58,13 +58,13 @@ const StatCard = ({ title, count, onClick, colorClass }: { title: string, count:
         onClick={onClick}
         disabled={count === 0}
         className={cn(
-            "p-2 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full flex items-center justify-between gap-2",
+            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full h-full flex flex-col justify-between shadow-sm",
             colorClass,
             "hover:bg-opacity-20"
         )}
     >
-        <p className="text-xs font-medium text-muted-foreground whitespace-normal leading-tight">{title}</p>
-        <p className="text-2xl font-bold">{count}</p>
+        <p className="text-sm font-semibold text-muted-foreground whitespace-normal leading-tight">{title}</p>
+        <p className="text-3xl font-bold self-end">{count}</p>
     </button>
 );
 
@@ -363,11 +363,11 @@ export default function ETenderListPage() {
     }
     
     const dashboardStats = [
-      { title: 'Tender Process', data: categorizedTenders.tenderProcess, colorClass: 'border-blue-500/50 bg-blue-500/5' },
-      { title: 'Bids Submitted', data: categorizedTenders.bidsSubmitted, colorClass: 'border-amber-500/50 bg-amber-500/5' },
-      { title: 'To Be Opened', data: categorizedTenders.toBeOpened, colorClass: 'border-sky-500/50 bg-sky-500/5' },
-      { title: 'Pending Selection', data: categorizedTenders.pendingSelection, colorClass: 'border-indigo-500/50 bg-indigo-500/5' },
-      { title: 'Pending Work Order', data: categorizedTenders.pendingWorkOrder, colorClass: 'border-emerald-500/50 bg-emerald-500/5' },
+      { type: 'tenderProcess', label: 'Tender Process', data: categorizedTenders.tenderProcess, colorClass: 'border-blue-500/50 bg-blue-500/5' },
+      { type: 'bidsSubmitted', label: 'Bids Submitted', data: categorizedTenders.bidsSubmitted, colorClass: 'border-amber-500/50 bg-amber-500/5' },
+      { type: 'toBeOpened', label: 'To Be Opened', data: categorizedTenders.toBeOpened, colorClass: 'border-sky-500/50 bg-sky-500/5' },
+      { type: 'pendingSelection', label: 'Pending Selection', data: categorizedTenders.pendingSelection, colorClass: 'border-indigo-500/50 bg-indigo-500/5' },
+      { type: 'pendingWorkOrder', label: 'Pending Work Order', data: categorizedTenders.pendingWorkOrder, colorClass: 'border-emerald-500/50 bg-emerald-500/5' },
     ];
 
 
@@ -416,47 +416,45 @@ export default function ETenderListPage() {
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
                             {dashboardStats.map(stat => (
                                 <StatCard
-                                    key={stat.title}
-                                    title={stat.title}
+                                    key={stat.type}
+                                    title={stat.label}
                                     count={stat.data.length}
-                                    onClick={() => setDialogContent({ title: stat.title, tenders: stat.data })}
+                                    onClick={() => setDialogContent({ title: stat.label, tenders: stat.data })}
                                     colorClass={stat.colorClass}
                                 />
                             ))}
                             <Button
                                 variant="outline"
-                                className="p-2 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full h-full flex items-center justify-between gap-2"
+                                className="p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full h-full flex flex-col justify-between shadow-sm"
                                 onClick={() => setIsLeaderboardOpen(true)}
                             >
-                                <p className="text-xs font-medium text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/>Contractor's List</p>
-                                <p className="text-2xl font-bold">{l1ContractorsData.length}</p>
+                                <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/>Contractor's List</p>
+                                <p className="text-3xl font-bold self-end">{l1ContractorsData.length}</p>
                             </Button>
                         </div>
                     </div>
-                     <div className="border-t pt-2 mt-4">
-                        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[11px]">
-                            <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-muted-foreground">
-                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div><span>Tender Process</span></div>
-                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-orange-400"></div><span>Bid Opened</span></div>
-                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-400"></div><span>Selection Notice</span></div>
-                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-400"></div><span>Work Order</span></div>
-                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-purple-400"></div><span>Supply Order</span></div>
-                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div><span>Retender</span></div>
-                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><span>Cancelled</span></div>
-                            </div>
-                            {lastCreatedDate && (
-                                <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
-                                    <Clock className="h-3 w-3"/>
-                                    Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                                </div>
-                            )}
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[11px] mt-4 pt-2 border-t">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-muted-foreground">
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div><span>Tender Process</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-orange-400"></div><span>Bid Opened</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-400"></div><span>Selection Notice</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-400"></div><span>Work Order</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-purple-400"></div><span>Supply Order</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div><span>Retender</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><span>Cancelled</span></div>
                         </div>
-                        {totalPages > 1 && (
-                            <div className="flex items-center justify-center pt-4">
-                                <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                        {lastCreatedDate && (
+                            <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
+                                <Clock className="h-3 w-3"/>
+                                Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                             </div>
                         )}
                     </div>
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center pt-4 border-t mt-4">
+                            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
