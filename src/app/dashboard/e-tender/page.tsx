@@ -6,7 +6,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useE_tenders, type E_tender } from '@/hooks/useE_tenders';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,9 +19,15 @@ import { cn } from '@/lib/utils';
 import type { E_tenderStatus } from '@/lib/schemas/eTenderSchema';
 import { eTenderStatusOptions } from '@/lib/schemas/eTenderSchema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay, isWithinInterval, parse } from 'date-fns';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import PaginationControls from '@/components/shared/PaginationControls';
+import ETenderNoticeBoard from '@/components/dashboard/ETenderNoticeBoard';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { TrendingUp, XCircle } from 'lucide-react';
+
 
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
@@ -88,6 +94,10 @@ export default function ETenderListPage() {
     const [tenderToCopy, setTenderToCopy] = useState<E_tender | null>(null);
     const [isCopying, setIsCopying] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    
+    const [l1StartDate, setL1StartDate] = useState('');
+    const [l1EndDate, setL1EndDate] = useState('');
+    const [selectedL1Contractor, setSelectedL1Contractor] = useState<{ name: string; tenders: E_tender[] } | null>(null);
 
     const canEdit = user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist';
 
@@ -152,6 +162,43 @@ export default function ETenderListPage() {
 
         return { filteredTenders: filtered, lastCreatedDate: lastCreated };
     }, [allE_tenders, searchTerm, statusFilter]);
+
+    const l1ContractorsData = useMemo(() => {
+        const sDate = l1StartDate ? startOfDay(parse(l1StartDate, 'yyyy-MM-dd', new Date())) : null;
+        const eDate = l1EndDate ? endOfDay(parse(l1EndDate, 'yyyy-MM-dd', new Date())) : null;
+
+        const tendersToConsider = allE_tenders.filter(tender => {
+            if (!sDate || !eDate) return true;
+            const tenderDate = toDateOrNull(tender.tenderDate);
+            return tenderDate && isWithinInterval(tenderDate, { start: sDate, end: eDate });
+        });
+
+        const contractorMap = new Map<string, { tenders: E_tender[], count: number }>();
+
+        tendersToConsider.forEach(tender => {
+            const acceptedBidders = (tender.bidders || []).filter(
+                b => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0
+            );
+            if (acceptedBidders.length > 0) {
+                const l1Bidder = acceptedBidders.reduce((lowest, current) => 
+                    current.quotedAmount! < lowest.quotedAmount! ? current : lowest
+                );
+
+                if (l1Bidder.name) {
+                    if (!contractorMap.has(l1Bidder.name)) {
+                        contractorMap.set(l1Bidder.name, { tenders: [], count: 0 });
+                    }
+                    const contractorEntry = contractorMap.get(l1Bidder.name)!;
+                    contractorEntry.tenders.push(tender);
+                    contractorEntry.count += 1;
+                }
+            }
+        });
+
+        return Array.from(contractorMap.entries())
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => b.count - a.count);
+    }, [allE_tenders, l1StartDate, l1EndDate]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -246,6 +293,51 @@ export default function ETenderListPage() {
 
     return (
         <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1">
+                    <ETenderNoticeBoard />
+                </div>
+                <div className="lg:col-span-2">
+                    <Card className="h-full flex flex-col max-h-[450px]">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary"/> L1 Contractors Leaderboard</CardTitle>
+                            <CardDescription>Contractors ranked by the number of tenders secured as L1. Filter by tender date.</CardDescription>
+                            <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t items-end">
+                                <div className="grid w-full sm:w-auto flex-1 gap-1.5">
+                                    <Label htmlFor="l1-start-date">From</Label>
+                                    <Input id="l1-start-date" type="date" value={l1StartDate} onChange={e => setL1StartDate(e.target.value)} />
+                                </div>
+                                <div className="grid w-full sm:w-auto flex-1 gap-1.5">
+                                    <Label htmlFor="l1-end-date">To</Label>
+                                    <Input id="l1-end-date" type="date" value={l1EndDate} onChange={e => setL1EndDate(e.target.value)} />
+                                </div>
+                                <Button variant="ghost" onClick={() => { setL1StartDate(''); setL1EndDate(''); }}><XCircle className="h-4 w-4 mr-2" />Clear</Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="flex-1 overflow-auto p-0">
+                            <ScrollArea className="h-full">
+                                <div className="p-6 pt-0">
+                                {l1ContractorsData.length > 0 ? (
+                                    <div className="space-y-2">
+                                    {l1ContractorsData.map((contractor, index) => (
+                                        <button key={index} onClick={() => setSelectedL1Contractor(contractor)} className="w-full text-left p-3 rounded-md hover:bg-secondary transition-colors flex justify-between items-center">
+                                        <div>
+                                            <p className="font-semibold text-sm">{index + 1}. {contractor.name}</p>
+                                        </div>
+                                        <Badge>{contractor.count} {contractor.count > 1 ? 'Tenders' : 'Tender'}</Badge>
+                                        </button>
+                                    ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-muted-foreground py-10">No L1 contractors found for the selected period.</div>
+                                )}
+                                </div>
+                            </ScrollArea>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+
             <Card>
                 <CardContent className="p-4 space-y-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -423,6 +515,38 @@ export default function ETenderListPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <Dialog open={!!selectedL1Contractor} onOpenChange={() => setSelectedL1Contractor(null)}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>L1 Tenders for: {selectedL1Contractor?.name}</DialogTitle>
+                  <DialogDescription>
+                    Showing all tenders where this contractor was ranked L1.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[60vh] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tender No</TableHead>
+                        <TableHead>Name of Work</TableHead>
+                        <TableHead>Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedL1Contractor?.tenders.map(t => (
+                        <TableRow key={t.id}>
+                          <TableCell>{t.eTenderNo}</TableCell>
+                          <TableCell>{t.nameOfWork}</TableCell>
+                          <TableCell>{formatDateSafe(t.tenderDate)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </DialogContent>
+            </Dialog>
         </div>
     );
 }
+
