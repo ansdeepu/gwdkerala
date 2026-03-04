@@ -315,7 +315,6 @@ export type FileStatus = typeof fileStatusOptions[number];
 export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = [
   "Geological logging",
   "Geophysical Logging",
-  "Pumping test",
   "Industry Pumping test",
   "MWSS Pumping test",
   "Pumping Test Others",
