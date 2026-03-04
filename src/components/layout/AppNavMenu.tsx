@@ -1,4 +1,3 @@
-
 // src/components/layout/AppNavMenu.tsx
 "use client";
 
@@ -111,43 +110,51 @@ export default function AppNavMenu() {
 
   return (
     <SidebarMenu>
-      {navItems.map((item, index) => (
-        <SidebarMenuItem key={item.href}>
-            <div className="flex items-center w-full group">
-              <Link href={item.href} passHref onClick={() => handleNavigation(item.href)} className="flex-grow">
-                <SidebarMenuButton
-                  asChild
-                  size="compact"
-                  isActive={pathname === item.href || (item.href !== '/dashboard' && !!pathname && pathname.startsWith(item.href))}
-                  tooltip={{ children: item.label, side: "right", align: "center" }}
-                  className="justify-start pr-8"
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-2">
-                      <item.icon className={`h-4 w-4 ${navItemColors[index % navItemColors.length]}`} />
-                      <span className={`font-medium ${navItemColors[index % navItemColors.length]}`}>{item.label}</span>
+      {navItems.map((item, index) => {
+        const cleanHref = item.href.split('?')[0]; // Ignore query params for matching
+        const isDashboard = cleanHref === '/dashboard' || cleanHref === '/dashboard/super-admin';
+        const isActive = isDashboard
+          ? pathname === cleanHref
+          : pathname.startsWith(cleanHref);
+
+        return (
+          <SidebarMenuItem key={item.href}>
+              <div className="flex items-center w-full group">
+                <Link href={item.href} passHref onClick={() => handleNavigation(item.href)} className="flex-grow">
+                  <SidebarMenuButton
+                    asChild
+                    size="compact"
+                    isActive={isActive}
+                    tooltip={{ children: item.label, side: "right", align: "center" }}
+                    className="justify-start pr-8"
+                  >
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <item.icon className={`h-4 w-4 ${navItemColors[index % navItemColors.length]}`} />
+                        <span className={`font-medium ${navItemColors[index % navItemColors.length]}`}>{item.label}</span>
+                      </div>
+                      {item.href === '/dashboard/pending-updates' && pendingCount > 0 && (
+                        <Badge className="h-5 px-2 text-xs font-semibold leading-none rounded-full bg-destructive text-destructive-foreground group-data-[collapsible=icon]:hidden">
+                          {pendingCount}
+                        </Badge>
+                      )}
                     </div>
-                    {item.href === '/dashboard/pending-updates' && pendingCount > 0 && (
-                      <Badge className="h-5 px-2 text-xs font-semibold leading-none rounded-full bg-destructive text-destructive-foreground group-data-[collapsible=icon]:hidden">
-                        {pendingCount}
-                      </Badge>
-                    )}
-                  </div>
-                </SidebarMenuButton>
-              </Link>
-               <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <a href={item.href} target="_blank" rel="noopener noreferrer" className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden">
-                            <ArrowUpRight className="h-4 w-4" />
-                        </a>
-                    </TooltipTrigger>
-                    <TooltipContent side="right"><p>Open in new tab</p></TooltipContent>
-                </Tooltip>
-               </TooltipProvider>
-            </div>
-        </SidebarMenuItem>
-      ))}
+                  </SidebarMenuButton>
+                </Link>
+                 <TooltipProvider>
+                  <Tooltip>
+                      <TooltipTrigger asChild>
+                          <a href={item.href} target="_blank" rel="noopener noreferrer" className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-sidebar-accent group-data-[collapsible=icon]:hidden">
+                              <ArrowUpRight className="h-4 w-4" />
+                          </a>
+                      </TooltipTrigger>
+                      <TooltipContent side="right"><p>Open in new tab</p></TooltipContent>
+                  </Tooltip>
+                 </TooltipProvider>
+              </div>
+          </SidebarMenuItem>
+        );
+      })}
     </SidebarMenu>
   );
 }
