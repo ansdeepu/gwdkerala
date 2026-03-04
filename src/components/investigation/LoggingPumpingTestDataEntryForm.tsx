@@ -557,7 +557,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContex
 
     return (
         <Form {...form}>
-             <form onSubmit={(e) => e.preventDefault()} className="flex flex-col h-full">
+             <form onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); form.handleSubmit(handleConfirmSubmit)(e); }}>
                 <DialogHeader className="p-6 pb-4 shrink-0">
                     <DialogTitle>Payment Details</DialogTitle>
                 </DialogHeader>
@@ -596,7 +596,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContex
                 </div>
                 <DialogFooter className="p-6 pt-4 shrink-0">
                     <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
-                    <Button type="button" onClick={form.handleSubmit(handleConfirmSubmit)}>Save</Button>
+                    <Button type="submit">Save</Button>
                 </DialogFooter>
             </form>
         </Form>
@@ -728,7 +728,6 @@ const LoggingPumpingTestSiteDialog = ({ initialData, onConfirm, onCancel, isRead
                                         <FormField name="constituency" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Constituency (LAC)</FormLabel>
-                                                {isFieldReadOnly(false) ? (<FormControl><Input {...field} value={field.value || ''} readOnly /></FormControl>) : (
                                                 <Select onValueChange={field.onChange} value={field.value} disabled={isConstituencyDisabled}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl>
                                                     <SelectContent>
@@ -736,7 +735,6 @@ const LoggingPumpingTestSiteDialog = ({ initialData, onConfirm, onCancel, isRead
                                                         {constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
-                                                )}
                                                 <FormMessage/>
                                             </FormItem>
                                         )} />
@@ -1073,13 +1071,32 @@ const handleDeleteItem = () => {
                 {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
             </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         
-        <Card>
-            <CardHeader className="flex flex-row justify-between items-start">
-                <div><CardTitle className="text-xl">3. Re-appropriation Details</CardTitle></div>
-                {isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('reappropriation', createDefaultReappropriationDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}
-            </CardHeader>
-            <CardContent>
-                <div className="relative max-h-[400px] overflow-auto">
+        <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+          <AccordionItem value="item-1" className="border-b-0">
+            <Card>
+              <AccordionTrigger className="w-full p-6 hover:no-underline [&[data-state=open]]:border-b">
+                <div className="flex flex-1 items-center justify-between">
+                  <CardTitle className="text-xl">3. Re-appropriation Details</CardTitle>
+                  {isEditor && !isFormDisabled && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDialog('reappropriation', createDefaultReappropriationDetail());
+                      }}
+                      disabled={isSupervisor || isViewer}
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add
+                    </Button>
+                  )}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <CardContent className="pt-6">
+                  <div className="relative max-h-[400px] overflow-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -1140,8 +1157,11 @@ const handleDeleteItem = () => {
                         </TableFooterComponent>
                     </Table>
                 </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+              </AccordionContent>
+            </Card>
+          </AccordionItem>
+        </Accordion>
 
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group"><div className="flex justify-between items-center w-full"><div>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"}</div><div className="flex items-center space-x-1 mr-2"><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button>{isEditor && !isFormDisabled && (<><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">5. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (
@@ -1196,4 +1216,5 @@ const handleDeleteItem = () => {
 
 
     
+
 
