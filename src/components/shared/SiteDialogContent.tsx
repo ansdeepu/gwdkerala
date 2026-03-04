@@ -57,7 +57,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         resolver: zodResolver(SiteDetailSchema),
         defaultValues: {
             ...initialData,
-            dateOfCompletion: formatDateForInput(initialData.dateOfCompletion),
+            dateOfCompletion: formatDateForInput(initialData?.dateOfCompletion),
         },
     });
     
