@@ -19,40 +19,14 @@ import { cn } from '@/lib/utils';
 import type { E_tenderStatus } from '@/lib/schemas/eTenderSchema';
 import { eTenderStatusOptions } from '@/lib/schemas/eTenderSchema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfDay, endOfDay, isWithinInterval, parse } from 'date-fns';
+import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter } from 'date-fns';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import PaginationControls from '@/components/shared/PaginationControls';
-import ETenderNoticeBoard from '@/components/dashboard/ETenderNoticeBoard';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { TrendingUp, XCircle } from 'lucide-react';
+import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock } from 'lucide-react';
 
-
-const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-);
-const PlusCircle = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
-);
-const Search = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-);
-const Trash2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-);
-const Eye = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-);
-const Users = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-);
-const Copy = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-);
-const Clock = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-);
 
 const ITEMS_PER_PAGE = 50;
 
@@ -79,6 +53,21 @@ const getStatusRowClass = (status?: E_tenderStatus | null): string => {
     }
 };
 
+const StatCard = ({ title, count, onClick, colorClass }: { title: string, count: number, onClick: () => void, colorClass: string }) => (
+    <button
+        onClick={onClick}
+        disabled={count === 0}
+        className={cn(
+            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+            colorClass,
+            "hover:bg-opacity-20"
+        )}
+    >
+        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <p className="text-2xl font-bold">{count}</p>
+    </button>
+);
+
 
 export default function ETenderListPage() {
     const { setHeader } = usePageHeader();
@@ -95,9 +84,13 @@ export default function ETenderListPage() {
     const [isCopying, setIsCopying] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     
+    // State for Dialogs
+    const [dialogContent, setDialogContent] = useState<{ title: string; tenders: E_tender[] } | null>(null);
+    const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+
+    // State for L1 Leaderboard date filters
     const [l1StartDate, setL1StartDate] = useState('');
     const [l1EndDate, setL1EndDate] = useState('');
-    const [selectedL1Contractor, setSelectedL1Contractor] = useState<{ name: string; tenders: E_tender[] } | null>(null);
 
     const canEdit = user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist';
 
@@ -105,6 +98,84 @@ export default function ETenderListPage() {
         setHeader('e-Tenders', 'Manage all electronic tenders for the department.');
     }, [setHeader]);
     
+    const categorizedTenders = useMemo(() => {
+        const now = new Date();
+        const list = Array.isArray(allE_tenders) ? allE_tenders : [];
+
+        const activeTenders = list.filter(t => t.presentStatus !== "Tender Cancelled" && t.presentStatus !== "Work Order Issued" && t.presentStatus !== "Supply Order Issued");
+
+        const sortByTenderNoDesc = (a: E_tender, b: E_tender) => {
+            const getTenderNumber = (tenderNo: string | undefined | null): number => {
+                if (!tenderNo) return 0;
+                const match = tenderNo.match(/T-(\d+)/);
+                return match ? parseInt(match[1], 10) : 0;
+            };
+            const numA = getTenderNumber(a.eTenderNo);
+            const numB = getTenderNumber(b.eTenderNo);
+            return numB - numA;
+        };
+        
+        let tenderProcess: E_tender[] = [];
+        let bidsSubmitted: E_tender[] = [];
+        let toBeOpened: E_tender[] = [];
+        let pendingSelection: E_tender[] = [];
+        let pendingWorkOrder: E_tender[] = [];
+        
+        activeTenders.forEach(t => {
+          const latestRetender = t.retenders && t.retenders.length > 0 ? t.retenders[t.retenders.length - 1] : null;
+          const latestDateCorrigendum = t.corrigendums?.filter(c => c.corrigendumType === 'Date Extension').sort((a,b) => (toDateOrNull(b.corrigendumDate)?.getTime() ?? 0) - (toDateOrNull(a.corrigendumDate)?.getTime() ?? 0))[0] || null;
+
+          let receipt: Date | null = null;
+          let opening: Date | null = null;
+          
+          if (latestRetender) {
+              receipt = toDateOrNull(latestRetender.lastDateOfReceipt);
+              opening = toDateOrNull(latestRetender.dateOfOpeningTender);
+          } else if (latestDateCorrigendum) {
+              receipt = toDateOrNull(latestDateCorrigendum.lastDateOfReceipt);
+              opening = toDateOrNull(latestDateCorrigendum.dateOfOpeningTender);
+          } else {
+              receipt = toDateOrNull(t.dateTimeOfReceipt);
+              opening = toDateOrNull(t.dateTimeOfOpening);
+          }
+          
+          const hasOpeningDetails = !!(t.dateOfOpeningBid || t.dateOfTechnicalAndFinancialBidOpening || t.technicalCommitteeMember1 || t.technicalCommitteeMember2 || t.technicalCommitteeMember3);
+          const hasSelectionDetails = !!(t.selectionNoticeDate || t.performanceGuaranteeAmount);
+          const hasWorkOrderDetails = !!(t.agreementDate || t.dateWorkOrder);
+        
+          if (t.presentStatus === 'Tender Process' && receipt && isValid(receipt) && isBefore(now, receipt)) {
+              tenderProcess.push(t);
+              return;
+          }
+          
+          if (receipt && opening && isValid(receipt) && isValid(opening) && isAfter(now, receipt) && isBefore(now, opening)) {
+            bidsSubmitted.push(t);
+            return; 
+          }
+          
+          if (opening && isValid(opening) && isAfter(now, opening) && !hasOpeningDetails) {
+            toBeOpened.push(t);
+          } 
+          else if (hasOpeningDetails && !hasSelectionDetails && t.presentStatus === 'Bid Opened') {
+            pendingSelection.push(t);
+          } 
+          else if (hasSelectionDetails && !hasWorkOrderDetails) {
+            const excludedStatuses = ["Tender Process", "Bid Opened", "Retender", "Tender Cancelled"];
+            if (t.presentStatus && !excludedStatuses.includes(t.presentStatus)) {
+               pendingWorkOrder.push(t);
+            }
+          }
+        });
+
+        tenderProcess.sort(sortByTenderNoDesc);
+        bidsSubmitted.sort(sortByTenderNoDesc);
+        toBeOpened.sort(sortByTenderNoDesc);
+        pendingSelection.sort(sortByTenderNoDesc);
+        pendingWorkOrder.sort(sortByTenderNoDesc);
+
+        return { tenderProcess, bidsSubmitted, toBeOpened, pendingSelection, pendingWorkOrder };
+    }, [allE_tenders]);
+
 
     const { filteredTenders, lastCreatedDate } = useMemo(() => {
       const list = allE_tenders || [];
@@ -290,54 +361,18 @@ export default function ETenderListPage() {
             </div>
         );
     }
+    
+    const dashboardStats = [
+      { title: 'Tender Process', data: categorizedTenders.tenderProcess, colorClass: 'border-blue-500/50 bg-blue-500/5' },
+      { title: 'Bids Submitted', data: categorizedTenders.bidsSubmitted, colorClass: 'border-amber-500/50 bg-amber-500/5' },
+      { title: 'To Be Opened', data: categorizedTenders.toBeOpened, colorClass: 'border-sky-500/50 bg-sky-500/5' },
+      { title: 'Pending Selection', data: categorizedTenders.pendingSelection, colorClass: 'border-indigo-500/50 bg-indigo-500/5' },
+      { title: 'Pending Work Order', data: categorizedTenders.pendingWorkOrder, colorClass: 'border-emerald-500/50 bg-emerald-500/5' },
+    ];
+
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1">
-                    <ETenderNoticeBoard />
-                </div>
-                <div className="lg:col-span-2">
-                    <Card className="h-full flex flex-col max-h-[450px]">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5 text-primary"/> L1 Contractors Leaderboard</CardTitle>
-                            <CardDescription>Contractors ranked by the number of tenders secured as L1. Filter by tender date.</CardDescription>
-                            <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t items-end">
-                                <div className="grid w-full sm:w-auto flex-1 gap-1.5">
-                                    <Label htmlFor="l1-start-date">From</Label>
-                                    <Input id="l1-start-date" type="date" value={l1StartDate} onChange={e => setL1StartDate(e.target.value)} />
-                                </div>
-                                <div className="grid w-full sm:w-auto flex-1 gap-1.5">
-                                    <Label htmlFor="l1-end-date">To</Label>
-                                    <Input id="l1-end-date" type="date" value={l1EndDate} onChange={e => setL1EndDate(e.target.value)} />
-                                </div>
-                                <Button variant="ghost" onClick={() => { setL1StartDate(''); setL1EndDate(''); }}><XCircle className="h-4 w-4 mr-2" />Clear</Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="flex-1 overflow-auto p-0">
-                            <ScrollArea className="h-full">
-                                <div className="p-6 pt-0">
-                                {l1ContractorsData.length > 0 ? (
-                                    <div className="space-y-2">
-                                    {l1ContractorsData.map((contractor, index) => (
-                                        <button key={index} onClick={() => setSelectedL1Contractor(contractor)} className="w-full text-left p-3 rounded-md hover:bg-secondary transition-colors flex justify-between items-center">
-                                        <div>
-                                            <p className="font-semibold text-sm">{index + 1}. {contractor.name}</p>
-                                        </div>
-                                        <Badge>{contractor.count} {contractor.count > 1 ? 'Tenders' : 'Tender'}</Badge>
-                                        </button>
-                                    ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center text-muted-foreground py-10">No L1 contractors found for the selected period.</div>
-                                )}
-                                </div>
-                            </ScrollArea>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-
             <Card>
                 <CardContent className="p-4 space-y-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -381,6 +416,23 @@ export default function ETenderListPage() {
                                     Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                     <div className="border-t pt-4 mt-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                            {dashboardStats.map(stat => (
+                                <StatCard
+                                    key={stat.title}
+                                    title={stat.title}
+                                    count={stat.data.length}
+                                    onClick={() => setDialogContent({ title: stat.title, tenders: stat.data })}
+                                    colorClass={stat.colorClass}
+                                />
+                            ))}
+                            <Button variant="outline" className="h-full flex-col items-start p-3" onClick={() => setIsLeaderboardOpen(true)}>
+                                <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/> L1 Leaderboard</p>
+                                <p className="text-2xl font-bold">{l1ContractorsData.length}</p>
+                            </Button>
                         </div>
                     </div>
                      <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t">
@@ -515,38 +567,80 @@ export default function ETenderListPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
-            <Dialog open={!!selectedL1Contractor} onOpenChange={() => setSelectedL1Contractor(null)}>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>L1 Tenders for: {selectedL1Contractor?.name}</DialogTitle>
+            
+             <Dialog open={!!dialogContent} onOpenChange={() => setDialogContent(null)}>
+              <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-4 border-b">
+                  <DialogTitle>{dialogContent?.title}</DialogTitle>
                   <DialogDescription>
-                    Showing all tenders where this contractor was ranked L1.
+                    Showing {dialogContent?.tenders.length} tender(s).
                   </DialogDescription>
                 </DialogHeader>
-                <div className="max-h-[60vh] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Tender No</TableHead>
-                        <TableHead>Name of Work</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selectedL1Contractor?.tenders.map(t => (
-                        <TableRow key={t.id}>
-                          <TableCell>{t.eTenderNo}</TableCell>
-                          <TableCell>{t.nameOfWork}</TableCell>
-                          <TableCell>{formatDateSafe(t.tenderDate)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="flex-1 min-h-0">
+                  <ScrollArea className="h-full">
+                    <div className="p-6 pt-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Tender No</TableHead>
+                            <TableHead>Name of Work</TableHead>
+                            <TableHead>Date</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {dialogContent?.tenders.map(t => (
+                            <TableRow key={t.id}>
+                              <TableCell>{t.eTenderNo}</TableCell>
+                              <TableCell>{t.nameOfWork}</TableCell>
+                              <TableCell>{formatDateSafe(t.tenderDate)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </ScrollArea>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isLeaderboardOpen} onOpenChange={setIsLeaderboardOpen}>
+              <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-4 border-b">
+                  <DialogTitle>L1 Contractors Leaderboard</DialogTitle>
+                   <div className="flex flex-col sm:flex-row gap-2 pt-4 items-end">
+                        <div className="grid w-full sm:w-auto flex-1 gap-1.5">
+                            <Label htmlFor="l1-start-date-dialog">From</Label>
+                            <Input id="l1-start-date-dialog" type="date" value={l1StartDate} onChange={e => setL1StartDate(e.target.value)} />
+                        </div>
+                        <div className="grid w-full sm:w-auto flex-1 gap-1.5">
+                            <Label htmlFor="l1-end-date-dialog">To</Label>
+                            <Input id="l1-end-date-dialog" type="date" value={l1EndDate} onChange={e => setL1EndDate(e.target.value)} />
+                        </div>
+                        <Button variant="ghost" onClick={() => { setL1StartDate(''); setL1EndDate(''); }}><XCircle className="h-4 w-4 mr-2" />Clear</Button>
+                    </div>
+                </DialogHeader>
+                 <div className="flex-1 min-h-0">
+                    <ScrollArea className="h-full">
+                        <div className="p-6 pt-0">
+                        {l1ContractorsData.length > 0 ? (
+                            <div className="space-y-2">
+                            {l1ContractorsData.map((contractor, index) => (
+                                <button key={index} onClick={() => { setDialogContent({ title: `L1 Tenders for ${contractor.name}`, tenders: contractor.tenders }); setIsLeaderboardOpen(false); }} className="w-full text-left p-3 rounded-md hover:bg-secondary transition-colors flex justify-between items-center">
+                                <div>
+                                    <p className="font-semibold text-sm">{index + 1}. {contractor.name}</p>
+                                </div>
+                                <Badge>{contractor.count} {contractor.count > 1 ? 'Tenders' : 'Tender'}</Badge>
+                                </button>
+                            ))}
+                            </div>
+                        ) : (
+                            <div className="text-center text-muted-foreground py-10">No L1 contractors found for the selected period.</div>
+                        )}
+                        </div>
+                    </ScrollArea>
                 </div>
               </DialogContent>
             </Dialog>
         </div>
     );
 }
-
