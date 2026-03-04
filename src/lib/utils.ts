@@ -22,14 +22,22 @@ export const formatCase = (str: string | null | undefined): string | null | unde
   
   const isAllUpperCase = str === str.toUpperCase() && str !== str.toLowerCase();
   
+  // List of small words to keep in lowercase unless they are the first word.
+  const lowerCaseWords = new Set(['a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor', 'on', 'at', 'to', 'from', 'by', 'of', 'in', 'with']);
+
   if (isAllUpperCase) {
     return str
       .split(' ')
-      .map(word => 
-        word.length > 0 
-          ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-          : ''
-      )
+      .map((word, index) => {
+        const lowerWord = word.toLowerCase();
+        if (word.length > 0) {
+          if (index > 0 && lowerCaseWords.has(lowerWord)) {
+            return lowerWord;
+          }
+          return word.charAt(0).toUpperCase() + lowerWord.slice(1);
+        }
+        return '';
+      })
       .join(' ');
   }
   
