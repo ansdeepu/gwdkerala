@@ -151,7 +151,7 @@ export default function ETenderListPage() {
               return;
           }
           
-          if (receipt && opening && isValid(receipt) && isValid(opening) && isAfter(now, receipt) && isBefore(now, opening)) {
+          if (receipt && opening && isValid(receipt) && isAfter(now, receipt) && isBefore(now, opening)) {
             bidsSubmitted.push(t);
             return; 
           }
@@ -634,7 +634,7 @@ export default function ETenderListPage() {
                         {l1ContractorsData.length > 0 ? (
                             <div className="space-y-2">
                             {l1ContractorsData.map((contractor, index) => (
-                                <button key={index} onClick={() => { setDialogContent({ title: `L1 Tenders for ${contractor.name}`, tenders: contractor.tenders }); setIsLeaderboardOpen(false); }} className="w-full text-left p-3 rounded-md hover:bg-secondary transition-colors flex justify-between items-center">
+                                <button key={index} onClick={() => { setDialogContent({ title: `Tenders for ${contractor.name}`, tenders: contractor.tenders }); setIsLeaderboardOpen(false); }} className="w-full text-left p-3 rounded-md hover:bg-secondary transition-colors flex justify-between items-center">
                                 <div>
                                     <p className="font-semibold text-sm">{index + 1}. {contractor.name}</p>
                                 </div>
