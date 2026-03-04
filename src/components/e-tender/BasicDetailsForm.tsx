@@ -1,4 +1,3 @@
-
 // src/components/e-tender/BasicDetailsForm.tsx
 "use client";
 
@@ -18,6 +17,7 @@ import { useDataStore } from '@/hooks/use-data-store';
 import { useTenderData } from './TenderDataContext';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { BasicDetailsSchema } from '@/lib/schemas/eTenderSchema';
+import { formatCase } from '@/lib/utils';
 
 interface BasicDetailsFormProps {
   onSubmit: (data: Partial<E_tenderFormData>) => void;
@@ -87,7 +87,11 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
     }, [calculateFees]);
      
     const onFormSubmit = (data: BasicDetailsFormData) => {
-        const formData: Partial<E_tenderFormData> = { ...data };
+        const formData: Partial<E_tenderFormData> = {
+            ...data,
+            nameOfWork: formatCase(data.nameOfWork) ?? data.nameOfWork,
+            nameOfWorkMalayalam: formatCase(data.nameOfWorkMalayalam) ?? data.nameOfWorkMalayalam,
+        };
         onSubmit(formData);
     };
 
