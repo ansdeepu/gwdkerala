@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import type { E_tenderStatus } from '@/lib/schemas/eTenderSchema';
 import { eTenderStatusOptions } from '@/lib/schemas/eTenderSchema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter } from 'date-fns';
+import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter, isValid } from 'date-fns';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import PaginationControls from '@/components/shared/PaginationControls';
 import { Label } from '@/components/ui/label';
