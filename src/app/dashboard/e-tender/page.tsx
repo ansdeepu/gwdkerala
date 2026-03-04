@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import type { E_tenderStatus } from '@/lib/schemas/eTenderSchema';
 import { eTenderStatusOptions } from '@/lib/schemas/eTenderSchema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter, isValid } from 'date-fns';
+import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter } from 'date-fns';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import PaginationControls from '@/components/shared/PaginationControls';
 import { Label } from '@/components/ui/label';
@@ -58,7 +58,7 @@ const StatCard = ({ title, count, onClick, colorClass, icon: Icon }: { title: st
         onClick={onClick}
         disabled={count === 0}
         className={cn(
-            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full h-full flex flex-col justify-between shadow-sm min-h-[5rem]",
+            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col justify-between shadow-sm min-h-[5rem]",
             colorClass,
             "hover:bg-opacity-20"
         )}
@@ -146,17 +146,17 @@ export default function ETenderListPage() {
           const hasSelectionDetails = !!(t.selectionNoticeDate || t.performanceGuaranteeAmount);
           const hasWorkOrderDetails = !!(t.agreementDate || t.dateWorkOrder);
         
-          if (t.presentStatus === 'Tender Process' && receipt && isValid(receipt) && isBefore(now, receipt)) {
+          if (t.presentStatus === 'Tender Process' && receipt && isBefore(now, receipt)) {
               tenderProcess.push(t);
               return;
           }
           
-          if (receipt && opening && isValid(receipt) && isAfter(now, receipt) && isBefore(now, opening)) {
+          if (receipt && opening && isAfter(now, receipt) && isBefore(now, opening)) {
             bidsSubmitted.push(t);
             return; 
           }
           
-          if (opening && isValid(opening) && isAfter(now, opening) && !hasOpeningDetails) {
+          if (opening && isAfter(now, opening) && !hasOpeningDetails) {
             toBeOpened.push(t);
           } 
           else if (hasOpeningDetails && !hasSelectionDetails && t.presentStatus === 'Bid Opened') {
@@ -593,7 +593,7 @@ export default function ETenderListPage() {
                           <TableRow>
                             <TableHead>Tender No</TableHead>
                             <TableHead>Name of Work</TableHead>
-                            <TableHead>Date</TableHead>
+                            <TableHead>Work Order date</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -601,7 +601,7 @@ export default function ETenderListPage() {
                             <TableRow key={t.id}>
                               <TableCell>{t.eTenderNo}</TableCell>
                               <TableCell>{t.nameOfWork}</TableCell>
-                              <TableCell>{formatDateSafe(t.tenderDate)}</TableCell>
+                              <TableCell>{formatDateSafe(t.dateWorkOrder)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
