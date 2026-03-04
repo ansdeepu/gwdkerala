@@ -58,13 +58,13 @@ const StatCard = ({ title, count, onClick, colorClass }: { title: string, count:
         onClick={onClick}
         disabled={count === 0}
         className={cn(
-            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full",
+            "p-2 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full",
             colorClass,
             "hover:bg-opacity-20"
         )}
     >
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <p className="text-2xl font-bold">{count}</p>
+        <p className="text-xs font-medium text-muted-foreground whitespace-normal leading-tight">{title}</p>
+        <p className="text-xl font-bold">{count}</p>
     </button>
 );
 
@@ -423,25 +423,29 @@ export default function ETenderListPage() {
                                     colorClass={stat.colorClass}
                                 />
                             ))}
-                            <Button variant="outline" className="h-full flex-col items-start p-3 w-full" onClick={() => setIsLeaderboardOpen(true)}>
-                                <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/> Contractor's List</p>
-                                <p className="text-2xl font-bold">{l1ContractorsData.length}</p>
+                            <Button
+                                variant="outline"
+                                className="p-2 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full h-full flex flex-col items-start justify-between"
+                                onClick={() => setIsLeaderboardOpen(true)}
+                            >
+                                <p className="text-xs font-medium text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/> Contractor's List</p>
+                                <p className="text-xl font-bold">{l1ContractorsData.length}</p>
                             </Button>
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-4 border-t">
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-gray-400"></div><span>Tender Process</span></div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-orange-400"></div><span>Bid Opened</span></div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-blue-400"></div><span>Selection Notice</span></div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-400"></div><span>Work Order</span></div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-purple-400"></div><span>Supply Order</span></div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-yellow-400"></div><span>Retender</span></div>
-                            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-red-400"></div><span>Cancelled</span></div>
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-4 border-t text-[10px] sm:text-xs">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-muted-foreground">
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div><span>Tender Process</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-orange-400"></div><span>Bid Opened</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-400"></div><span>Selection Notice</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-400"></div><span>Work Order</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-purple-400"></div><span>Supply Order</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div><span>Retender</span></div>
+                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><span>Cancelled</span></div>
                         </div>
                         {lastCreatedDate && (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                                <Clock className="h-4 w-4"/>
+                            <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
+                                <Clock className="h-3 w-3"/>
                                 Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                             </div>
                         )}
@@ -459,13 +463,13 @@ export default function ETenderListPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Sl. No.</TableHead>
-                                        <TableHead>eTender Ref. No.</TableHead>
-                                        <TableHead>Name of Work</TableHead>
-                                        <TableHead>Last Date of Receipt</TableHead>
-                                        <TableHead>Date of Opening</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-center">Actions</TableHead>
+                                        <TableHead className="w-[5%] px-2 py-3">Sl. No.</TableHead>
+                                        <TableHead className="w-[15%] px-2 py-3">eTender Ref. No.</TableHead>
+                                        <TableHead className="w-[35%] px-2 py-3">Name of Work</TableHead>
+                                        <TableHead className="w-[15%] px-2 py-3">Last Date of Receipt</TableHead>
+                                        <TableHead className="w-[15%] px-2 py-3">Date of Opening</TableHead>
+                                        <TableHead className="w-[10%] px-2 py-3">Status</TableHead>
+                                        <TableHead className="text-center w-[5%] px-2 py-3">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -479,21 +483,21 @@ export default function ETenderListPage() {
 
                                             return (
                                                 <TableRow key={tender.id} className={getStatusRowClass(tender.presentStatus)}>
-                                                    <TableCell className="align-top">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
-                                                    <TableCell className="font-bold align-top">
+                                                    <TableCell className="align-top py-2 px-3">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
+                                                    <TableCell className="font-bold align-top py-2 px-3">
                                                         <div className="flex flex-col">
                                                             <span className="whitespace-normal break-words">{`GKT/${tender.fileNo}/${tender.eTenderNo}`}</span>
                                                             <span className="text-xs font-normal">Dated: {formatDateSafe(tender.tenderDate)}</span>
                                                             {hasRetenders && <Badge variant="secondary" className="mt-1 w-fit bg-yellow-200 text-yellow-800">Re-tender</Badge>}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top max-w-sm">{tender.nameOfWork}</TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top">{formatDateSafe(lastDateOfReceipt, true)}</TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top">{formatDateSafe(dateOfOpening, true)}</TableCell>
-                                                    <TableCell className="align-top">
+                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3">{tender.nameOfWork}</TableCell>
+                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3">{formatDateSafe(lastDateOfReceipt, true)}</TableCell>
+                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3">{formatDateSafe(dateOfOpening, true)}</TableCell>
+                                                    <TableCell className="align-top py-2 px-3">
                                                         {tender.presentStatus && <Badge className={cn(getStatusBadgeClass(tender.presentStatus))}>{tender.presentStatus}</Badge>}
                                                     </TableCell>
-                                                    <TableCell className="text-center align-top">
+                                                    <TableCell className="text-center align-top py-2 px-3">
                                                         <div className="flex flex-col items-center justify-center space-y-1">
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewAndEdit(tender.id)}><Eye className="h-4 w-4" /></Button></TooltipTrigger>
