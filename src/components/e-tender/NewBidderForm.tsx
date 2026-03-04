@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Save, X, UserPlus } from 'lucide-react';
 import { z } from 'zod';
 import { type Bidder, NewBidderSchema, type NewBidderFormData } from '@/lib/schemas/eTenderSchema';
+import { formatCase } from '@/lib/utils';
 
 
 const createDefaultBidder = (): NewBidderFormData => ({
@@ -45,9 +46,18 @@ export default function NewBidderForm({ onSubmit, onCancel, isSubmitting, initia
         }
     }, [initialData, form]);
 
+    const handleInternalSubmit = (data: NewBidderFormData) => {
+        const formattedData = {
+            ...data,
+            name: formatCase(data.name) ?? data.name,
+            address: formatCase(data.address) ?? data.address
+        };
+        onSubmit(formattedData);
+    };
+
     return (
         <FormProvider {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+            <form onSubmit={form.handleSubmit(handleInternalSubmit)} className="flex flex-col h-full">
                 <DialogHeader className="p-6 pb-4">
                     <DialogTitle>{initialData ? 'Edit Bidder Details' : 'Add New Bidder'}</DialogTitle>
                     <DialogDescription>Enter the contact information for the bidder.</DialogDescription>

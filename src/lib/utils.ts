@@ -16,3 +16,22 @@ export const getInitials = (name?: string) => {
     .join('')
     .toUpperCase();
 };
+
+export const formatCase = (str: string | null | undefined): string | null | undefined => {
+  if (!str || str.trim().length === 0) return str;
+  
+  const isAllUpperCase = str === str.toUpperCase() && str !== str.toLowerCase();
+  
+  if (isAllUpperCase) {
+    return str
+      .split(' ')
+      .map(word => 
+        word.length > 0 
+          ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+          : ''
+      )
+      .join(' ');
+  }
+  
+  return str;
+};

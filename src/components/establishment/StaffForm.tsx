@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn, formatCase } from "@/lib/utils";
 import { Loader2, Save, X, ImageUp, Unplug, Expand, UserCheck, Info, CalendarIcon } from "lucide-react";
 import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions } from "@/lib/schemas";
 import type { StaffMember, OfficeAddress } from "@/lib/schemas";
@@ -209,7 +209,11 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
 
   const handleFormSubmitInternal = (data: StaffMemberFormData) => {
     if (isViewer) return;
-    onSubmit(data);
+    const formattedData = {
+        ...data,
+        name: formatCase(data.name) ?? data.name,
+    };
+    onSubmit(formattedData);
   };
 
   const visibleStatusOptions = useMemo(() => {

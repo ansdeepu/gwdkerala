@@ -22,7 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
+import { cn, formatCase } from "@/lib/utils";
 import { format, addYears, isValid, parseISO, parse } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -667,8 +667,21 @@ export default function AgencyRegistrationPage() {
   const onSubmit = async (data: AgencyApplication) => {
     setIsSubmitting(true);
     try {
-        const finalStatus = data.agencyRegistrationNo ? 'Active' : 'Pending Verification';
-        const dataForSave = processDataForSaving(data);
+        const formattedData: AgencyApplication = {
+            ...data,
+            agencyName: formatCase(data.agencyName) ?? data.agencyName,
+            owner: {
+                ...data.owner,
+                name: formatCase(data.owner.name) ?? data.owner.name,
+            },
+            partners: data.partners?.map(p => ({
+                ...p,
+                name: formatCase(p.name) ?? p.name,
+            }))
+        };
+
+        const finalStatus = formattedData.agencyRegistrationNo ? 'Active' : 'Pending Verification';
+        const dataForSave = processDataForSaving(formattedData);
 
         if (selectedApplicationId && selectedApplicationId !== 'new') {
             const originalApp = allAgencyApplications.find(a => a.id === selectedApplicationId);
@@ -719,7 +732,7 @@ export default function AgencyRegistrationPage() {
   };
 
 
-  const handleAddNew() => {
+  const handleAddNew = () => {
     setIsNavigating(true);
     setSelectedApplicationId('new');
   }
