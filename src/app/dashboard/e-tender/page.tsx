@@ -25,7 +25,7 @@ import PaginationControls from '@/components/shared/PaginationControls';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock } from 'lucide-react';
+import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock, FolderOpen, Bell, Hammer } from 'lucide-react';
 
 
 const ITEMS_PER_PAGE = 50;
@@ -53,7 +53,7 @@ const getStatusRowClass = (status?: E_tenderStatus | null): string => {
     }
 };
 
-const StatCard = ({ title, count, onClick, colorClass }: { title: string, count: number, onClick: () => void, colorClass: string }) => (
+const StatCard = ({ title, count, onClick, colorClass, icon: Icon }: { title: string, count: number, onClick: () => void, colorClass: string, icon?: React.ElementType }) => (
     <button
         onClick={onClick}
         disabled={count === 0}
@@ -63,7 +63,10 @@ const StatCard = ({ title, count, onClick, colorClass }: { title: string, count:
             "hover:bg-opacity-20"
         )}
     >
-        <p className="text-xs font-semibold text-muted-foreground whitespace-normal leading-tight flex-grow">{title}</p>
+        <div className="flex items-center gap-1.5">
+          {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
+          <p className="text-xs font-semibold text-muted-foreground whitespace-normal leading-tight max-w-24">{title}</p>
+        </div>
         <p className="text-3xl font-bold ml-2 pl-2">{count}</p>
     </button>
 );
@@ -352,7 +355,6 @@ export default function ETenderListPage() {
         }
     };
 
-
     if (isLoading) {
         return (
             <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
@@ -363,11 +365,11 @@ export default function ETenderListPage() {
     }
     
     const dashboardStats = [
-      { type: 'tenderProcess', label: 'Tender Process', data: categorizedTenders.tenderProcess, colorClass: 'border-blue-500/50 bg-blue-500/5' },
-      { type: 'bidsSubmitted', label: 'Bids Submitted', data: categorizedTenders.bidsSubmitted, colorClass: 'border-amber-500/50 bg-amber-500/5' },
-      { type: 'toBeOpened', label: 'To Be Opened', data: categorizedTenders.toBeOpened, colorClass: 'border-sky-500/50 bg-sky-500/5' },
-      { type: 'pendingSelection', label: 'Pending Selection', data: categorizedTenders.pendingSelection, colorClass: 'border-indigo-500/50 bg-indigo-500/5' },
-      { type: 'pendingWorkOrder', label: 'Pending Work Order', data: categorizedTenders.pendingWorkOrder, colorClass: 'border-emerald-500/50 bg-emerald-500/5' },
+      { type: 'tenderProcess', label: 'Tender Process', data: categorizedTenders.tenderProcess, colorClass: 'border-blue-500/50 bg-blue-500/5', icon: Clock },
+      { type: 'bidsSubmitted', label: 'Bids Submitted', data: categorizedTenders.bidsSubmitted, colorClass: 'border-amber-500/50 bg-amber-500/5', icon: Users },
+      { type: 'toBeOpened', label: 'To Be Opened', data: categorizedTenders.toBeOpened, colorClass: 'border-sky-500/50 bg-sky-500/5', icon: FolderOpen },
+      { type: 'pendingSelection', label: 'Pending Selection', data: categorizedTenders.pendingSelection, colorClass: 'border-indigo-500/50 bg-indigo-500/5', icon: Bell },
+      { type: 'pendingWorkOrder', label: 'Pending Work Order', data: categorizedTenders.pendingWorkOrder, colorClass: 'border-emerald-500/50 bg-emerald-500/5', icon: Hammer },
     ];
 
 
@@ -413,7 +415,7 @@ export default function ETenderListPage() {
                         </div>
                     </div>
                      <div className="border-t pt-4 mt-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
                             {dashboardStats.map(stat => (
                                 <StatCard
                                     key={stat.type}
@@ -421,19 +423,19 @@ export default function ETenderListPage() {
                                     count={stat.data.length}
                                     onClick={() => setDialogContent({ title: stat.label, tenders: stat.data })}
                                     colorClass={stat.colorClass}
+                                    icon={stat.icon}
                                 />
                             ))}
-                            <Button
-                                variant="outline"
-                                className="p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full h-full flex flex-col justify-between shadow-sm"
+                            <StatCard
+                                title="Contractor's List"
+                                count={l1ContractorsData.length}
                                 onClick={() => setIsLeaderboardOpen(true)}
-                            >
-                                <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/>Contractor's List</p>
-                                <p className="text-3xl font-bold self-end">{l1ContractorsData.length}</p>
-                            </Button>
+                                colorClass="border-gray-500/50 bg-gray-500/5"
+                                icon={TrendingUp}
+                            />
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[11px] mt-4 pt-2 border-t">
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[11px] mt-2 pt-2 border-t">
                         <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-muted-foreground">
                             <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div><span>Tender Process</span></div>
                             <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-orange-400"></div><span>Bid Opened</span></div>
