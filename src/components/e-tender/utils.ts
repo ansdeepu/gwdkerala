@@ -1,4 +1,3 @@
-
 // src/components/e-tender/utils.ts
 import { format, isValid, parseISO, toDate } from 'date-fns';
 import type { E_tenderStatus } from '@/lib/schemas/eTenderSchema';
@@ -87,6 +86,7 @@ export const formatDateSafe = (date: any, includeTime: boolean = false, isReceip
 export const getStatusBadgeClass = (status?: E_tenderStatus): string => {
     if (!status) return "";
     switch (status) {
+        case 'Tender Preparation':
         case 'Tender Process':
             return "border-gray-400 bg-gray-100 text-gray-800";
         case 'Bid Opened':

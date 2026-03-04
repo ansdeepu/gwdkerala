@@ -33,7 +33,7 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
                     id: 'new',
                     eTenderNo: '', tenderDate: null, fileNo: '', nameOfWork: '', nameOfWorkMalayalam: '', location: '', estimateAmount: undefined,
                     tenderFormFee: undefined, emd: undefined, periodOfCompletion: undefined, lastDateOfReceipt: null, timeOfReceipt: '',
-                    dateOfOpeningTender: null, timeOfOpeningTender: '', presentStatus: 'Tender Process', bidders: [], corrigendums: [],
+                    dateOfOpeningTender: null, timeOfOpeningTender: '', presentStatus: 'Tender Preparation', bidders: [], corrigendums: [],
                     dateTimeOfReceipt: undefined, dateTimeOfOpening: undefined, noOfBids: undefined, noOfTenderers: undefined,
                     noOfSuccessfulTenderers: undefined, quotedPercentage: undefined, aboveBelow: undefined, dateOfOpeningBid: undefined,
                     dateOfTechnicalAndFinancialBidOpening: undefined, technicalCommitteeMember1: undefined, technicalCommitteeMember2: undefined,

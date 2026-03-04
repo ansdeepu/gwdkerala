@@ -53,6 +53,7 @@ const ITEMS_PER_PAGE = 50;
 const getStatusRowClass = (status?: E_tenderStatus | null): string => {
     if (!status) return "";
     switch (status) {
+        case 'Tender Preparation':
         case 'Tender Process':
             return "bg-gray-500/5 hover:bg-gray-500/10 text-gray-700";
         case 'Bid Opened':
@@ -187,7 +188,7 @@ export default function ETenderListPage() {
             const newTenderId = await addTender({
                 ...tenderToCopy,
                 eTenderNo: `${tenderToCopy.eTenderNo}-COPY`,
-                presentStatus: 'Tender Process',
+                presentStatus: 'Tender Preparation',
                 bidders: [],
                 corrigendums: [],
                 retenders: [],

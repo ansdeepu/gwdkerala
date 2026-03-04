@@ -15,6 +15,7 @@ const optionalStringSchema = z.string().optional().nullable();
 
 
 export const eTenderStatusOptions = [
+    "Tender Preparation",
     "Tender Process",
     "Bid Opened",
     "Retender",
