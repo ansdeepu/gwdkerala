@@ -55,7 +55,7 @@ export async function generateWorkAgreement(tender: E_tender, officeAddress: Off
 
     // 1. Draw the heading at exactly 17cm from the top
     let currentY = height - cm(17);
-    const headingText = `AGREEMENT NO. GKT/${fileNo}/${eTenderNo} DATED ${agreementDateForHeading}`;
+    const headingText = `AGREEMENT NO. ${officeAddress?.officeCode || 'GKT'}/${fileNo}/${eTenderNo} DATED ${agreementDateForHeading}`;
     const headingTextWidth = timesRomanBoldFont.widthOfTextAtSize(headingText, headingFontSize);
     const headingX = (width - headingTextWidth) / 2; // Center alignment
     
@@ -155,3 +155,5 @@ export async function generateWorkAgreement(tender: E_tender, officeAddress: Off
 
     return await pdfDoc.save();
 }
+
+    

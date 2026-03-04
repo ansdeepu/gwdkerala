@@ -44,7 +44,7 @@ export async function generateDateExtensionCorrigendum(
     const fullParagraph = `     The time period for submitting e-tenders expired on ${lastDate}, and ${reasonText}. Consequently, the deadline for submitting e-tenders has been extended to ${newLastDate}, and the opening of the tender has been rescheduled to ${newOpeningDate}.`;
 
     const fieldMappings: Record<string, string> = {
-        file_no_header: `GKT/${tender.fileNo || ""}`,
+        file_no_header: `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ""}`,
         e_tender_no_header: tender.eTenderNo || "",
         tender_date_header: `Dated ${formatDateSafe(tender.tenderDate)}`,
         name_of_work: tender.nameOfWork || "",
@@ -76,3 +76,5 @@ export async function generateDateExtensionCorrigendum(
     
     return await pdfDoc.save();
 }
+
+    

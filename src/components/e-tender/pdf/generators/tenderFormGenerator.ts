@@ -1,12 +1,12 @@
-
 // src/components/e-tender/pdf/generators/tenderFormGenerator.ts
 import { PDFDocument, PDFTextField, StandardFonts, rgb } from 'pdf-lib';
 import type { E_tender } from '@/hooks/useE_tenders';
 import { formatDateSafe, formatTenderNoForFilename } from '../../utils';
 import type { StaffMember } from '@/lib/schemas';
 import { getAttachedFilesString } from './utils';
+import type { OfficeAddress } from '@/hooks/use-data-store';
 
-export async function generateTenderForm(tender: E_tender, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
+export async function generateTenderForm(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
     const templatePath = '/Tender-Form.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
         if (!res.ok) throw new Error(`Template file not found: ${templatePath.split('/').pop()}`);
@@ -35,10 +35,10 @@ export async function generateTenderForm(tender: E_tender, allStaffMembers?: Sta
     const fileName = `bTenderForm${formattedTenderNo}.pdf`;
 
     const fieldMappings: Record<string, any> = {
-        'file_no_header': `GKT/${tender.fileNo || ''}`,
+        'file_no_header': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
         'e_tender_no_header': `${tender.eTenderNo || ''}${isRetender ? ' (Re-Tender)' : ''}`,
         'tender_date_header': formatDateSafe(tender.tenderDate),
-        'file_no': `GKT/${tender.fileNo || ''}`,
+        'file_no': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
         'e_tender_no': tender.eTenderNo,
         'tender_no_page_2': tender.eTenderNo,
         'date_page_2': formatDateSafe(tender.tenderDate),
@@ -82,3 +82,5 @@ export async function generateTenderForm(tender: E_tender, allStaffMembers?: Sta
     
     return await pdfDoc.save();
 }
+
+    

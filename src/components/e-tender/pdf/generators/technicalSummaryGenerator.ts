@@ -4,8 +4,9 @@ import type { E_tender } from '@/hooks/useE_tenders';
 import { formatDateSafe, formatTenderNoForFilename } from '../../utils';
 import type { StaffMember } from '@/lib/schemas';
 import { getAttachedFilesString, numberToWords } from './utils';
+import type { OfficeAddress } from '@/hooks/use-data-store';
 
-export async function generateTechnicalSummary(tender: E_tender, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
+export async function generateTechnicalSummary(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
     const templatePath = '/Technical-Summary.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
         if (!res.ok) throw new Error(`Template file not found: ${templatePath.split('/').pop()}`);
@@ -39,7 +40,7 @@ export async function generateTechnicalSummary(tender: E_tender, allStaffMembers
     const fileName = `bTechEvaluation${formattedTenderNo}.pdf`;
     
     const fieldMappings: Record<string, any> = {
-        'file_no_header': `GKT/${tender.fileNo || ''}`,
+        'file_no_header': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
         'e_tender_no_header': tender.eTenderNo,
         'tender_date_header': formatDateSafe(tender.tenderDate),
         'name_of_work': tender.nameOfWork,
@@ -73,3 +74,5 @@ export async function generateTechnicalSummary(tender: E_tender, allStaffMembers
     
     return await pdfDoc.save();
 }
+
+    

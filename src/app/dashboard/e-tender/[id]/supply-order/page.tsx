@@ -7,7 +7,7 @@ import { formatDateSafe, formatTenderNoForFilename } from '@/components/e-tender
 import { useDataStore } from '@/hooks/use-data-store';
 import type { StaffMember } from '@/lib/schemas';
 import { numberToWords } from '@/components/e-tender/pdf/generators/utils';
-import { Button } from '@/components/ui/button';
+import { Button } => '@/components/ui/button';
 
 export default function SupplyOrderPrintPage() {
     const { tender } = useTenderData();
@@ -55,7 +55,7 @@ export default function SupplyOrderPrintPage() {
             <div className="space-y-6">
                 <div className="flex justify-between">
                     <div>
-                        <p>File No. GKT/{tender.fileNo || '__________'}</p>
+                        <p>File No. {officeAddress?.officeCode || 'GKT'}/{tender.fileNo || '__________'}</p>
                         <p>Tender No. {tender.eTenderNo || '__________'}</p>
                     </div>
                     <div className="text-right">
@@ -175,3 +175,5 @@ export default function SupplyOrderPrintPage() {
         </div>
     );
 }
+
+    

@@ -78,6 +78,7 @@ export default function ETenderListPage() {
     const { tenders: allE_tenders, isLoading, deleteTender, addTender } = useE_tenders();
     const { toast } = useToast();
     const { user } = useAuth();
+    const { officeAddress } = useDataStore();
     
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<E_tenderStatus | 'all'>('all');
@@ -185,7 +186,7 @@ export default function ETenderListPage() {
       const processedTenders = list.map(tender => {
         const bidderNames = (tender.bidders || []).map(b => b.name).filter(Boolean).join(' ').toLowerCase();
         const searchableContent = [
-          tender.eTenderNo, `GKT/${tender.fileNo}/${tender.eTenderNo}`,
+          tender.eTenderNo, `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}/${tender.eTenderNo}`,
           tender.fileNo, tender.nameOfWork, tender.nameOfWorkMalayalam, tender.location, tender.tenderType,
           tender.presentStatus, tender.periodOfCompletion, tender.estimateAmount?.toString(),
           formatDateSafe(tender.tenderDate), formatDateSafe(tender.dateTimeOfOpening, true),
@@ -235,7 +236,7 @@ export default function ETenderListPage() {
         });
 
         return { filteredTenders: filtered, lastCreatedDate: lastCreated };
-    }, [allE_tenders, searchTerm, statusFilter]);
+    }, [allE_tenders, searchTerm, statusFilter, officeAddress]);
 
     const l1ContractorsData = useMemo(() => {
         const sDate = l1StartDate ? startOfDay(parse(l1StartDate, 'yyyy-MM-dd', new Date())) : null;
@@ -490,7 +491,7 @@ export default function ETenderListPage() {
                                                     <TableCell className="align-top py-2 px-3">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
                                                     <TableCell className="font-bold align-top py-2 px-3">
                                                         <div className="flex flex-col">
-                                                            <span className="whitespace-normal break-words">{`GKT/${tender.fileNo}/${tender.eTenderNo}`}</span>
+                                                            <span className="whitespace-normal break-words">{`${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}/${tender.eTenderNo}`}</span>
                                                             <span className="text-xs font-normal">Dated: {formatDateSafe(tender.tenderDate)}</span>
                                                             {hasRetenders && <Badge variant="secondary" className="mt-1 w-fit bg-yellow-200 text-yellow-800">Re-tender</Badge>}
                                                         </div>
@@ -653,3 +654,5 @@ export default function ETenderListPage() {
         </div>
     );
 }
+
+    

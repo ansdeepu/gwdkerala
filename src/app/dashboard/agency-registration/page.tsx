@@ -808,7 +808,7 @@ export default function AgencyRegistrationPage() {
             }
             
             const officeCode = officeAddress?.officeCode;
-            const regexPattern = officeCode ? `(?:/|${officeCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\/|GWD\/)` : `(?:/|GWD\/)`;
+            const regexPattern = officeCode ? `(?:/|${officeCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\/|GKT\/)` : `(?:/|GKT\/)`;
             const regex = new RegExp(`${regexPattern}(\\d+)(?:\\(N\\)\/|\/)`);
 
             // Secondary Sort: registration number
@@ -2040,3 +2040,5 @@ function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialDat
         </Form>
     );
 }
+
+    
