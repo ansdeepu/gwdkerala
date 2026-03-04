@@ -58,13 +58,13 @@ const StatCard = ({ title, count, onClick, colorClass }: { title: string, count:
         onClick={onClick}
         disabled={count === 0}
         className={cn(
-            "p-2 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full",
+            "p-2 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full flex items-center justify-between gap-2",
             colorClass,
             "hover:bg-opacity-20"
         )}
     >
         <p className="text-xs font-medium text-muted-foreground whitespace-normal leading-tight">{title}</p>
-        <p className="text-xl font-bold">{count}</p>
+        <p className="text-2xl font-bold">{count}</p>
     </button>
 );
 
@@ -374,7 +374,7 @@ export default function ETenderListPage() {
     return (
         <div className="space-y-6">
             <Card>
-                <CardContent className="p-4 space-y-4">
+                <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="relative flex-grow w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -413,7 +413,7 @@ export default function ETenderListPage() {
                         </div>
                     </div>
                      <div className="border-t pt-4 mt-4">
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
                             {dashboardStats.map(stat => (
                                 <StatCard
                                     key={stat.title}
@@ -425,33 +425,37 @@ export default function ETenderListPage() {
                             ))}
                             <Button
                                 variant="outline"
-                                className="p-2 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full h-full flex flex-col items-start justify-between"
+                                className="p-2 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full h-full flex items-center justify-between gap-2"
                                 onClick={() => setIsLeaderboardOpen(true)}
                             >
-                                <p className="text-xs font-medium text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/> Contractor's List</p>
-                                <p className="text-xl font-bold">{l1ContractorsData.length}</p>
+                                <p className="text-xs font-medium text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/>Contractor's List</p>
+                                <p className="text-2xl font-bold">{l1ContractorsData.length}</p>
                             </Button>
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-4 border-t text-[10px] sm:text-xs">
-                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-muted-foreground">
-                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div><span>Tender Process</span></div>
-                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-orange-400"></div><span>Bid Opened</span></div>
-                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-400"></div><span>Selection Notice</span></div>
-                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-400"></div><span>Work Order</span></div>
-                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-purple-400"></div><span>Supply Order</span></div>
-                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div><span>Retender</span></div>
-                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><span>Cancelled</span></div>
+                     <div className="border-t pt-2 mt-4">
+                        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[11px]">
+                            <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-muted-foreground">
+                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-gray-400"></div><span>Tender Process</span></div>
+                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-orange-400"></div><span>Bid Opened</span></div>
+                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-400"></div><span>Selection Notice</span></div>
+                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-400"></div><span>Work Order</span></div>
+                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-purple-400"></div><span>Supply Order</span></div>
+                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div><span>Retender</span></div>
+                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><span>Cancelled</span></div>
+                            </div>
+                            {lastCreatedDate && (
+                                <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
+                                    <Clock className="h-3 w-3"/>
+                                    Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                                </div>
+                            )}
                         </div>
-                        {lastCreatedDate && (
-                            <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
-                                <Clock className="h-3 w-3"/>
-                                Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-center pt-4">
+                                <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                             </div>
                         )}
-                    </div>
-                    <div className="flex items-center justify-center pt-4 border-t">
-                        {totalPages > 1 && <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
                     </div>
                 </CardContent>
             </Card>
@@ -463,13 +467,13 @@ export default function ETenderListPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead className="w-[5%] px-2 py-3">Sl. No.</TableHead>
-                                        <TableHead className="w-[15%] px-2 py-3">eTender Ref. No.</TableHead>
-                                        <TableHead className="w-[35%] px-2 py-3">Name of Work</TableHead>
-                                        <TableHead className="w-[15%] px-2 py-3">Last Date of Receipt</TableHead>
-                                        <TableHead className="w-[15%] px-2 py-3">Date of Opening</TableHead>
-                                        <TableHead className="w-[10%] px-2 py-3">Status</TableHead>
-                                        <TableHead className="text-center w-[5%] px-2 py-3">Actions</TableHead>
+                                        <TableHead className="w-[4%] px-2 py-3">Sl. No.</TableHead>
+                                        <TableHead className="w-[14%] px-2 py-3">eTender Ref. No.</TableHead>
+                                        <TableHead className="w-[42%] px-2 py-3">Name of Work</TableHead>
+                                        <TableHead className="w-[12%] px-2 py-3">Last Date of Receipt</TableHead>
+                                        <TableHead className="w-[12%] px-2 py-3">Date of Opening</TableHead>
+                                        <TableHead className="w-[8%] px-2 py-3">Status</TableHead>
+                                        <TableHead className="text-center w-[8%] px-2 py-3">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -532,7 +536,7 @@ export default function ETenderListPage() {
                         </TooltipProvider>
                     </div>
                     {totalPages > 1 && (
-                         <div className="flex items-center justify-center py-4">
+                         <div className="flex items-center justify-center py-4 border-t">
                            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
                         </div>
                     )}
