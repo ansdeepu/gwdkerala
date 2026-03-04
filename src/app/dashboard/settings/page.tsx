@@ -24,7 +24,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import ExcelJS from 'exceljs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
+import { cn, formatCase } from '@/lib/utils';
 import type { LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -265,7 +265,11 @@ export default function SettingsPage() {
         
         setIsSubmitting(true);
         try {
-            const payload: { [key: string]: any } = { ...data };
+            const payload: { [key: string]: any } = { 
+              ...data,
+              officeName: formatCase(data.officeName) ?? data.officeName,
+              address: formatCase(data.address) ?? data.address,
+            };
             delete payload.officeCode;
             delete payload.officeLocation;
             Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });

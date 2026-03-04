@@ -24,7 +24,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import ExcelJS from 'exceljs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
+import { cn, formatCase } from '@/lib/utils';
 import type { LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -106,8 +106,9 @@ export default function OfficeManagementPage() {
   const handleCreateOfficeSetup = async (data: NewOfficeAdminFormData) => {
     setIsSubmitting(true);
     const lowerCaseOfficeLocation = data.officeLocation.toLowerCase();
+    const formattedName = formatCase(data.name) || data.name;
     try {
-        const result = await createOfficeAdmin(data.email, data.name, data.officeLocation);
+        const result = await createOfficeAdmin(data.email, formattedName, data.officeLocation);
         if (result.success) {
             const batch = writeBatch(db);
 
@@ -157,7 +158,7 @@ export default function OfficeManagementPage() {
     if (!userToEdit) return;
     setIsSubmitting(true);
     try {
-        await updateUserProfileByAdmin(userToEdit.uid, { name: data.name, officeLocation: data.officeLocation });
+        await updateUserProfileByAdmin(userToEdit.uid, { name: formatCase(data.name) ?? data.name, officeLocation: data.officeLocation });
         toast({ title: "User Updated", description: `Profile for ${data.name} has been updated.` });
         setUserToEdit(null);
         // Data will refresh automatically via onSnapshot
