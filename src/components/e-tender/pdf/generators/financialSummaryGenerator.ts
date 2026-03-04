@@ -3,9 +3,10 @@ import { PDFDocument, PDFTextField, StandardFonts, rgb } from 'pdf-lib';
 import type { E_tender } from '@/hooks/useE_tenders';
 import { formatDateSafe, formatTenderNoForFilename } from '../../utils';
 import type { StaffMember } from '@/lib/schemas';
-import { getAttachedFilesString } from './utils';
+import { getAttachedFilesString, numberToWords } from './utils';
+import type { OfficeAddress } from '@/hooks/use-data-store';
 
-export async function generateFinancialSummary(tender: E_tender, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
+export async function generateFinancialSummary(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
     const templatePath = '/Financial-Summary.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
         if (!res.ok) throw new Error(`Template file not found: ${templatePath.split('/').pop()}`);
