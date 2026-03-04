@@ -57,7 +57,7 @@ export async function generateFinancialSummary(tender: E_tender, officeAddress: 
     const fileName = `cFinEvaluation${formattedTenderNo}.pdf`;
     
     const fieldMappings: Record<string, any> = {
-        'file_no_header': `GKT/${tender.fileNo || ''}`,
+        'file_no_header': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
         'e_tender_no_header': tender.eTenderNo,
         'tender_date_header': formatDateSafe(tender.tenderDate),
         'name_of_work': tender.nameOfWork,
@@ -72,14 +72,14 @@ export async function generateFinancialSummary(tender: E_tender, officeAddress: 
     allFields.forEach(field => {
         const fieldName = field.getName();
         if (fieldName in fieldMappings) {
-            try {
-                const textField = form.getTextField(fieldName);
-                const isBold = boldFields.includes(fieldName);
-                textField.setText(String(fieldMappings[fieldName] || ''));
-                textField.updateAppearances(isBold ? timesRomanBoldFont : timesRomanFont);
-            } catch(e) {
+           try {
+            const textField = form.getTextField(fieldName);
+            const isBold = boldFields.includes(fieldName);
+            textField.setText(String(fieldMappings[fieldName] || ''));
+            textField.updateAppearances(isBold ? timesRomanBoldFont : timesRomanFont);
+           } catch(e) {
                 console.warn(`Could not fill field ${fieldName}:`, e);
-            }
+           }
         }
     });
 
