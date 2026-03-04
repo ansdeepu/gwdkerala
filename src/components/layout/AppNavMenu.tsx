@@ -2,7 +2,7 @@
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -75,6 +75,7 @@ const navItemColors = [
 
 export default function AppNavMenu() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { subscribeToPendingUpdates } = usePendingUpdates();
   const { setIsNavigating } = usePageNavigation();
@@ -111,11 +112,30 @@ export default function AppNavMenu() {
   return (
     <SidebarMenu>
       {navItems.map((item, index) => {
-        const cleanHref = item.href.split('?')[0]; // Ignore query params for matching
+        const cleanHref = item.href.split('?')[0];
         const isDashboard = cleanHref === '/dashboard' || cleanHref === '/dashboard/super-admin';
-        const isActive = isDashboard
-          ? pathname === cleanHref
-          : pathname.startsWith(cleanHref);
+        
+        let isActive;
+
+        if (pathname.startsWith('/dashboard/data-entry')) {
+            const workType = searchParams.get('workType');
+            const workTypeMapping: Record<string, string> = {
+                'gwInvestigation': '/dashboard/gw-investigation',
+                'loggingPumpingTest': '/dashboard/logging-pumping-test',
+                'public': '/dashboard/file-room',
+                'private': '/dashboard/private-deposit-works',
+                'collector': '/dashboard/collectors-deposit-works',
+                'planFund': '/dashboard/plan-fund-works',
+            };
+            isActive = workType ? workTypeMapping[workType] === cleanHref : false;
+        } else if (pathname.startsWith('/dashboard/e-tender/')) {
+            isActive = cleanHref === '/dashboard/e-tender';
+        } else if (pathname.startsWith('/dashboard/agency-registration')) {
+            isActive = cleanHref === '/dashboard/agency-registration' || cleanHref === '/dashboard/super-admin/rig-registration';
+        } else {
+            // Default logic for all other pages
+            isActive = isDashboard ? pathname === cleanHref : pathname.startsWith(cleanHref);
+        }
 
         return (
           <SidebarMenuItem key={item.href}>
