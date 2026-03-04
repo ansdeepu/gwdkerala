@@ -419,7 +419,7 @@ export default function ETenderListPage() {
                         </div>
                     </div>
                      <div className="border-t pt-4 mt-4">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                             {dashboardStats.map(stat => (
                                 <StatCard
                                     key={stat.title}
@@ -430,7 +430,7 @@ export default function ETenderListPage() {
                                 />
                             ))}
                             <Button variant="outline" className="h-full flex-col items-start p-3" onClick={() => setIsLeaderboardOpen(true)}>
-                                <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/> L1 Leaderboard</p>
+                                <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/> Contractor's List</p>
                                 <p className="text-2xl font-bold">{l1ContractorsData.length}</p>
                             </Button>
                         </div>
@@ -606,7 +606,7 @@ export default function ETenderListPage() {
             <Dialog open={isLeaderboardOpen} onOpenChange={setIsLeaderboardOpen}>
               <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
                 <DialogHeader className="p-6 pb-4 border-b">
-                  <DialogTitle>L1 Contractors Leaderboard</DialogTitle>
+                  <DialogTitle>Contractor's List</DialogTitle>
                    <div className="flex flex-col sm:flex-row gap-2 pt-4 items-end">
                         <div className="grid w-full sm:w-auto flex-1 gap-1.5">
                             <Label htmlFor="l1-start-date-dialog">From</Label>
