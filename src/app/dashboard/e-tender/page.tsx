@@ -58,7 +58,7 @@ const StatCard = ({ title, count, onClick, colorClass }: { title: string, count:
         onClick={onClick}
         disabled={count === 0}
         className={cn(
-            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full",
             colorClass,
             "hover:bg-opacity-20"
         )}
@@ -410,16 +410,10 @@ export default function ETenderListPage() {
                                     </div>
                                 )}
                             </div>
-                             {lastCreatedDate && (
-                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                                    <Clock className="h-4 w-4"/>
-                                    Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                                </div>
-                            )}
                         </div>
                     </div>
                      <div className="border-t pt-4 mt-4">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                             {dashboardStats.map(stat => (
                                 <StatCard
                                     key={stat.title}
@@ -429,7 +423,7 @@ export default function ETenderListPage() {
                                     colorClass={stat.colorClass}
                                 />
                             ))}
-                            <Button variant="outline" className="h-full flex-col items-start p-3" onClick={() => setIsLeaderboardOpen(true)}>
+                            <Button variant="outline" className="h-full flex-col items-start p-3 w-full" onClick={() => setIsLeaderboardOpen(true)}>
                                 <p className="text-sm font-medium text-muted-foreground flex items-center gap-2"><TrendingUp className="h-4 w-4"/> Contractor's List</p>
                                 <p className="text-2xl font-bold">{l1ContractorsData.length}</p>
                             </Button>
@@ -446,7 +440,15 @@ export default function ETenderListPage() {
                             <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-yellow-400"></div><span>Retender</span></div>
                             <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-red-400"></div><span>Cancelled</span></div>
                         </div>
-                         {totalPages > 1 && <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
+                        {lastCreatedDate && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                                <Clock className="h-4 w-4"/>
+                                Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex items-center justify-center pt-4 border-t">
+                        {totalPages > 1 && <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />}
                     </div>
                 </CardContent>
             </Card>
@@ -460,7 +462,7 @@ export default function ETenderListPage() {
                                     <TableRow>
                                         <TableHead>Sl. No.</TableHead>
                                         <TableHead>eTender Ref. No.</TableHead>
-                                        <TableHead>Name of Work</TableHead>
+                                        <TableHead className="min-w-[350px]">Name of Work</TableHead>
                                         <TableHead>Last Date of Receipt</TableHead>
                                         <TableHead>Date of Opening</TableHead>
                                         <TableHead>Status</TableHead>
@@ -486,14 +488,14 @@ export default function ETenderListPage() {
                                                             {hasRetenders && <Badge variant="secondary" className="mt-1 w-fit bg-yellow-200 text-yellow-800">Re-tender</Badge>}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top">{tender.nameOfWork}</TableCell>
+                                                    <TableCell className="whitespace-normal break-words align-top min-w-[350px]">{tender.nameOfWork}</TableCell>
                                                     <TableCell className="whitespace-normal break-words align-top">{formatDateSafe(lastDateOfReceipt, true)}</TableCell>
                                                     <TableCell className="whitespace-normal break-words align-top">{formatDateSafe(dateOfOpening, true)}</TableCell>
                                                     <TableCell className="align-top">
                                                         {tender.presentStatus && <Badge className={cn(getStatusBadgeClass(tender.presentStatus))}>{tender.presentStatus}</Badge>}
                                                     </TableCell>
                                                     <TableCell className="text-center align-top">
-                                                        <div className="flex items-center justify-center space-x-1">
+                                                        <div className="flex flex-col items-center justify-center space-y-1">
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewAndEdit(tender.id)}><Eye className="h-4 w-4" /></Button></TooltipTrigger>
                                                                 <TooltipContent><p>View / Edit Tender</p></TooltipContent>
