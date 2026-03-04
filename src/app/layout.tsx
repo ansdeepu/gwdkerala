@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'GWD Office Dashboard',
-  description: 'Official dashboard for the Ground Water Department, Government of Kerala. Manage deposit works, investigations, tenders, and more.',
-  keywords: ['Ground Water Department', 'GWD', 'Kerala', 'Water Management', 'Government Dashboard'],
+  title: 'GWD Dashboard | Ground Water Department, Kerala',
+  description: 'The official GWD Dashboard for the Ground Water Department, Kerala (GWD Kerala). Manage deposit works, investigations, tenders, and more.',
+  keywords: ['GWD Kerala', 'GWD Dashboard', 'Ground Water Department', 'GWD', 'Kerala', 'Water Management', 'Government Dashboard'],
   authors: [{ name: 'Ground Water Department, Govt. of Kerala' }],
   creator: 'Ground Water Department, Govt. of Kerala',
   icons: {
