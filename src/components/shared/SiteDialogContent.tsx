@@ -180,7 +180,6 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             targetDesignations.includes(s.designation as any)
         );
 
-        // Sort based on the hierarchy defined in designationOptions
         return filtered.sort((a, b) => {
             const indexA = a.designation ? (designationOptions as unknown as string[]).indexOf(a.designation) : 999;
             const indexB = b.designation ? (designationOptions as unknown as string[]).indexOf(b.designation) : 999;
@@ -241,7 +240,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                     <Form {...form}>
                         <form id="site-dialog-form" onSubmit={handleSubmit(handleDialogSubmit)} className="space-y-6">
                             <Card>
-                                <CardHeader><CardTitle className="text-lg">Main Details</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-lg text-primary">Main Details</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
@@ -290,8 +289,68 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                 </CardContent>
                             </Card>
 
+                            {/* Reordered: Investigation Details comes BEFORE Work Implementation for Well purposes */}
+                            {isWellPurpose && (
+                                <Card>
+                                    <CardHeader><CardTitle className="text-lg text-primary">Investigation Details (Recommended)</CardTitle></CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                            <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Diameter (mm)</FormLabel>
+                                                    <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                            {siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}/>
+                                            <FormField name="surveyRecommendedTD" control={control} render={({ field }) => <FormItem><FormLabel>Total Depth (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                            
+                                            {watchedPurpose === 'BWC' && (
+                                                <>
+                                                    <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                </>
+                                            )}
+
+                                            {watchedPurpose === 'TWC' && (
+                                                <>
+                                                    <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedMsCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                </>
+                                            )}
+
+                                            {watchedPurpose === 'FPW' && (
+                                                <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <FormField name="surveyLocation" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Well Location</FormLabel>
+                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[40px]" /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}/>
+                                            <FormField name="surveyRemarks" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Investigation Remarks</FormLabel>
+                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[40px]" /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}/>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            )}
+
                             <Card>
-                                <CardHeader><CardTitle className="text-lg">Work Implementation</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="text-lg text-primary">Work Implementation</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                         <FormField name="siteConditions" control={control} render={({ field }) => (
@@ -370,65 +429,6 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                     )}/>
                                 </CardContent>
                             </Card>
-
-                            {isWellPurpose && (
-                                <Card>
-                                    <CardHeader><CardTitle className="text-lg text-primary">Investigation Details (Recommended)</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                            <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Diameter (mm)</FormLabel>
-                                                    <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
-                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
-                                                        <SelectContent>
-                                                            <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                            {siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}/>
-                                            <FormField name="surveyRecommendedTD" control={control} render={({ field }) => <FormItem><FormLabel>Total Depth (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                            
-                                            {watchedPurpose === 'BWC' && (
-                                                <>
-                                                    <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                                    <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                                </>
-                                            )}
-
-                                            {watchedPurpose === 'TWC' && (
-                                                <>
-                                                    <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                                    <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                                    <FormField name="surveyRecommendedMsCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                                </>
-                                            )}
-
-                                            {watchedPurpose === 'FPW' && (
-                                                <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                            )}
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField name="surveyLocation" control={control} render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Well Location</FormLabel>
-                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[40px]" /></FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}/>
-                                            <FormField name="surveyRemarks" control={control} render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Investigation Remarks</FormLabel>
-                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[40px]" /></FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}/>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
 
                             {isWellPurpose && (
                                 <Card>
