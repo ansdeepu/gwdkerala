@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Save, X, Info, Loader2 } from "lucide-react";
-import { SiteDetailSchema, type SiteDetailFormData, siteWorkStatusOptions, sitePurposeOptions, type SitePurpose, siteDiameterOptions, siteTypeOfRigOptions, siteConditionsOptions, type Constituency, type StaffMember, type E_tender, type Bidder, designationOptions } from '@/lib/schemas';
+import { SiteDetailSchema, type SiteDetailFormData, siteWorkStatusOptions, sitePurposeOptions, type SitePurpose, siteDiameterOptions, siteTypeOfRigOptions, siteConditionsOptions, type Constituency, type StaffMember, type E_tender, type Bidder, designationOptions, type RigCompressor } from '@/lib/schemas';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, isValid, parseISO } from "date-fns";
@@ -43,7 +43,7 @@ const SITE_DIALOG_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
     (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending"].includes(status)
 );
 
-export default function SiteDialogContent({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, supervisorList, allLsgConstituencyMaps, allE_tenders, allStaffMembers, allBidders }: {
+export default function SiteDialogContent({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, supervisorList, allLsgConstituencyMaps, allE_tenders, allStaffMembers, allBidders, allRigCompressors }: {
     initialData: Partial<SiteDetailFormData>;
     onConfirm: (data: SiteDetailFormData) => void;
     onCancel: () => void;
@@ -54,6 +54,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     allE_tenders: E_tender[];
     allStaffMembers: StaffMember[];
     allBidders: Bidder[];
+    allRigCompressors: RigCompressor[];
 }) {
     const form = useForm<SiteDetailFormData>({
         resolver: zodResolver(SiteDetailSchema),
@@ -188,6 +189,12 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             return a.name.localeCompare(b.name);
         });
     }, [allStaffMembers]);
+
+    const rigOptions = useMemo(() => {
+        const units = (allRigCompressors || []).filter(r => r.status !== 'Garaged').map(r => r.typeOfRigUnit).filter(Boolean);
+        const uniqueUnits = Array.from(new Set(units)).sort();
+        return [...uniqueUnits, "Other Dept Rig", "Private Rig"];
+    }, [allRigCompressors]);
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
         onConfirm(data);
@@ -472,7 +479,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Rig" /></SelectTrigger></FormControl>
                                                         <SelectContent>
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                            {siteTypeOfRigOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                            {rigOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                     <FormMessage />
@@ -573,7 +580,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                     <CardContent className="space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                             <FormField name="arsNumberOfStructures" control={control} render={({ field }) => <FormItem><FormLabel>Number of Structures</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                            <FormField name="arsStorageCapacity" control={control} render={({ field }) => <FormItem><FormLabel>Storage Capacity (m³)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                            <FormField name="arsStorageCapacity" control={control} render={({ field }) => <FormItem><FormLabel>Storage Capacity (m³)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
                                             <FormField name="arsNumberOfFillings" control={control} render={({ field }) => <FormItem><FormLabel>Number of Fillings</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                                             <FormField name="noOfBeneficiary" control={control} render={({ field }) => <FormItem><FormLabel># Beneficiaries</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                                         </div>

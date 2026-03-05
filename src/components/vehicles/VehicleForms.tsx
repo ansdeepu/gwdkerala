@@ -247,19 +247,8 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
                     <DialogTitle>{isExternal ? "External Rig Unit" : (initialData ? 'Edit' : 'Add') + ' Rig & Compressor Unit'}</DialogTitle>
                 </DialogHeader>
                 <div className="p-6 pt-0 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField name="isExternal" control={form.control} render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-secondary/10">
-                                <FormControl>
-                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
-                                    <FormLabel>External Rig</FormLabel>
-                                    <FormDescription className="text-xs">Is this rig engaged from another sub-office?</FormDescription>
-                                </div>
-                            </FormItem>
-                        )}/>
-                        {isExternal && (
+                    {isExternal && (
+                        <div className="grid grid-cols-1 gap-4">
                             <FormField name="externalOffice" control={form.control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Owning Office <span className="text-destructive">*</span></FormLabel>
@@ -274,8 +263,8 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
                                     <FormMessage />
                                 </FormItem>
                             )}/>
-                        )}
-                    </div>
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField name="typeOfRigUnit" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Type of Rig Unit {!isExternal && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="status" control={form.control} render={({ field }) => ( 

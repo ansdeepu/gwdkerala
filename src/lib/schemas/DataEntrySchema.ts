@@ -38,7 +38,7 @@ export const designationMalayalamOptions = [
     "അസിസ്റ്റന്റ് എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "ഹൈഡ്രോജിയോളജിസ്റ്റ്", "ജിയോഫിസിസ്റ്റ്",
     "അസിസ്റ്റന്റ് എഞ്ചിനീയർ", "ജൂനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്", "ജൂനിയർ ജിയോഫിസിസ്റ്റ്",
     "ജിയോളജിക്കൽ അസിസ്റ്റന്റ്", "ജിയോഫിസിക്കൽ അസിസ്റ്റന്റ്", "മാസ്റ്റർ ഡ്രില്ലർ",
-    "സീനിയർ ഡ്രില്ലർ", "ഡ്രില്ലർ", "ഡ്രില്ലർ മെക്കാനിക്ക്", "ഡ്രില്ലിംഗ് അസിസ്റ്റന്റ്",
+    "സീനിയർ ഡ്രില്ലർ", "ഡ്രില്ലർ", "ഡ്രില്ലർ മെക്കാനിക്ക്", "ഡրില്ലിംഗ് അസിസ്റ്റന്റ്",
     "കംപ്രസ്സർ ഡ്രൈവർ", "പമ്പ് ഓപ്പറേറ്റർ", "ഡ്രൈവർ, എച്ച്ഡിവി", "ഡ്രൈവർ, എൽഡിവി",
     "സീനിയർ ക്ലർക്ക്", "ക്ലർക്ക്", "യു.ഡി ടൈപ്പിസ്റ്റ്", "എൽ.ഡി ടൈപ്പിസ്റ്റ്",
     "ട്രേസർ", "ഡ്രാഫ്റ്റ്‌സ്മാൻ", "ലാസ്കർ", "ഓഫീസ് അറ്റൻഡന്റ്", "വാച്ചർ", "പിടിഎസ്"
@@ -182,7 +182,7 @@ export const SiteDetailSchema = z.object({
   noOfTapConnections: optionalNumber(),
   noOfBeneficiary: z.string().optional().nullable(),
   dateOfCompletion: nativeDateSchema.optional().nullable(),
-  typeOfRig: z.preprocess((val) => (val === "" || val === null || val === '_clear_' ? undefined : val), z.enum(siteTypeOfRigOptions).optional()),
+  typeOfRig: z.preprocess((val) => (val === "" || val === null || val === '_clear_' ? undefined : val), z.string().optional()),
   contractorName: z.string().optional(),
   supervisorUid: z.string().optional().nullable(),
   supervisorName: z.string().optional().nullable(),
