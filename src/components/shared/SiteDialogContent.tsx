@@ -289,7 +289,6 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                 </CardContent>
                             </Card>
 
-                            {/* Reordered: Investigation Details comes BEFORE Work Implementation for Well purposes */}
                             {isWellPurpose && (
                                 <Card>
                                     <CardHeader><CardTitle className="text-lg text-primary">Investigation Details (Recommended)</CardTitle></CardHeader>
@@ -356,7 +355,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                         <FormField name="siteConditions" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Rig and Site Accessibility</FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value}>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Conditions" /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -406,7 +405,10 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                             <FormItem>
                                                 <FormLabel>Supervisor</FormLabel>
                                                 {isQuotation ? (
-                                                    <Select onValueChange={handleQuotationSupervisorChange} value={field.value || ""}>
+                                                    <Select onValueChange={(val) => {
+                                                        field.onChange(val === '_clear_' ? undefined : val);
+                                                        handleQuotationSupervisorChange(val);
+                                                    }} value={field.value || ""}>
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Supervisor" /></SelectTrigger></FormControl>
                                                         <SelectContent className="max-h-80">
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
