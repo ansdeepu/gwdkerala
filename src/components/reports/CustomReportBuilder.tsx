@@ -25,19 +25,11 @@ import {
 } from '@/lib/schemas';
 import { useDataStore } from '@/hooks/use-data-store';
 import { useToast } from '@/hooks/use-toast';
-import { format, parse, isValid, startOfDay, endOfDay, isWithinInterval, parseISO } from 'date-fns';
+import { format, isValid, startOfDay, endOfDay, isWithinInterval, parseISO } from 'date-fns';
 import ExcelJS from 'exceljs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-
-const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
-const RotateCcw = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg> );
-const Filter = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> );
-const TableIcon = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg> );
-const Database = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg> );
-
 
 type ReportSource = 'deposit' | 'private' | 'ars' | 'gwInvestigation' | 'loggingPumpingTest' | 'collector' | 'planFund';
 type ReportRow = Record<string, string | number | undefined | null>;
@@ -56,20 +48,18 @@ const safeParseDate = (dateValue: any): Date | null => {
 };
 
 export default function CustomReportBuilder() {
-  const { allFileEntries, allArsEntries, allLsgConstituencyMaps, officeAddress } = useDataStore();
+  const { allFileEntries, allArsEntries, allLsgConstituencyMaps } = useDataStore();
   const { toast } = useToast();
 
-  // Filters
   const [selectedPage, setSelectedPage] = useState<ReportSource>('deposit');
-  const [startDate, setStartDate] = useState<Date | undefined>();
-  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
   const [selectedPurpose, setSelectedPurpose] = useState<string>('all');
   const [selectedLsg, setSelectedLsg] = useState<string>('all');
   const [selectedConstituency, setSelectedConstituency] = useState<string>('all');
   const [selectedAppType, setSelectedAppType] = useState<string>('all');
   const [selectedSchemeType, setSelectedSchemeType] = useState<string>('all');
   
-  // Field Selection & Report Data
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [reportData, setReportData] = useState<ReportRow[] | null>(null);
   const [reportHeaders, setReportHeaders] = useState<string[]>([]);
@@ -77,189 +67,98 @@ export default function CustomReportBuilder() {
   const lsgOptions = useMemo(() => allLsgConstituencyMaps.map(m => m.name).sort(), [allLsgConstituencyMaps]);
 
   const availableFields = useMemo(() => {
-    if (selectedPage === 'ars') {
-        return reportableFields.filter(f => f.arsApplicable);
-    }
-    // For deposit and private works
-    const purposeFiltered = reportableFields.filter(f => 
-        !f.arsOnly && 
-        (selectedPurpose === 'all' || !f.purpose || f.purpose.includes(selectedPurpose as SitePurpose))
-    );
-    return purposeFiltered;
+    return reportableFields.filter(f => {
+        // 1. Check source compatibility
+        const sourceMatch = (f as any).sources ? (f as any).sources.includes(selectedPage) : true;
+        if (!sourceMatch) return false;
+
+        // 2. Check purpose compatibility (only if source is not ARS)
+        if (selectedPage !== 'ars' && selectedPurpose !== 'all') {
+            if (f.purpose && !f.purpose.includes(selectedPurpose as SitePurpose)) return false;
+        }
+
+        return true;
+    });
   }, [selectedPurpose, selectedPage]);
   
   useEffect(() => {
     setSelectedFields([]);
+    setReportData(null);
   }, [selectedPage]);
-
-  const handleSelectAllFields = () => {
-    if (selectedFields.length === availableFields.length) {
-      setSelectedFields([]);
-    } else {
-      setSelectedFields(availableFields.map(f => f.id));
-    }
-  };
 
   const handleGenerateReport = useCallback(() => {
     if (selectedFields.length === 0) {
-        toast({ title: "No Fields Selected", description: "Please select at least one field for the report.", variant: "destructive" });
+        toast({ title: "No Fields Selected", variant: "destructive" });
         return;
     }
 
-    let sourceData: (DataEntryFormData | ArsEntryFormData)[] = [];
-    if (selectedPage === 'deposit') {
-        sourceData = allFileEntries.filter(e => e.applicationType && PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(e.applicationType as any));
-    } else if (selectedPage === 'private') {
-        sourceData = allFileEntries.filter(e => e.applicationType && PRIVATE_APPLICATION_TYPES.includes(e.applicationType as any));
-    } else if (selectedPage === 'collector') {
-        sourceData = allFileEntries.filter(e => e.applicationType && COLLECTOR_APPLICATION_TYPES.includes(e.applicationType as any));
-    } else if (selectedPage === 'planFund') {
-        sourceData = allFileEntries.filter(e => e.applicationType && PLAN_FUND_APPLICATION_TYPES.includes(e.applicationType as any));
-    } else if (selectedPage === 'gwInvestigation') {
-        sourceData = allFileEntries.filter(e => e.siteDetails?.some(s => s.purpose === 'GW Investigation'));
-    } else if (selectedPage === 'loggingPumpingTest') {
-        sourceData = allFileEntries.filter(e => e.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any)));
-    } else if (selectedPage === 'ars') {
-        sourceData = allArsEntries;
-    }
+    let sourceData: any[] = [];
+    if (selectedPage === 'deposit') sourceData = allFileEntries.filter(e => e.applicationType && PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(e.applicationType as any));
+    else if (selectedPage === 'private') sourceData = allFileEntries.filter(e => e.applicationType && PRIVATE_APPLICATION_TYPES.includes(e.applicationType as any));
+    else if (selectedPage === 'collector') sourceData = allFileEntries.filter(e => e.applicationType && COLLECTOR_APPLICATION_TYPES.includes(e.applicationType as any));
+    else if (selectedPage === 'planFund') sourceData = allFileEntries.filter(e => e.applicationType && PLAN_FUND_APPLICATION_TYPES.includes(e.applicationType as any));
+    else if (selectedPage === 'gwInvestigation') sourceData = allFileEntries.filter(e => e.siteDetails?.some(s => s.purpose === 'GW Investigation'));
+    else if (selectedPage === 'loggingPumpingTest') sourceData = allFileEntries.filter(e => e.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any)));
+    else if (selectedPage === 'ars') sourceData = allArsEntries;
 
-    const fromDate = startDate ? startOfDay(startDate) : null;
-    const toDate = endDate ? endOfDay(endDate) : null;
-    let filteredData = sourceData;
+    const fromDate = startDate ? startOfDay(new Date(startDate)) : null;
+    const toDate = endDate ? endOfDay(new Date(endDate)) : null;
 
-    // Filter by Date Range
-    if (fromDate && toDate) {
-        filteredData = filteredData.filter(entry => {
-            const dateToTest = selectedPage === 'ars'
-                ? (entry as ArsEntryFormData).arsSanctionedDate
-                : (entry as DataEntryFormData).remittanceDetails?.[0]?.dateOfRemittance;
-            const entryDate = safeParseDate(dateToTest);
-            return entryDate ? isWithinInterval(entryDate, { start: fromDate, end: toDate }) : false;
-        });
-    }
+    let siteLevelData: any[] = [];
+    sourceData.forEach(entry => {
+        const dateToTest = selectedPage === 'ars' ? entry.arsSanctionedDate : entry.remittanceDetails?.[0]?.dateOfRemittance;
+        const entryDate = safeParseDate(dateToTest);
+        if (fromDate && toDate) {
+            if (!entryDate || !isWithinInterval(entryDate, { start: fromDate, end: toDate })) return;
+        }
 
-    // Unpack entries with multiple sites into individual rows
-    let siteLevelData: ReportableEntry[] = [];
-    if (selectedPage === 'deposit' || selectedPage === 'private' || selectedPage === 'collector' || selectedPage === 'planFund' || selectedPage === 'gwInvestigation' || selectedPage === 'loggingPumpingTest') {
-        filteredData.forEach(entry => {
-            const fileEntry = entry as DataEntryFormData;
-            if (fileEntry.siteDetails && fileEntry.siteDetails.length > 0) {
-                fileEntry.siteDetails.forEach(site => {
-                    siteLevelData.push({ ...fileEntry, ...site, siteDetails: undefined });
-                });
-            } else {
-                 siteLevelData.push({ ...fileEntry, siteDetails: undefined });
-            }
-        });
-    } else {
-        siteLevelData = filteredData as ReportableEntry[];
-    }
+        if (selectedPage === 'ars') {
+            siteLevelData.push(entry);
+        } else {
+            entry.siteDetails?.forEach((site: any) => {
+                siteLevelData.push({ ...entry, ...site, siteDetails: undefined });
+            });
+        }
+    });
 
-    // Apply Site-level Filters on unpacked data
     if (selectedPage === 'ars') {
-        if (selectedSchemeType !== 'all') {
-            siteLevelData = siteLevelData.filter(entry => (entry as ArsEntryFormData).arsTypeOfScheme === selectedSchemeType);
-        }
+        if (selectedSchemeType !== 'all') siteLevelData = siteLevelData.filter(e => e.arsTypeOfScheme === selectedSchemeType);
     } else {
-        if (selectedPurpose !== 'all') {
-            siteLevelData = siteLevelData.filter(entry => (entry as any).purpose === selectedPurpose);
-        }
-        if (selectedAppType !== 'all') {
-            siteLevelData = siteLevelData.filter(entry => ('applicationType' in entry && entry.applicationType === selectedAppType));
-        }
+        if (selectedPurpose !== 'all') siteLevelData = siteLevelData.filter(e => e.purpose === selectedPurpose);
+        if (selectedAppType !== 'all') siteLevelData = siteLevelData.filter(e => e.applicationType === selectedAppType);
     }
     
-    if (selectedLsg !== 'all') {
-        siteLevelData = siteLevelData.filter(entry => (entry as any).localSelfGovt === selectedLsg);
-    }
-    if (selectedConstituency !== 'all') {
-        siteLevelData = siteLevelData.filter(entry => (entry as any).constituency === selectedConstituency);
-    }
+    if (selectedLsg !== 'all') siteLevelData = siteLevelData.filter(e => e.localSelfGovt === selectedLsg);
+    if (selectedConstituency !== 'all') siteLevelData = siteLevelData.filter(e => e.constituency === selectedConstituency);
     
-    // Generate Report Rows from the final, site-level data
     const selectedFieldObjects = reportableFields.filter(f => selectedFields.includes(f.id));
     const headers = selectedFieldObjects.map(f => f.label);
     const dataForReport = siteLevelData.map(entry => {
         const row: ReportRow = {};
         selectedFieldObjects.forEach(field => {
-            const value = field.accessor(entry as any);
-            if (typeof value === 'object' && value instanceof Date) {
-                 row[field.label] = formatDateHelper(value);
-            } else {
-                 row[field.label] = value === null || value === undefined ? 'N/A' : value;
-            }
+            const value = field.accessor(entry);
+            if (value instanceof Date) row[field.label] = format(value, "dd/MM/yyyy");
+            else row[field.label] = value ?? 'N/A';
         });
         return row;
     });
 
-    if (dataForReport.length === 0) {
-        toast({ title: "No Data Found", description: "No records match the selected filters.", variant: "default" });
-    }
     setReportData(dataForReport);
     setReportHeaders(headers);
+    if (dataForReport.length === 0) toast({ title: "No Data Found" });
   }, [selectedFields, selectedPage, startDate, endDate, selectedPurpose, selectedLsg, selectedConstituency, selectedAppType, selectedSchemeType, allFileEntries, allArsEntries, toast]);
 
-  const handleClear = () => {
-    setSelectedFields([]);
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setSelectedPurpose('all');
-    setSelectedLsg('all');
-    setSelectedConstituency('all');
-    setSelectedAppType('all');
-    setSelectedSchemeType('all');
-    setReportData(null);
-    setReportHeaders([]);
-    toast({ title: 'Cleared', description: 'All selections and filters have been reset.' });
-  };
-  
   const handleExportExcel = async () => {
-    if (!reportData || reportData.length === 0) {
-      toast({ title: "No report data to export.", variant: "destructive" });
-      return;
-    }
+    if (!reportData?.length) return;
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Custom_Report');
-    
+    const worksheet = workbook.addWorksheet('Report');
     worksheet.addRow(reportHeaders).font = { bold: true };
-
-    reportData.forEach(row => {
-        const rowData = reportHeaders.map(header => row[header]);
-        worksheet.addRow(rowData);
-    });
-
-    worksheet.columns.forEach(column => {
-        let maxLength = 0;
-        column.eachCell!({ includeEmpty: true }, cell => {
-            const columnLength = cell.value ? String(cell.value).length : 10;
-            if (columnLength > maxLength) {
-                maxLength = columnLength;
-            }
-        });
-        column.width = maxLength < 15 ? 15 : maxLength + 2;
-    });
-
+    reportData.forEach(row => worksheet.addRow(reportHeaders.map(h => row[h])));
     const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `GWD_Custom_Report_${format(new Date(), 'yyyyMMdd_HHmmss')}.xlsx`;
-    document.body.appendChild(a);
+    a.href = URL.createObjectURL(new Blob([buffer]));
+    a.download = `Report_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`;
     a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-    toast({ title: "Excel Exported", description: "Custom report has been downloaded." });
-  };
-  
-  const formatDateHelper = (date: Date | string | null | undefined): string => {
-    if (!date) return 'N/A';
-    try {
-        const d = date instanceof Date ? date : new Date(date);
-        return isValid(d) ? format(d, "dd/MM/yyyy") : 'Invalid Date';
-    } catch {
-        return 'Invalid Date';
-    }
   };
 
   return (
@@ -268,91 +167,64 @@ export default function CustomReportBuilder() {
             <CardContent className="space-y-4 pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="space-y-2"><Label>Data Source</Label>
-                        <Select value={selectedPage} onValueChange={(v) => {
-                            const newSource = v as ReportSource;
-                            setSelectedPage(newSource);
-                            // Reset filters that may not apply to the new source
-                            setSelectedPurpose('all');
-                            setSelectedAppType('all');
-                            setSelectedSchemeType('all');
-                            setSelectedFields([]);
-                            setReportData(null);
-                        }}>
+                        <Select value={selectedPage} onValueChange={(v) => setSelectedPage(v as ReportSource)}>
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="gwInvestigation">GW Investigation</SelectItem>
-                                <SelectItem value="loggingPumpingTest">Logging & Pumping Test</SelectItem>
                                 <SelectItem value="deposit">Deposit Works</SelectItem>
                                 <SelectItem value="collector">Collector's Deposit Works</SelectItem>
                                 <SelectItem value="private">Private Deposit Works</SelectItem>
                                 <SelectItem value="planFund">Plan Fund Works</SelectItem>
                                 <SelectItem value="ars">ARS</SelectItem>
+                                <SelectItem value="gwInvestigation">GW Investigation</SelectItem>
+                                <SelectItem value="loggingPumpingTest">Logging & Pumping Test</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="space-y-2"><Label>From Date</Label><Input type="date" value={startDate ? format(startDate, 'yyyy-MM-dd') : ''} onChange={(e) => setStartDate(e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined)} /></div>
-                    <div className="space-y-2"><Label>To Date</Label><Input type="date" value={endDate ? format(endDate, 'yyyy-MM-dd') : ''} onChange={(e) => setEndDate(e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined)} /></div>
-                    <div className="space-y-2"><Label>Type of Application</Label><Select value={selectedAppType} onValueChange={setSelectedAppType} disabled={selectedPage === 'ars' || selectedPage === 'gwInvestigation' || selectedPage === 'loggingPumpingTest'}><SelectTrigger><SelectValue placeholder="Select Type"/></SelectTrigger><SelectContent position="popper"><SelectItem value="all">All Types</SelectItem>{applicationTypeOptions.map(t => <SelectItem key={t} value={t}>{applicationTypeDisplayMap[t]}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label>Purpose</Label><Select value={selectedPurpose} onValueChange={setSelectedPurpose} disabled={selectedPage === 'ars' || selectedPage === 'gwInvestigation' || selectedPage === 'loggingPumpingTest'}><SelectTrigger><SelectValue placeholder="Select Purpose"/></SelectTrigger><SelectContent><SelectItem value="all">All Purposes</SelectItem>{sitePurposeOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label>Type of Scheme (ARS)</Label><Select value={selectedSchemeType} onValueChange={setSelectedSchemeType} disabled={selectedPage !== 'ars'}><SelectTrigger><SelectValue placeholder="Select Scheme"/></SelectTrigger><SelectContent><SelectItem value="all">All Scheme Types</SelectItem>{arsTypeOfSchemeOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label>Local Self Govt.</Label><Select value={selectedLsg} onValueChange={setSelectedLsg}><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger><SelectContent className="max-h-80"><SelectItem value="all">All LSGs</SelectItem>{lsgOptions.map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}</SelectContent></Select></div>
-                    <div className="space-y-2"><Label>Constituency (LAC)</Label><Select value={selectedConstituency} onValueChange={setSelectedConstituency}><SelectTrigger><SelectValue placeholder="Select Constituency"/></SelectTrigger><SelectContent position="popper"><SelectItem value="all">All Constituencies</SelectItem>{[...constituencyOptions].sort().map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+                    <div className="space-y-2"><Label>From Date</Label><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
+                    <div className="space-y-2"><Label>To Date</Label><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
+                    <div className="space-y-2"><Label>Purpose</Label>
+                        <Select value={selectedPurpose} onValueChange={setSelectedPurpose} disabled={selectedPage === 'ars'}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent><SelectItem value="all">All Purposes</SelectItem>{sitePurposeOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
                 </div>
             </CardContent>
         </Card>
 
-        {selectedPage && (
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle className="flex items-center gap-2"><Database className="h-5 w-5 text-primary"/>Select Report Fields</CardTitle>
-                         <CardDescription>Choose columns for your report. {selectedPage !== 'ars' && selectedPurpose === 'all' && 'Some fields are available only after selecting a specific purpose.'}</CardDescription>
-                      </div>
-                      <Button variant="link" onClick={handleSelectAllFields} disabled={availableFields.length === 0} className="p-0 h-auto">
-                        {selectedFields.length === availableFields.length ? 'Deselect All' : 'Select All'}
-                      </Button>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-secondary/20 max-h-96 overflow-y-auto">
-                        {availableFields.map(field => (
-                            <div key={field.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-secondary/50">
-                                <Checkbox id={field.id} checked={selectedFields.includes(field.id)} onCheckedChange={() => setSelectedFields(prev => prev.includes(field.id) ? prev.filter(id => id !== field.id) : [...prev, field.id])} />
-                                <label htmlFor={field.id} className="text-sm font-medium leading-none cursor-pointer">{field.label}</label>
-                            </div>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-        )}
+        <Card>
+            <CardHeader className="flex flex-row justify-between items-center">
+                <div><CardTitle>Select Report Fields</CardTitle><CardDescription>Available columns for {selectedPage}.</CardDescription></div>
+                <Button variant="link" onClick={() => setSelectedFields(selectedFields.length === availableFields.length ? [] : availableFields.map(f => f.id))}>
+                    {selectedFields.length === availableFields.length ? 'Deselect All' : 'Select All'}
+                </Button>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 border rounded-lg bg-secondary/20 max-h-96 overflow-y-auto">
+                    {availableFields.map(field => (
+                        <div key={field.id} className="flex items-center space-x-3 p-2 rounded-md hover:bg-secondary/50">
+                            <Checkbox id={field.id} checked={selectedFields.includes(field.id)} onCheckedChange={() => setSelectedFields(prev => prev.includes(field.id) ? prev.filter(id => id !== field.id) : [...prev, field.id])} />
+                            <label htmlFor={field.id} className="text-sm font-medium cursor-pointer">{field.label}</label>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
 
-        <div className="flex justify-start items-center gap-4 pt-4 border-t">
-          <Button onClick={handleGenerateReport} disabled={selectedFields.length === 0}><FileDown className="mr-2 h-4 w-4" />Generate Report ({reportData?.length ?? 0})</Button>
-          <Button variant="outline" onClick={handleClear}><RotateCcw className="mr-2 h-4 w-4" />Clear</Button>
-          <Button onClick={handleExportExcel} disabled={!reportData || reportData.length === 0}><FileDown className="mr-2 h-4 w-4" />Export Excel</Button>
+        <div className="flex gap-4 pt-4 border-t">
+          <Button onClick={handleGenerateReport}><PlusCircle className="mr-2 h-4 w-4" />Generate Report</Button>
+          <Button variant="outline" onClick={() => setReportData(null)}>Clear</Button>
+          <Button onClick={handleExportExcel} disabled={!reportData?.length}><FileDown className="mr-2 h-4 w-4" />Export Excel</Button>
         </div>
 
         {reportData && (
-          <div className="pt-8 border-t">
-            <h3 className="text-lg font-semibold flex items-center gap-2 mb-2"><TableIcon className="h-5 w-5 text-primary"/>Generated Report</h3>
+          <div className="pt-8">
+            <h3 className="text-lg font-semibold mb-2">Generated Data ({reportData.length} rows)</h3>
             <div className="border rounded-lg max-h-[60vh] overflow-auto">
               <Table>
-                  <TableHeader className="sticky top-0 bg-secondary z-10">
-                      <TableRow>{reportHeaders.map(header => <TableHead key={header}>{header}</TableHead>)}</TableRow>
-                  </TableHeader>
+                  <TableHeader className="sticky top-0 bg-secondary z-10"><TableRow>{reportHeaders.map(h => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader>
                   <TableBody>
-                      {reportData.length > 0 ? (
-                        reportData.map((row, rowIndex) => (
-                            <TableRow key={rowIndex}>
-                                {reportHeaders.map(header => (
-                                    <TableCell key={`${rowIndex}-${header}`} className="whitespace-nowrap text-xs">{String(row[header] ?? 'N/A')}</TableCell>
-                                ))}
-                            </TableRow>
-                        ))
-                      ) : (
-                        <TableRow><TableCell colSpan={reportHeaders.length} className="h-24 text-center">No records found for the selected filters.</TableCell></TableRow>
-                      )}
+                      {reportData.map((row, i) => <TableRow key={i}>{reportHeaders.map(h => <TableCell key={h} className="text-xs whitespace-nowrap">{String(row[h] ?? '-')}</TableCell>)}</TableRow>)}
                   </TableBody>
               </Table>
             </div>
@@ -361,6 +233,3 @@ export default function CustomReportBuilder() {
     </div>
   );
 }
-
-// Add a new type to handle both entry types
-type ReportableEntry = (DataEntryFormData | ArsEntryFormData) & { [key: string]: any };
