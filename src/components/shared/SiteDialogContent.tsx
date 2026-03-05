@@ -79,6 +79,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     const isDevPurpose = useMemo(() => ['BW Dev', 'TW Dev', 'FPW Dev'].includes(watchedPurpose as any), [watchedPurpose]);
     const isMWSSPurpose = useMemo(() => ['MWSS', 'MWSS Ext', 'Pumping Scheme', 'MWSS Pump Reno'].includes(watchedPurpose as any), [watchedPurpose]);
     const isHPSPurpose = useMemo(() => ['HPS', 'HPR'].includes(watchedPurpose as any), [watchedPurpose]);
+    const isARSPurpose = useMemo(() => watchedPurpose === 'ARS', [watchedPurpose]);
 
     const isFieldReadOnly = (isSupervisorEditable: boolean) => {
         if (isReadOnly) return true;
@@ -226,7 +227,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                 )}
 
                 {/* 3. Work Implementation */}
-                {(isWellPurpose || isDevPurpose || isMWSSPurpose || isHPSPurpose) && (
+                {(isWellPurpose || isDevPurpose || isMWSSPurpose || isHPSPurpose || isARSPurpose) && (
                     <Card>
                         <CardHeader><CardTitle className="text-lg text-primary">Work Implementation</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
@@ -425,7 +426,29 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                     </Card>
                 )}
 
-                {/* 8. Work Status */}
+                {/* 8. ARS Scheme Details */}
+                {isARSPurpose && (
+                    <Card>
+                        <CardHeader><CardTitle className="text-lg text-primary">Scheme Details</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <FormField name="arsNumberOfStructures" control={control} render={({ field }) => <FormItem><FormLabel>Number of Structures</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="arsStorageCapacity" control={control} render={({ field }) => <FormItem><FormLabel>Storage Capacity (m³)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="arsNumberOfFillings" control={control} render={({ field }) => <FormItem><FormLabel>Number of Fillings</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="noOfBeneficiary" control={control} render={({ field }) => <FormItem><FormLabel># Beneficiaries</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
+                            </div>
+                            <FormField name="schemeRemarks" control={control} render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Scheme Remarks</FormLabel>
+                                    <FormControl><Textarea {...field} value={field.value || ''} placeholder="Any specific remarks about the ARS scheme..." readOnly={isFieldReadOnly(true)} className="min-h-[40px]" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* 9. Work Status */}
                 <Card>
                     <CardHeader><CardTitle className="text-lg text-primary">Work Status</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
@@ -444,7 +467,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                     </CardContent>
                  </Card>
 
-                 {/* 9. Media Gallery */}
+                 {/* 10. Media Gallery */}
                  <Card>
                     <CardHeader><CardTitle className="text-lg text-primary">Media Gallery</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
