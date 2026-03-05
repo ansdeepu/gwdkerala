@@ -35,10 +35,9 @@ const FileDown = (props: React.SVGProps<SVGSVGElement>) => (
 const AlertTriangle = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
 );
-const CalendarClock = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="M17.5 17.5 16 16.25V14"/><circle cx="16" cy="16" r="6"/></svg>
+const Building = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>
 );
-
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -68,7 +67,6 @@ interface ExpiryInfo {
         status: 'Expired' | 'Expiring Soon';
     }[];
 }
-
 
 function ExpiryAlertDialog({ 
     isOpen, 
@@ -225,7 +223,6 @@ export default function VehiclesPage() {
         return Array.from(alertsMap.values());
     }, [allDepartmentVehicles, allHiredVehicles]);
 
-
     const handleAddOrEdit = (type: 'department' | 'hired' | 'rig', data: any) => {
         if(type === 'department') {
             setEditingDepartmentVehicle(data);
@@ -274,9 +271,7 @@ export default function VehiclesPage() {
         setEditingRigCompressor(null);
     };
 
-    const handleExportExcel = useCallback(async (
-        dataType: 'department' | 'hired' | 'rig'
-    ) => {
+    const handleExportExcel = useCallback(async (dataType: 'department' | 'hired' | 'rig') => {
         const workbook = new ExcelJS.Workbook();
         let data, headers, sheetName, fileNamePrefix;
 
@@ -316,7 +311,6 @@ export default function VehiclesPage() {
             sheet.addRow(row);
         });
 
-        // Auto-width columns
         sheet.columns.forEach(column => {
             let maxLength = 0;
             if(column.eachCell){
@@ -360,7 +354,6 @@ export default function VehiclesPage() {
             historyRigCompressors: allRigCompressors.filter(v => v.status === 'Garaged'),
         };
     }, [allRigCompressors]);
-
 
     return (
         <div className="space-y-6">
@@ -503,7 +496,7 @@ export default function VehiclesPage() {
                                     onView={handleView}
                                 />
                             </CardContent>
-                        </TabsContent>
+                        </Card>
                     </TabsContent>
                 </Tabs>
             )}

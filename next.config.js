@@ -12,6 +12,7 @@ const nextConfig = {
   },
   allowedDevOrigins: [
     "https://6000-firebase-gwd-kerala1-1770522254979.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev",
+    "https://6000-firebase-gwd-kerala-1772693375957.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev",
   ],
   images: {
     remotePatterns: [
@@ -61,5 +62,5 @@ const nextConfig = {
   },
 };
 
-// Force cache invalidation by updating this comment. V30
+// Force cache invalidation by updating this comment. V31
 module.exports = nextConfig;
