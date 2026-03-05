@@ -55,8 +55,9 @@ export const LOGGING_PUMPING_TEST_TYPES = ["Logging_Pumping_Test"] as const;
 export const INVESTIGATION_GOVT_TYPES = ["Government Institution", "Government Water Authority", "Government Infrastructure", "Government Industry", "Government Others", "Government PMKSY", "MPLAD", "MLASDF", "MLA Asset development Fund", "Collector DRW", "Collector SC/ST", "Collector ARWSS", "Collector PMKSY", "Collector Others", "LSGD", "MGNRES", "Others", "GWBDWS", "ARS"] as const;
 export const INVESTIGATION_PRIVATE_TYPES = ["Private Individuals", "Private Institution", "Private Infra structure", "Private Industry"] as const;
 export const INVESTIGATION_COMPLAINT_TYPES = ["Complaints Illegal Well Construction", "Complaints Groundwater extraction without NOC", "Complaints Groundwater Pollution", "Complaints Chief Minister’s Grievance Redressal Cell", "Complaints Others"] as const;
-export const LOGGING_PUMPING_TEST_GOVT_TYPES = ["Government Institution", "Government Water Authority", "Government Infrastructure", "Government Industry", "Government Others", "Government PMKSY", "MPLAD", "MLASDF", "MLA Asset development Fund", "Collector DRW", "Collector SC/ST", "Collector ARWSS", "Collector PMKSY", "Collector Others", "LSGD", "MGNRES", "Others", "GWBDWS", "ARS"] as const;
-export const LOGGING_PUMPING_TEST_PRIVATE_TYPES = ["Private Individuals", "Private Institution", "Private Infra structure", "Private Industry"] as const;
+
+export const LOGGING_PUMPING_TEST_GOVT_TYPES = [...INVESTIGATION_GOVT_TYPES];
+export const LOGGING_PUMPING_TEST_PRIVATE_TYPES = [...INVESTIGATION_PRIVATE_TYPES];
 
 export const applicationTypeOptions = [...PRIVATE_APPLICATION_TYPES, ...PUBLIC_DEPOSIT_APPLICATION_TYPES, ...COLLECTOR_APPLICATION_TYPES, ...PLAN_FUND_APPLICATION_TYPES, ...GW_INVESTIGATION_TYPES, ...LOGGING_PUMPING_TEST_TYPES, ...INVESTIGATION_GOVT_TYPES, ...INVESTIGATION_PRIVATE_TYPES, ...INVESTIGATION_COMPLAINT_TYPES, ...LOGGING_PUMPING_TEST_GOVT_TYPES, ...LOGGING_PUMPING_TEST_PRIVATE_TYPES] as const;
 export type ApplicationType = typeof applicationTypeOptions[number];
@@ -120,6 +121,9 @@ export type PaymentDetailFormData = z.infer<typeof PaymentDetailSchema>;
 export const siteWorkStatusOptions = ["Under Process", "Addl. AS Awaited", "To be Refunded", "Awaiting Dept. Rig", "To be Tendered", "TS Pending", "Tendered", "Selection Notice Issued", "Work Order Issued", "Work Initiated", "Work in Progress", "Work Failed", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending"] as const;
 export type SiteWorkStatus = typeof siteWorkStatusOptions[number];
 
+export const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
+export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Under Process", "Completed"] as const;
+
 export const fileStatusOptions = ["File Under Process", "Rig Accessibility Inspection", "Technical Sanction", "Tender Process", "Work Initiated", "Fully Completed", "Partially Completed", "Completed Except Disputed", "Partially Completed Except Disputed", "Fully Disputed", "To be Refunded", "Bill Preparation", "Payments", "Utilization Certificate", "File Closed"] as const;
 export type FileStatus = typeof fileStatusOptions[number];
 
@@ -127,6 +131,11 @@ export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = ["Geological logging", "Geop
 
 export const sitePurposeOptions = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS", "GW Investigation", "Geological logging", "Geophysical Logging", "VES", "Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others", "Pumping Test Others"] as const;
 export type SitePurpose = typeof sitePurposeOptions[number];
+
+export const REPORTING_PURPOSE_ORDER = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS", "GW Investigation", "VES", "Pumping test"] as const;
+export const PUMPING_TEST_AGGREGATE_PURPOSES = ["Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others", "Pumping Test Others"] as const;
+export const INVESTIGATION_APP_TYPE_PURPOSES = ["Geological logging", "Geophysical Logging"] as const;
+export const INVESTIGATION_WELL_TYPE_PURPOSES = ["GW Investigation", "VES"] as const;
 
 export const siteDiameterOptions = ["110 mm (4.5”)", "150 mm (6”)", "200 mm (8”)"] as const;
 export type SiteDiameter = typeof siteDiameterOptions[number];
