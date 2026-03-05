@@ -1,3 +1,4 @@
+
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -415,10 +416,16 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
           if (!user) throw new Error("User must be logged in.");
           const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
           if (!officeLoc) throw new Error("User must have an office location.");
-          if (!data.id) throw new Error("Document ID is missing for update.");
-          const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, data.id);
+          
+          const recordId = data.id;
+          if (!recordId) throw new Error("Document ID is missing for update.");
+          
+          const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, recordId);
           const payload = { ...data, updatedAt: serverTimestamp() };
+          
+          // Remove ID from the data map before saving to Firestore document body
           if ('id' in payload) delete (payload as any).id;
+          
           await updateDoc(docRef, payload);
           toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
       }, [user, selectedOffice]);

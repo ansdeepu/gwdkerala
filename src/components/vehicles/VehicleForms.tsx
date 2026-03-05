@@ -1,3 +1,4 @@
+
 // src/components/vehicles/VehicleForms.tsx
 "use client";
 
@@ -66,7 +67,9 @@ export function DepartmentVehicleForm({ initialData, onFormSubmit, onClose }: Fo
     });
 
     const handleSubmit = async (data: DepartmentVehicle) => {
-        const payload = { ...initialData, ...data };
+        // Ensure ID is passed back if it's an update
+        const payload = { ...data };
+        if (initialData?.id) payload.id = initialData.id;
         await onFormSubmit(payload);
     };
 
@@ -147,7 +150,8 @@ export function HiredVehicleForm({ initialData, onFormSubmit, onClose }: FormPro
     });
 
     const handleSubmit = async (data: HiredVehicle) => {
-        const payload = { ...initialData, ...data };
+        const payload = { ...data };
+        if (initialData?.id) payload.id = initialData.id;
         await onFormSubmit(payload);
     };
 
@@ -236,7 +240,8 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
     const isExternal = form.watch('isExternal');
 
     const handleSubmit = async (data: RigCompressor) => {
-        const payload = { ...initialData, ...data };
+        const payload = { ...data };
+        if (initialData?.id) payload.id = initialData.id;
         await onFormSubmit(payload);
     };
 
@@ -244,7 +249,7 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)}>
                 <DialogHeader className="p-6 pb-4">
-                    <DialogTitle>{isExternal ? "External Rig Unit" : (initialData ? 'Edit' : 'Add') + ' Rig & Compressor Unit'}</DialogTitle>
+                    <DialogTitle>{isExternal ? "External Rig Unit" : (initialData?.id ? 'Edit' : 'Add') + ' Rig & Compressor Unit'}</DialogTitle>
                 </DialogHeader>
                 <div className="p-6 pt-0 space-y-4">
                     {isExternal && (

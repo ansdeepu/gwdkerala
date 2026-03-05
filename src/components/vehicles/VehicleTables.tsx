@@ -1,41 +1,22 @@
+
 // src/components/vehicles/VehicleTables.tsx
 "use client";
 
 import React, { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash2, Building, Truck, AlertTriangle, Loader2 } from "lucide-react";
+import { Eye, Trash2, Building, Truck, AlertTriangle, Loader2, Pencil } from "lucide-react";
 import type { DepartmentVehicle, HiredVehicle, RigCompressor } from "@/lib/schemas";
 import { format, isValid, isBefore, addDays } from "date-fns";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
-import { Card, CardHeader, CardContent, CardTitle } from "../ui/card";
-import { ScrollArea } from "../ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
 import Image from "next/image";
 import { useDataStore } from '@/hooks/use-data-store';
-
-interface CommonTableProps {
-    canEdit: boolean;
-    onView: (vehicle: any) => void;
-}
-interface DepartmentVehicleTableProps extends CommonTableProps {
-    data: DepartmentVehicle[];
-    onEdit: (vehicle: DepartmentVehicle) => void;
-    onDelete: (id: string, name: string) => Promise<void>;
-}
-interface HiredVehicleTableProps extends CommonTableProps {
-    data: HiredVehicle[];
-    onEdit: (vehicle: HiredVehicle) => void;
-    onDelete: (id: string, name: string) => Promise<void>;
-}
-interface RigCompressorTableProps extends CommonTableProps {
-    data: RigCompressor[];
-    onEdit: (unit: RigCompressor) => void;
-    onDelete: (id: string, name: string) => Promise<void>;
-}
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -275,18 +256,20 @@ export function DepartmentVehicleTable({ data, onEdit, onDelete, canEdit, onView
                             <TableCell className="p-2 text-sm">{formatDateSafe(v.fuelTestExpiry)}</TableCell>
                             {canEdit && (
                                 <TableCell className="text-right p-1">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" onClick={() => onEdit(v)}><Eye className="h-4 w-4"/></Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Edit</p></TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete(v)}><Trash2 className="h-4 w-4"/></Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Delete</p></TooltipContent>
-                                    </Tooltip>
+                                    <div className="flex justify-end gap-1">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => onEdit(v)}><Pencil className="h-4 w-4"/></Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Edit</p></TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete(v)}><Trash2 className="h-4 w-4"/></Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Delete</p></TooltipContent>
+                                        </Tooltip>
+                                    </div>
                                 </TableCell>
                             )}
                         </TableRow>
@@ -350,18 +333,20 @@ export function HiredVehicleTable({ data, onEdit, onDelete, canEdit, onView }: H
                             <TableCell className="p-2 text-sm">{formatDateSafe(v.permitExpiry)}</TableCell>
                              {canEdit && (
                                 <TableCell className="text-right p-1">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" onClick={() => onEdit(v)}><Eye className="h-4 w-4"/></Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Edit</p></TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete(v)}><Trash2 className="h-4 w-4"/></Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Delete</p></TooltipContent>
-                                    </Tooltip>
+                                    <div className="flex justify-end gap-1">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => onEdit(v)}><Pencil className="h-4 w-4"/></Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Edit</p></TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete(v)}><Trash2 className="h-4 w-4"/></Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Delete</p></TooltipContent>
+                                        </Tooltip>
+                                    </div>
                                 </TableCell>
                             )}
                         </TableRow>
@@ -414,18 +399,20 @@ export function RigCompressorTable({ data, onEdit, onDelete, canEdit, onView }: 
                             <TableCell className="p-2 text-sm">{u.compressorDetails || '-'}</TableCell>
                             {canEdit && (
                                 <TableCell className="text-right p-1">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" onClick={() => onEdit(u)}><Eye className="h-4 w-4"/></Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Edit</p></TooltipContent>
-                                    </Tooltip>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete(u)}><Trash2 className="h-4 w-4"/></Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Delete</p></TooltipContent>
-                                    </Tooltip>
+                                    <div className="flex justify-end gap-1">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => onEdit(u)}><Pencil className="h-4 w-4"/></Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Edit</p></TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete(u)}><Trash2 className="h-4 w-4"/></Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Delete</p></TooltipContent>
+                                        </Tooltip>
+                                    </div>
                                 </TableCell>
                             )}
                         </TableRow>
@@ -475,7 +462,7 @@ export function EngagedRigTable({ data, onEdit, onDelete, canEdit, onView }: Rig
                                     <div className="flex justify-end gap-1">
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <Button variant="ghost" size="icon" onClick={() => onEdit(u)}><Eye className="h-4 w-4"/></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => onEdit(u)}><Pencil className="h-4 w-4"/></Button>
                                             </TooltipTrigger>
                                             <TooltipContent><p>View / Edit</p></TooltipContent>
                                         </Tooltip>
