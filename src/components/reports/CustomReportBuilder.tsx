@@ -1,4 +1,3 @@
-// src/components/reports/CustomReportBuilder.tsx
 "use client";
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +29,7 @@ import ExcelJS from 'exceljs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { PlusCircle, FileDown } from 'lucide-react';
 
 type ReportSource = 'deposit' | 'private' | 'ars' | 'gwInvestigation' | 'loggingPumpingTest' | 'collector' | 'planFund';
 type ReportRow = Record<string, string | number | undefined | null>;
@@ -41,7 +41,7 @@ const safeParseDate = (dateValue: any): Date | null => {
     return new Date((dateValue as any).seconds * 1000);
   }
   if (typeof dateValue === 'string') {
-    const parsed = parseISO(dateValue);
+    const parsed = new Date(dateValue);
     if (isValid(parsed)) return parsed;
   }
   return null;
