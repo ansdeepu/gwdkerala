@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DepartmentVehicle, HiredVehicle, RigCompressor } from '@/lib/schemas';
-import { DepartmentVehicleTable, HiredVehicleTable, RigCompressorTable, VehicleViewDialog } from '@/components/vehicles/VehicleTables';
+import { DepartmentVehicleTable, HiredVehicleTable, RigCompressorTable, EngagedRigTable, VehicleViewDialog } from '@/components/vehicles/VehicleTables';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
@@ -46,10 +46,14 @@ export default function VehiclesSuperAdminPage() {
         historyHiredVehicles: allHiredVehicles.filter(v => v.rcStatus === 'Garaged'),
     }), [allHiredVehicles]);
 
-    const { presentRigCompressors, historyRigCompressors } = useMemo(() => ({
-        presentRigCompressors: allRigCompressors.filter(v => v.status !== 'Garaged'),
-        historyRigCompressors: allRigCompressors.filter(v => v.status === 'Garaged'),
-    }), [allRigCompressors]);
+    const { ownRigs, engagedRigs, historyRigCompressors } = useMemo(() => {
+        const active = allRigCompressors.filter(v => v.status !== 'Garaged');
+        return {
+            ownRigs: active.filter(v => !v.isExternal),
+            engagedRigs: active.filter(v => v.isExternal),
+            historyRigCompressors: allRigCompressors.filter(v => v.status === 'Garaged'),
+        };
+    }, [allRigCompressors]);
 
     return (
         <div className="space-y-6">
@@ -98,20 +102,37 @@ export default function VehiclesSuperAdminPage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Rig & Compressor Units ({presentRigCompressors.length})</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <RigCompressorTable 
-                                    data={presentRigCompressors} 
-                                    onEdit={() => {}}
-                                    onDelete={async () => {}}
-                                    canEdit={canEdit}
-                                    onView={handleView}
-                                />
-                            </CardContent>
-                        </Card>
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Rig & Compressor Units ({ownRigs.length})</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <RigCompressorTable 
+                                        data={ownRigs} 
+                                        onEdit={() => {}}
+                                        onDelete={async () => {}}
+                                        canEdit={canEdit}
+                                        onView={handleView}
+                                    />
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-primary/20 bg-primary/5">
+                                <CardHeader>
+                                    <CardTitle>Other Office Rigs Engaged</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <EngagedRigTable 
+                                        data={engagedRigs}
+                                        onEdit={() => {}}
+                                        onDelete={async () => {}}
+                                        canEdit={canEdit}
+                                        onView={handleView}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </div>
                     </TabsContent>
                     <TabsContent value="history" className="mt-4 space-y-6">
                          <Card>

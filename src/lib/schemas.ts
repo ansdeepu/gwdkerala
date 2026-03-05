@@ -433,5 +433,7 @@ export const RigCompressorSchema = z.object({
     compressorDetails: z.string().optional(),
     remarks: z.string().optional(),
     officeLocation: z.string().optional(),
+    isExternal: z.boolean().optional().default(false),
+    externalOffice: z.string().optional().nullable(),
 });
 export type RigCompressor = z.infer<typeof RigCompressorSchema>;

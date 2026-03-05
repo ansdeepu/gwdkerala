@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import ExcelJS from 'exceljs';
 import { format, isValid, addDays, isBefore, isAfter } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
-import { DepartmentVehicleTable, HiredVehicleTable, RigCompressorTable, VehicleViewDialog } from '@/components/vehicles/VehicleTables';
+import { DepartmentVehicleTable, HiredVehicleTable, RigCompressorTable, EngagedRigTable, VehicleViewDialog } from '@/components/vehicles/VehicleTables';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -351,10 +351,14 @@ export default function VehiclesPage() {
         historyHiredVehicles: allHiredVehicles.filter(v => v.rcStatus === 'Garaged'),
     }), [allHiredVehicles]);
 
-    const { presentRigCompressors, historyRigCompressors } = useMemo(() => ({
-        presentRigCompressors: allRigCompressors.filter(v => v.status !== 'Garaged'),
-        historyRigCompressors: allRigCompressors.filter(v => v.status === 'Garaged'),
-    }), [allRigCompressors]);
+    const { ownRigs, engagedRigs, historyRigCompressors } = useMemo(() => {
+        const active = allRigCompressors.filter(v => v.status !== 'Garaged');
+        return {
+            ownRigs: active.filter(v => !v.isExternal),
+            engagedRigs: active.filter(v => v.isExternal),
+            historyRigCompressors: allRigCompressors.filter(v => v.status === 'Garaged'),
+        };
+    }, [allRigCompressors]);
 
 
     return (
@@ -382,7 +386,7 @@ export default function VehiclesPage() {
                                  <div className="flex items-center gap-2">
                                     <Button variant="outline" size="sm" onClick={() => setExpiryAlertType('Department')}><AlertTriangle className="h-4 w-4 mr-2"/>Expiry Alerts</Button>
                                     {canEdit && <Button size="sm" onClick={() => handleAddOrEdit('department', null)}><PlusCircle className="h-4 w-4 mr-2"/> Add</Button>}
-                                    <Button variant="outline" size="sm" onClick={() => handleExportExcel('department')}><FileDown className="h-4 w-4 mr-2" /> Export</Button>
+                                    <Button variant="outline" size="sm" onClick={() => handleExportExcel('department')}><FileDown className="mr-2 h-4 w-4" /> Export</Button>
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -402,7 +406,7 @@ export default function VehiclesPage() {
                                  <div className="flex items-center gap-2">
                                     <Button variant="outline" size="sm" onClick={() => setExpiryAlertType('Hired')}><AlertTriangle className="h-4 w-4 mr-2"/>Expiry Alerts</Button>
                                     {canEdit && <Button size="sm" onClick={() => handleAddOrEdit('hired', null)}><PlusCircle className="h-4 w-4 mr-2"/> Add</Button>}
-                                    <Button variant="outline" size="sm" onClick={() => handleExportExcel('hired')}><FileDown className="h-4 w-4 mr-2" /> Export</Button>
+                                    <Button variant="outline" size="sm" onClick={() => handleExportExcel('hired')}><FileDown className="mr-2 h-4 w-4" /> Export</Button>
                                 </div>
                             </CardHeader>
                             <CardContent>
@@ -416,24 +420,38 @@ export default function VehiclesPage() {
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <CardTitle>Rig & Compressor Units ({presentRigCompressors.length})</CardTitle>
-                                 <div className="flex items-center gap-2">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <CardTitle>Rig & Compressor Units ({ownRigs.length})</CardTitle>
                                     {canEdit && <Button size="sm" onClick={() => handleAddOrEdit('rig', null)}><PlusCircle className="h-4 w-4 mr-2"/> Add</Button>}
-                                    <Button variant="outline" size="sm" onClick={() => handleExportExcel('rig')}><FileDown className="h-4 w-4 mr-2" /> Export</Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <RigCompressorTable 
-                                    data={presentRigCompressors} 
-                                    onEdit={(v) => handleAddOrEdit('rig', v)} 
-                                    onDelete={deleteRigCompressor}
-                                    canEdit={canEdit}
-                                    onView={handleView}
-                                />
-                            </CardContent>
-                        </Card>
+                                </CardHeader>
+                                <CardContent>
+                                    <RigCompressorTable 
+                                        data={ownRigs} 
+                                        onEdit={(v) => handleAddOrEdit('rig', v)} 
+                                        onDelete={deleteRigCompressor} 
+                                        canEdit={canEdit}
+                                        onView={handleView}
+                                    />
+                                </CardContent>
+                            </Card>
+
+                            <Card className="border-primary/20 bg-primary/5">
+                                <CardHeader>
+                                    <CardTitle>Other Office Rigs Engaged</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <EngagedRigTable 
+                                        data={engagedRigs}
+                                        onEdit={(v) => handleAddOrEdit('rig', v)}
+                                        onDelete={deleteRigCompressor}
+                                        canEdit={canEdit}
+                                        onView={handleView}
+                                    />
+                                </CardContent>
+                            </Card>
+                        </div>
                     </TabsContent>
                     <TabsContent value="history" className="mt-4 space-y-6">
                          <Card>
@@ -472,7 +490,7 @@ export default function VehiclesPage() {
                                 <RigCompressorTable 
                                     data={historyRigCompressors} 
                                     onEdit={(v) => handleAddOrEdit('rig', v)} 
-                                    onDelete={deleteRigCompressor}
+                                    onDelete={deleteRigCompressor} 
                                     canEdit={canEdit}
                                     onView={handleView}
                                 />

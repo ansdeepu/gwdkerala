@@ -1,4 +1,3 @@
-
 // src/components/vehicles/VehicleTables.tsx
 "use client";
 
@@ -190,6 +189,12 @@ export function VehicleViewDialog({ vehicle, onClose }: { vehicle: DepartmentVeh
                         <DetailRow label="Status" value={u.status} isUppercase />
                         <DetailRow label="Fuel Consumption" value={u.fuelConsumption} />
                     </div>
+                    {u.isExternal && (
+                        <div className="p-3 bg-primary/10 border border-primary/20 rounded-md text-center">
+                            <p className="text-xs font-semibold text-primary uppercase">Engaged from Other Office</p>
+                            <p className="text-sm font-bold text-primary">{u.externalOffice}</p>
+                        </div>
+                    )}
                     <Separator />
                     <div className="space-y-2">
                         <h4 className="text-sm font-semibold text-muted-foreground text-center">Associated Vehicles</h4>
@@ -425,6 +430,73 @@ export function RigCompressorTable({ data, onEdit, onDelete, canEdit, onView }: 
                             )}
                         </TableRow>
                     ))}
+                </TableBody>
+            </Table>
+            <ConfirmDeleteDialog isOpen={!!itemToDelete} onOpenChange={() => setItemToDelete(null)} onConfirm={handleDelete} itemName={itemToDelete?.typeOfRigUnit} isDeleting={isDeleting} />
+        </TooltipProvider>
+    );
+}
+
+export function EngagedRigTable({ data, onEdit, onDelete, canEdit, onView }: RigCompressorTableProps) {
+    const [itemToDelete, setItemToDelete] = useState<RigCompressor | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        if (!itemToDelete) return;
+        setIsDeleting(true);
+        await onDelete(itemToDelete.id!, itemToDelete.typeOfRigUnit);
+        setIsDeleting(false);
+        setItemToDelete(null);
+    };
+
+    return (
+        <TooltipProvider>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="p-2 text-sm w-[80px]">Sl. No</TableHead>
+                        <TableHead className="p-2 text-sm">Office</TableHead>
+                        <TableHead className="p-2 text-sm">Type of Rig</TableHead>
+                        {canEdit && <TableHead className="text-right p-2 text-sm">Actions</TableHead>}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {(data || []).map((u, index) => (
+                        <TableRow key={u.id}>
+                            <TableCell className="p-2 text-sm text-center font-mono">{index + 1}</TableCell>
+                            <TableCell className="p-2 text-sm font-bold text-primary">{u.externalOffice || '-'}</TableCell>
+                            <TableCell className="p-2 text-sm">
+                                <button onClick={() => onView(u)} className="text-left hover:underline font-semibold">
+                                    {u.typeOfRigUnit || '-'}
+                                </button>
+                            </TableCell>
+                            {canEdit && (
+                                <TableCell className="text-right p-1">
+                                    <div className="flex justify-end gap-1">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => onEdit(u)}><Eye className="h-4 w-4"/></Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>View / Edit</p></TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete(u)}><Trash2 className="h-4 w-4"/></Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent><p>Delete</p></TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                </TableCell>
+                            )}
+                        </TableRow>
+                    ))}
+                    {(data || []).length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={canEdit ? 4 : 3} className="h-24 text-center text-muted-foreground italic">
+                                No external rigs engaged for drilling work.
+                            </TableCell>
+                        </TableRow>
+                    )}
                 </TableBody>
             </Table>
             <ConfirmDeleteDialog isOpen={!!itemToDelete} onOpenChange={() => setItemToDelete(null)} onConfirm={handleDelete} itemName={itemToDelete?.typeOfRigUnit} isDeleting={isDeleting} />

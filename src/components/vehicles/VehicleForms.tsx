@@ -4,7 +4,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,9 @@ import type { DepartmentVehicle, HiredVehicle, RigCompressor } from "@/lib/schem
 import { ScrollArea } from "../ui/scroll-area";
 import { format, isValid } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Checkbox } from "../ui/checkbox";
 
+const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate"];
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -226,8 +228,12 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
             supportingVehicleRegNo: initialData?.supportingVehicleRegNo || '',
             compressorDetails: initialData?.compressorDetails || '',
             remarks: initialData?.remarks || '',
+            isExternal: initialData?.isExternal || false,
+            externalOffice: initialData?.externalOffice || null,
         },
     });
+
+    const isExternal = form.watch('isExternal');
 
     const handleSubmit = async (data: RigCompressor) => {
         const payload = { ...initialData, ...data };
@@ -241,6 +247,35 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
                     <DialogTitle>{initialData ? 'Edit' : 'Add'} Rig & Compressor Unit</DialogTitle>
                 </DialogHeader>
                 <div className="p-6 pt-0 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField name="isExternal" control={form.control} render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 bg-secondary/10">
+                                <FormControl>
+                                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                    <FormLabel>External Rig</FormLabel>
+                                    <FormDescription className="text-xs">Is this rig engaged from another sub-office?</FormDescription>
+                                </div>
+                            </FormItem>
+                        )}/>
+                        {isExternal && (
+                            <FormField name="externalOffice" control={form.control} render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Owning Office</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Office" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            {districts.map(d => (
+                                                <SelectItem key={d} value={d}>{d}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                        )}
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField name="typeOfRigUnit" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Type of Rig Unit</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="status" control={form.control} render={({ field }) => ( 
