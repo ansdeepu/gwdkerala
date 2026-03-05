@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Save, X, Info, Loader2 } from "lucide-react";
-import { SiteDetailSchema, type SiteDetailFormData, siteWorkStatusOptions, sitePurposeOptions, type SitePurpose, siteDiameterOptions, siteTypeOfRigOptions, siteConditionsOptions, type Constituency, type StaffMember, type E_tender, type Bidder } from '@/lib/schemas';
+import { SiteDetailSchema, type SiteDetailFormData, siteWorkStatusOptions, sitePurposeOptions, type SitePurpose, siteDiameterOptions, siteTypeOfRigOptions, siteConditionsOptions, type Constituency, type StaffMember, type E_tender, type Bidder, designationOptions } from '@/lib/schemas';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, isValid, parseISO } from "date-fns";
@@ -145,14 +145,24 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                 const l1Bidder = validBidders.length > 0 ? validBidders.reduce((lowest: Bidder, current: Bidder) => (lowest.quotedAmount! < current.quotedAmount!) ? lowest : current) : null;
                 setValue('contractorName', l1Bidder ? `${l1Bidder.name}, ${l1Bidder.address}` : '');
 
-                const staffNames: string[] = [];
-                if (selectedTender.nameOfAssistantEngineer) staffNames.push(selectedTender.nameOfAssistantEngineer);
-                if (selectedTender.supervisor1Name) staffNames.push(selectedTender.supervisor1Name);
-                if (selectedTender.supervisor2Name) staffNames.push(selectedTender.supervisor2Name);
-                if (selectedTender.supervisor3Name) staffNames.push(selectedTender.supervisor3Name);
+                const staffIdentities: string[] = [];
+                const addStaffInfo = (name?: string | null) => {
+                    if (!name) return;
+                    const staff = (allStaffMembers || []).find(s => s.name === name);
+                    if (staff) {
+                        staffIdentities.push(`${staff.name} (${staff.designation})`);
+                    } else {
+                        staffIdentities.push(name);
+                    }
+                };
+
+                addStaffInfo(selectedTender.nameOfAssistantEngineer);
+                addStaffInfo(selectedTender.supervisor1Name);
+                addStaffInfo(selectedTender.supervisor2Name);
+                addStaffInfo(selectedTender.supervisor3Name);
                 
-                const joinedNames = staffNames.join(', ');
-                setValue('supervisorName', joinedNames);
+                const joinedInfo = staffIdentities.join(', ');
+                setValue('supervisorName', joinedInfo);
                 setValue('supervisorUid', null); 
             }
         } else if (watchedTenderNo === '_clear_' || !watchedTenderNo) {
@@ -160,15 +170,23 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             setValue('supervisorName', '');
             setValue('supervisorUid', undefined);
         }
-    }, [watchedTenderNo, isTenderSelected, isQuotation, allE_tenders, setValue]);
+    }, [watchedTenderNo, isTenderSelected, isQuotation, allE_tenders, allStaffMembers, setValue]);
 
     const quotationSupervisorList = useMemo(() => {
         const targetDesignations = ["Master Driller", "Senior Driller", "Driller", "Driller Mechanic", "Drilling Assistant", "Tracer", "Draftsman"];
-        return (allStaffMembers || []).filter(s => 
+        const filtered = (allStaffMembers || []).filter(s => 
             s.status === 'Active' && 
             s.designation && 
             targetDesignations.includes(s.designation as any)
-        ).sort((a, b) => a.name.localeCompare(b.name));
+        );
+
+        // Sort based on the hierarchy defined in designationOptions
+        return filtered.sort((a, b) => {
+            const indexA = a.designation ? (designationOptions as unknown as string[]).indexOf(a.designation) : 999;
+            const indexB = b.designation ? (designationOptions as unknown as string[]).indexOf(b.designation) : 999;
+            if (indexA !== indexB) return indexA - indexB;
+            return a.name.localeCompare(b.name);
+        });
     }, [allStaffMembers]);
 
     const handleSupervisorChange = (uid: string) => {
