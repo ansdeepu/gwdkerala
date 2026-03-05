@@ -189,6 +189,11 @@ service cloud.firestore {
         allow write: if canEditEngineering();
       }
       
+      match /bidders/{docId} {
+        allow read: if officeRead();
+        allow write: if canEditEngineering();
+      }
+      
       match /localSelfGovernments/{docId} {
           allow read: if officeRead();
           allow write: if canManageAll();
@@ -229,6 +234,9 @@ service cloud.firestore {
       allow read: if isSuperAdmin();
     }
     match /{path=**}/rigCompressors/{docId} {
+      allow read: if isSuperAdmin();
+    }
+    match /{path=**}/bidders/{docId} {
       allow read: if isSuperAdmin();
     }
     match /{path=**}/localSelfGovernments/{docId} {
