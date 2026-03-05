@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm, FormProvider, useWatch, useFieldArray } from "react-hook-form";
@@ -19,7 +18,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import MediaManager from '@/components/shared/MediaManager';
 
-// Helper functions
 const toDateOrNull = (value: any): Date | null => {
     if (!value) return null;
     if (value instanceof Date) return value;
@@ -153,14 +151,14 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             <Form {...form}>
               <form id="site-dialog-form" onSubmit={handleSubmit(handleDialogSubmit)} className="space-y-6">
                 {/* 1. Main Details */}
-                <Card className="shadow-lg">
-                    <CardHeader><CardTitle>Main Details</CardTitle></CardHeader>
+                <Card>
+                    <CardHeader><CardTitle className="text-lg">Main Details</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                              <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                             <FormField name="purpose" control={control} render={({ field }) => ( <FormItem><FormLabel>Purpose <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(false)}><FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl><SelectContent>{sitePurposeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
+                             <FormField name="purpose" control={control} render={({ field }) => ( <FormItem><FormLabel>Purpose <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(false)}><FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{sitePurposeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
                              <FormField name="localSelfGovt" control={control} render={({ field }) => ( <FormItem><FormLabel>Local Self Govt.</FormLabel><Select onValueChange={(value) => handleLsgChange(value)} value={field.value} disabled={isFieldReadOnly(false)}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
-                             <FormField name="constituency" control={control} render={({ field }) => ( <FormItem><FormLabel>Constituency (LAC)</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isConstituencyDisabled}><FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl><SelectContent><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
+                             <FormField name="constituency" control={control} render={({ field }) => ( <FormItem><FormLabel>Constituency (LAC)</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isConstituencyDisabled}><FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>{constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
                              <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                              <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                         </div>
@@ -169,8 +167,8 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
 
                 {/* 2. Investigation Details (Recommended) */}
                 {isWellPurpose && (
-                    <Card className="shadow-md">
-                        <CardHeader><CardTitle>Investigation Details (Recommended)</CardTitle></CardHeader>
+                    <Card>
+                        <CardHeader><CardTitle className="text-lg text-primary">Investigation Details (Recommended)</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => (
@@ -225,8 +223,8 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                 )}
 
                 {/* 3. Work Implementation */}
-                <Card className="shadow-md">
-                    <CardHeader><CardTitle>Work Implementation</CardTitle></CardHeader>
+                <Card>
+                    <CardHeader><CardTitle className="text-lg text-primary">Work Implementation</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField name="siteConditions" control={control} render={({ field }) => (
@@ -281,8 +279,8 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
 
                 {/* 4. Drilling Details (Actuals) */}
                 {isWellPurpose && (
-                    <Card className="shadow-md">
-                        <CardHeader><CardTitle>Drilling Details (Actuals)</CardTitle></CardHeader>
+                    <Card>
+                        <CardHeader><CardTitle className="text-lg text-primary">Drilling Details (Actuals)</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <FormField name="diameter" control={control} render={({ field }) => (
@@ -346,11 +344,11 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                 )}
 
                 {/* 5. Work Status */}
-                <Card className="shadow-md">
-                    <CardHeader><CardTitle>Work Status</CardTitle></CardHeader>
+                <Card>
+                    <CardHeader><CardTitle className="text-lg text-primary">Work Status</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <FormField name="workStatus" control={control} render={({ field }) => <FormItem><FormLabel>Work Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl><SelectContent>{SITE_DIALOG_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</Select><FormMessage /></FormItem>} />
+                           <FormField name="workStatus" control={control} render={({ field }) => <FormItem><FormLabel>Work Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl><SelectContent>{SITE_DIALOG_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                            <FormField name="dateOfCompletion" control={control} render={({ field }) => <FormItem><FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                            <FormField name="totalExpenditure" control={control} render={({ field }) => <FormItem><FormLabel>Total Expenditure (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                            <FormField name="workRemarks" control={control} render={({ field }) => (
@@ -365,8 +363,8 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                  </Card>
 
                  {/* 6. Media Gallery */}
-                 <Card className="shadow-lg">
-                    <CardHeader><CardTitle>Media Gallery</CardTitle></CardHeader>
+                 <Card>
+                    <CardHeader><CardTitle className="text-lg text-primary">Media Gallery</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
                         <MediaManager
                             title="Work Images"
@@ -393,9 +391,9 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             </Form>
           </ScrollArea>
         </div>
-        <div className="flex justify-end p-6 pt-4 shrink-0 border-t">
+        <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
           <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
-          {!isReadOnly && <Button type="submit" form="site-dialog-form">Save</Button>}
+          {!isReadOnly && <Button type="submit" form="site-dialog-form">Save Changes</Button>}
         </div>
       </div>
     );
