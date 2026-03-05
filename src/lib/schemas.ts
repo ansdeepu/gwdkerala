@@ -424,7 +424,7 @@ export type RigStatus = typeof rigStatusOptions[number];
 
 export const RigCompressorSchema = z.object({
     id: z.string().optional(),
-    typeOfRigUnit: z.string().min(1, "Type of Rig Unit is required."),
+    typeOfRigUnit: z.string().optional(),
     status: z.enum(rigStatusOptions).default('Active').optional(),
     fuelConsumption: z.string().optional(),
     rigVehicleRegNo: z.string().optional(),
@@ -435,5 +435,23 @@ export const RigCompressorSchema = z.object({
     officeLocation: z.string().optional(),
     isExternal: z.boolean().optional().default(false),
     externalOffice: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+    if (data.isExternal) {
+        if (!data.externalOffice) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Owning Office is required.",
+                path: ["externalOffice"],
+            });
+        }
+    } else {
+        if (!data.typeOfRigUnit || data.typeOfRigUnit.trim() === "") {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Type of Rig Unit is required.",
+                path: ["typeOfRigUnit"],
+            });
+        }
+    }
 });
 export type RigCompressor = z.infer<typeof RigCompressorSchema>;

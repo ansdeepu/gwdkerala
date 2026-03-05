@@ -244,7 +244,7 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)}>
                 <DialogHeader className="p-6 pb-4">
-                    <DialogTitle>{initialData ? 'Edit' : 'Add'} Rig & Compressor Unit</DialogTitle>
+                    <DialogTitle>{isExternal ? "External Rig Unit" : (initialData ? 'Edit' : 'Add') + ' Rig & Compressor Unit'}</DialogTitle>
                 </DialogHeader>
                 <div className="p-6 pt-0 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -262,7 +262,7 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
                         {isExternal && (
                             <FormField name="externalOffice" control={form.control} render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Owning Office</FormLabel>
+                                    <FormLabel>Owning Office <span className="text-destructive">*</span></FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value || ""}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Office" /></SelectTrigger></FormControl>
                                         <SelectContent>
@@ -277,7 +277,7 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
                         )}
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FormField name="typeOfRigUnit" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Type of Rig Unit</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="typeOfRigUnit" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Type of Rig Unit {!isExternal && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="status" control={form.control} render={({ field }) => ( 
                             <FormItem>
                                 <FormLabel>Status</FormLabel>
