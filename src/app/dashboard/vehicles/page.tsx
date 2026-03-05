@@ -438,8 +438,9 @@ export default function VehiclesPage() {
                             </Card>
 
                             <Card className="border-primary/20 bg-primary/5">
-                                <CardHeader>
+                                <CardHeader className="flex flex-row items-center justify-between">
                                     <CardTitle>Other Office Rigs Engaged</CardTitle>
+                                    {canEdit && <Button size="sm" variant="outline" onClick={() => handleAddOrEdit('rig', { isExternal: true })}><PlusCircle className="h-4 w-4 mr-2"/> Add</Button>}
                                 </CardHeader>
                                 <CardContent>
                                     <EngagedRigTable 
