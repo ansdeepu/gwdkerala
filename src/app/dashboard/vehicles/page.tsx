@@ -1,3 +1,4 @@
+
 // src/app/dashboard/vehicles/page.tsx
 "use client";
 
@@ -244,8 +245,8 @@ export default function VehiclesPage() {
     };
 
     const handleDepartmentFormSubmit = async (data: DepartmentVehicle) => {
-        if (editingDepartmentVehicle) {
-            await updateDepartmentVehicle(data);
+        if (editingDepartmentVehicle?.id) {
+            await updateDepartmentVehicle({ ...data, id: editingDepartmentVehicle.id });
         } else {
             await addDepartmentVehicle(data);
         }
@@ -254,8 +255,8 @@ export default function VehiclesPage() {
     };
 
     const handleHiredFormSubmit = async (data: HiredVehicle) => {
-        if (editingHiredVehicle) {
-            await updateHiredVehicle(data);
+        if (editingHiredVehicle?.id) {
+            await updateHiredVehicle({ ...data, id: editingHiredVehicle.id });
         } else {
             await addHiredVehicle(data);
         }
@@ -264,8 +265,8 @@ export default function VehiclesPage() {
     };
 
     const handleRigCompressorFormSubmit = async (data: RigCompressor) => {
-        if (editingRigCompressor) {
-            await updateRigCompressor(data);
+        if (editingRigCompressor?.id) {
+            await updateRigCompressor({ ...data, id: editingRigCompressor.id });
         } else {
             await addRigCompressor(data);
         }
@@ -422,9 +423,12 @@ export default function VehiclesPage() {
 
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                             <Card>
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle>Rig & Compressor Units ({ownRigs.length})</CardTitle>
-                                    {canEdit && <Button size="sm" onClick={() => handleAddOrEdit('rig', null)}><PlusCircle className="h-4 w-4 mr-2"/> Add</Button>}
+                                <CardHeader className="flex flex-row justify-between items-center p-4">
+                                    <div className="flex items-center gap-3">
+                                        <Truck className="h-5 w-5 text-primary"/>
+                                        <CardTitle className="text-lg font-semibold text-primary">Rig & Compressor Units ({ownRigs.length})</CardTitle>
+                                    </div>
+                                    {canEdit && <Button size="sm" variant="outline" onClick={() => handleAddOrEdit('rig', null)}><PlusCircle className="h-4 w-4 mr-2"/>Add Rig</Button>}
                                 </CardHeader>
                                 <CardContent>
                                     <RigCompressorTable 
@@ -438,9 +442,12 @@ export default function VehiclesPage() {
                             </Card>
 
                             <Card className="border-primary/20 bg-primary/5">
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <CardTitle>Other Office Rigs Engaged</CardTitle>
-                                    {canEdit && <Button size="sm" variant="outline" onClick={() => handleAddOrEdit('rig', { isExternal: true })}><PlusCircle className="h-4 w-4 mr-2"/> Add</Button>}
+                                <CardHeader className="flex flex-row justify-between items-center p-4">
+                                    <div className="flex items-center gap-3">
+                                        <Building className="h-5 w-5 text-primary"/>
+                                        <CardTitle className="text-lg font-semibold text-primary">Other Office Rigs Engaged</CardTitle>
+                                    </div>
+                                    {canEdit && <Button size="sm" variant="outline" onClick={() => handleAddOrEdit('rig', { isExternal: true })}><PlusCircle className="h-4 w-4 mr-2"/>Add External</Button>}
                                 </CardHeader>
                                 <CardContent>
                                     <EngagedRigTable 
@@ -496,7 +503,7 @@ export default function VehiclesPage() {
                                     onView={handleView}
                                 />
                             </CardContent>
-                        </Card>
+                        </TabsContent>
                     </TabsContent>
                 </Tabs>
             )}

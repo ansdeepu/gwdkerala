@@ -2,6 +2,7 @@
 // src/components/vehicles/VehicleForms.tsx
 "use client";
 
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -15,7 +16,6 @@ import type { DepartmentVehicle, HiredVehicle, RigCompressor } from "@/lib/schem
 import { ScrollArea } from "../ui/scroll-area";
 import { format, isValid } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Checkbox } from "../ui/checkbox";
 
 const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate"];
 
@@ -51,6 +51,7 @@ export function DepartmentVehicleForm({ initialData, onFormSubmit, onClose }: Fo
     const form = useForm<DepartmentVehicle>({
         resolver: zodResolver(DepartmentVehicleSchema),
         defaultValues: {
+            id: initialData?.id || undefined,
             registrationNumber: initialData?.registrationNumber || '',
             model: initialData?.model || '',
             typeOfVehicle: initialData?.typeOfVehicle || '',
@@ -66,18 +67,29 @@ export function DepartmentVehicleForm({ initialData, onFormSubmit, onClose }: Fo
         } as any,
     });
 
+    useEffect(() => {
+        if (initialData) {
+            form.reset({
+                ...initialData,
+                registrationDate: formatDateForInput(initialData.registrationDate),
+                fitnessExpiry: formatDateForInput(initialData.fitnessExpiry),
+                taxExpiry: formatDateForInput(initialData.taxExpiry),
+                insuranceExpiry: formatDateForInput(initialData.insuranceExpiry),
+                pollutionExpiry: formatDateForInput(initialData.pollutionExpiry),
+                fuelTestExpiry: formatDateForInput(initialData.fuelTestExpiry),
+            } as any);
+        }
+    }, [initialData, form]);
+
     const handleSubmit = async (data: DepartmentVehicle) => {
-        // Ensure ID is passed back if it's an update
-        const payload = { ...data };
-        if (initialData?.id) payload.id = initialData.id;
-        await onFormSubmit(payload);
+        await onFormSubmit(data);
     };
 
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)}>
                 <DialogHeader className="p-6 pb-4">
-                    <DialogTitle>{initialData ? 'Edit' : 'Add'} Department Vehicle</DialogTitle>
+                    <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} Department Vehicle</DialogTitle>
                     <DialogDescription>Fill in the details for the vehicle.</DialogDescription>
                 </DialogHeader>
                 <div className="px-6 py-4 space-y-4">
@@ -132,6 +144,7 @@ export function HiredVehicleForm({ initialData, onFormSubmit, onClose }: FormPro
     const form = useForm<HiredVehicle>({
         resolver: zodResolver(HiredVehicleSchema),
         defaultValues: {
+            id: initialData?.id || undefined,
             registrationNumber: initialData?.registrationNumber || '',
             model: initialData?.model || '',
             ownerName: initialData?.ownerName || '',
@@ -149,17 +162,30 @@ export function HiredVehicleForm({ initialData, onFormSubmit, onClose }: FormPro
         } as any,
     });
 
+    useEffect(() => {
+        if (initialData) {
+            form.reset({
+                ...initialData,
+                agreementValidity: formatDateForInput(initialData.agreementValidity),
+                registrationDate: formatDateForInput(initialData.registrationDate),
+                fitnessExpiry: formatDateForInput(initialData.fitnessExpiry),
+                taxExpiry: formatDateForInput(initialData.taxExpiry),
+                insuranceExpiry: formatDateForInput(initialData.insuranceExpiry),
+                pollutionExpiry: formatDateForInput(initialData.pollutionExpiry),
+                permitExpiry: formatDateForInput(initialData.permitExpiry),
+            } as any);
+        }
+    }, [initialData, form]);
+
     const handleSubmit = async (data: HiredVehicle) => {
-        const payload = { ...data };
-        if (initialData?.id) payload.id = initialData.id;
-        await onFormSubmit(payload);
+        await onFormSubmit(data);
     };
 
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col h-full">
                 <DialogHeader className="p-6 pb-4 shrink-0">
-                    <DialogTitle>{initialData ? 'Edit' : 'Add'} Hired Vehicle</DialogTitle>
+                    <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} Hired Vehicle</DialogTitle>
                 </DialogHeader>
                  <div className="flex-1 min-h-0">
                     <ScrollArea className="h-full px-6 py-4">
@@ -237,12 +263,28 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
         },
     });
 
+    useEffect(() => {
+        if (initialData) {
+            form.reset({
+                id: initialData.id || undefined,
+                typeOfRigUnit: initialData.typeOfRigUnit || '',
+                status: initialData.status || 'Active',
+                fuelConsumption: initialData.fuelConsumption || '',
+                rigVehicleRegNo: initialData.rigVehicleRegNo || '',
+                compressorVehicleRegNo: initialData.compressorVehicleRegNo || '',
+                supportingVehicleRegNo: initialData.supportingVehicleRegNo || '',
+                compressorDetails: initialData.compressorDetails || '',
+                remarks: initialData.remarks || '',
+                isExternal: initialData.isExternal || false,
+                externalOffice: initialData.externalOffice || null,
+            });
+        }
+    }, [initialData, form]);
+
     const isExternal = form.watch('isExternal');
 
     const handleSubmit = async (data: RigCompressor) => {
-        const payload = { ...data };
-        if (initialData?.id) payload.id = initialData.id;
-        await onFormSubmit(payload);
+        await onFormSubmit(data);
     };
 
     return (
