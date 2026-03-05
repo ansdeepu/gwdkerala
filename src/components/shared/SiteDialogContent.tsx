@@ -77,6 +77,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
 
     const isWellPurpose = useMemo(() => ['BWC', 'TWC', 'FPW'].includes(watchedPurpose as any), [watchedPurpose]);
     const isDevPurpose = useMemo(() => ['BW Dev', 'TW Dev', 'FPW Dev'].includes(watchedPurpose as any), [watchedPurpose]);
+    const isMWSSPurpose = useMemo(() => ['MWSS', 'MWSS Ext', 'Pumping Scheme', 'MWSS Pump Reno'].includes(watchedPurpose as any), [watchedPurpose]);
 
     const isFieldReadOnly = (isSupervisorEditable: boolean) => {
         if (isReadOnly) return true;
@@ -224,7 +225,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                 )}
 
                 {/* 3. Work Implementation */}
-                {(isWellPurpose || isDevPurpose) && (
+                {(isWellPurpose || isDevPurpose || isMWSSPurpose) && (
                     <Card>
                         <CardHeader><CardTitle className="text-lg text-primary">Work Implementation</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
@@ -377,7 +378,32 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                     </Card>
                 )}
 
-                {/* 6. Work Status */}
+                {/* 6. Scheme Details (MWSS etc.) */}
+                {isMWSSPurpose && (
+                    <Card>
+                        <CardHeader><CardTitle className="text-lg text-primary">Scheme Details</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <FormField name="yieldDischarge" control={control} render={({ field }) => <FormItem><FormLabel>Well Discharge (LPH)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="pumpDetails" control={control} render={({ field }) => <FormItem><FormLabel>Pump Details</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="pumpingLineLength" control={control} render={({ field }) => <FormItem><FormLabel>Pumping Line (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="deliveryLineLength" control={control} render={({ field }) => <FormItem><FormLabel>Delivery Line (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="waterTankCapacity" control={control} render={({ field }) => <FormItem><FormLabel>Tank Capacity (L)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="noOfTapConnections" control={control} render={({ field }) => <FormItem><FormLabel># Taps</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="noOfBeneficiary" control={control} render={({ field }) => <FormItem><FormLabel># Beneficiaries</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
+                            </div>
+                            <FormField name="schemeRemarks" control={control} render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Scheme Remarks</FormLabel>
+                                    <FormControl><Textarea {...field} value={field.value || ''} placeholder="Any specific remarks about the scheme..." readOnly={isFieldReadOnly(true)} className="min-h-[40px]" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* 7. Work Status */}
                 <Card>
                     <CardHeader><CardTitle className="text-lg text-primary">Work Status</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
@@ -396,7 +422,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                     </CardContent>
                  </Card>
 
-                 {/* 7. Media Gallery */}
+                 {/* 8. Media Gallery */}
                  <Card>
                     <CardHeader><CardTitle className="text-lg text-primary">Media Gallery</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
