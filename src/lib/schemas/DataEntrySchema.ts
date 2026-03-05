@@ -29,7 +29,7 @@ export const designationOptions = [
     "Junior Geophysicist", "Geological Assistant", "Geophysical Assistant", "Master Driller",
     "Senior Driller", "Driller", "Driller Mechanic", "Drilling Assistant", "Compressor Driver",
     "Pump Operator", "Driver, HDV", "Driver, LDV", "Senior Clerk", "Clerk", "U D Typist",
-    "L D Typist", "Tracer", "Lascar", "Office Attendant", "Watcher", "PTS",
+    "L D Typist", "Tracer", "Draftsman", "Lascar", "Office Attendant", "Watcher", "PTS",
 ] as const;
 export type Designation = typeof designationOptions[number];
 
@@ -41,7 +41,7 @@ export const designationMalayalamOptions = [
     "സീനിയർ ഡ്രില്ലർ", "ഡ്രില്ലർ", "ഡ്രില്ലർ മെക്കാനിക്ക്", "ഡ്രില്ലിംഗ് അസിസ്റ്റന്റ്",
     "കംപ്രസ്സർ ഡ്രൈവർ", "പമ്പ് ഓപ്പറേറ്റർ", "ഡ്രൈവർ, എച്ച്ഡിവി", "ഡ്രൈവർ, എൽഡിവി",
     "സീനിയർ ക്ലർക്ക്", "ക്ലർക്ക്", "യു.ഡി ടൈപ്പിസ്റ്റ്", "എൽ.ഡി ടൈപ്പിസ്റ്റ്",
-    "ട്രേസർ", "ലാസ്കർ", "ഓഫീസ് അറ്റൻഡന്റ്", "വാച്ചർ", "പിടിഎസ്"
+    "ട്രേസർ", "ഡ്രാഫ്റ്റ്‌സ്മാൻ", "ലാസ്കർ", "ഓഫീസ് അറ്റൻഡന്റ്", "വാച്ചർ", "പിടിഎസ്"
 ] as const;
 export type DesignationMalayalam = typeof designationMalayalamOptions[number];
 

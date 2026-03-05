@@ -1,6 +1,7 @@
+// src/components/shared/SiteDialogContent.tsx
 "use client";
 
-import { useForm, FormProvider, useWatch, useFieldArray } from "react-hook-form";
+import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -43,7 +44,7 @@ const SITE_DIALOG_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
     (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending"].includes(status)
 );
 
-export default function SiteDialogContent({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, supervisorList, allLsgConstituencyMaps, allE_tenders }: {
+export default function SiteDialogContent({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, supervisorList, allLsgConstituencyMaps, allE_tenders, allStaffMembers }: {
     initialData: Partial<SiteDetailFormData>;
     onConfirm: (data: SiteDetailFormData) => void;
     onCancel: () => void;
@@ -52,6 +53,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     supervisorList: (StaffMember & { uid: string; name: string; })[];
     allLsgConstituencyMaps: any[];
     allE_tenders: E_tender[];
+    allStaffMembers: StaffMember[];
 }) {
     const { allBidders } = useDataStore();
     
@@ -132,7 +134,6 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         return false;
     }, [isFieldReadOnly, watchedLsg, constituencyOptionsForLsg]);
 
-    // Derived values for Tender selection
     const isTenderSelected = watchedTenderNo && watchedTenderNo !== 'Quotation' && watchedTenderNo !== '_clear_';
     const isQuotation = watchedTenderNo === 'Quotation';
 
@@ -140,12 +141,10 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         if (isTenderSelected) {
             const selectedTender = allE_tenders.find(t => t.eTenderNo === watchedTenderNo);
             if (selectedTender) {
-                // Contractor logic
                 const validBidders = (selectedTender.bidders || []).filter((b: Bidder) => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
                 const l1Bidder = validBidders.length > 0 ? validBidders.reduce((lowest: Bidder, current: Bidder) => (lowest.quotedAmount! < current.quotedAmount!) ? lowest : current) : null;
                 setValue('contractorName', l1Bidder ? `${l1Bidder.name}, ${l1Bidder.address}` : '');
 
-                // Supervisor logic
                 const staffNames: string[] = [];
                 if (selectedTender.nameOfAssistantEngineer) staffNames.push(selectedTender.nameOfAssistantEngineer);
                 if (selectedTender.supervisor1Name) staffNames.push(selectedTender.supervisor1Name);
@@ -156,13 +155,21 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                 setValue('supervisorName', joinedNames);
                 setValue('supervisorUid', null); 
             }
-        } else if (!isQuotation) {
-            // If cleared, reset auto-filled fields
+        } else if (watchedTenderNo === '_clear_' || !watchedTenderNo) {
             setValue('contractorName', '');
             setValue('supervisorName', '');
             setValue('supervisorUid', undefined);
         }
     }, [watchedTenderNo, isTenderSelected, isQuotation, allE_tenders, setValue]);
+
+    const quotationSupervisorList = useMemo(() => {
+        const targetDesignations = ["Master Driller", "Senior Driller", "Driller", "Driller Mechanic", "Drilling Assistant", "Tracer", "Draftsman"];
+        return allStaffMembers.filter(s => 
+            s.status === 'Active' && 
+            s.designation && 
+            targetDesignations.includes(s.designation as any)
+        ).sort((a, b) => a.name.localeCompare(b.name));
+    }, [allStaffMembers]);
 
     const handleSupervisorChange = (uid: string) => {
         if (uid === '_clear_') {
@@ -175,6 +182,22 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         setValue('supervisorUid', uid);
         setValue('supervisorName', staff?.name || '');
         setValue('supervisorDesignation', staff?.designation || '');
+    };
+
+    const handleQuotationSupervisorChange = (staffName: string) => {
+        if (staffName === '_clear_') {
+            setValue('supervisorUid', undefined);
+            setValue('supervisorName', undefined);
+            setValue('supervisorDesignation', undefined);
+            return;
+        }
+        const staff = quotationSupervisorList.find(s => s.name === staffName);
+        if (staff) {
+            const linkedUser = supervisorList.find(u => u.staffId === staff.id);
+            setValue('supervisorUid', linkedUser?.uid || null);
+            setValue('supervisorName', staff.name);
+            setValue('supervisorDesignation', staff.designation);
+        }
     };
 
     const handleContractorChange = (bidderName: string) => {
@@ -249,6 +272,87 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                 </CardContent>
                             </Card>
 
+                            <Card>
+                                <CardHeader><CardTitle className="text-lg">Work Implementation</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <FormField name="siteConditions" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Rig and Site Accessibility</FormLabel>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Conditions" /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                        {siteConditionsOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}/>
+                                        <FormField name="estimateAmount" control={control} render={({ field }) => <FormItem><FormLabel>Estimate Amount (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="remittedAmount" control={control} render={({ field }) => <FormItem><FormLabel>Remitted Amount (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="tsAmount" control={control} render={({ field }) => <FormItem><FormLabel>TS Amount (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <FormField name="tenderNo" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Tender No.</FormLabel>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Tender or Quotation" /></SelectTrigger></FormControl>
+                                                    <SelectContent className="max-h-80">
+                                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                        <SelectItem value="Quotation">Quotation</SelectItem>
+                                                        {allE_tenders.filter(t => t.eTenderNo).map(t => <SelectItem key={t.id} value={t.eTenderNo!}>{t.eTenderNo}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="contractorName" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Contractor</FormLabel>
+                                                {isQuotation ? (
+                                                    <Select onValueChange={handleContractorChange} value={field.value || ""}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Contractor" /></SelectTrigger></FormControl>
+                                                        <SelectContent className="max-h-80">
+                                                            <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                            {allBidders.filter(b => b.name).map(b => <SelectItem key={b.id} value={b.name!}>{b.name}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                ) : (
+                                                    <FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isTenderSelected} className={cn(isTenderSelected && "bg-muted min-h-[40px]")} /></FormControl>
+                                                )}
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="supervisorName" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Supervisor</FormLabel>
+                                                {isQuotation ? (
+                                                    <Select onValueChange={handleQuotationSupervisorChange} value={field.value || ""}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Supervisor" /></SelectTrigger></FormControl>
+                                                        <SelectContent className="max-h-80">
+                                                            <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                            {quotationSupervisorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                ) : (
+                                                    <FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isTenderSelected} className={cn(isTenderSelected && "bg-muted min-h-[40px]")} /></FormControl>
+                                                )}
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}/>
+                                    </div>
+                                    <FormField name="implementationRemarks" control={control} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Implementation Remarks</FormLabel>
+                                            <FormControl><Textarea {...field} value={field.value || ''} placeholder="Any specific remarks about implementation..." readOnly={isFieldReadOnly(false)} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                </CardContent>
+                            </Card>
+
                             {isWellPurpose && (
                                 <Card>
                                     <CardHeader><CardTitle className="text-lg text-primary">Investigation Details (Recommended)</CardTitle></CardHeader>
@@ -307,89 +411,6 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                     </CardContent>
                                 </Card>
                             )}
-
-                            <Card>
-                                <CardHeader><CardTitle className="text-lg text-primary">Work Implementation</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField name="siteConditions" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Rig and Site Accessibility</FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Conditions" /></SelectTrigger></FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                        {siteConditionsOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}/>
-                                        <FormField name="tenderNo" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Tender No.</FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
-                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Tender or Quotation" /></SelectTrigger></FormControl>
-                                                    <SelectContent className="max-h-80">
-                                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                        <SelectItem value="Quotation">Quotation</SelectItem>
-                                                        {allE_tenders.filter(t => t.eTenderNo).map(t => <SelectItem key={t.id} value={t.eTenderNo!}>{t.eTenderNo}</SelectItem>)}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <FormField name="estimateAmount" control={control} render={({ field }) => <FormItem><FormLabel>Estimate Amount (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="remittedAmount" control={control} render={({ field }) => <FormItem><FormLabel>Remitted Amount (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="tsAmount" control={control} render={({ field }) => <FormItem><FormLabel>TS Amount (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField name="contractorName" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Contractor</FormLabel>
-                                                {isQuotation ? (
-                                                    <Select onValueChange={handleContractorChange} value={field.value || ""}>
-                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Contractor" /></SelectTrigger></FormControl>
-                                                        <SelectContent className="max-h-80">
-                                                            <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                            {allBidders.filter(b => b.name).map(b => <SelectItem key={b.id} value={b.name!}>{b.name}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                ) : (
-                                                    <FormControl><Input {...field} value={field.value ?? ''} readOnly={isTenderSelected} className={cn(isTenderSelected && "bg-muted")} /></FormControl>
-                                                )}
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField name="supervisorUid" control={control} render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Supervisor</FormLabel>
-                                                {isTenderSelected ? (
-                                                    <FormControl><Textarea value={watch('supervisorName') || ''} readOnly className="bg-muted min-h-[40px]" /></FormControl>
-                                                ) : (
-                                                    <Select onValueChange={handleSupervisorChange} value={field.value || ""}>
-                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Supervisor" /></SelectTrigger></FormControl>
-                                                        <SelectContent className="max-h-80">
-                                                            <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                            {supervisorList.map(s => <SelectItem key={s.uid} value={s.uid}>{s.name} ({s.designation})</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                )}
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}/>
-                                    </div>
-                                    <FormField name="implementationRemarks" control={control} render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Implementation Remarks</FormLabel>
-                                            <FormControl><Textarea {...field} value={field.value || ''} placeholder="Any specific remarks about implementation..." readOnly={isFieldReadOnly(false)} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                </CardContent>
-                            </Card>
 
                             {isWellPurpose && (
                                 <Card>

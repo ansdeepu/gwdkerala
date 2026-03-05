@@ -1,4 +1,3 @@
-
 // src/app/dashboard/bidders/page.tsx
 "use client";
 
@@ -49,7 +48,7 @@ export default function BiddersListPage() {
     const { setHeader } = usePageHeader();
     const router = useRouter();
     const { user } = useAuth();
-    const { allBidders } = useDataStore();
+    const { allBidders, selectedOffice } = useDataStore();
     const { toast } = useToast();
 
     const [isNewBidderDialogOpen, setIsNewBidderDialogOpen] = useState(false);
@@ -77,17 +76,23 @@ export default function BiddersListPage() {
     }, [setHeader]);
 
     const handleAddOrEditBidderSubmit = async (data: NewBidderFormData) => {
+        const officeLoc = user?.role === 'superAdmin' ? selectedOffice : user?.officeLocation;
+        if (!officeLoc) {
+            toast({ title: "Error", description: "Office location not identified.", variant: "destructive" });
+            return;
+        }
+
         setIsSubmitting(true);
+        const collectionPath = `offices/${officeLoc.toLowerCase()}/bidders`;
         try {
             if (bidderToEdit && bidderToEdit.id) {
-                const bidderDocRef = doc(db, "bidders", bidderToEdit.id);
-                // Ensure no 'id' field is in the data being updated
+                const bidderDocRef = doc(db, collectionPath, bidderToEdit.id);
                 const dataToUpdate: Partial<NewBidderFormData> = { ...data };
                 await updateDoc(bidderDocRef, dataToUpdate);
                 toast({ title: "Bidder Updated", description: `Bidder "${data.name}" has been updated.` });
             } else {
                 const newOrder = displayedBidders.length > 0 ? Math.max(...displayedBidders.map(b => b.order ?? 0)) + 1 : 0;
-                await addDoc(collection(db, "bidders"), { ...data, order: newOrder });
+                await addDoc(collection(db, collectionPath), { ...data, order: newOrder });
                 toast({ title: "Bidder Added", description: `Bidder "${data.name}" has been saved.` });
             }
             setIsNewBidderDialogOpen(false);
@@ -102,9 +107,13 @@ export default function BiddersListPage() {
     
     const confirmDeleteBidder = async () => {
         if (!bidderToDelete) return;
+        const officeLoc = user?.role === 'superAdmin' ? selectedOffice : user?.officeLocation;
+        if (!officeLoc) return;
+
         setIsSubmitting(true);
+        const collectionPath = `offices/${officeLoc.toLowerCase()}/bidders`;
         try {
-            await deleteDoc(doc(db, "bidders", bidderToDelete.id));
+            await deleteDoc(doc(db, collectionPath, bidderToDelete.id));
             toast({ title: "Bidder Deleted", description: `Bidder "${bidderToDelete.name}" has been removed.` });
         } catch (error: any) {
             console.error("Error deleting bidder:", error);
@@ -117,6 +126,8 @@ export default function BiddersListPage() {
     
     const handleReorderSubmit = useCallback(async (newPosition: number) => {
         if (!bidderToReorder || isSubmitting) return;
+        const officeLoc = user?.role === 'superAdmin' ? selectedOffice : user?.officeLocation;
+        if (!officeLoc) return;
 
         setIsSubmitting(true);
 
@@ -132,10 +143,11 @@ export default function BiddersListPage() {
         const [movedItem] = localBidders.splice(fromIndex, 1);
         localBidders.splice(newPosition - 1, 0, movedItem);
 
+        const collectionPath = `offices/${officeLoc.toLowerCase()}/bidders`;
         try {
             const batch = writeBatch(db);
             localBidders.forEach((bidder, index) => {
-                const docRef = doc(db, 'bidders', bidder.id);
+                const docRef = doc(db, collectionPath, bidder.id);
                 batch.update(docRef, { order: index });
             });
 
@@ -150,7 +162,7 @@ export default function BiddersListPage() {
         } finally {
             setIsSubmitting(false);
         }
-    }, [bidderToReorder, isSubmitting, displayedBidders, toast]);
+    }, [bidderToReorder, isSubmitting, displayedBidders, toast, user, selectedOffice]);
 
     return (
         <div className="space-y-6">
