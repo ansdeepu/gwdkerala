@@ -99,11 +99,11 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     };
 
     const sortedLsgMaps = useMemo(() => {
-        return [...allLsgConstituencyMaps].sort((a, b) => a.name.localeCompare(b.name));
+        return [...(allLsgConstituencyMaps || [])].sort((a, b) => a.name.localeCompare(b.name));
     }, [allLsgConstituencyMaps]);
     
     const constituencyOptionsForLsg = useMemo(() => {
-        if (!watchedLsg) return [];
+        if (!watchedLsg || !allLsgConstituencyMaps) return [];
         const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
         if (!map || !map.constituencies) return [];
         return [...map.constituencies].sort((a, b) => a.localeCompare(b));
@@ -113,7 +113,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         const normalized = lsgName === '_clear_' ? '' : lsgName;
         setValue('localSelfGovt', normalized);
         
-        if (!normalized) {
+        if (!normalized || !allLsgConstituencyMaps) {
             setValue('constituency', undefined);
             return;
         }
@@ -139,7 +139,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
 
     useEffect(() => {
         if (isTenderSelected) {
-            const selectedTender = allE_tenders.find(t => t.eTenderNo === watchedTenderNo);
+            const selectedTender = (allE_tenders || []).find(t => t.eTenderNo === watchedTenderNo);
             if (selectedTender) {
                 const validBidders = (selectedTender.bidders || []).filter((b: Bidder) => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
                 const l1Bidder = validBidders.length > 0 ? validBidders.reduce((lowest: Bidder, current: Bidder) => (lowest.quotedAmount! < current.quotedAmount!) ? lowest : current) : null;
@@ -164,7 +164,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
 
     const quotationSupervisorList = useMemo(() => {
         const targetDesignations = ["Master Driller", "Senior Driller", "Driller", "Driller Mechanic", "Drilling Assistant", "Tracer", "Draftsman"];
-        return allStaffMembers.filter(s => 
+        return (allStaffMembers || []).filter(s => 
             s.status === 'Active' && 
             s.designation && 
             targetDesignations.includes(s.designation as any)
@@ -178,7 +178,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             setValue('supervisorDesignation', undefined);
             return;
         }
-        const staff = supervisorList.find(s => s.uid === uid);
+        const staff = (supervisorList || []).find(s => s.uid === uid);
         setValue('supervisorUid', uid);
         setValue('supervisorName', staff?.name || '');
         setValue('supervisorDesignation', staff?.designation || '');
@@ -191,9 +191,9 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             setValue('supervisorDesignation', undefined);
             return;
         }
-        const staff = quotationSupervisorList.find(s => s.name === staffName);
+        const staff = (quotationSupervisorList || []).find(s => s.name === staffName);
         if (staff) {
-            const linkedUser = supervisorList.find(u => u.staffId === staff.id);
+            const linkedUser = (supervisorList || []).find(u => u.staffId === staff.id);
             setValue('supervisorUid', linkedUser?.uid || null);
             setValue('supervisorName', staff.name);
             setValue('supervisorDesignation', staff.designation);
@@ -205,7 +205,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             setValue('contractorName', '');
             return;
         }
-        const bidder = allBidders.find(b => b.name === bidderName);
+        const bidder = (allBidders || []).find(b => b.name === bidderName);
         setValue('contractorName', bidder ? `${bidder.name}, ${bidder.address}` : bidderName);
     };
 
@@ -302,7 +302,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
                                                         <SelectItem value="Quotation">Quotation</SelectItem>
-                                                        {allE_tenders.filter(t => t.eTenderNo).map(t => <SelectItem key={t.id} value={t.eTenderNo!}>{t.eTenderNo}</SelectItem>)}
+                                                        {(allE_tenders || []).filter(t => t.eTenderNo).map(t => <SelectItem key={t.id} value={t.eTenderNo!}>{t.eTenderNo}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -316,7 +316,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Contractor" /></SelectTrigger></FormControl>
                                                         <SelectContent className="max-h-80">
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                            {allBidders.filter(b => b.name).map(b => <SelectItem key={b.id} value={b.name!}>{b.name}</SelectItem>)}
+                                                            {(allBidders || []).filter(b => b.name).map(b => <SelectItem key={b.id} value={b.name!}>{b.name}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 ) : (
