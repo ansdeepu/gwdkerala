@@ -74,8 +74,6 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     const watchedWorkStatus = watch('workStatus');
     const watchedLsg = watch("localSelfGovt");
     const watchedTenderNo = watch('tenderNo');
-    const watchedTypeOfWell = watch('typeOfWell');
-    const watchedFeasibility = watch('feasibility');
     
     const isCompletionDateRequired = watchedWorkStatus === 'Work Completed' || watchedWorkStatus === 'Work Failed';
 
@@ -155,7 +153,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             <Form {...form}>
               <form id="site-dialog-form" onSubmit={handleSubmit(handleDialogSubmit)} className="space-y-6">
                 {/* 1. Main Details */}
-                <Card>
+                <Card className="shadow-lg">
                     <CardHeader><CardTitle>Main Details</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -169,9 +167,9 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                     </CardContent>
                 </Card>
 
-                {/* 2. Investigation Details (Recommended) - Shown for BWC, TWC, FPW */}
+                {/* 2. Investigation Details (Recommended) */}
                 {isWellPurpose && (
-                    <Card>
+                    <Card className="shadow-md">
                         <CardHeader><CardTitle>Investigation Details (Recommended)</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -227,7 +225,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                 )}
 
                 {/* 3. Work Implementation */}
-                <Card>
+                <Card className="shadow-md">
                     <CardHeader><CardTitle>Work Implementation</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -244,7 +242,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                             <FormField name="accessibleRig" control={control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Rig Accessibility</FormLabel>
-                                    <FormControl><Input {...field} value={field.value || ''} placeholder="e.g., Accessible to small DTH" readOnly={isFieldReadOnly(false)} /></FormControl>
+                                    <FormControl><Input {...field} value={field.value || ''} placeholder="e.g., Small DTH accessible" readOnly={isFieldReadOnly(false)} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}/>
@@ -281,9 +279,9 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                     </CardContent>
                 </Card>
 
-                {/* 4. Drilling Details (Actuals) - Shown for BWC, TWC, FPW */}
+                {/* 4. Drilling Details (Actuals) */}
                 {isWellPurpose && (
-                    <Card>
+                    <Card className="shadow-md">
                         <CardHeader><CardTitle>Drilling Details (Actuals)</CardTitle></CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -310,10 +308,10 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
 
                                 {watchedPurpose === 'TWC' && (
                                     <>
-                                        <FormField name="pilotDrillingDepth" control={control} render={({ field }) => <FormItem><FormLabel>Pilot Drilling Depth (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="surveyPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Actual Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="surveySlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Actual Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="outerCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Actual MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="pilotDrillingDepth" control={control} render={({ field }) => <FormItem><FormLabel>Pilot Drilling (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="surveyPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="surveySlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="outerCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
                                     </>
                                 )}
 
@@ -348,11 +346,11 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                 )}
 
                 {/* 5. Work Status */}
-                <Card>
+                <Card className="shadow-md">
                     <CardHeader><CardTitle>Work Status</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           <FormField name="workStatus" control={control} render={({ field }) => <FormItem><FormLabel>Work Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl><SelectContent>{SITE_DIALOG_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                           <FormField name="workStatus" control={control} render={({ field }) => <FormItem><FormLabel>Work Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl><SelectContent>{SITE_DIALOG_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</Select><FormMessage /></FormItem>} />
                            <FormField name="dateOfCompletion" control={control} render={({ field }) => <FormItem><FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                            <FormField name="totalExpenditure" control={control} render={({ field }) => <FormItem><FormLabel>Total Expenditure (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                            <FormField name="workRemarks" control={control} render={({ field }) => (
@@ -367,7 +365,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                  </Card>
 
                  {/* 6. Media Gallery */}
-                 <Card>
+                 <Card className="shadow-lg">
                     <CardHeader><CardTitle>Media Gallery</CardTitle></CardHeader>
                     <CardContent className="space-y-6">
                         <MediaManager
