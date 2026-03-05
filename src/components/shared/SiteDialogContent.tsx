@@ -18,7 +18,6 @@ import { format, isValid, parseISO } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import MediaManager from '@/components/shared/MediaManager';
-import { useDataStore } from "@/hooks/use-data-store";
 
 const toDateOrNull = (value: any): Date | null => {
     if (!value) return null;
@@ -44,7 +43,7 @@ const SITE_DIALOG_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
     (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending"].includes(status)
 );
 
-export default function SiteDialogContent({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, supervisorList, allLsgConstituencyMaps, allE_tenders, allStaffMembers }: {
+export default function SiteDialogContent({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, supervisorList, allLsgConstituencyMaps, allE_tenders, allStaffMembers, allBidders }: {
     initialData: Partial<SiteDetailFormData>;
     onConfirm: (data: SiteDetailFormData) => void;
     onCancel: () => void;
@@ -54,9 +53,8 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     allLsgConstituencyMaps: any[];
     allE_tenders: E_tender[];
     allStaffMembers: StaffMember[];
+    allBidders: Bidder[];
 }) {
-    const { allBidders } = useDataStore();
-    
     const form = useForm<SiteDetailFormData>({
         resolver: zodResolver(SiteDetailSchema),
         defaultValues: {
@@ -77,6 +75,8 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     const watchedWorkStatus = watch('workStatus');
     const watchedLsg = watch("localSelfGovt");
     const watchedTenderNo = watch('tenderNo');
+    const watchedContractorName = watch('contractorName');
+    const watchedSupervisorName = watch('supervisorName');
     
     const isCompletionDateRequired = watchedWorkStatus === 'Work Completed' || watchedWorkStatus === 'Work Failed';
 
@@ -180,51 +180,14 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             targetDesignations.includes(s.designation as any)
         );
 
+        const designationOrder = (designationOptions as unknown as string[]);
         return filtered.sort((a, b) => {
-            const indexA = a.designation ? (designationOptions as unknown as string[]).indexOf(a.designation) : 999;
-            const indexB = b.designation ? (designationOptions as unknown as string[]).indexOf(b.designation) : 999;
+            const indexA = a.designation ? designationOrder.indexOf(a.designation) : 999;
+            const indexB = b.designation ? designationOrder.indexOf(b.designation) : 999;
             if (indexA !== indexB) return indexA - indexB;
             return a.name.localeCompare(b.name);
         });
     }, [allStaffMembers]);
-
-    const handleSupervisorChange = (uid: string) => {
-        if (uid === '_clear_') {
-            setValue('supervisorUid', undefined);
-            setValue('supervisorName', undefined);
-            setValue('supervisorDesignation', undefined);
-            return;
-        }
-        const staff = (supervisorList || []).find(s => s.uid === uid);
-        setValue('supervisorUid', uid);
-        setValue('supervisorName', staff?.name || '');
-        setValue('supervisorDesignation', staff?.designation || '');
-    };
-
-    const handleQuotationSupervisorChange = (staffName: string) => {
-        if (staffName === '_clear_') {
-            setValue('supervisorUid', undefined);
-            setValue('supervisorName', undefined);
-            setValue('supervisorDesignation', undefined);
-            return;
-        }
-        const staff = (quotationSupervisorList || []).find(s => s.name === staffName);
-        if (staff) {
-            const linkedUser = (supervisorList || []).find(u => u.staffId === staff.id);
-            setValue('supervisorUid', linkedUser?.uid || null);
-            setValue('supervisorName', staff.name);
-            setValue('supervisorDesignation', staff.designation);
-        }
-    };
-
-    const handleContractorChange = (bidderName: string) => {
-        if (bidderName === '_clear_') {
-            setValue('contractorName', '');
-            return;
-        }
-        const bidder = (allBidders || []).find(b => b.name === bidderName);
-        setValue('contractorName', bidder ? `${bidder.name}, ${bidder.address}` : bidderName);
-    };
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
         onConfirm(data);
@@ -247,7 +210,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                         <FormField name="purpose" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value}>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -388,7 +351,17 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                             <FormItem>
                                                 <FormLabel>Contractor</FormLabel>
                                                 {isQuotation ? (
-                                                    <Select onValueChange={handleContractorChange} value={field.value || ""}>
+                                                    <Select 
+                                                        onValueChange={(val) => {
+                                                            if (val === '_clear_') {
+                                                                field.onChange('');
+                                                            } else {
+                                                                const bidder = allBidders?.find(b => b.name === val);
+                                                                field.onChange(bidder ? `${bidder.name}, ${bidder.address || ''}` : val);
+                                                            }
+                                                        }} 
+                                                        value={watchedContractorName ? watchedContractorName.split(',')[0].trim() : ""}
+                                                    >
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Contractor" /></SelectTrigger></FormControl>
                                                         <SelectContent className="max-h-80">
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -405,10 +378,24 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                             <FormItem>
                                                 <FormLabel>Supervisor</FormLabel>
                                                 {isQuotation ? (
-                                                    <Select onValueChange={(val) => {
-                                                        field.onChange(val === '_clear_' ? undefined : val);
-                                                        handleQuotationSupervisorChange(val);
-                                                    }} value={field.value || ""}>
+                                                    <Select 
+                                                        onValueChange={(val) => {
+                                                            if (val === '_clear_') {
+                                                                field.onChange('');
+                                                                setValue('supervisorUid', undefined);
+                                                                setValue('supervisorDesignation', undefined);
+                                                            } else {
+                                                                const staff = quotationSupervisorList.find(s => s.name === val);
+                                                                if (staff) {
+                                                                    field.onChange(staff.name);
+                                                                    const linkedUser = supervisorList.find(u => u.staffId === staff.id);
+                                                                    setValue('supervisorUid', linkedUser?.uid || null);
+                                                                    setValue('supervisorDesignation', staff.designation);
+                                                                }
+                                                            }
+                                                        }} 
+                                                        value={watchedSupervisorName || ""}
+                                                    >
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Supervisor" /></SelectTrigger></FormControl>
                                                         <SelectContent className="max-h-80">
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
