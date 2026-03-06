@@ -17,7 +17,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { format, isValid } from "date-fns";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
-const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate"];
+const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Workshop & Store"];
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -79,7 +79,7 @@ export function DepartmentVehicleForm({ initialData, onFormSubmit, onClose }: Fo
                 fuelTestExpiry: formatDateForInput(initialData.fuelTestExpiry),
             } as any);
         }
-    }, [initialData, form]);
+    }, [initialData, reset]);
 
     const handleSubmit = async (data: DepartmentVehicle) => {
         await onFormSubmit(data);
@@ -175,7 +175,7 @@ export function HiredVehicleForm({ initialData, onFormSubmit, onClose }: FormPro
                 permitExpiry: formatDateForInput(initialData.permitExpiry),
             } as any);
         }
-    }, [initialData, form]);
+    }, [initialData, reset]);
 
     const handleSubmit = async (data: HiredVehicle) => {
         await onFormSubmit(data);
@@ -279,7 +279,7 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
                 externalOffice: initialData.externalOffice || null,
             });
         }
-    }, [initialData, form]);
+    }, [initialData, reset]);
 
     const isExternal = form.watch('isExternal');
 

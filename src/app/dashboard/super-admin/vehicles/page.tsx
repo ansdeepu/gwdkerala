@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/vehicles/page.tsx
 "use client";
 
@@ -102,7 +103,7 @@ export default function VehiclesSuperAdminPage() {
                             </CardContent>
                         </Card>
 
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <div className="space-y-6">
                             <Card>
                                 <CardHeader>
                                     <CardTitle>Rig & Compressor Units ({ownRigs.length})</CardTitle>

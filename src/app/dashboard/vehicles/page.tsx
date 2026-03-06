@@ -414,7 +414,7 @@ export default function VehiclesPage() {
                             </CardContent>
                         </Card>
 
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <div className="space-y-6">
                             <Card>
                                 <CardHeader className="flex flex-row justify-between items-center p-4">
                                     <div className="flex items-center gap-3">
