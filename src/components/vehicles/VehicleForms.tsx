@@ -384,9 +384,9 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
                         <FormField name="compressorVehicleRegNo" control={control} render={({ field }) => ( <FormItem><FormLabel>Compressor Vehicle Reg. No</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="supportingVehicleRegNo" control={control} render={({ field }) => ( <FormItem><FormLabel>Supporting Vehicle Reg. No</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
                     </div>
-                    <div className="space-y-4">
-                        <FormField name="compressorDetails" control={control} render={({ field }) => ( <FormItem><FormLabel>Compressor Details</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="remarks" control={control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField name="compressorDetails" control={control} render={({ field }) => ( <FormItem><FormLabel>Compressor Details</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} className="min-h-[80px]" /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="remarks" control={control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} className="min-h-[80px]" /></FormControl><FormMessage/></FormItem> )}/>
                     </div>
                 </div>
                 <DialogFooter className="p-6 pt-4">
