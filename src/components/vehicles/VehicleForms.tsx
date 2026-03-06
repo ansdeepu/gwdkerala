@@ -67,9 +67,11 @@ export function DepartmentVehicleForm({ initialData, onFormSubmit, onClose }: Fo
         } as any,
     });
 
+    const { reset, control, handleSubmit, formState: { isSubmitting } } = form;
+
     useEffect(() => {
         if (initialData) {
-            form.reset({
+            reset({
                 ...initialData,
                 registrationDate: formatDateForInput(initialData.registrationDate),
                 fitnessExpiry: formatDateForInput(initialData.fitnessExpiry),
@@ -78,30 +80,45 @@ export function DepartmentVehicleForm({ initialData, onFormSubmit, onClose }: Fo
                 pollutionExpiry: formatDateForInput(initialData.pollutionExpiry),
                 fuelTestExpiry: formatDateForInput(initialData.fuelTestExpiry),
             } as any);
+        } else {
+            reset({
+                registrationNumber: '',
+                model: '',
+                typeOfVehicle: '',
+                vehicleClass: '',
+                rcStatus: 'Active',
+                fuelConsumptionRate: '',
+                registrationDate: '',
+                fitnessExpiry: '',
+                taxExpiry: '',
+                insuranceExpiry: '',
+                pollutionExpiry: '',
+                fuelTestExpiry: '',
+            } as any);
         }
     }, [initialData, reset]);
 
-    const handleSubmit = async (data: DepartmentVehicle) => {
+    const handleInternalSubmit = async (data: DepartmentVehicle) => {
         await onFormSubmit(data);
     };
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <form onSubmit={handleSubmit(handleInternalSubmit)}>
                 <DialogHeader className="p-6 pb-4">
                     <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} Department Vehicle</DialogTitle>
                     <DialogDescription>Fill in the details for the vehicle.</DialogDescription>
                 </DialogHeader>
                 <div className="px-6 py-4 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FormField name="registrationNumber" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Registration Number</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="model" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Model</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="typeOfVehicle" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Type of Vehicle</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="vehicleClass" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Vehicle Class</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="registrationDate" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Registration Date</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="registrationNumber" control={control} render={({ field }) => ( <FormItem><FormLabel>Registration Number</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="model" control={control} render={({ field }) => ( <FormItem><FormLabel>Model</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="typeOfVehicle" control={control} render={({ field }) => ( <FormItem><FormLabel>Type of Vehicle</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="vehicleClass" control={control} render={({ field }) => ( <FormItem><FormLabel>Vehicle Class</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="registrationDate" control={control} render={({ field }) => ( <FormItem><FormLabel>Registration Date</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
                          <FormField
                             name="rcStatus"
-                            control={form.control}
+                            control={control}
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>RC Status</FormLabel>
@@ -115,23 +132,23 @@ export function DepartmentVehicleForm({ initialData, onFormSubmit, onClose }: Fo
                                 </FormItem>
                             )}
                         />
-                        <FormField name="fuelConsumptionRate" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Fuel Consumption Rate</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="fuelConsumptionRate" control={control} render={({ field }) => ( <FormItem><FormLabel>Fuel Consumption Rate</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
                     </div>
                     <div className="space-y-2 pt-4 border-t">
                         <h4 className="font-medium text-sm text-primary">Certificate Validity</h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <FormField name="fitnessExpiry" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Fitness</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)} /></FormControl><FormMessage/></FormItem> )}/>
-                            <FormField name="taxExpiry" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Tax</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)} /></FormControl><FormMessage/></FormItem> )}/>
-                            <FormField name="insuranceExpiry" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Insurance</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)} /></FormControl><FormMessage/></FormItem> )}/>
-                            <FormField name="pollutionExpiry" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Pollution</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)} /></FormControl><FormMessage/></FormItem> )}/>
-                            <FormField name="fuelTestExpiry" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Fuel Test</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)} /></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField name="fitnessExpiry" control={control} render={({ field }) => ( <FormItem><FormLabel>Fitness</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)} /></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField name="taxExpiry" control={control} render={({ field }) => ( <FormItem><FormLabel>Tax</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)} /></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField name="insuranceExpiry" control={control} render={({ field }) => ( <FormItem><FormLabel>Insurance</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)} /></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField name="pollutionExpiry" control={control} render={({ field }) => ( <FormItem><FormLabel>Pollution</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)} /></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField name="fuelTestExpiry" control={control} render={({ field }) => ( <FormItem><FormLabel>Fuel Test</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)} /></FormControl><FormMessage/></FormItem> )}/>
                         </div>
                     </div>
                 </div>
                 <DialogFooter className="p-6 pt-4">
-                    <Button type="button" variant="outline" onClick={onClose} disabled={form.formState.isSubmitting}>Cancel</Button>
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Save className="mr-2 h-4 w-4" />}
+                    <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Save className="mr-2 h-4 w-4" />}
                         Save
                     </Button>
                 </DialogFooter>
@@ -162,9 +179,11 @@ export function HiredVehicleForm({ initialData, onFormSubmit, onClose }: FormPro
         } as any,
     });
 
+    const { reset, control, handleSubmit, formState: { isSubmitting } } = form;
+
     useEffect(() => {
         if (initialData) {
-            form.reset({
+            reset({
                 ...initialData,
                 agreementValidity: formatDateForInput(initialData.agreementValidity),
                 registrationDate: formatDateForInput(initialData.registrationDate),
@@ -174,16 +193,33 @@ export function HiredVehicleForm({ initialData, onFormSubmit, onClose }: FormPro
                 pollutionExpiry: formatDateForInput(initialData.pollutionExpiry),
                 permitExpiry: formatDateForInput(initialData.permitExpiry),
             } as any);
+        } else {
+            reset({
+                registrationNumber: '',
+                model: '',
+                ownerName: '',
+                ownerAddress: '',
+                agreementValidity: '',
+                vehicleClass: '',
+                registrationDate: '',
+                rcStatus: 'Active',
+                hireCharges: undefined,
+                fitnessExpiry: '',
+                taxExpiry: '',
+                insuranceExpiry: '',
+                pollutionExpiry: '',
+                permitExpiry: '',
+            } as any);
         }
     }, [initialData, reset]);
 
-    const handleSubmit = async (data: HiredVehicle) => {
+    const handleInternalSubmit = async (data: HiredVehicle) => {
         await onFormSubmit(data);
     };
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit(handleInternalSubmit)} className="flex flex-col h-full">
                 <DialogHeader className="p-6 pb-4 shrink-0">
                     <DialogTitle>{initialData?.id ? 'Edit' : 'Add'} Hired Vehicle</DialogTitle>
                 </DialogHeader>
@@ -191,20 +227,20 @@ export function HiredVehicleForm({ initialData, onFormSubmit, onClose }: FormPro
                     <ScrollArea className="h-full px-6 py-4">
                         <div className="space-y-4">
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField name="registrationNumber" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Registration Number</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                                <FormField name="model" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Model</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField name="registrationNumber" control={control} render={({ field }) => ( <FormItem><FormLabel>Registration Number</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField name="model" control={control} render={({ field }) => ( <FormItem><FormLabel>Model</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField name="ownerName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Owner Name</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                                <FormField name="ownerAddress" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Owner Address</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} className="min-h-[40px]" /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField name="ownerName" control={control} render={({ field }) => ( <FormItem><FormLabel>Owner Name</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField name="ownerAddress" control={control} render={({ field }) => ( <FormItem><FormLabel>Owner Address</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} className="min-h-[40px]" /></FormControl><FormMessage/></FormItem> )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <FormField name="agreementValidity" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Agreement Validity</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
-                                <FormField name="vehicleClass" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Vehicle Class</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                                <FormField name="registrationDate" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Registration Date</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField name="agreementValidity" control={control} render={({ field }) => ( <FormItem><FormLabel>Agreement Validity</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField name="vehicleClass" control={control} render={({ field }) => ( <FormItem><FormLabel>Vehicle Class</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField name="registrationDate" control={control} render={({ field }) => ( <FormItem><FormLabel>Registration Date</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
                                 <FormField
                                     name="rcStatus"
-                                    control={form.control}
+                                    control={control}
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>RC Status</FormLabel>
@@ -218,25 +254,25 @@ export function HiredVehicleForm({ initialData, onFormSubmit, onClose }: FormPro
                                         </FormItem>
                                     )}
                                 />
-                                <FormField name="hireCharges" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Hire Charges</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage/></FormItem> )}/>
+                                <FormField name="hireCharges" control={control} render={({ field }) => ( <FormItem><FormLabel>Hire Charges</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage/></FormItem> )}/>
                             </div>
                             <div className="space-y-2 pt-4 border-t">
                                 <h4 className="font-medium text-sm text-primary">Certificate Validity</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <FormField name="fitnessExpiry" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Fitness</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
-                                    <FormField name="taxExpiry" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Tax</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
-                                    <FormField name="insuranceExpiry" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Insurance</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
-                                    <FormField name="pollutionExpiry" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Pollution</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
-                                    <FormField name="permitExpiry" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Permit</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
+                                    <FormField name="fitnessExpiry" control={control} render={({ field }) => ( <FormItem><FormLabel>Fitness</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
+                                    <FormField name="taxExpiry" control={control} render={({ field }) => ( <FormItem><FormLabel>Tax</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
+                                    <FormField name="insuranceExpiry" control={control} render={({ field }) => ( <FormItem><FormLabel>Insurance</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
+                                    <FormField name="pollutionExpiry" control={control} render={({ field }) => ( <FormItem><FormLabel>Pollution</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
+                                    <FormField name="permitExpiry" control={control} render={({ field }) => ( <FormItem><FormLabel>Permit</FormLabel><FormControl><Input type="date" value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value || undefined)}/></FormControl><FormMessage/></FormItem> )}/>
                                 </div>
                             </div>
                         </div>
                     </ScrollArea>
                 </div>
                 <DialogFooter className="p-6 pt-4 shrink-0">
-                    <Button type="button" variant="outline" onClick={onClose} disabled={form.formState.isSubmitting}>Cancel</Button>
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Save className="mr-2 h-4 w-4" />}
+                    <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Save className="mr-2 h-4 w-4" />}
                         Save
                     </Button>
                 </DialogFooter>
@@ -263,9 +299,11 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
         },
     });
 
+    const { reset, control, handleSubmit, watch, formState: { isSubmitting } } = form;
+
     useEffect(() => {
         if (initialData) {
-            form.reset({
+            reset({
                 id: initialData.id || undefined,
                 typeOfRigUnit: initialData.typeOfRigUnit || '',
                 status: initialData.status || 'Active',
@@ -278,25 +316,38 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
                 isExternal: initialData.isExternal || false,
                 externalOffice: initialData.externalOffice || null,
             });
+        } else {
+            reset({
+                typeOfRigUnit: '',
+                status: 'Active',
+                fuelConsumption: '',
+                rigVehicleRegNo: '',
+                compressorVehicleRegNo: '',
+                supportingVehicleRegNo: '',
+                compressorDetails: '',
+                remarks: '',
+                isExternal: false,
+                externalOffice: null,
+            });
         }
     }, [initialData, reset]);
 
-    const isExternal = form.watch('isExternal');
+    const isExternal = watch('isExternal');
 
-    const handleSubmit = async (data: RigCompressor) => {
+    const handleInternalSubmit = async (data: RigCompressor) => {
         await onFormSubmit(data);
     };
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <form onSubmit={handleSubmit(handleInternalSubmit)}>
                 <DialogHeader className="p-6 pb-4">
                     <DialogTitle>{isExternal ? "External Rig Unit" : (initialData?.id ? 'Edit' : 'Add') + ' Rig & Compressor Unit'}</DialogTitle>
                 </DialogHeader>
                 <div className="p-6 pt-0 space-y-4">
                     {isExternal && (
                         <div className="grid grid-cols-1 gap-4">
-                            <FormField name="externalOffice" control={form.control} render={({ field }) => (
+                            <FormField name="externalOffice" control={control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Owning Office <span className="text-destructive">*</span></FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value || ""}>
@@ -313,8 +364,8 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
                         </div>
                     )}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FormField name="typeOfRigUnit" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Type of Rig Unit {!isExternal && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="status" control={form.control} render={({ field }) => ( 
+                        <FormField name="typeOfRigUnit" control={control} render={({ field }) => ( <FormItem><FormLabel>Type of Rig Unit {!isExternal && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="status" control={control} render={({ field }) => ( 
                             <FormItem>
                                 <FormLabel>Status</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
@@ -326,22 +377,22 @@ export function RigCompressorForm({ initialData, onFormSubmit, onClose }: FormPr
                                 <FormMessage/>
                             </FormItem>
                         )}/>
-                        <FormField name="fuelConsumption" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Fuel Consumption</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="fuelConsumption" control={control} render={({ field }) => ( <FormItem><FormLabel>Fuel Consumption</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
                     </div>
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FormField name="rigVehicleRegNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Rig Vehicle Reg. No</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="compressorVehicleRegNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Compressor Vehicle Reg. No</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="supportingVehicleRegNo" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Supporting Vehicle Reg. No</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="rigVehicleRegNo" control={control} render={({ field }) => ( <FormItem><FormLabel>Rig Vehicle Reg. No</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="compressorVehicleRegNo" control={control} render={({ field }) => ( <FormItem><FormLabel>Compressor Vehicle Reg. No</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="supportingVehicleRegNo" control={control} render={({ field }) => ( <FormItem><FormLabel>Supporting Vehicle Reg. No</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
                     </div>
                     <div className="space-y-4">
-                        <FormField name="compressorDetails" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Compressor Details</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="compressorDetails" control={control} render={({ field }) => ( <FormItem><FormLabel>Compressor Details</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="remarks" control={control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} /></FormControl><FormMessage/></FormItem> )}/>
                     </div>
                 </div>
                 <DialogFooter className="p-6 pt-4">
-                    <Button type="button" variant="outline" onClick={onClose} disabled={form.formState.isSubmitting}>Cancel</Button>
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? <Loader2 className="animate-spin mr-2"/> : <Save className="mr-2 h-4 w-4" />}
+                    <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Save className="mr-2 h-4 w-4" />}
                         Save
                     </Button>
                 </DialogFooter>
