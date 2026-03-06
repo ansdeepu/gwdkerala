@@ -172,39 +172,30 @@ export default function ReportsPage() {
   }, []);
 
   const rigOptions = useMemo(() => {
-    // Collect all rigs types actually used in the data
-    const usedRigTypes = new Set<string>();
-    fileEntries.forEach(entry => {
-      entry.siteDetails?.forEach(site => {
-        if (site.typeOfRig) usedRigTypes.add(site.typeOfRig);
-      });
-    });
+    const internalRigs: string[] = [];
+    const externalRigs: string[] = [];
 
-    // Collect currently registered rig units
-    const activeUnits = (allRigCompressors || []).filter(r => r.status !== 'Garaged');
-    
-    activeUnits.forEach(r => {
+    (allRigCompressors || []).forEach(r => {
+      if (r.status === 'Garaged') return;
+      
       if (r.isExternal) {
         if (r.typeOfRigUnit && r.externalOffice) {
-          usedRigTypes.add(`${r.typeOfRigUnit} - ${r.externalOffice}`);
+          externalRigs.push(`${r.typeOfRigUnit} - ${r.externalOffice}`);
         }
       } else if (r.typeOfRigUnit) {
-        usedRigTypes.add(r.typeOfRigUnit);
+        internalRigs.push(r.typeOfRigUnit);
       }
     });
 
-    // Add standardized private options
-    ["Private Rig - DTH", "Private Rig - Rotary", "Private Rig - Calyx"].forEach(opt => usedRigTypes.add(opt));
+    // Sort departmental categories
+    internalRigs.sort((a, b) => a.localeCompare(b));
+    externalRigs.sort((a, b) => a.localeCompare(b));
 
-    return Array.from(usedRigTypes).sort((a, b) => {
-      // Keep Private Rigs at the bottom if desired, or just alpha sort
-      const isAPrivate = a.startsWith('Private');
-      const isBPrivate = b.startsWith('Private');
-      if (isAPrivate && !isBPrivate) return 1;
-      if (!isAPrivate && isBPrivate) return -1;
-      return a.localeCompare(b);
-    });
-  }, [fileEntries, allRigCompressors]);
+    const privateRigs = ["Private Rig - DTH", "Private Rig - Rotary", "Private Rig - Calyx"];
+
+    // Combine all in the specific order requested
+    return Array.from(new Set([...internalRigs, ...externalRigs, ...privateRigs]));
+  }, [allRigCompressors]);
 
   const applyFilters = useCallback(() => {
     let currentEntries = [...fileEntries];
