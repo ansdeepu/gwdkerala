@@ -1,3 +1,4 @@
+
 // src/components/shared/DataEntryForm.tsx
 "use client";
 
@@ -96,6 +97,14 @@ const toDateOrNull = (value: any): Date | null => {
         if (isValid(d)) return d;
     }
     return null;
+};
+
+const getStatusColorClass = (status: string | undefined): string => {
+    if (!status) return 'text-muted-foreground';
+    const completedOrFailed = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed"];
+    if (completedOrFailed.includes(status)) return 'text-red-600';
+    if (status === 'To be Refunded') return 'text-yellow-600';
+    return 'text-green-600';
 };
 
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ id: uuidv4(), amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
@@ -613,6 +622,10 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     return workTypeContext === 'planFund' || workTypeContext === 'collector';
   }, [workTypeContext]);
 
+  const isDepositWork = useMemo(() => {
+    return ['public', 'private', 'collector', 'planFund'].includes(workTypeContext || '');
+  }, [workTypeContext]);
+
   const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction Details" : "2. Remittance Details";
   const formOptions = useMemo(() => {
     if (workTypeContext === 'public') return PUBLIC_DEPOSIT_APPLICATION_TYPES;
@@ -798,9 +811,16 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             }
         } else if (type === 'site') {
             if (originalData.index !== undefined) updateSite(originalData.index, data); else appendSite(data);
+        } else if (type === 'reorderSite') {
+            const reorderedSites = data as SiteDetailFormData[];
+            replaceSites(reorderedSites);
         }
         closeDialog();
     };
+
+    const replaceSites = useCallback((newSites: SiteDetailFormData[]) => {
+        setValue("siteDetails", newSites, { shouldDirty: true });
+    }, [setValue]);
 
     const handleDeleteItem = () => {
         if (!itemToDelete) return;
@@ -823,6 +843,13 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         }
         toast({ title: "Removed locally" });
         setItemToDelete(null);
+    };
+
+    const handleCopySite = (index: number) => {
+        const siteToCopy = getValues(`siteDetails.${index}`);
+        const clonedSite = { ...JSON.parse(JSON.stringify(siteToCopy)), id: uuidv4() };
+        appendSite(clonedSite);
+        toast({ title: "Site Cloned", description: `Cloned Site #${index + 1}` });
     };
 
   const totalRemittanceWatched = watch('totalRemittance');
@@ -936,7 +963,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
           </AccordionItem>
         </Accordion>
 
-        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group"><div className="flex justify-between items-center w-full"><div>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"}</div><div className="flex items-center space-x-1 mr-2"><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button>{isEditor && !isFormDisabled && (<><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /><DetailRow label="Contractor" value={site.contractorName} /><DetailRow label="Supervisor" value={site.supervisorName} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
+        <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group"><div className="flex justify-between items-center w-full"><div className={cn("text-left flex-1", getStatusColorClass(site.workStatus))}>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"} ({site.purpose || 'N/A'})</div><div className="flex items-center space-x-1 mr-2"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>View / Edit Site</p></TooltipContent></Tooltip></TooltipProvider>{isDepositWork && !isFormDisabled && !isViewer && (<><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCopySite(index); }}><Copy className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Copy Site</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('reorderSite', getValues('siteDetails')); }}><ArrowUpDown className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Reorder Sites</p></TooltipContent></Tooltip></TooltipProvider></>)}{isEditor && !isFormDisabled && (<><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Delete Site</p></TooltipContent></Tooltip></TooltipProvider></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /><DetailRow label="Contractor" value={site.contractorName} /><DetailRow label="Supervisor" value={site.supervisorName} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
         <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">5. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Contractor's (₹)</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (
             <TableRow key={item.id} className={item.remittanceId ? 'bg-muted/50' : ''}>
                 <TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell>
@@ -980,7 +1007,50 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
       <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
       <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} supervisorList={supervisorList} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders} allStaffMembers={allStaffMembers} allBidders={allBidders} allRigCompressors={allRigCompressors} /></DialogContent></Dialog>
       <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
+      <Dialog open={dialogState.type === 'reorderSite'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl flex flex-col p-0"><ReorderSitesDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
       <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </FormProvider>
   );
+}
+
+function ReorderSitesDialog({ initialData, onConfirm, onCancel }: { initialData: SiteDetailFormData[], onConfirm: (data: SiteDetailFormData[]) => void, onCancel: () => void }) {
+    const [sites, setSites] = useState([...initialData]);
+
+    const move = (fromIndex: number, toIndex: number) => {
+        const newSites = [...sites];
+        const [movedItem] = newSites.splice(fromIndex, 1);
+        newSites.splice(toIndex, 0, movedItem);
+        setSites(newSites);
+    };
+
+    return (
+        <>
+            <DialogHeader className="p-6 pb-4">
+                <DialogTitle>Reorder Sites</DialogTitle>
+                <DialogDescription>Adjust the sequence of sites using the up and down arrows.</DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 min-h-0 px-6 py-4">
+                <ScrollArea className="h-[50vh]">
+                    <div className="space-y-2">
+                        {sites.map((site, index) => (
+                            <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-secondary/20">
+                                <div className="flex-1">
+                                    <p className="text-sm font-bold">Site #{index + 1}: {site.nameOfSite || 'Unnamed Site'}</p>
+                                    <p className="text-xs text-muted-foreground">{site.purpose}</p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" disabled={index === 0} onClick={() => move(index, index - 1)}><ChevronLeft className="h-4 w-4 rotate-90"/></Button>
+                                    <Button variant="ghost" size="icon" disabled={index === sites.length - 1} onClick={() => move(index, index + 1)}><ChevronRight className="h-4 w-4 rotate-90"/></Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </div>
+            <DialogFooter className="p-6 pt-4">
+                <Button variant="outline" onClick={onCancel}>Cancel</Button>
+                <Button onClick={() => onConfirm(sites)}>Save Order</Button>
+            </DialogFooter>
+        </>
+    );
 }
