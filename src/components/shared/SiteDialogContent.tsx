@@ -1,3 +1,4 @@
+
 // src/components/shared/SiteDialogContent.tsx
 "use client";
 
@@ -191,9 +192,28 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     }, [allStaffMembers]);
 
     const rigOptions = useMemo(() => {
-        const units = (allRigCompressors || []).filter(r => r.status !== 'Garaged').map(r => r.typeOfRigUnit).filter(Boolean);
-        const uniqueUnits = Array.from(new Set(units)).sort();
-        return [...uniqueUnits, "Other Dept Rig", "Private Rig"];
+        const activeUnits = (allRigCompressors || []).filter(r => r.status !== 'Garaged');
+        
+        // 1. Internal Rigs
+        const internalLabels = activeUnits
+            .filter(r => !r.isExternal)
+            .map(r => r.typeOfRigUnit)
+            .filter((val): val is string => !!val);
+            
+        // 2. External Rigs (Other Office Rigs Engaged)
+        const externalLabels = activeUnits
+            .filter(r => r.isExternal)
+            .map(r => `${r.typeOfRigUnit} - ${r.externalOffice || 'Unknown'}`)
+            .filter((val): val is string => !!val && !val.startsWith('undefined'));
+
+        // 3. Fixed Private Options
+        const privateOptions = ["Private Rig - DTH", "Private Rig - Rotary", "Private Rig - Calyx"];
+
+        return [
+            ...Array.from(new Set(internalLabels)).sort(),
+            ...Array.from(new Set(externalLabels)).sort(),
+            ...privateOptions
+        ];
     }, [allRigCompressors]);
 
     const handleDialogSubmit = (data: SiteDetailFormData) => {
@@ -208,7 +228,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             <div className="flex-1 min-h-0">
                 <ScrollArea className="h-full px-6 py-4">
                     <Form {...form}>
-                        <form id="site-dialog-form" onSubmit={handleSubmit(handleDialogSubmit)} className="space-y-6">
+                        <form id="investigation-site-dialog-form" onSubmit={handleSubmit(handleDialogSubmit)} className="space-y-6">
                             <Card>
                                 <CardHeader><CardTitle className="text-lg text-primary">Main Details</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
@@ -655,7 +675,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             </div>
             <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
                 <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
-                {!isReadOnly && <Button type="submit" form="site-dialog-form">Save Changes</Button>}
+                {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save Changes</Button>}
             </div>
         </div>
     );
