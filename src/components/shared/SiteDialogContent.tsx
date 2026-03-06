@@ -618,7 +618,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                             <Card>
                                 <CardHeader><CardTitle className="text-lg text-primary">Work Status</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <FormField name="workStatus" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Work Status <span className="text-destructive">*</span></FormLabel>
@@ -635,7 +635,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                         <FormField name="dateOfCompletion" control={control} render={({ field }) => <FormItem><FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                                         <FormField name="totalExpenditure" control={control} render={({ field }) => <FormItem><FormLabel>Total Expenditure (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                                         <FormField name="workRemarks" control={control} render={({ field }) => (
-                                            <FormItem className="md:col-span-2">
+                                            <FormItem className="md:col-span-3">
                                                 <FormLabel>Work Remarks</FormLabel>
                                                 <FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Add any final remarks about the work status..." readOnly={isFieldReadOnly(true)} /></FormControl>
                                                 <FormMessage />
