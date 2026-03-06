@@ -132,7 +132,7 @@ const safeParseDate = (dateValue: any): Date | null => {
 
 export default function ReportsPage() {
   const { setHeader } = usePageHeader();
-  const { officeAddress } = useDataStore();
+  const { allRigCompressors, officeAddress } = useDataStore();
   useEffect(() => {
     setHeader('Reports', 'Generate custom reports by applying a combination of filters.');
   }, [setHeader]);
@@ -170,6 +170,41 @@ export default function ReportsPage() {
     setCurrentDate(format(now, 'dd/MM/yyyy'));
     setCurrentTime(format(now, 'hh:mm:ss a'));
   }, []);
+
+  const rigOptions = useMemo(() => {
+    // Collect all rigs types actually used in the data
+    const usedRigTypes = new Set<string>();
+    fileEntries.forEach(entry => {
+      entry.siteDetails?.forEach(site => {
+        if (site.typeOfRig) usedRigTypes.add(site.typeOfRig);
+      });
+    });
+
+    // Collect currently registered rig units
+    const activeUnits = (allRigCompressors || []).filter(r => r.status !== 'Garaged');
+    
+    activeUnits.forEach(r => {
+      if (r.isExternal) {
+        if (r.typeOfRigUnit && r.externalOffice) {
+          usedRigTypes.add(`${r.typeOfRigUnit} - ${r.externalOffice}`);
+        }
+      } else if (r.typeOfRigUnit) {
+        usedRigTypes.add(r.typeOfRigUnit);
+      }
+    });
+
+    // Add standardized private options
+    ["Private Rig - DTH", "Private Rig - Rotary", "Private Rig - Calyx"].forEach(opt => usedRigTypes.add(opt));
+
+    return Array.from(usedRigTypes).sort((a, b) => {
+      // Keep Private Rigs at the bottom if desired, or just alpha sort
+      const isAPrivate = a.startsWith('Private');
+      const isBPrivate = b.startsWith('Private');
+      if (isAPrivate && !isBPrivate) return 1;
+      if (!isAPrivate && isBPrivate) return -1;
+      return a.localeCompare(b);
+    });
+  }, [fileEntries, allRigCompressors]);
 
   const applyFilters = useCallback(() => {
     let currentEntries = [...fileEntries];
@@ -566,7 +601,7 @@ export default function ReportsPage() {
                     <SelectTrigger id="report-rig-type-trigger"><SelectValue placeholder="Filter by Site Type of Rig" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Site Rig Types</SelectItem>
-                        {siteTypeOfRigOptions.map((rig) => (<SelectItem key={rig} value={rig}>{rig}</SelectItem>))}
+                        {rigOptions.map((rig) => (<SelectItem key={rig} value={rig}>{rig}</SelectItem>))}
                     </SelectContent>
                 </Select>
                  <Select value={workCategoryFilter} onValueChange={setWorkCategoryFilter} name="workCategoryFilter">
@@ -751,6 +786,7 @@ export default function ReportsPage() {
                                 <h5 className="text-sm font-semibold text-foreground mt-3 pt-2 border-t">Scheme Details</h5>
                                 {renderDetail("Depth Erected (m)", site.totalDepth)}
                                 {renderDetail("Water Level (m)", site.waterLevel)}
+                                {renderDetail("noOfBeneficiary", site.noOfBeneficiary)}
                               </>}
 
                                {isARSPurpose && <>
