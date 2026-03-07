@@ -29,8 +29,6 @@ const LAST_ACTIVE_UPDATE_INTERVAL = 5 * 60 * 1000; // Update Firestore lastActiv
 
 function HeaderContent({ user }: { user: UserProfile | null }) {
   const { title, description } = usePageHeader();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   
   useEffect(() => {
@@ -40,63 +38,6 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
   }, []);
 
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
-
-  const breadcrumbs = useMemo(() => {
-    if (!pathname) return [];
-    const segments = pathname.split('/').filter(Boolean);
-    const result: Array<{ href: string; label: string; isLast: boolean }> = [];
-    
-    segments.forEach((segment, index) => {
-      const href = `/${segments.slice(0, index + 1).join('/')}`;
-      const isLast = index === segments.length - 1;
-      
-      // Map segments to friendly names
-      let label = segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-      
-      if (segment === 'dashboard') label = 'Dashboard';
-      else if (segment === 'gw-investigation') label = 'GW Investigation';
-      else if (segment === 'logging-pumping-test') label = 'Logging & Pumping Test';
-      else if (segment === 'file-room') label = 'Deposit Works';
-      else if (segment === 'collectors-deposit-works') label = "Collector's Deposit Works";
-      else if (segment === 'private-deposit-works') label = 'Private Deposit Works';
-      else if (segment === 'plan-fund-works') label = 'Plan Fund Works';
-      else if (segment === 'agency-registration') label = 'Rig Registration';
-      else if (segment === 'e-tender') label = 'e-Tender';
-      else if (segment === 'vehicles') label = 'Vehicle & Rig';
-      else if (segment === 'pending-updates') label = 'Pending Actions';
-      else if (segment === 'report-format-suggestion') label = 'Report Builders';
-      else if (segment === 'gwd-rates') label = 'GWD Rates';
-      else if (segment === 'super-admin') label = 'Super Admin';
-      else if (segment === 'data-entry') {
-          // Add the parent category based on workType context
-          const workType = searchParams?.get('workType');
-          const workTypeMapping: Record<string, { label: string, href: string }> = {
-              'gwInvestigation': { label: 'GW Investigation', href: '/dashboard/gw-investigation' },
-              'loggingPumpingTest': { label: 'Logging & Pumping Test', href: '/dashboard/logging-pumping-test' },
-              'public': { label: 'Deposit Works', href: '/dashboard/file-room' },
-              'private': { label: 'Private Deposit Works', href: '/dashboard/private-deposit-works' },
-              'collector': { label: "Collector's Deposit Works", href: '/dashboard/collectors-deposit-works' },
-              'planFund': { label: 'Plan Fund Works', href: '/dashboard/plan-fund-works' },
-          };
-          
-          if (workType && workTypeMapping[workType]) {
-              result.push({ 
-                  href: workTypeMapping[workType].href, 
-                  label: workTypeMapping[workType].label, 
-                  isLast: false 
-              });
-          }
-          label = 'File Entry';
-      }
-      
-      // If it's the last segment, use the page title if it's more descriptive than the segment
-      const displayLabel = isLast && title && !title.includes('Loading') ? title : label;
-
-      result.push({ href, label: displayLabel, isLast });
-    });
-
-    return result;
-  }, [pathname, title, searchParams]);
 
   return (
     <div className="flex items-center justify-between w-full gap-4 px-6 py-3">
@@ -113,26 +54,6 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
         </TooltipProvider>
         
         <div className="flex flex-col min-w-0">
-          {/* Navigation Address (Breadcrumbs) */}
-          <nav className="flex items-center space-x-1 text-xs text-muted-foreground mb-1" aria-label="Breadcrumb">
-            <Link href="/dashboard" className="hover:text-primary transition-colors flex items-center">
-              <Home className="h-3 w-3 mr-1" />
-              <span>Dashboard</span>
-            </Link>
-            {breadcrumbs.filter(b => b.href !== '/dashboard').map((crumb, idx) => (
-              <React.Fragment key={crumb.href + idx}>
-                <ChevronRight className="h-3 w-3 shrink-0" />
-                {crumb.isLast ? (
-                  <span className="font-medium text-primary truncate max-w-[200px]">{crumb.label}</span>
-                ) : (
-                  <Link href={crumb.href} className="hover:text-primary transition-colors truncate max-w-[150px]">
-                    {crumb.label}
-                  </Link>
-                )}
-              </React.Fragment>
-            ))}
-          </nav>
-
           <h1 className="text-xl font-bold tracking-tight truncate leading-tight">{title}</h1>
           {description && <p className="text-[10px] text-muted-foreground truncate hidden lg:block">{description}</p>}
         </div>
@@ -160,6 +81,88 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
   );
 }
 
+function BreadcrumbNav() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { title } = usePageHeader();
+
+  const breadcrumbs = useMemo(() => {
+    if (!pathname) return [];
+    const segments = pathname.split('/').filter(Boolean);
+    const result: Array<{ href: string; label: string; isLast: boolean }> = [];
+    
+    segments.forEach((segment, index) => {
+      const href = `/${segments.slice(0, index + 1).join('/')}`;
+      const isLast = index === segments.length - 1;
+      
+      let label = segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      
+      if (segment === 'dashboard') label = 'Dashboard';
+      else if (segment === 'gw-investigation') label = 'GW Investigation';
+      else if (segment === 'logging-pumping-test') label = 'Logging & Pumping Test';
+      else if (segment === 'file-room') label = 'Deposit Works';
+      else if (segment === 'collectors-deposit-works') label = "Collector's Deposit Works";
+      else if (segment === 'private-deposit-works') label = 'Private Deposit Works';
+      else if (segment === 'plan-fund-works') label = 'Plan Fund Works';
+      else if (segment === 'agency-registration') label = 'Rig Registration';
+      else if (segment === 'e-tender') label = 'e-Tender';
+      else if (segment === 'vehicles') label = 'Vehicle & Rig';
+      else if (segment === 'pending-updates') label = 'Pending Actions';
+      else if (segment === 'report-format-suggestion') label = 'Report Builders';
+      else if (segment === 'gwd-rates') label = 'GWD Rates';
+      else if (segment === 'super-admin') label = 'Super Admin';
+      else if (segment === 'data-entry') {
+          const workType = searchParams?.get('workType');
+          const workTypeMapping: Record<string, { label: string, href: string }> = {
+              'gwInvestigation': { label: 'GW Investigation', href: '/dashboard/gw-investigation' },
+              'loggingPumpingTest': { label: 'Logging & Pumping Test', href: '/dashboard/logging-pumping-test' },
+              'public': { label: 'Deposit Works', href: '/dashboard/file-room' },
+              'private': { label: 'Private Deposit Works', href: '/dashboard/private-deposit-works' },
+              'collector': { label: "Collector's Deposit Works", href: '/dashboard/collectors-deposit-works' },
+              'planFund': { label: 'Plan Fund Works', href: '/dashboard/plan-fund-works' },
+          };
+          
+          if (workType && workTypeMapping[workType]) {
+              result.push({ 
+                  href: workTypeMapping[workType].href, 
+                  label: workTypeMapping[workType].label, 
+                  isLast: false 
+              });
+          }
+          label = 'File Entry';
+      }
+      
+      const displayLabel = isLast && title && !title.includes('Loading') ? title : label;
+      result.push({ href, label: displayLabel, isLast });
+    });
+
+    return result;
+  }, [pathname, title, searchParams]);
+
+  if (pathname === '/dashboard' || pathname === '/dashboard/super-admin') return null;
+
+  return (
+    <nav className="flex items-center space-x-1 text-xs text-muted-foreground mb-4 px-1" aria-label="Breadcrumb">
+      <Link href="/dashboard" className="hover:text-primary transition-colors flex items-center">
+        <Home className="h-3 w-3 mr-1" />
+        <span>Dashboard</span>
+      </Link>
+      {breadcrumbs.filter(b => b.href !== '/dashboard' && b.href !== '/dashboard/super-admin').map((crumb, idx) => (
+        <React.Fragment key={crumb.href + idx}>
+          <ChevronRight className="h-3 w-3 shrink-0" />
+          {crumb.isLast ? (
+            <span className="font-medium text-primary truncate max-w-[300px]">{crumb.label}</span>
+          ) : (
+            <Link href={crumb.href} className="hover:text-primary transition-colors truncate max-w-[200px]">
+              {crumb.label}
+            </Link>
+          )}
+        </React.Fragment>
+      ))}
+    </nav>
+  );
+}
+
 function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -169,7 +172,7 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const { isNavigating, setIsNavigating } = usePageNavigation();
 
-  const isDashboardPage = pathname === '/dashboard';
+  const isDashboardPage = pathname === '/dashboard' || pathname === '/dashboard/super-admin';
 
   useEffect(() => {
     if (isLoading) return;
@@ -181,13 +184,11 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
 
     const isSuperAdmin = user.email === SUPER_ADMIN_EMAIL;
 
-    // If Super Admin lands on a page that is not theirs, redirect. But allow access to shared pages
     if (isSuperAdmin && pathname === '/dashboard') {
         router.replace('/dashboard/super-admin');
         return;
     }
     
-    // If a regular user tries to access any super admin page, redirect them to their dashboard.
     if (!isSuperAdmin && pathname.startsWith('/dashboard/super-admin')) {
         router.replace('/dashboard');
         return;
@@ -225,7 +226,7 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
       const handleUserActivity = () => resetIdleTimer();
       
       activityEvents.forEach(event => window.addEventListener(event, handleUserActivity, { passive: true }));
-      resetIdleTimer(); // Initial setup
+      resetIdleTimer(); 
       
       return () => {
         if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -240,7 +241,6 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
       setIsNavigating(false);
   }, [pathname, setIsNavigating]);
 
-  // While loading auth OR if a user is being redirected, show a clean loader.
   const isRedirecting = !isLoading && user && (
     (user.email === SUPER_ADMIN_EMAIL && pathname === '/dashboard') ||
     (user.email !== SUPER_ADMIN_EMAIL && pathname.startsWith('/dashboard/super-admin'))
@@ -254,7 +254,6 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // Render the unified layout for all authenticated users.
   return (
       <SidebarProvider defaultOpen>
         {isNavigating && (
@@ -271,8 +270,9 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
               </header>
             <main className={cn(
               "flex-1 overflow-x-hidden overflow-y-auto bg-background",
-              !isDashboardPage && "p-6" // Apply padding only if it's NOT the dashboard page
+              !isDashboardPage ? "p-6 pt-4" : "p-0"
             )}>
+              {!isDashboardPage && <BreadcrumbNav />}
               {children}
             </main>
           </SidebarInset>
