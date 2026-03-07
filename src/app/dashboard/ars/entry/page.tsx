@@ -59,7 +59,6 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
 };
 
-// This function now recursively processes the data and formats dates to 'yyyy-MM-dd' for native date pickers
 const processDataForForm = (data: any): any => {
     if (!data) return data;
     if (Array.isArray(data)) {
@@ -84,7 +83,6 @@ const processDataForForm = (data: any): any => {
             }
         }
         
-        // Ensure every media item has an ID
         if (processed.workImages) {
             processed.workImages = processed.workImages.map((img: any) => ({ ...img, id: img.id || uuidv4() }));
         }
@@ -181,20 +179,17 @@ export default function ArsEntryPage() {
     const watchedArsStatus = useWatch({ control, name: 'arsStatus' });
     const watchedLsg = useWatch({ control, name: "localSelfGovt" });
     const watchedTenderNo = formWatch('arsTenderNo');
-    const isSupervisorDropdownDisabled = false;
 
     const isFieldReadOnly = (fieldName: keyof ArsEntryFormData): boolean => {
-        if ((user?.role === 'admin' || user?.role === 'engineer') && !isViewer) return false; // Admin/Engineer can edit everything unless in read-only mode
-        if (isViewer) return true; // Viewer can edit nothing
+        if ((user?.role === 'admin' || user?.role === 'engineer') && !isViewer) return false; 
+        if (isViewer) return true; 
     
         if (isSupervisor) {
             if (!isEditing || isFormDisabledForSupervisor) return true;
-    
-            // For other editable statuses, use the standard editable fields list
             return !SUPERVISOR_EDITABLE_FIELDS.includes(fieldName);
         }
     
-        return true; // Default to read-only for any other unhandled case
+        return true; 
     };
     
     const sortedTenders = useMemo(() => {
@@ -441,7 +436,6 @@ export default function ArsEntryPage() {
                 await createArsPendingUpdate(entryIdToEdit, payload, user);
                  toast({ title: "Update Submitted", description: `Your changes for site "${data.nameOfSite}" have been submitted for approval.` });
             }
-            // REDIRECTION REMOVED: Save data only.
         } catch (error: any) {
              toast({ title: "Error Processing Site", description: error.message, variant: "destructive" });
         } finally {
@@ -474,13 +468,13 @@ export default function ArsEntryPage() {
     return (
         <div className="space-y-6">
             <Card className="shadow-lg">
+                <CardHeader className="flex flex-row items-center justify-end p-4 border-b space-y-0">
+                    <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Close
+                    </Button>
+                </CardHeader>
                 <CardContent className="pt-6">
-                   <div className="flex justify-end mb-4">
-                      <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
-                          <ArrowLeft className="mr-2 h-4 w-4" />
-                          Close
-                      </Button>
-                    </div>
                     <FormProvider {...form}>
                       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 p-1">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

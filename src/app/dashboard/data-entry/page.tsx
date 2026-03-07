@@ -4,7 +4,7 @@
 import DataEntryFormComponent from "@/components/shared/DataEntryForm";
 import InvestigationDataEntryFormComponent from "@/components/investigation/InvestigationDataEntryForm";
 import LoggingPumpingTestDataEntryFormComponent from "@/components/investigation/LoggingPumpingTestDataEntryForm";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, Loader2, ArrowLeft } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -47,7 +47,7 @@ const toDateOrNull = (value: any): Date | null => {
         if (isValid(d)) return d;
     }
     return null;
-};
+ };
 
 const processDataForForm = (data: any): any => {
   const transform = (obj: any): any => {
@@ -87,6 +87,9 @@ const getFormDefaults = (workType: string | null): DataEntryFormData => ({
   assignedSupervisorUids: [],
   remittanceDetails: [], 
   totalRemittance: 0, 
+  reappropriationDetails: [],
+  totalReappropriation: 0,
+  totalReappropriationCredit: 0,
   siteDetails: [], 
   paymentDetails: [], 
   totalPaymentAllEntries: 0, 
@@ -130,7 +133,7 @@ export default function DataEntryPage() {
     let base = '/dashboard/file-room'; 
     
     if (approveUpdateId) {
-        base = '/dashboard/pending-updates';
+        base = '/dashboard/pending-updates'; 
     } else if (fileIdToEdit && pageData?.initialData) { // Editing existing, determine path from content
         const hasInvestigationPurpose = pageData?.initialData?.siteDetails?.some(site => site.purpose === 'GW Investigation');
         const hasLoggingPumpingPurpose = pageData?.initialData?.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
@@ -157,7 +160,7 @@ export default function DataEntryPage() {
         else if (workTypeContext === 'loggingPumpingTest') base = '/dashboard/logging-pumping-test';
     }
     return pageToReturnTo ? `${base}?page=${pageToReturnTo}` : base;
-  }, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
+   }, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
 
   useEffect(() => {
     const loadAllData = async () => {
@@ -174,7 +177,7 @@ export default function DataEntryPage() {
             }
             const originalEntry = await fetchEntryForEditing(fileIdToEdit);
             if (!originalEntry) { setErrorState("Could not find the requested file."); setDataLoading(false); return; }
-            if (user.role === 'supervisor' && user.uid) {
+             if (user.role === 'supervisor' && user.uid) {
                 const hasPending = await hasPendingUpdateForFile(originalEntry.fileNo, user.uid);
                 if (hasPending) { setIsFormDisabledForSupervisor(true); toast({ title: "Edits Locked", description: "Pending update review required." }); }
             }
@@ -206,7 +209,7 @@ export default function DataEntryPage() {
                 if (workTypeContext === 'private') title = "New Private Deposit Work";
                 else if (workTypeContext === 'collector') title = "New Collector's Deposit Work";
                 else if (workTypeContext === 'planFund') title = "New Plan Fund Work";
-                else if (workTypeContext === 'gwInvestigation') title = "New GW Investigation";
+                else if (workTypeContext === 'gwInvestigation') title = "New GW Investigation"; 
                 else if (workTypeContext === 'loggingPumpingTest') title = "New Logging & Pumping Test";
                 else title = "New Deposit Work";
             } else if (approveUpdateId) title = "Approve Pending Updates";
@@ -224,19 +227,19 @@ export default function DataEntryPage() {
         const staffInfo = staffMembers.find(s => s.id === userProfile.staffId && s.status === 'Active');
         return staffInfo ? { ...staffInfo, uid: userProfile.uid, name: staffInfo.name } : null;
     }).filter((s): s is (StaffMember & { uid: string; name: string }) => s !== null).sort((a, b) => a.name.localeCompare(b.name));
-  }, [pageData, staffMembers, user, staffIsLoading]);
+   }, [pageData, staffMembers, user, staffIsLoading]);
   
   const hasInvestigationPurpose = useMemo(() => 
     pageData?.initialData?.siteDetails?.some(site => site.purpose === 'GW Investigation'), 
     [pageData]
   );
   
-  const hasLoggingPumpingPurpose = useMemo(() => 
+   const hasLoggingPumpingPurpose = useMemo(() => 
     pageData?.initialData?.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any)),
     [pageData]
   );
 
-  const isGwInvestigationType = workTypeContext === 'gwInvestigation' || (!!fileIdToEdit && hasInvestigationPurpose && !hasLoggingPumpingPurpose);
+   const isGwInvestigationType = workTypeContext === 'gwInvestigation' || (!!fileIdToEdit && hasInvestigationPurpose && !hasLoggingPumpingPurpose);
   const isLoggingPumpingTestType = workTypeContext === 'loggingPumpingTest' || (!!fileIdToEdit && hasLoggingPumpingPurpose && !hasInvestigationPurpose);
   
   if (authIsLoading || dataLoading) return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -244,8 +247,13 @@ export default function DataEntryPage() {
   
   return (
     <div className="space-y-6">
-       <div className="flex justify-end mb-4"><Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}><ArrowLeft className="mr-2 h-4 w-4" />Back</Button></div>
       <Card className="shadow-lg">
+        <CardHeader className="flex flex-row items-center justify-end p-4 border-b space-y-0">
+            <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+            </Button>
+        </CardHeader>
         <CardContent className="p-6">
           {pageData && pageData.initialData ? (
              isGwInvestigationType ? (
@@ -256,7 +264,7 @@ export default function DataEntryPage() {
                     userRole={effectiveUserRole}
                     workTypeContext={workTypeContext}
                     returnPath={returnPath}
-                    pageToReturnTo={pageToReturnTo}
+                    pageToReturnTo={pageToReturnTo} 
                     isFormDisabled={isFormDisabledForSupervisor}
                     allLsgConstituencyMaps={allLsgConstituencyMaps}
                 />
@@ -268,7 +276,7 @@ export default function DataEntryPage() {
                     userRole={effectiveUserRole}
                     workTypeContext={workTypeContext}
                     returnPath={returnPath}
-                    pageToReturnTo={pageToReturnTo}
+                    pageToReturnTo={pageToReturnTo} 
                     isFormDisabled={isFormDisabledForSupervisor}
                     allLsgConstituencyMaps={allLsgConstituencyMaps}
                 />
@@ -283,7 +291,7 @@ export default function DataEntryPage() {
                     pageToReturnTo={pageToReturnTo}
                     isFormDisabled={isFormDisabledForSupervisor}
                 />
-             )
+              )
           ) : <div className="flex h-64 items-center justify-center"><p className="text-muted-foreground">Loading entry details...</p></div>}
         </CardContent>
       </Card>
