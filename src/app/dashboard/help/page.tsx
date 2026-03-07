@@ -1,4 +1,3 @@
-// src/app/dashboard/help/page.tsx
 "use client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -26,6 +25,10 @@ import {
     TestTube2,
     Droplets,
     Waves,
+    History,
+    MapPin,
+    Save,
+    ExternalLink
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -56,7 +59,7 @@ export default function HelpPage() {
           <div>
             <h3 className="font-semibold text-foreground mb-2">Ground Water Department, {user?.officeLocation ? capitalize(user.officeLocation) : 'Directorate'}</h3>
             <p className="text-sm text-muted-foreground">
-              The Ground Water Department is the state-level agency entrusted with the development, management, conservation, and regulation of precious ground water resources. The department provides technical guidance for various schemes, including well construction, groundwater recharge projects, and water supply systems for both government and private sectors. Its key services involve hydrogeological surveys, drilling, and monitoring to ensure the sustainable use of groundwater for drinking, agriculture, and industrial purposes.
+              The Ground Water Department is the state-level agency entrusted with the development, management, conservation, and regulation of precious ground water resources. The department provides technical guidance for various schemes, including well construction, groundwater recharge projects, and water supply systems for both government and private sectors.
             </p>
           </div>
            <div className="pt-4 border-t">
@@ -68,36 +71,32 @@ export default function HelpPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-primary/20 bg-primary/5">
-            <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" />Office Onboarding Guide</CardTitle>
-                <CardDescription>Essential first steps for new Sub-Office Administrators.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-                <p>When an office is first activated, the Office Admin should perform these actions in order:</p>
-                <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
-                    <li><strong>Configure Office Details:</strong> Go to the <strong>Settings</strong> page and fill in the office address (English & Malayalam), bank account details, and the District Officer's name. This information is used for auto-generating PDF reports.</li>
-                    <li><strong>Register Staff:</strong> Go to the <strong>Establishment</strong> page and add all employees. Ensure accurate designations and PEN numbers.</li>
-                    <li><strong>Create User Accounts:</strong> While adding or editing a staff member, check the <strong>"Create User Account"</strong> box to provide them with dashboard access (e.g., for Supervisors or Investigators).</li>
-                </ol>
-            </CardContent>
-        </Card>
-
-        <Card className="border-amber-200 bg-amber-50/30">
-            <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2"><UserPlus className="h-5 w-5 text-amber-600" />Super Admin Functions</CardTitle>
-                <CardDescription>Management of sub-offices and global settings.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-muted-foreground">
-                <ul className="list-disc pl-5 space-y-2">
-                    <li><strong>Sub-Office Setup:</strong> Super Admins can create new office locations. This automatically provisions three core accounts: <strong>Admin, Scientist, and Engineer</strong> with a default password of "123456".</li>
-                    <li><strong>Global Data:</strong> Super Admins manage departmental drilling rates and global user accounts across the entire state.</li>
-                    <li><strong>Transfer Approval:</strong> When an Office Admin initiates a staff transfer, it must be approved by the Super Admin to move the record to the target office.</li>
-                </ul>
-            </CardContent>
-        </Card>
-      </div>
+      <Card className="border-primary/20 bg-primary/5">
+        <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2 text-primary"><History className="h-5 w-5" />Recent System Enhancements</CardTitle>
+            <CardDescription>Latest updates to improve your workflow and productivity.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2 text-sm"><MapPin className="h-4 w-4 text-primary"/>Navigation Address</h4>
+                    <p className="text-xs text-muted-foreground">A new breadcrumb trail at the top-left of every page helps you track your current location and navigate back to parent categories with a single click.</p>
+                </div>
+                <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2 text-sm"><Save className="h-4 w-4 text-primary"/>Save vs Close Logic</h4>
+                    <p className="text-xs text-muted-foreground">The <strong>Save</strong> button now persists data only, allowing you to continue editing. Use the <strong>Close</strong> button once you are finished to return to the list view.</p>
+                </div>
+                <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2 text-sm"><ExternalLink className="h-4 w-4 text-primary"/>Dashboard Drill-down</h4>
+                    <p className="text-xs text-muted-foreground">Clicking a <strong>File No.</strong> in Dashboard popups now opens the record in a <strong>new browser window</strong>, keeping your summary view active in the original tab.</p>
+                </div>
+                <div className="space-y-2">
+                    <h4 className="font-semibold flex items-center gap-2 text-sm"><Palette className="h-4 w-4 text-primary"/>Status Color Coding</h4>
+                    <p className="text-xs text-muted-foreground">Site names are now color-coded: <span className="text-green-600 font-bold">Green</span> for Ongoing, <span className="text-amber-600 font-bold">Yellow</span> for Refunds, and <span className="text-red-600 font-bold">Red</span> for Completed/Failed.</p>
+                </div>
+            </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -126,31 +125,14 @@ export default function HelpPage() {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="reappropriation">
-              <AccordionTrigger>Re-appropriation & Fund Transfers</AccordionTrigger>
+            <AccordionItem value="deposit">
+              <AccordionTrigger>Site Management (Copy & Reorder)</AccordionTrigger>
               <AccordionContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">The system allows for seamless movement of funds between project files. This is essential for managing excess remittances or adjusting project budgets.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-3 border rounded-md bg-secondary/20">
-                        <h5 className="font-semibold text-xs uppercase text-primary mb-1">Debits (Transfers Out)</h5>
-                        <p className="text-xs text-muted-foreground">Created manually in the source file. You must select the target "Type of Page" and start typing the File No. to see suggestions.</p>
-                    </div>
-                    <div className="p-3 border rounded-md bg-secondary/20">
-                        <h5 className="font-semibold text-xs uppercase text-primary mb-1">Credits (Transfers In)</h5>
-                        <p className="text-xs text-muted-foreground">Automatically detected. If File A transfers funds to File B, File B will automatically show a corresponding "Credit" entry in its table.</p>
-                    </div>
-                </div>
-                <div className="p-3 rounded-md bg-primary/10 border border-primary/20">
-                    <p className="text-xs font-bold text-primary">Balance Formula:</p>
-                    <p className="text-sm font-mono text-primary">Balance = Total Remittance + Total Credit - Total Payment - Total Debit</p>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="media">
-              <AccordionTrigger>Image & Video Gallery</AccordionTrigger>
-              <AccordionContent>
-                <p className="text-sm text-muted-foreground">Every site includes a media section for visual documentation. You can add links to photos or videos (including YouTube/Vimeo embeds). The system provides a light-box viewer for full-screen inspection of images and playback of videos.</p>
+                <p className="text-sm text-muted-foreground">In Deposit Work modules, you can now manage multiple sites more efficiently:</p>
+                <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                    <li><strong>Copy Site:</strong> Use the copy icon to duplicate an existing site's details, useful for schemes with identical specifications.</li>
+                    <li><strong>Reorder Sites:</strong> Use the sort icon to rearrange the sequence of sites within a file.</li>
+                </ul>
               </AccordionContent>
             </AccordionItem>
 
@@ -178,31 +160,34 @@ export default function HelpPage() {
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="faq-3">
+              <AccordionTrigger>How do I save images for Staff or Work Sites?</AccordionTrigger>
+              <AccordionContent className="space-y-4 text-sm text-muted-foreground text-justify">
+                <p>Direct file uploading is not supported to ensure database performance. You must provide a <strong>direct public link</strong> to your image.</p>
+                <div className="p-4 rounded-lg bg-secondary/30 border space-y-2">
+                    <p className="font-semibold text-primary flex items-center gap-2"><ImageUp className="h-4 w-4"/> Recommended Workflow (using Postimages):</p>
+                    <ol className="list-decimal pl-5 space-y-1">
+                        <li>Visit <a href="https://postimages.org/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline font-bold">Postimages.org</a>.</li>
+                        <li>Upload your photo (select "Do not resize" for best quality).</li>
+                        <li>Once uploaded, copy the <strong>"Direct Link"</strong> (it must end in <code>.jpg</code> or <code>.png</code>).</li>
+                        <li>Paste this link into the Photo URL field in the dashboard. A preview will appear if the link is valid.</li>
+                    </ol>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
             <AccordionItem value="faq-1">
-              <AccordionTrigger>How are new users created?</AccordionTrigger>
+              <AccordionTrigger>How are new user accounts created?</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground">
                 <ul className="list-disc pl-5 space-y-2">
-                    <li><strong>Sub-Office Accounts:</strong> Initial Admin, Scientist, and Engineer accounts are created by the Super Admin using the "Office Management" tool.</li>
-                    <li><strong>Staff Logins:</strong> Office Admins create accounts for other staff (like Supervisors) by registering them in the **Establishment** module and checking the "Create User Account" option.</li>
+                    <li><strong>Sub-Office Accounts:</strong> Initial Admin, Scientist, and Engineer accounts are created by the Super Admin.</li>
+                    <li><strong>Staff Logins:</strong> Office Admins create accounts for other staff (like Supervisors) by registering them in the <strong>Establishment</strong> module and checking the "Create User Account" option.</li>
                 </ul>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="faq-2">
-              <AccordionTrigger>What does the 'Eye' icon do?</AccordionTrigger>
-              <AccordionContent className="text-sm text-muted-foreground">
-                The **Eye** icon is the standard "View/Edit" action button. Clicking it opens the details of a record. Depending on your permissions, you will either see a read-only view or a form where you can make changes.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="faq-3">
-              <AccordionTrigger>How do I add a photo for a staff member?</AccordionTrigger>
-              <AccordionContent className="text-sm text-muted-foreground text-justify">
-                Direct file uploading is not supported to ensure performance. You must provide a **direct public link** to an image hosted on a service like Imgur or Postimages. The URL must end in an image extension like `.jpg` or `.png`. A preview will appear if the link is valid.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="faq-4">
               <AccordionTrigger>How does the LSG and Constituency mapping work?</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground">
-                Admins can import an Excel mapping file in **Settings**. Once mapped, selecting an LSG in any project form will automatically filter the "Constituency" dropdown to show only the LACs associated with that LSG.
+                Admins can import an Excel mapping file in <strong>Settings</strong>. Once mapped, selecting an LSG in any project form will automatically filter the "Constituency" dropdown to show only the LACs associated with that LSG.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -216,7 +201,7 @@ export default function HelpPage() {
             <CardTitle>Contact for Support</CardTitle>
           </div>
           <CardDescription>
-            If you encounter technical issues or have questions not covered in the documentation, please contact the administrator.
+            If you encounter technical issues, contact the system administrator.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
