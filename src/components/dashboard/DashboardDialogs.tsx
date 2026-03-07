@@ -14,7 +14,6 @@ import type { DataEntryFormData } from '@/lib/schemas';
 import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
 import type { ArsEntry } from '@/hooks/useArsEntries';
 import { FileDown } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 interface DetailDialogColumn {
   key: string;
@@ -40,7 +39,6 @@ interface DashboardDialogsProps {
 
 export default function DashboardDialogs({ dialogState, setDialogState, allFileEntries, allArsEntries, financeDates }: DashboardDialogsProps) {
   const { toast } = useToast();
-  const router = useRouter();
   const { isOpen, title, data, columns, type } = dialogState;
   
   const handleFileNoClick = (fileNo: string) => {
@@ -60,16 +58,17 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
       const queryParams = new URLSearchParams({ id: entry.id });
       if (workType) queryParams.set('workType', workType);
       
-      router.push(`/dashboard/data-entry?${queryParams.toString()}`);
-      setDialogState({ ...dialogState, isOpen: false });
+      const url = `/dashboard/data-entry?${queryParams.toString()}`;
+      window.open(url, '_blank');
+      // We no longer close the dialog here so it remains visible in the original window
       return;
     }
 
     // Try finding in ARS entries
     const arsEntry = allArsEntries.find(e => e.fileNo === fileNo);
     if (arsEntry && arsEntry.id) {
-      router.push(`/dashboard/ars/entry?id=${arsEntry.id}`);
-      setDialogState({ ...dialogState, isOpen: false });
+      const url = `/dashboard/ars/entry?id=${arsEntry.id}`;
+      window.open(url, '_blank');
       return;
     }
 
