@@ -246,7 +246,7 @@ export default function DataEntryPage() {
         <CardHeader className="flex flex-row items-center justify-end p-4 border-b space-y-0">
             <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Close
+                Back
             </Button>
         </CardHeader>
         <CardContent className="p-6">

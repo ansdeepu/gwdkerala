@@ -1216,7 +1216,7 @@ export default function AgencyRegistrationPage() {
       const remarksSectionNumber = hasCancelledRigs ? 6 : 5;
       
       return (
-        <div>
+        <div className="space-y-6">
           <FormProvider {...form}>
             <form
               onSubmit={form.handleSubmit(
@@ -1573,6 +1573,7 @@ export default function AgencyRegistrationPage() {
                   />
                 </DialogContent>
             </Dialog>
+          </FormProvider>
         </div>
       );
   }

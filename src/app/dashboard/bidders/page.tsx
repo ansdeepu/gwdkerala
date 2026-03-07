@@ -256,7 +256,7 @@ export default function BiddersListPage() {
                               <Input id="position" type="number" min="1" max={displayedBidders.length} required />
                           </div>
                           <DialogFooter className="p-6 pt-4">
-                              <Button type="button" variant="outline" onClick={() => setProjectToReorder(null)} disabled={isSubmitting}>Cancel</Button>
+                              <Button type="button" variant="outline" onClick={() => setBidderToReorder(null)} disabled={isSubmitting}>Cancel</Button>
                               <Button type="submit" disabled={isSubmitting}>
                                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Move"}
                               </Button>
