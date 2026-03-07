@@ -2,8 +2,8 @@
 // src/app/dashboard/layout.tsx
 "use client";
 
-import React, { useEffect, useCallback, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
+import { useRouter, usePathname, Link } from 'next/navigation';
 import {
   SidebarProvider,
   SidebarInset,
@@ -20,7 +20,7 @@ import { useAuth, type UserProfile, updateUserLastActive } from '@/hooks/useAuth
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import FirebaseErrorListener from '@/components/FirebaseErrorListener';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { Loader2, Clock, Building } from 'lucide-react';
+import { Loader2, Clock, Building, ChevronRight, Home } from 'lucide-react';
 import OfficeSwitcher from '@/components/layout/OfficeSwitcher';
 
 const IDLE_TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
@@ -28,6 +28,7 @@ const LAST_ACTIVE_UPDATE_INTERVAL = 5 * 60 * 1000; // Update Firestore lastActiv
 
 function HeaderContent({ user }: { user: UserProfile | null }) {
   const { title, description } = usePageHeader();
+  const pathname = usePathname();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   
   useEffect(() => {
@@ -37,6 +38,40 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
   }, []);
 
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
+
+  const breadcrumbs = useMemo(() => {
+    if (!pathname) return [];
+    const segments = pathname.split('/').filter(Boolean);
+    
+    return segments.map((segment, index) => {
+      const href = `/${segments.slice(0, index + 1).join('/')}`;
+      const isLast = index === segments.length - 1;
+      
+      // Map segments to friendly names
+      let label = segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      
+      if (segment === 'dashboard') label = 'Home';
+      else if (segment === 'gw-investigation') label = 'GW Investigation';
+      else if (segment === 'logging-pumping-test') label = 'Logging & Pumping Test';
+      else if (segment === 'file-room') label = 'Deposit Works';
+      else if (segment === 'collectors-deposit-works') label = "Collector's Deposit Works";
+      else if (segment === 'private-deposit-works') label = 'Private Deposit Works';
+      else if (segment === 'plan-fund-works') label = 'Plan Fund Works';
+      else if (segment === 'agency-registration') label = 'Rig Registration';
+      else if (segment === 'e-tender') label = 'e-Tender';
+      else if (segment === 'vehicles') label = 'Vehicle & Rig';
+      else if (segment === 'pending-updates') label = 'Pending Actions';
+      else if (segment === 'report-format-suggestion') label = 'Report Builders';
+      else if (segment === 'gwd-rates') label = 'GWD Rates';
+      else if (segment === 'super-admin') label = 'Super Admin';
+      else if (segment === 'data-entry') label = 'File Entry';
+      
+      // If it's the last segment, use the page title if it's more descriptive than the segment
+      const displayLabel = isLast && title && !title.includes('Loading') ? title : label;
+
+      return { href, label: displayLabel, isLast };
+    });
+  }, [pathname, title]);
 
   return (
     <div className="flex items-center justify-between w-full gap-4 px-6 py-3">
@@ -49,9 +84,30 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
             <p>Toggle Sidebar (Ctrl+B)</p>
           </TooltipContent>
         </Tooltip>
+        
         <div className="flex flex-col min-w-0">
-          <h1 className="text-xl font-bold tracking-tight truncate">{title}</h1>
-          {description && <p className="text-xs text-muted-foreground truncate hidden lg:block">{description}</p>}
+          {/* Navigation Address (Breadcrumbs) */}
+          <nav className="flex items-center space-x-1 text-xs text-muted-foreground mb-1" aria-label="Breadcrumb">
+            <Link href="/dashboard" className="hover:text-primary transition-colors flex items-center">
+              <Home className="h-3 w-3 mr-1" />
+              <span>Home</span>
+            </Link>
+            {breadcrumbs.filter(b => b.href !== '/dashboard').map((crumb, idx) => (
+              <React.Fragment key={crumb.href}>
+                <ChevronRight className="h-3 w-3 shrink-0" />
+                {crumb.isLast ? (
+                  <span className="font-medium text-primary truncate max-w-[200px]">{crumb.label}</span>
+                ) : (
+                  <Link href={crumb.href} className="hover:text-primary transition-colors truncate max-w-[150px]">
+                    {crumb.label}
+                  </Link>
+                )}
+              </React.Fragment>
+            ))}
+          </nav>
+
+          <h1 className="text-xl font-bold tracking-tight truncate leading-tight">{title}</h1>
+          {description && <p className="text-[10px] text-muted-foreground truncate hidden lg:block">{description}</p>}
         </div>
       </div>
       
