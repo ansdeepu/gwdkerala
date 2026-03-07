@@ -325,11 +325,9 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
                     {uniqueOptions.length === 1 ? (
-                        <Input 
-                            value={applicationTypeDisplayMap[uniqueOptions[0]] || uniqueOptions[0]} 
-                            readOnly 
-                            className="bg-muted font-semibold"
-                        />
+                        <div className="p-2 border rounded-md bg-muted font-semibold text-sm">
+                            {applicationTypeDisplayMap[uniqueOptions[0]] || uniqueOptions[0]}
+                        </div>
                     ) : (
                         <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType} disabled={isChecking}>
                             <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
@@ -1050,7 +1048,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
       <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
       <Dialog open={dialogState.type === 'reorderSite'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl flex flex-col p-0"><ReorderSitesDialog initialData={dialogState.data || []} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
       <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
-    </FormProvider>
+    </div>
   );
 }
 

@@ -13,8 +13,14 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Eye, Trash2, Loader2, Copy } from "lucide-react";
-import type { DataEntryFormData, SiteWorkStatus, SiteDetailFormData } from "@/lib/schemas";
-import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from "@/lib/schemas";
+import type { DataEntryFormData, SiteWorkStatus, SiteDetailFormData, ApplicationType } from "@/lib/schemas";
+import { 
+    LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
+    PUBLIC_DEPOSIT_APPLICATION_TYPES,
+    PRIVATE_APPLICATION_TYPES,
+    COLLECTOR_APPLICATION_TYPES,
+    PLAN_FUND_APPLICATION_TYPES
+} from "@/lib/schemas";
 import { format, isValid, parseISO } from "date-fns";
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -118,8 +124,24 @@ export default function FileDatabaseTable({
     const hasLoggingPumpingPurpose = item.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
 
     let workType = '';
-    if (hasInvestigationPurpose && !hasLoggingPumpingPurpose) workType = 'gwInvestigation';
-    else if (hasLoggingPumpingPurpose && !hasInvestigationPurpose) workType = 'loggingPumpingTest';
+    const appType = item.applicationType as any;
+
+    if (hasInvestigationPurpose && !hasLoggingPumpingPurpose) {
+        workType = 'gwInvestigation';
+    } else if (hasLoggingPumpingPurpose && !hasInvestigationPurpose) {
+        workType = 'loggingPumpingTest';
+    } else if (appType && (PUBLIC_DEPOSIT_APPLICATION_TYPES as any).includes(appType)) {
+        workType = 'public';
+    } else if (appType && (PRIVATE_APPLICATION_TYPES as any).includes(appType)) {
+        workType = 'private';
+    } else if (appType && (COLLECTOR_APPLICATION_TYPES as any).includes(appType)) {
+        workType = 'collector';
+    } else if (appType && (PLAN_FUND_APPLICATION_TYPES as any).includes(appType)) {
+        workType = 'planFund';
+    } else {
+        // Default fallback for deposit works
+        workType = 'public';
+    }
 
     const queryParams = new URLSearchParams({ id: item.id });
     if (workType) queryParams.set('workType', workType);
