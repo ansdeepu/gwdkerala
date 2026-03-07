@@ -1,3 +1,4 @@
+
 // src/components/e-tender/TenderDetails.tsx
 "use client";
 
@@ -162,7 +163,7 @@ export default function TenderDetails() {
         try {
             await handleSave(getValues(), true);
             toast({ title: "Tender Saved", description: "All changes have been saved." });
-            router.push('/dashboard/e-tender');
+            // Redirection removed: Logic changed to save data only.
         } catch (error: any) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } finally {
@@ -428,7 +429,7 @@ export default function TenderDetails() {
                     <CardHeader className="p-4 flex flex-row justify-end">
                         <Button variant="destructive" onClick={() => router.back()}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back
+                            Close
                         </Button>
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -759,18 +760,18 @@ export default function TenderDetails() {
                             {!isReadOnly && 
                               <div className="flex items-center gap-2">
                                 <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
-                                    <X className="mr-2 h-4 w-4" /> Cancel
+                                    <X className="mr-2 h-4 w-4" /> Close
                                 </Button>
                                 <TooltipProvider>
                                   <Tooltip>
                                       <TooltipTrigger asChild>
                                           <Button type="button" size="lg" onClick={handleFinalSave} disabled={isSubmitting}>
                                               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                              Save All Changes & Exit
+                                              Save
                                           </Button>
                                       </TooltipTrigger>
                                       <TooltipContent>
-                                          <p>Persists all locally made changes to the database and returns to the list.</p>
+                                          <p>Persists all locally made changes to the database.</p>
                                       </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>

@@ -32,6 +32,7 @@ import {
   sitePurposeOptions,
   type SitePurpose,
   siteDiameterOptions,
+  siteTypeOfRigOptions,
   fileStatusOptions,
   remittedAccountOptions,
   paymentAccountOptions,
@@ -44,13 +45,18 @@ import {
   applicationTypeOptions,
   applicationTypeDisplayMap,
   type ApplicationType,
+  siteConditionsOptions,
   type UserRole,
   type SiteWorkStatus,
+  constituencyOptions,
+  type Constituency,
   PUBLIC_DEPOSIT_APPLICATION_TYPES,
   PRIVATE_APPLICATION_TYPES,
   COLLECTOR_APPLICATION_TYPES,
   PLAN_FUND_APPLICATION_TYPES,
   LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
+  type Bidder,
+  type MediaItem,
   ReappropriationDetailSchema,
   type ReappropriationDetailFormData
 } from '@/lib/schemas';
@@ -459,7 +465,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
     ];
 
     return (
-      <Form {...form}>
+      <FormProvider {...form}>
         <form onSubmit={(e) => { e.stopPropagation(); e.preventDefault(); form.handleSubmit(handleConfirmSubmit)(e); }}>
             <DialogHeader>
                 <DialogTitle>Re-appropriation Details</DialogTitle>
@@ -510,7 +516,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                 <Button type="submit">Save</Button>
             </DialogFooter>
         </form>
-      </Form>
+      </FormProvider>
     );
 };
 
@@ -784,7 +790,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
         }
-        router.push(returnPath);
+        // REDIRECTION REMOVED: Logic changed to save data only.
     } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
   };
 
@@ -1018,9 +1024,9 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
             <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{fileStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
         <CardFooter className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button>
             {!(isViewer || isFormDisabled) && (
-                <Button type="button" onClick={handleSubmit(onSubmit, onInvalid)} disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button>
+                <Button type="button" onClick={handleSubmit(onSubmit, onInvalid)} disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save'}</Button>
             )}
         </CardFooter>
       </div>

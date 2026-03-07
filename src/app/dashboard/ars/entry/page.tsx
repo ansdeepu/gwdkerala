@@ -1,3 +1,4 @@
+
 // src/app/dashboard/ars/entry/page.tsx
 "use client";
 
@@ -304,7 +305,7 @@ export default function ArsEntryPage() {
         if (isApprovingUpdate) return '/dashboard/pending-updates';
         if (user?.email === 'keralagwd@gmail.com') return '/dashboard/super-admin/ars-plan';
         return '/dashboard/ars';
-    }, [isApprovingUpdate, pageToReturnTo, user]);
+    }, [isApprovingUpdate, user]);
 
 
     useEffect(() => {
@@ -324,7 +325,6 @@ export default function ArsEntryPage() {
             
              if (isSupervisor && user) {
                 const hasPending = await hasPendingUpdateForFile(originalEntry.fileNo, user.uid);
-                const isEditableStatus = originalEntry.arsStatus && SUPERVISOR_EDITABLE_STATUSES.includes(originalEntry.arsStatus as (typeof arsStatusOptions)[number]);
                 
                 if (hasPending) {
                     setIsFormDisabledForSupervisor(true);
@@ -441,7 +441,7 @@ export default function ArsEntryPage() {
                 await createArsPendingUpdate(entryIdToEdit, payload, user);
                  toast({ title: "Update Submitted", description: `Your changes for site "${data.nameOfSite}" have been submitted for approval.` });
             }
-            router.push(returnPath);
+            // REDIRECTION REMOVED: Focus on saving data only.
         } catch (error: any) {
              toast({ title: "Error Processing Site", description: error.message, variant: "destructive" });
         } finally {
@@ -478,7 +478,7 @@ export default function ArsEntryPage() {
                    <div className="flex justify-end mb-4">
                       <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
                           <ArrowLeft className="mr-2 h-4 w-4" />
-                          Back
+                          Close
                       </Button>
                     </div>
                     <FormProvider {...form}>
@@ -655,8 +655,8 @@ export default function ArsEntryPage() {
                         </div>
 
                         <div className="flex justify-end pt-8 space-x-3">
-                           <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4" />Cancel</Button>
-                           {!(isViewer || isFormDisabledForSupervisor) && <Button type="submit" disabled={isSubmitting}> {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} {isEditing ? "Save Changes" : "Create Entry"} </Button>}
+                           <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4" />Close</Button>
+                           {!(isViewer || isFormDisabledForSupervisor) && <Button type="submit" disabled={isSubmitting}> {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save </Button>}
                         </div>
                       </form>
                     </FormProvider>

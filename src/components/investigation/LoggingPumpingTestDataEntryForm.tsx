@@ -227,9 +227,8 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
             if (data.category === 'Govt') return LOGGING_PUMPING_TEST_GOVT_TYPES;
             if (data.category === 'Private') return LOGGING_PUMPING_TEST_PRIVATE_TYPES;
         } else if (workTypeContext === 'gwInvestigation') {
-            if (data.category === 'Govt') return INVESTIGATION_GOVT_TYPES;
-            if (data.category === 'Private') return INVESTIGATION_PRIVATE_TYPES;
-            if (data.category === 'Complaints') return INVESTIGATION_COMPLAINT_TYPES;
+            // This is logging specific but keeping for structural integrity
+            return [];
         }
         return [];
     }, [data.category, workTypeContext]);
@@ -302,7 +301,6 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
 
     const categoryOptions = useMemo(() => {
         if (workTypeContext === 'loggingPumpingTest') return ['Govt', 'Private'];
-        if (workTypeContext === 'gwInvestigation') return ['Govt', 'Private', 'Complaints'];
         return [];
     }, [workTypeContext]);
 
@@ -568,7 +566,10 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContex
                       <div className="space-y-4">
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl>
+                                <SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                              </Select><FormMessage /></FormItem>} />
                           </div>
                           <Separator/>
                             <FormField 
@@ -683,6 +684,9 @@ const LoggingPumpingTestSiteDialog = ({ initialData, onConfirm, onCancel, isRead
             setValue('constituency', constituencies[0] as Constituency);
         }
     }, [watchedLsg, allLsgConstituencyMaps, setValue, getValues]);
+
+    const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
+    const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
@@ -983,18 +987,21 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
         return sum + (Number(item.amountRemitted) || 0);
     }, 0) || 0;
-    const totalReappCredit = autoCredits.reduce((sum, item) => {
-        return sum + (Number(item.amount) || 0);
-    }, 0);
-    const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
+    setValue("totalRemittance", totalRemittance);
+
     const totalReappDebit = watchedReappropriationDetails?.reduce((sum, item) => {
         return sum + (Number(item.amount) || 0);
     }, 0) || 0;
-
-    setValue("totalRemittance", totalRemittance);
     setValue("totalReappropriation", totalReappDebit);
+
+    const totalReappCredit = autoCredits.reduce((sum, item) => {
+        return sum + (Number(item.amount) || 0);
+    }, 0);
     setValue("totalReappropriationCredit", totalReappCredit);
+    
+    const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
+
     setValue("overallBalance", totalRemittance + totalReappCredit - totalPayment - totalReappDebit);
     
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
@@ -1023,7 +1030,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
             await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
         }
-        router.push(returnPath);
+        // Redirection removed: Stay on page after save.
     } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
   };
 
@@ -1242,7 +1249,7 @@ const handleDeleteItem = () => {
             <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
             <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
             <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
-        {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save & Exit'}</Button></CardFooter>)}
+        {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save'}</Button></CardFooter>)}
       </form>
 
       <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>

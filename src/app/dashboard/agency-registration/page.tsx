@@ -721,8 +721,7 @@ export default function AgencyRegistrationPage() {
             await addApplication(dataWithHistory);
             toast({ title: "Application Created", description: "The new agency registration has been saved." });
         }
-        setSelectedApplicationId(null);
-        router.push(returnPath);
+        // REDIRECTION REMOVED: Stick to saving data only.
     } catch (error: any) {
         console.error("Submission failed:", error);
         toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
@@ -808,7 +807,7 @@ export default function AgencyRegistrationPage() {
             }
             
             const officeCode = officeAddress?.officeCode;
-            const regexPattern = officeCode ? `(?:/|${officeCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\/|GKT\/)` : `(?:/|GKT\/)`;
+            const regexPattern = officeCode ? `(?:/|${officeAddress.officeCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\/|GKT\/)` : `(?:/|GKT\/)`;
             const regex = new RegExp(`${regexPattern}(\\d+)(?:\\(N\\)\/|\/)`);
 
             // Secondary Sort: registration number
@@ -858,6 +857,10 @@ export default function AgencyRegistrationPage() {
   };
     
     const handleEditRenewal = (rigIndex: number, renewal: RigRenewalFormData) => {
+        handleEditRenewalInternal(rigIndex, renewal);
+    };
+
+    const handleEditRenewalInternal = (rigIndex: number, renewal: RigRenewalFormData) => {
         openDialog('editRenewal', { rigIndex, renewal: { ...renewal } });
     };
     
@@ -1079,7 +1082,7 @@ export default function AgencyRegistrationPage() {
       return;
     }
     const reportTitle = "Agency Rig Registration Report";
-    const fileNamePrefix = "gwd_rig_reg_report";
+    const fileNamePrefix = "gwd_rig_report";
     
     const headers = [
       "Sl. No.", "Agency Name & Address", "Owner & Partner Details", "Mobile No.",
@@ -1229,7 +1232,7 @@ export default function AgencyRegistrationPage() {
                 <Card>
                     <CardHeader className="p-4 flex flex-row justify-end">
                         <Button type="button" variant="destructive" onClick={handleCancelForm} disabled={isSubmitting}>
-                            <ArrowLeft className="mr-2 h-4 w-4"/> Back
+                            <ArrowLeft className="mr-2 h-4 w-4"/> Close
                         </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -1346,7 +1349,7 @@ export default function AgencyRegistrationPage() {
                             <div className="col-span-full border-t pt-4 mt-2"></div>
                             <DetailRow label="Additional Reg. Fee" value={form.watch('agencyAdditionalRegFee')} />
                             <DetailRow label="Additional Payment Date" value={form.watch('agencyAdditionalPaymentDate')} />
-                            <DetailRow label="Additional Challan No." value={form.watch('agencyAdditionalChallanNo')} />
+                            <DetailRow label="Additional Chalan No." value={form.watch('agencyAdditionalChallanNo')} />
                            </dl>
                         </div>
                         
@@ -1428,10 +1431,10 @@ export default function AgencyRegistrationPage() {
                     </CardContent>
                     {!isReadOnly && (
                       <CardFooter className="flex justify-end gap-2">
-                          <Button type="button" variant="outline" onClick={handleCancelForm} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Cancel</Button>
+                          <Button type="button" variant="outline" onClick={handleCancelForm} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button>
                           <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
-                            {selectedApplicationId === 'new' ? 'Save Registration' : 'Save Changes'}
+                            Save
                           </Button>
                       </CardFooter>
                     )}
@@ -1571,8 +1574,7 @@ export default function AgencyRegistrationPage() {
                   />
                 </DialogContent>
             </Dialog>
-        </FormProvider>
-      </div>
+        </div>
       );
   }
 
@@ -1804,7 +1806,7 @@ function ApplicationFeeDialogContent({ initialData, onConfirm, onCancel }: { ini
                     </div>
                 </div>
             </div>
-            <DialogFooter className="p-6 pt-4">
+            <DialogFooter>
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button type="button" onClick={handleConfirm}>Confirm</Button>
             </DialogFooter>
@@ -1989,7 +1991,6 @@ function RigDetailsDialog({ form, rigIndex, onConfirm, onCancel, isAdding }: { f
 }
 
 function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialData: OwnerInfo, onConfirm: (data: OwnerInfo) => void, onCancel: () => void }) {
-    const { toast } = useToast();
     const form = useForm<OwnerInfo>({
         resolver: zodResolver(OwnerInfoSchema),
         defaultValues: initialData || { name: '', address: '', mobile: '', secondaryMobile: '' }
@@ -2040,5 +2041,3 @@ function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialDat
         </Form>
     );
 }
-
-    
