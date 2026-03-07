@@ -8,19 +8,9 @@ import { cn } from "@/lib/utils"
 
 const Select = SelectPrimitive.Root
 
-const SelectGroup = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Group>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Group>
->((props, ref) => <SelectPrimitive.Group ref={ref} {...props} />);
-SelectGroup.displayName = SelectPrimitive.Group.displayName;
+const SelectGroup = SelectPrimitive.Group
 
-
-const SelectValue = React.forwardRef<
-  React.ElementRef<typeof SelectPrimitive.Value>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Value>
->((props, ref) => <SelectPrimitive.Value ref={ref} {...props} />);
-SelectValue.displayName = SelectPrimitive.Value.displayName;
-
+const SelectValue = SelectPrimitive.Value
 
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,

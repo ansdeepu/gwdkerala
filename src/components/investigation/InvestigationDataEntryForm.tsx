@@ -1,4 +1,3 @@
-
 // src/components/investigation/InvestigationDataEntryForm.tsx
 "use client";
 
@@ -130,25 +129,10 @@ const processDataForForm = (data: any): any => {
   return transform(data);
 };
 
-const getFormDefaults = (workType: string | null): DataEntryFormData => ({
-  fileNo: "", 
-  applicantName: "", 
-  phoneNo: "", 
-  secondaryMobileNo: "",
-  category: undefined,
-  applicationType: undefined, 
-  constituency: undefined,
-  estimateAmount: undefined, 
-  assignedSupervisorUids: [],
-  remittanceDetails: [], 
-  totalRemittance: 0, 
-  siteDetails: [], 
-  paymentDetails: [], 
-  totalPaymentAllEntries: 0, 
-  overallBalance: 0,
-  fileStatus: 'File Under Process', 
-  remarks: "",
-});
+const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ id: uuidv4(), amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
+const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "GW Investigation", fileDetails: "" });
+const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ id: uuidv4(), remittanceId: null, dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
+const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", workImages: [], workVideos: [] });
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
   if (!payment) return 0;
@@ -265,15 +249,17 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
     
     const filteredAppTypeOptions = useMemo(() => {
+        let options: string[] = [];
         if (workTypeContext === 'loggingPumpingTest') {
-            if (data.category === 'Govt') return LOGGING_PUMPING_TEST_GOVT_TYPES;
-            if (data.category === 'Private') return LOGGING_PUMPING_TEST_PRIVATE_TYPES;
+            if (data.category === 'Govt') options = [...LOGGING_PUMPING_TEST_GOVT_TYPES];
+            else if (data.category === 'Private') options = [...LOGGING_PUMPING_TEST_PRIVATE_TYPES];
         } else if (workTypeContext === 'gwInvestigation') {
-            if (data.category === 'Govt') return INVESTIGATION_GOVT_TYPES;
-            if (data.category === 'Private') return INVESTIGATION_PRIVATE_TYPES;
-            if (data.category === 'Complaints') return INVESTIGATION_COMPLAINT_TYPES;
+            if (data.category === 'Govt') options = [...INVESTIGATION_GOVT_TYPES];
+            else if (data.category === 'Private') options = [...INVESTIGATION_PRIVATE_TYPES];
+            else if (data.category === 'Complaints') options = [...INVESTIGATION_COMPLAINT_TYPES];
         }
-        return [];
+        // Unique options to prevent repetition
+        return Array.from(new Set(options));
     }, [data.category, workTypeContext]);
 
     // Auto-select if only one option exists
@@ -390,12 +376,20 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
 
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={!data.category || isChecking || filteredAppTypeOptions.length === 1}>
-                        <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
-                        <SelectContent className="max-h-80">
-                            {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o.replace(/_/g, " ")}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    {filteredAppTypeOptions.length === 1 ? (
+                        <Input 
+                            value={applicationTypeDisplayMap[filteredAppTypeOptions[0] as ApplicationType] || filteredAppTypeOptions[0]} 
+                            readOnly 
+                            className="bg-muted font-semibold"
+                        />
+                    ) : (
+                        <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={!data.category || isChecking}>
+                            <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
+                            <SelectContent className="max-h-80">
+                                {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o.replace(/_/g, " ")}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    )}
                      {errors.applicationType && <p className="text-xs text-destructive mt-1">{errors.applicationType}</p>}
                 </div>
             </div>
@@ -443,7 +437,9 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField name="dateOfRemittance" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Date <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     <FormField name="amountRemitted" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
-                    <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl><SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
+                    <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl>
+                        <SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
                 </div>
                 <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{category === 'Complaints' ? 'Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>

@@ -1,4 +1,3 @@
-
 // src/components/investigation/LoggingPumpingTestDataEntryForm.tsx
 "use client";
 
@@ -223,14 +222,13 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; category?: string; }>({});
     
     const filteredAppTypeOptions = useMemo(() => {
+        let options: string[] = [];
         if (workTypeContext === 'loggingPumpingTest') {
-            if (data.category === 'Govt') return LOGGING_PUMPING_TEST_GOVT_TYPES;
-            if (data.category === 'Private') return LOGGING_PUMPING_TEST_PRIVATE_TYPES;
-        } else if (workTypeContext === 'gwInvestigation') {
-            // This is logging specific but keeping for structural integrity
-            return [];
+            if (data.category === 'Govt') options = [...LOGGING_PUMPING_TEST_GOVT_TYPES];
+            else if (data.category === 'Private') options = [...LOGGING_PUMPING_TEST_PRIVATE_TYPES];
         }
-        return [];
+        // Unique options to prevent duplicates like "LSGDLSGDLSGD"
+        return Array.from(new Set(options));
     }, [data.category, workTypeContext]);
 
     const handleChange = (key: string, value: any) => {
@@ -339,12 +337,20 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
 
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={!data.category || isChecking}>
-                        <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
-                        <SelectContent className="max-h-80">
-                            {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o.replace(/_/g, " ")}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    {filteredAppTypeOptions.length === 1 ? (
+                        <Input 
+                            value={applicationTypeDisplayMap[filteredAppTypeOptions[0] as ApplicationType] || filteredAppTypeOptions[0]} 
+                            readOnly 
+                            className="bg-muted font-semibold"
+                        />
+                    ) : (
+                        <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={!data.category || isChecking}>
+                            <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
+                            <SelectContent className="max-h-80">
+                                {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o.replace(/_/g, " ")}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    )}
                      {errors.applicationType && <p className="text-xs text-destructive mt-1">{errors.applicationType}</p>}
                 </div>
             </div>
