@@ -425,13 +425,7 @@ export default function TenderDetails() {
         <FormProvider {...form}>
             <div className="space-y-6">
                 <Card>
-                    <CardHeader className="p-4 flex flex-row justify-end">
-                        <Button variant="destructive" onClick={() => router.back()}>
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Close
-                        </Button>
-                    </CardHeader>
-                    <CardContent className="pt-0">
+                    <CardContent className="pt-6">
                         <div className="space-y-4">
                             <Card className="border rounded-lg bg-blue-500/5 border-blue-500/20">
                                 <CardHeader className="flex flex-row justify-between items-center p-4">
@@ -758,9 +752,6 @@ export default function TenderDetails() {
                         <div className="mt-6 flex flex-col items-center gap-6">
                             {!isReadOnly && 
                               <div className="flex items-center gap-2">
-                                <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
-                                    <X className="mr-2 h-4 w-4" /> Close
-                                </Button>
                                 <TooltipProvider>
                                   <Tooltip>
                                       <TooltipTrigger asChild>

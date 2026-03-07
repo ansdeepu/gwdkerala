@@ -151,9 +151,6 @@ export default function BiddersListPage() {
                     <Button onClick={() => { setBidderToEdit(null); setIsNewBidderDialogOpen(true); }}>
                         <UserPlus className="mr-2 h-4 w-4" /> Add New Bidder
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => router.back()}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back
-                    </Button>
                 </CardHeader>
                 <CardContent className="pt-6">
                      <div className="max-h-[70vh] overflow-auto">

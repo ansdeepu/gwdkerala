@@ -721,7 +721,6 @@ export default function AgencyRegistrationPage() {
             await addApplication(dataWithHistory);
             toast({ title: "Application Created", description: "The new agency registration has been saved." });
         }
-        // Redirection removed: Saving data only.
     } catch (error: any) {
         console.error("Submission failed:", error);
         toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
@@ -1202,7 +1201,6 @@ export default function AgencyRegistrationPage() {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
          <div className="space-y-6 p-6 text-center">
-            <ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" />
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Access Denied</h1>
             <p className="text-muted-foreground">You do not have permission to access this page.</p>
         </div>
@@ -1229,11 +1227,6 @@ export default function AgencyRegistrationPage() {
               className="space-y-6"
             >
                 <Card>
-                    <CardHeader className="p-4 flex flex-row justify-end border-b">
-                        <Button type="button" variant="destructive" size="sm" onClick={handleClose} disabled={isSubmitting}>
-                            <ArrowLeft className="mr-2 h-4 w-4"/> Close
-                        </Button>
-                    </CardHeader>
                     <CardContent className="space-y-4 pt-6">
                         {/* Section 1: Application Details */}
                          <div className="flex items-center justify-between py-4">

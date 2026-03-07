@@ -4,8 +4,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArsEntrySchema, type ArsEntryFormData, type StaffMember, type SiteWorkStatus, type Constituency, arsStatusOptions, type Bidder, arsTypeOfSchemeOptions } from "@/lib/schemas";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { ArsEntrySchema, type ArsEntryFormData, arsStatusOptions, type Bidder, arsTypeOfSchemeOptions, type Constituency } from "@/lib/schemas";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -17,14 +17,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { format, isValid, parseISO, parse } from "date-fns";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
-import { cn } from "@/lib/utils";
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { usePendingUpdates } from "@/hooks/usePendingUpdates";
 import { useDataStore } from '@/hooks/use-data-store';
 import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useArsEntries } from "@/hooks/useArsEntries";
-import { Loader2, Save, X, ArrowLeft, ShieldAlert } from "lucide-react";
+import { Loader2, Save, X } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import MediaManager from '@/components/shared/MediaManager';
 
@@ -46,9 +45,9 @@ const toDateOrNull = (value: any): Date | null => {
         if (isValid(d)) return d;
     }
     if (typeof value === 'string') {
-        let d = parseISO(value); // Handles yyyy-MM-dd and ISO strings
+        let d = parseISO(value); 
         if (isValid(d)) return d;
-        d = parse(value, 'dd/MM/yyyy', new Date()); // Handles dd/MM/yyyy
+        d = parse(value, 'dd/MM/yyyy', new Date()); 
         if (isValid(d)) return d;
     }
     return null;
@@ -444,7 +443,6 @@ export default function ArsEntryPage() {
         return (
             <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
                 <div className="space-y-6 p-6 text-center">
-                    <ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" />
                     <h1 className="text-2xl font-bold tracking-tight text-foreground">Access Denied</h1>
                     <p className="text-muted-foreground">Supervisors cannot create new ARS entries.</p>
                 </div>
@@ -461,12 +459,6 @@ export default function ArsEntryPage() {
     return (
         <div className="space-y-6">
             <Card className="shadow-lg">
-                <CardHeader className="flex flex-row items-center justify-end p-4 border-b space-y-0">
-                    <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Close
-                    </Button>
-                </CardHeader>
                 <CardContent className="pt-6">
                     <FormProvider {...form}>
                       <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 p-1">

@@ -4,25 +4,22 @@
 import DataEntryFormComponent from "@/components/shared/DataEntryForm";
 import InvestigationDataEntryFormComponent from "@/components/investigation/InvestigationDataEntryForm";
 import LoggingPumpingTestDataEntryFormComponent from "@/components/investigation/LoggingPumpingTestDataEntryForm";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ShieldAlert, Loader2, ArrowLeft } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ShieldAlert, Loader2 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useFileEntries } from "@/hooks/useFileEntries";
-import { useStaffMembers } from "@/hooks/useStaffMembers";
 import { useMemo, useEffect, useState } from "react";
-import type { DataEntryFormData, StaffMember, ApplicationType } from "@/lib/schemas";
+import type { DataEntryFormData, ApplicationType } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { usePendingUpdates } from "@/hooks/usePendingUpdates";
-import { isValid, format, parseISO } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { useDataStore } from "@/hooks/use-data-store";
 import { 
-    PUBLIC_DEPOSIT_APPLICATION_TYPES, 
-    PRIVATE_APPLICATION_TYPES, 
     COLLECTOR_APPLICATION_TYPES, 
     PLAN_FUND_APPLICATION_TYPES, 
+    PRIVATE_APPLICATION_TYPES, 
     LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
 } from '@/lib/schemas';
 
@@ -78,7 +75,6 @@ const getFormDefaults = (workType: string | null): DataEntryFormData => ({
   category: undefined,
   applicationType: workType === 'planFund' ? 'GWBDWS' as ApplicationType : undefined, 
   constituency: undefined,
-  estimateAmount: undefined, 
   assignedSupervisorUids: [],
   remittanceDetails: [], 
   totalRemittance: 0, 
@@ -109,7 +105,6 @@ export default function DataEntryPage() {
 
   const { user, isLoading: authIsLoading, fetchAllUsers } = useAuth();
   const { fetchEntryForEditing } = useFileEntries();
-  const { staffMembers, isLoading: staffIsLoading } = useStaffMembers();
   const { getPendingUpdateById, hasPendingUpdateForFile } = usePendingUpdates();
   const { toast } = useToast();
   const { setHeader } = usePageHeader();
@@ -129,7 +124,7 @@ export default function DataEntryPage() {
     
     if (approveUpdateId) {
         base = '/dashboard/pending-updates'; 
-    } else if (fileIdToEdit && pageData?.initialData) { // Editing existing, determine path from content
+    } else if (fileIdToEdit && pageData?.initialData) {
         const hasInvestigationPurpose = pageData?.initialData?.siteDetails?.some(site => site.purpose === 'GW Investigation');
         const hasLoggingPumpingPurpose = pageData?.initialData?.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
 
@@ -147,7 +142,7 @@ export default function DataEntryPage() {
                 base = '/dashboard/private-deposit-works';
             }
         }
-    } else if (workTypeContext) { // Creating new, determine from context
+    } else if (workTypeContext) {
         if (workTypeContext === 'collector') base = '/dashboard/collectors-deposit-works';
         else if (workTypeContext === 'planFund') base = '/dashboard/plan-fund-works';
         else if (workTypeContext === 'private') base = '/dashboard/private-deposit-works';
@@ -196,11 +191,10 @@ export default function DataEntryPage() {
   useEffect(() => {
     let title = "Loading...";
     let description = "";
-    const isCreatingNew = !fileIdToEdit;
     if (!dataLoading) {
         if (errorState) { title = "Error"; description = errorState; } 
         else if (user?.role === 'admin') {
-            if (isCreatingNew) {
+            if (!fileIdToEdit) {
                 if (workTypeContext === 'private') title = "New Private Deposit Work";
                 else if (workTypeContext === 'collector') title = "New Collector's Deposit Work";
                 else if (workTypeContext === 'planFund') title = "New Plan Fund Work";
@@ -217,12 +211,12 @@ export default function DataEntryPage() {
   }, [fileIdToEdit, user, approveUpdateId, setHeader, fileNoForHeader, workTypeContext, dataLoading, errorState, readOnlyParam]);
 
   const supervisorList = useMemo(() => {
-    if (!user || !pageData || staffIsLoading) return [];
+    if (!user || !pageData) return [];
     return pageData.allUsers.filter(u => u.role === 'supervisor' && u.isApproved && u.staffId).map(userProfile => {
-        const staffInfo = staffMembers.find(s => s.id === userProfile.staffId && s.status === 'Active');
+        const staffInfo = allStaffMembers.find(s => s.id === userProfile.staffId && s.status === 'Active');
         return staffInfo ? { ...staffInfo, uid: userProfile.uid, name: staffInfo.name } : null;
     }).filter((s): s is (StaffMember & { uid: string; name: string }) => s !== null).sort((a, b) => a.name.localeCompare(b.name));
-   }, [pageData, staffMembers, user, staffIsLoading]);
+   }, [pageData, allStaffMembers, user]);
   
   const hasInvestigationPurpose = useMemo(() => 
     pageData?.initialData?.siteDetails?.some(site => site.purpose === 'GW Investigation'), 
@@ -243,12 +237,6 @@ export default function DataEntryPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-end p-4 border-b space-y-0">
-            <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-            </Button>
-        </CardHeader>
         <CardContent className="p-6">
           {pageData && pageData.initialData ? (
              isGwInvestigationType ? (
