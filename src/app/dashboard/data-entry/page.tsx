@@ -81,7 +81,7 @@ const getFormDefaults = (workType: string | null): DataEntryFormData => ({
   phoneNo: "", 
   secondaryMobileNo: "",
   category: undefined,
-  applicationType: undefined, 
+  applicationType: workType === 'planFund' ? 'GWBDWS' as ApplicationType : undefined, 
   constituency: undefined,
   estimateAmount: undefined, 
   assignedSupervisorUids: [],

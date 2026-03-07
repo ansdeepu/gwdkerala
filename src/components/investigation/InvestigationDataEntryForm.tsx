@@ -104,10 +104,51 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
 };
 
-const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ id: uuidv4(), amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
-const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "GW Investigation", fileDetails: "" });
-const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ id: uuidv4(), remittanceId: null, dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
-const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: undefined, workRemarks: "", surveyOB: "", surveyLocation: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", nameOfInvestigator: undefined, vesInvestigator: undefined, hydrogeologicalRemarks: "", geophysicalRemarks: "", workImages: [], workVideos: [] });
+const processDataForForm = (data: any): any => {
+  const transform = (obj: any): any => {
+    if (obj === null || obj === undefined) return obj;
+    if (Array.isArray(obj)) return obj.map(transform);
+    if (typeof obj === 'object') {
+      const maybeDate = toDateOrNull(obj);
+      if (maybeDate) return format(maybeDate, 'yyyy-MM-dd');
+      const newObj: { [key: string]: any } = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const value = obj[key];
+          if (key.toLowerCase().includes('date')) {
+            const date = toDateOrNull(value);
+            newObj[key] = date && isValid(date) ? format(date, 'yyyy-MM-dd') : "";
+          } else {
+            newObj[key] = transform(value);
+          }
+        }
+      }
+      return newObj;
+    }
+    return obj;
+  };
+  return transform(data);
+};
+
+const getFormDefaults = (workType: string | null): DataEntryFormData => ({
+  fileNo: "", 
+  applicantName: "", 
+  phoneNo: "", 
+  secondaryMobileNo: "",
+  category: undefined,
+  applicationType: undefined, 
+  constituency: undefined,
+  estimateAmount: undefined, 
+  assignedSupervisorUids: [],
+  remittanceDetails: [], 
+  totalRemittance: 0, 
+  siteDetails: [], 
+  paymentDetails: [], 
+  totalPaymentAllEntries: 0, 
+  overallBalance: 0,
+  fileStatus: 'File Under Process', 
+  remarks: "",
+});
 
 const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undefined): number => {
   if (!payment) return 0;
@@ -235,6 +276,13 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
         return [];
     }, [data.category, workTypeContext]);
 
+    // Auto-select if only one option exists
+    useEffect(() => {
+        if (filteredAppTypeOptions.length === 1 && data.applicationType !== filteredAppTypeOptions[0]) {
+            setData((prev: any) => ({ ...prev, applicationType: filteredAppTypeOptions[0] }));
+        }
+    }, [filteredAppTypeOptions, data.applicationType]);
+
     const handleChange = (key: string, value: any) => {
         setData((prev: any) => ({ ...prev, [key]: value }));
         if (value && String(value).trim()) {
@@ -342,7 +390,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
 
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={!data.category || isChecking}>
+                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={!data.category || isChecking || filteredAppTypeOptions.length === 1}>
                         <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
                         <SelectContent className="max-h-80">
                             {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o.replace(/_/g, " ")}</SelectItem>)}
@@ -569,7 +617,10 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, workTypeContex
                       <div className="space-y-4">
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl><SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl>
+                                <SelectContent>{availablePaymentAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                              </Select><FormMessage /></FormItem>} />
                           </div>
                           <Separator/>
                             <FormField 

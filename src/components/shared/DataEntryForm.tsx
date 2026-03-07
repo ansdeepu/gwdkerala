@@ -214,6 +214,13 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; }>();
     const [isChecking, setIsChecking] = useState(false);
 
+    // Auto-select if only one option exists
+    useEffect(() => {
+        if (formOptions.length === 1 && data.applicationType !== formOptions[0]) {
+            setData((prev: any) => ({ ...prev, applicationType: formOptions[0] }));
+        }
+    }, [formOptions, data.applicationType]);
+
     const handleChange = (key: string, value: any) => {
         setData((prev: any) => ({ ...prev, [key]: value }));
         if (value && String(value).trim()) {
@@ -309,7 +316,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} disabled={isChecking}/></div>
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType} disabled={isChecking}>
+                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType} disabled={isChecking || formOptions.length === 1}>
                         <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                         <SelectContent className="max-h-80">
                             {formOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o] || o}</SelectItem>)}
