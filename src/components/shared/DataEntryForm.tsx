@@ -54,12 +54,6 @@ import {
   COLLECTOR_APPLICATION_TYPES,
   PLAN_FUND_APPLICATION_TYPES,
   LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
-  type Bidder,
-  ReappropriationDetailSchema,
-  type ReappropriationDetailFormData,
-  INVESTIGATION_WORK_STATUS_OPTIONS,
-  LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS,
-  typeOfWellOptions
 } from '@/lib/schemas';
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -226,7 +220,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
 
     // Auto-select if only one option exists
     useEffect(() => {
-        if (uniqueOptions.length === 1 && data.applicationType !== uniqueOptions[0]) {
+        if (uniqueOptions.length === 1 && (!data.applicationType || data.applicationType === "")) {
             setData((prev: any) => ({ ...prev, applicationType: uniqueOptions[0] }));
         }
     }, [uniqueOptions, data.applicationType]);
@@ -234,7 +228,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
     const handleChange = (key: string, value: any) => {
         setData((prev: any) => ({ ...prev, [key]: value }));
         if (value && String(value).trim()) {
-            setErrors(prev => ({...prev, [key]: undefined}));
+            setErrors(prev => prev ? ({...prev, [key]: undefined}) : undefined);
         }
     };
     
@@ -328,13 +322,13 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                     <Label>Type of Application *</Label>
                     {uniqueOptions.length === 1 ? (
                         <div className="p-2 border rounded-md bg-muted font-semibold text-sm">
-                            {applicationTypeDisplayMap[uniqueOptions[0]] || uniqueOptions[0]}
+                            {applicationTypeDisplayMap[uniqueOptions[0] as ApplicationType] || uniqueOptions[0]}
                         </div>
                     ) : (
                         <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType} disabled={isChecking}>
                             <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                             <SelectContent className="max-h-80">
-                                {uniqueOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o] || o}</SelectItem>)}
+                                {uniqueOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as ApplicationType] || o}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     )}

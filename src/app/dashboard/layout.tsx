@@ -3,7 +3,8 @@
 "use client";
 
 import React, { useEffect, useCallback, useState, useMemo } from 'react';
-import { useRouter, usePathname, Link } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import {
   SidebarProvider,
   SidebarInset,
