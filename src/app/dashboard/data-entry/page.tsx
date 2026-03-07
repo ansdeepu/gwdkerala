@@ -23,11 +23,6 @@ import {
     PRIVATE_APPLICATION_TYPES, 
     COLLECTOR_APPLICATION_TYPES, 
     PLAN_FUND_APPLICATION_TYPES, 
-    GW_INVESTIGATION_TYPES,
-    LOGGING_PUMPING_TEST_TYPES,
-    INVESTIGATION_GOVT_TYPES, 
-    INVESTIGATION_PRIVATE_TYPES, 
-    INVESTIGATION_COMPLAINT_TYPES,
     LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
 } from '@/lib/schemas';
 
@@ -118,7 +113,7 @@ export default function DataEntryPage() {
   const { getPendingUpdateById, hasPendingUpdateForFile } = usePendingUpdates();
   const { toast } = useToast();
   const { setHeader } = usePageHeader();
-  const { allLsgConstituencyMaps, allE_tenders, allStaffMembers } = useDataStore();
+  const { allLsgConstituencyMaps, allStaffMembers } = useDataStore();
   
   const [pageData, setPageData] = useState<PageData | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
@@ -251,7 +246,7 @@ export default function DataEntryPage() {
         <CardHeader className="flex flex-row items-center justify-end p-4 border-b space-y-0">
             <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
+                Close
             </Button>
         </CardHeader>
         <CardContent className="p-6">

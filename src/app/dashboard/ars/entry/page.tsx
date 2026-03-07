@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArsEntrySchema, type ArsEntryFormData, constituencyOptions, arsTypeOfSchemeOptions, type StaffMember, type SiteWorkStatus, type Constituency, arsStatusOptions, type Bidder, type MediaItem } from "@/lib/schemas";
+import { ArsEntrySchema, type ArsEntryFormData, type StaffMember, type SiteWorkStatus, type Constituency, arsStatusOptions, type Bidder, arsTypeOfSchemeOptions } from "@/lib/schemas";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -24,14 +24,9 @@ import { useDataStore } from '@/hooks/use-data-store';
 import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useArsEntries } from "@/hooks/useArsEntries";
-import { Loader2, Save, X, ArrowLeft, ShieldAlert, ImagePlus, Video, ChevronLeft, ChevronRight, Pencil, Trash2, PlusCircle } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2, Save, X, ArrowLeft, ShieldAlert } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import MediaManager from '@/components/shared/MediaManager';
-
 
 export const dynamic = 'force-dynamic';
 
@@ -140,7 +135,6 @@ export default function ArsEntryPage() {
     
     const entryIdToEdit = searchParams?.get('id');
     const approveUpdateId = searchParams?.get("approveUpdateId");
-    const pageToReturnTo = searchParams?.get('page');
     const readOnlyParam = searchParams?.get('readOnly');
     
     const { isLoading: entriesLoading, getArsEntryById, updateArsEntry, addArsEntry } = useArsEntries();
@@ -176,7 +170,6 @@ export default function ArsEntryPage() {
     const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
     const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
 
-    const watchedArsStatus = useWatch({ control, name: 'arsStatus' });
     const watchedLsg = useWatch({ control, name: "localSelfGovt" });
     const watchedTenderNo = formWatch('arsTenderNo');
 
@@ -648,7 +641,7 @@ export default function ArsEntryPage() {
                             />
                         </div>
 
-                        <div className="flex justify-end pt-8 space-x-3">
+                        <div className="flex justify-end pt-8 space-x-3 border-t mt-6">
                            <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4" />Close</Button>
                            {!(isViewer || isFormDisabledForSupervisor) && <Button type="submit" disabled={isSubmitting}> {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save </Button>}
                         </div>

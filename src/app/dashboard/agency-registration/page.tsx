@@ -742,7 +742,7 @@ export default function AgencyRegistrationPage() {
     setSelectedApplicationId(id);
   }
 
-  const handleCancelForm = () => {
+  const handleClose = () => {
     setSelectedApplicationId(null);
     router.push(returnPath);
   }
@@ -1213,7 +1213,6 @@ export default function AgencyRegistrationPage() {
   // FORM VIEW
   if (selectedApplicationId) {
       const hasCancelledRigs = cancelledRigs.length > 0;
-      
       const remarksSectionNumber = hasCancelledRigs ? 6 : 5;
       
       return (
@@ -1230,12 +1229,12 @@ export default function AgencyRegistrationPage() {
               className="space-y-6"
             >
                 <Card>
-                    <CardHeader className="p-4 flex flex-row justify-end">
-                        <Button type="button" variant="destructive" onClick={handleCancelForm} disabled={isSubmitting}>
+                    <CardHeader className="p-4 flex flex-row justify-end border-b">
+                        <Button type="button" variant="destructive" size="sm" onClick={handleClose} disabled={isSubmitting}>
                             <ArrowLeft className="mr-2 h-4 w-4"/> Close
                         </Button>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-4 pt-6">
                         {/* Section 1: Application Details */}
                          <div className="flex items-center justify-between py-4">
                             <h2 className="text-xl font-semibold text-primary flex-1">1. Application Details</h2>
@@ -1430,8 +1429,8 @@ export default function AgencyRegistrationPage() {
 
                     </CardContent>
                     {!isReadOnly && (
-                      <CardFooter className="flex justify-end gap-2">
-                          <Button type="button" variant="outline" onClick={handleCancelForm} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button>
+                      <CardFooter className="flex justify-end gap-2 border-t pt-6">
+                          <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button>
                           <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
                             Save
@@ -1888,39 +1887,6 @@ function CancellationDialogContent({ initialData, onConfirm, onCancel }: { initi
     );
 }
 
-const ViewDetailRow = ({ label, value }: { label: string; value: any }) => {
-  if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
-    return null;
-  }
-
-  let displayValue = String(value);
-  const isDate = label.toLowerCase().includes('date') || label.toLowerCase().includes('validity');
-  
-  if (isDate) {
-    const date = toDateOrNull(value);
-    displayValue = date ? format(date, 'dd/MM/yyyy') : 'N/A';
-    if(displayValue === 'N/A' && String(value)) displayValue = String(value); // fallback for non-standard date strings
-  } else if (typeof value === 'number') {
-    displayValue = value.toLocaleString('en-IN');
-  } else if (typeof value === 'boolean') {
-    displayValue = value ? 'Yes' : 'No';
-  } else if (typeof value === 'object' && value !== null) {
-      displayValue = Object.entries(value)
-        .map(([key, val]) => (val ? `${key}: ${val}` : null))
-        .filter(Boolean)
-        .join(', ');
-      if (!displayValue) return null;
-  }
-
-  return (
-    <div className="grid grid-cols-3 gap-4 py-1.5 border-b last:border-b-0">
-      <dt className="text-sm font-medium text-muted-foreground col-span-1">{label}</dt>
-      <dd className="text-sm col-span-2 break-words">{displayValue}</dd>
-    </div>
-  );
-};
-
-
 function RigDetailsDialog({ form, rigIndex, onConfirm, onCancel, isAdding }: { form: UseFormReturn<any>, rigIndex?: number, onConfirm: (data: any) => void, onCancel: () => void, isAdding?: boolean }) {
     const currentRigData = rigIndex !== undefined ? form.getValues(`rigs.${rigIndex}`) : createDefaultRig();
     const [localRigData, setLocalRigData] = useState<RigRegistrationType>(currentRigData);
@@ -1982,7 +1948,7 @@ function RigDetailsDialog({ form, rigIndex, onConfirm, onCancel, isAdding }: { f
                     </div>
                 </ScrollArea>
             </div>
-            <div className="mt-6 p-6 pt-0 shrink-0 flex justify-end gap-2">
+            <div className="mt-6 p-6 pt-0 shrink-0 flex justify-end gap-2 border-t">
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button type="button" onClick={handleConfirm}>{isAdding ? 'Add Rig' : 'Save Details'}</Button>
             </div>
@@ -2033,7 +1999,7 @@ function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialDat
                         </div>
                     </div>
                 </div>
-                <DialogFooter className="p-6 pt-4 mt-auto shrink-0">
+                <DialogFooter className="p-6 pt-4 mt-auto shrink-0 border-t">
                     <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                     <Button type="submit">Confirm</Button>
                 </DialogFooter>
