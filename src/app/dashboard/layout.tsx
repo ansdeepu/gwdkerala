@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useCallback, useState, useMemo } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   SidebarProvider,
@@ -30,6 +30,7 @@ const LAST_ACTIVE_UPDATE_INTERVAL = 5 * 60 * 1000; // Update Firestore lastActiv
 function HeaderContent({ user }: { user: UserProfile | null }) {
   const { title, description } = usePageHeader();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   
   useEffect(() => {
@@ -43,15 +44,16 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
   const breadcrumbs = useMemo(() => {
     if (!pathname) return [];
     const segments = pathname.split('/').filter(Boolean);
+    const result: Array<{ href: string; label: string; isLast: boolean }> = [];
     
-    return segments.map((segment, index) => {
+    segments.forEach((segment, index) => {
       const href = `/${segments.slice(0, index + 1).join('/')}`;
       const isLast = index === segments.length - 1;
       
       // Map segments to friendly names
       let label = segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       
-      if (segment === 'dashboard') label = 'Home';
+      if (segment === 'dashboard') label = 'Dashboard';
       else if (segment === 'gw-investigation') label = 'GW Investigation';
       else if (segment === 'logging-pumping-test') label = 'Logging & Pumping Test';
       else if (segment === 'file-room') label = 'Deposit Works';
@@ -65,36 +67,60 @@ function HeaderContent({ user }: { user: UserProfile | null }) {
       else if (segment === 'report-format-suggestion') label = 'Report Builders';
       else if (segment === 'gwd-rates') label = 'GWD Rates';
       else if (segment === 'super-admin') label = 'Super Admin';
-      else if (segment === 'data-entry') label = 'File Entry';
+      else if (segment === 'data-entry') {
+          // Add the parent category based on workType context
+          const workType = searchParams?.get('workType');
+          const workTypeMapping: Record<string, { label: string, href: string }> = {
+              'gwInvestigation': { label: 'GW Investigation', href: '/dashboard/gw-investigation' },
+              'loggingPumpingTest': { label: 'Logging & Pumping Test', href: '/dashboard/logging-pumping-test' },
+              'public': { label: 'Deposit Works', href: '/dashboard/file-room' },
+              'private': { label: 'Private Deposit Works', href: '/dashboard/private-deposit-works' },
+              'collector': { label: "Collector's Deposit Works", href: '/dashboard/collectors-deposit-works' },
+              'planFund': { label: 'Plan Fund Works', href: '/dashboard/plan-fund-works' },
+          };
+          
+          if (workType && workTypeMapping[workType]) {
+              result.push({ 
+                  href: workTypeMapping[workType].href, 
+                  label: workTypeMapping[workType].label, 
+                  isLast: false 
+              });
+          }
+          label = 'File Entry';
+      }
       
       // If it's the last segment, use the page title if it's more descriptive than the segment
       const displayLabel = isLast && title && !title.includes('Loading') ? title : label;
 
-      return { href, label: displayLabel, isLast };
+      result.push({ href, label: displayLabel, isLast });
     });
-  }, [pathname, title]);
+
+    return result;
+  }, [pathname, title, searchParams]);
 
   return (
     <div className="flex items-center justify-between w-full gap-4 px-6 py-3">
       <div className="flex items-center gap-4 flex-1 min-w-0">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <SidebarTrigger />
-          </TooltipTrigger>
-          <TooltipContent side="right">
-            <p>Toggle Sidebar (Ctrl+B)</p>
-          </TooltipContent>
-        </Tooltip>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <SidebarTrigger />
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Toggle Sidebar (Ctrl+B)</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         
         <div className="flex flex-col min-w-0">
           {/* Navigation Address (Breadcrumbs) */}
           <nav className="flex items-center space-x-1 text-xs text-muted-foreground mb-1" aria-label="Breadcrumb">
             <Link href="/dashboard" className="hover:text-primary transition-colors flex items-center">
               <Home className="h-3 w-3 mr-1" />
-              <span>Home</span>
+              <span>Dashboard</span>
             </Link>
             {breadcrumbs.filter(b => b.href !== '/dashboard').map((crumb, idx) => (
-              <React.Fragment key={crumb.href}>
+              <React.Fragment key={crumb.href + idx}>
                 <ChevronRight className="h-3 w-3 shrink-0" />
                 {crumb.isLast ? (
                   <span className="font-medium text-primary truncate max-w-[200px]">{crumb.label}</span>
