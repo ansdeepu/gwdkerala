@@ -69,16 +69,18 @@ export default function AppSidebar() {
   return (
     <Sidebar side="left" variant="sidebar" collapsible="icon" className="flex flex-col">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <Image 
-            src="https://placehold.co/40x40/2563EB/FFFFFF.png?text=G" 
-            alt="GWD Logo" 
-            width={32} 
-            height={32} 
-            className="rounded-sm"
-            data-ai-hint="logo abstract"
-          />
-          <div className="flex flex-col items-start -space-y-1 group-data-[collapsible=icon]:hidden">
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard" className="shrink-0">
+            <Image 
+              src="https://placehold.co/40x40/2563EB/FFFFFF.png?text=G" 
+              alt="GWD Logo" 
+              width={32} 
+              height={32} 
+              className="rounded-sm"
+              data-ai-hint="logo abstract"
+            />
+          </Link>
+          <div className="flex flex-col items-start -space-y-1 group-data-[collapsible=icon]:hidden select-none">
              {user?.officeLocation ? (
                 <span className="font-bold text-lg text-sidebar-foreground">
                   GWD {user.officeLocation.charAt(0).toUpperCase() + user.officeLocation.slice(1).toLowerCase()}
@@ -94,7 +96,7 @@ export default function AppSidebar() {
                 </>
               )}
           </div>
-        </Link>
+        </div>
       </SidebarHeader>
       <SidebarContent className="flex-1 p-2 overflow-y-auto no-scrollbar">
           <AppNavMenu />

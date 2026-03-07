@@ -1,3 +1,4 @@
+
 // src/components/layout/AppNavMenu.tsx
 "use client";
 
@@ -16,6 +17,7 @@ import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useEffect, useState, useMemo } from 'react';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { LayoutDashboard, Users, FileText, BarChart3, Briefcase, Truck, ClipboardList, Waves, Landmark, HelpCircle, Settings, FolderOpen, Building, DollarSign, Hammer, Hourglass, ArrowUpRight, TestTube2, Droplets } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 
 export interface NavItem {
@@ -146,12 +148,15 @@ export default function AppNavMenu() {
                     size="compact"
                     isActive={isActive}
                     tooltip={{ children: item.label, side: "right", align: "center" }}
-                    className="justify-start pr-8"
+                    className={cn(
+                        "justify-start pr-8 transition-all",
+                        isActive ? "bg-primary/10 text-primary border-l-4 border-primary rounded-none shadow-inner" : "hover:bg-sidebar-accent"
+                    )}
                   >
                     <div className="flex items-center justify-between w-full">
                       <div className="flex items-center gap-2">
-                        <item.icon className={`h-4 w-4 ${navItemColors[index % navItemColors.length]}`} />
-                        <span className={`font-medium ${navItemColors[index % navItemColors.length]}`}>{item.label}</span>
+                        <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : navItemColors[index % navItemColors.length])} />
+                        <span className={cn("font-medium", isActive ? "text-primary font-bold" : navItemColors[index % navItemColors.length])}>{item.label}</span>
                       </div>
                       {item.href === '/dashboard/pending-updates' && pendingCount > 0 && (
                         <Badge className="h-5 px-2 text-xs font-semibold leading-none rounded-full bg-destructive text-destructive-foreground group-data-[collapsible=icon]:hidden">
