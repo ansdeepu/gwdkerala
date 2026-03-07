@@ -452,7 +452,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
     ];
 
     return (
-      <FormProvider {...form}>
+      <Form {...form}>
         <form onSubmit={(e) => { e.stopPropagation(); e.preventDefault(); form.handleSubmit(handleConfirmSubmit)(e); }}>
             <DialogHeader>
                 <DialogTitle>Re-appropriation Details</DialogTitle>
@@ -503,7 +503,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                 <Button type="submit">Save</Button>
             </DialogFooter>
         </form>
-      </FormProvider>
+      </Form>
     );
 };
 
@@ -604,6 +604,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
+  const [reappAccordionValue, setReappAccordionValue] = useState<string | undefined>(undefined);
   const [dialogState, setDialogState] = useState<{ type: null | 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite'; data: any, isView?: boolean }>({ type: null, data: null, isView: false });
   const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'reappropriation' | 'payment' | 'site'; index: number } | null>(null);
 
@@ -687,6 +688,16 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         return timeB - timeA;
     });
   }, [reappropriationFields, autoCredits]);
+
+  const hasReappropriations = useMemo(() => sortedCombinedReappropriations.length > 0, [sortedCombinedReappropriations.length]);
+
+  useEffect(() => {
+    if (hasReappropriations) {
+      setReappAccordionValue("reappropriation-details");
+    } else {
+      setReappAccordionValue(undefined);
+    }
+  }, [hasReappropriations]);
 
    useEffect(() => {
         const currentRemittances = getValues('remittanceDetails') || [];
@@ -865,7 +876,13 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
             </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         
-        <Accordion type="single" collapsible className="w-full" defaultValue="reappropriation-details">
+        <Accordion 
+          type="single" 
+          collapsible 
+          className="w-full" 
+          value={reappAccordionValue}
+          onValueChange={setReappAccordionValue}
+        >
           <AccordionItem value="reappropriation-details" className="border-b-0">
             <Card>
               <AccordionTrigger className="w-full p-6 hover:no-underline [&[data-state=open]]:border-b">

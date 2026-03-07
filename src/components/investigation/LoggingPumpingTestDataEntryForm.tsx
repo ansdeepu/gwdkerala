@@ -1,3 +1,4 @@
+
 // src/components/investigation/LoggingPumpingTestDataEntryForm.tsx
 "use client";
 
@@ -814,13 +815,38 @@ const LoggingPumpingTestSiteDialog = ({ initialData, onConfirm, onCancel, isRead
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            <Card>
+                                <CardHeader><CardTitle>Media Gallery</CardTitle></CardHeader>
+                                <CardContent className="space-y-6">
+                                    <MediaManager
+                                        title="Work Images"
+                                        type="image"
+                                        fields={imageFields}
+                                        append={appendImage}
+                                        remove={removeImage}
+                                        update={updateImage}
+                                        isReadOnly={isFieldReadOnly(true)}
+                                    />
+                                    <Separator />
+                                    <MediaManager
+                                        title="Work Videos"
+                                        type="video"
+                                        fields={videoFields}
+                                        append={appendVideo}
+                                        remove={removeVideo}
+                                        update={updateVideo}
+                                        isReadOnly={isFieldReadOnly(true)}
+                                    />
+                                </CardContent>
+                            </Card>
                         </form>
                     </Form>
                 </ScrollArea>
             </div>
-            <div className="flex justify-end p-6 pt-4 shrink-0 border-t">
+            <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
                 <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
-                {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save</Button>}
+                {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save Changes</Button>}
             </div>
         </div>
     );
@@ -840,6 +866,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
+  const [reappAccordionValue, setReappAccordionValue] = useState<string | undefined>(undefined);
   const [dialogState, setDialogState] = useState<{ type: null | 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite'; data: any, isView?: boolean }>({ type: null, data: null, isView: false });
   const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'reappropriation' | 'payment' | 'site'; index: number } | null>(null);
 
@@ -910,6 +937,16 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         return timeB - timeA; // Descending (most recent first)
     });
   }, [reappropriationFields, autoCredits]);
+
+  const hasReappropriations = useMemo(() => sortedCombinedReappropriations.length > 0, [sortedCombinedReappropriations.length]);
+
+  useEffect(() => {
+    if (hasReappropriations) {
+      setReappAccordionValue("reappropriation-details");
+    } else {
+      setReappAccordionValue(undefined);
+    }
+  }, [hasReappropriations]);
 
    useEffect(() => {
         const currentRemittances = getValues('remittanceDetails') || [];
@@ -1072,32 +1109,38 @@ const handleDeleteItem = () => {
                 {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
             </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
         
-        <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
-          <AccordionItem value="item-1" className="border-b-0">
+        <Accordion 
+          type="single" 
+          collapsible 
+          className="w-full" 
+          value={reappAccordionValue}
+          onValueChange={setReappAccordionValue}
+        >
+          <AccordionItem value="reappropriation-details" className="border-b-0">
             <Card>
               <AccordionTrigger className="w-full p-6 hover:no-underline [&[data-state=open]]:border-b">
                 <div className="flex flex-1 items-center justify-between">
-                  <CardTitle className="text-xl">3. Re-appropriation Details</CardTitle>
-                  {isEditor && !isFormDisabled && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDialog('reappropriation', createDefaultReappropriationDetail());
-                      }}
-                      disabled={isSupervisor || isViewer}
-                    >
-                      <PlusCircle className="h-4 w-4 mr-2" />
-                      Add
-                    </Button>
-                  )}
+                    <CardTitle className="text-xl">3. Re-appropriation Details</CardTitle>
+                    {isEditor && !isFormDisabled && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                openDialog('reappropriation', createDefaultReappropriationDetail());
+                            }}
+                            disabled={isSupervisor || isViewer}
+                        >
+                            <PlusCircle className="h-4 w-4 mr-2" />
+                            Add
+                        </Button>
+                    )}
                 </div>
               </AccordionTrigger>
               <AccordionContent>
                 <CardContent className="pt-6">
-                  <div className="relative max-h-[400px] overflow-auto">
+                <div className="relative max-h-[400px] overflow-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
