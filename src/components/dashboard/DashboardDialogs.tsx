@@ -11,7 +11,10 @@ import ExcelJS from 'exceljs';
 import { format, isWithinInterval, startOfDay, endOfDay, isValid, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import type { DataEntryFormData } from '@/lib/schemas';
+import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
+import type { ArsEntry } from '@/hooks/useArsEntries';
 import { FileDown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface DetailDialogColumn {
   key: string;
@@ -31,13 +34,48 @@ interface DashboardDialogsProps {
   dialogState: DialogState;
   setDialogState: React.Dispatch<React.SetStateAction<DialogState>>;
   allFileEntries: DataEntryFormData[];
+  allArsEntries: ArsEntry[];
   financeDates?: { start?: Date, end?: Date };
 }
 
-export default function DashboardDialogs({ dialogState, setDialogState, allFileEntries, financeDates }: DashboardDialogsProps) {
+export default function DashboardDialogs({ dialogState, setDialogState, allFileEntries, allArsEntries, financeDates }: DashboardDialogsProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const { isOpen, title, data, columns, type } = dialogState;
   
+  const handleFileNoClick = (fileNo: string) => {
+    if (!fileNo || fileNo === 'N/A' || fileNo === '-') return;
+
+    // Try finding in regular files first
+    const entry = allFileEntries.find(e => e.fileNo === fileNo);
+    if (entry && entry.id) {
+      // Determine work type for investigation/logging if applicable to ensure correct form layout
+      const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
+      const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+
+      let workType = '';
+      if (hasInvestigationPurpose && !hasLoggingPumpingPurpose) workType = 'gwInvestigation';
+      else if (hasLoggingPumpingPurpose && !hasInvestigationPurpose) workType = 'loggingPumpingTest';
+
+      const queryParams = new URLSearchParams({ id: entry.id });
+      if (workType) queryParams.set('workType', workType);
+      
+      router.push(`/dashboard/data-entry?${queryParams.toString()}`);
+      setDialogState({ ...dialogState, isOpen: false });
+      return;
+    }
+
+    // Try finding in ARS entries
+    const arsEntry = allArsEntries.find(e => e.fileNo === fileNo);
+    if (arsEntry && arsEntry.id) {
+      router.push(`/dashboard/ars/entry?id=${arsEntry.id}`);
+      setDialogState({ ...dialogState, isOpen: false });
+      return;
+    }
+
+    toast({ title: "File Not Found", description: "The source record for this File No could not be identified.", variant: "destructive" });
+  };
+
   const exportDialogDataToExcel = async () => {
     const reportTitle = title;
     const columnLabels = columns.map(col => col.label);
@@ -138,9 +176,21 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
                   <TableBody>
                     {data.map((row, rowIndex) => (
                       <TableRow key={rowIndex}>
-                        {getColumnsForType(type, title).map(col => 
-                          <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>{row[col.key]}</TableCell>
-                        )}
+                        {getColumnsForType(type, title).map(col => (
+                          <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>
+                            {col.key === 'fileNo' ? (
+                              <Button 
+                                variant="link" 
+                                className="p-0 h-auto font-mono text-xs text-primary font-bold hover:underline" 
+                                onClick={() => handleFileNoClick(row[col.key])}
+                              >
+                                {row[col.key]}
+                              </Button>
+                            ) : (
+                              row[col.key]
+                            )}
+                          </TableCell>
+                        ))}
                       </TableRow>
                     ))}
                   </TableBody>
