@@ -441,7 +441,7 @@ export default function ArsEntryPage() {
                 await createArsPendingUpdate(entryIdToEdit, payload, user);
                  toast({ title: "Update Submitted", description: `Your changes for site "${data.nameOfSite}" have been submitted for approval.` });
             }
-            // REDIRECTION REMOVED: Focus on saving data only.
+            // REDIRECTION REMOVED: Save data only.
         } catch (error: any) {
              toast({ title: "Error Processing Site", description: error.message, variant: "destructive" });
         } finally {

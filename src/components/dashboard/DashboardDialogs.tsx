@@ -1,3 +1,4 @@
+
 // src/components/dashboard/DashboardDialogs.tsx
 "use client";
 
@@ -16,7 +17,8 @@ import {
     PUBLIC_DEPOSIT_APPLICATION_TYPES,
     PRIVATE_APPLICATION_TYPES,
     COLLECTOR_APPLICATION_TYPES,
-    PLAN_FUND_APPLICATION_TYPES
+    PLAN_FUND_APPLICATION_TYPES,
+    ApplicationType
 } from '@/lib/schemas';
 import type { ArsEntry } from '@/hooks/useArsEntries';
 import { FileDown } from 'lucide-react';
@@ -58,7 +60,7 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
       const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
 
       let workType = '';
-      const appType = entry.applicationType as any;
+      const appType = entry.applicationType as ApplicationType;
 
       if (hasInvestigationPurpose && !hasLoggingPumpingPurpose) {
           workType = 'gwInvestigation';

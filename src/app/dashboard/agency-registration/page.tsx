@@ -721,7 +721,7 @@ export default function AgencyRegistrationPage() {
             await addApplication(dataWithHistory);
             toast({ title: "Application Created", description: "The new agency registration has been saved." });
         }
-        // REDIRECTION REMOVED: Stick to saving data only.
+        // Redirection removed: Saving data only.
     } catch (error: any) {
         console.error("Submission failed:", error);
         toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
@@ -811,16 +811,16 @@ export default function AgencyRegistrationPage() {
             const regex = new RegExp(`${regexPattern}(\\d+)(?:\\(N\\)\/|\/)`);
 
             // Secondary Sort: registration number
-            const getRegNumber = (regNo: string | null | undefined): number | null => {
-                if (!regNo) return null;
+            const getRegNumber = (regNo: string | null | undefined): number => {
+                if (!regNo) return 0;
                 const match = regNo.match(regex);
-                return match && match[1] ? parseInt(match[1], 10) : null;
+                return match && match[1] ? parseInt(match[1], 10) : 0;
             };
 
             const numA = getRegNumber(a.agencyRegistrationNo);
             const numB = getRegNumber(b.agencyRegistrationNo);
 
-            if (numA !== null && numB !== null && numA !== numB) {
+            if (numA !== 0 && numB !== 0 && numA !== numB) {
                 return numA - numB;
             }
 
@@ -1982,10 +1982,10 @@ function RigDetailsDialog({ form, rigIndex, onConfirm, onCancel, isAdding }: { f
                     </div>
                 </ScrollArea>
             </div>
-            <DialogFooter className="mt-6 p-6 pt-0 shrink-0">
+            <div className="mt-6 p-6 pt-0 shrink-0 flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button type="button" onClick={handleConfirm}>{isAdding ? 'Add Rig' : 'Save Details'}</Button>
-            </DialogFooter>
+            </div>
         </>
     );
 }

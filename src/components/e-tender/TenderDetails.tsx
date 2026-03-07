@@ -163,7 +163,6 @@ export default function TenderDetails() {
         try {
             await handleSave(getValues(), true);
             toast({ title: "Tender Saved", description: "All changes have been saved." });
-            // Redirection removed: Logic changed to save data only.
         } catch (error: any) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } finally {

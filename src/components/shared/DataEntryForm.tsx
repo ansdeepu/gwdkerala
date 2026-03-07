@@ -1,3 +1,4 @@
+
 // src/components/shared/DataEntryForm.tsx
 "use client";
 
@@ -31,7 +32,6 @@ import {
   sitePurposeOptions,
   type SitePurpose,
   siteDiameterOptions,
-  siteTypeOfRigOptions,
   fileStatusOptions,
   remittedAccountOptions,
   paymentAccountOptions,
@@ -55,9 +55,11 @@ import {
   PLAN_FUND_APPLICATION_TYPES,
   LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
   type Bidder,
-  type MediaItem,
   ReappropriationDetailSchema,
-  type ReappropriationDetailFormData
+  type ReappropriationDetailFormData,
+  INVESTIGATION_WORK_STATUS_OPTIONS,
+  LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS,
+  typeOfWellOptions
 } from '@/lib/schemas';
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -219,7 +221,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; }>();
     const [isChecking, setIsChecking] = useState(false);
 
-    // Filter unique options to prevent repeats like "LSGDLSGDLSGD"
+    // Filter unique options
     const uniqueOptions = useMemo(() => Array.from(new Set(formOptions)), [formOptions]);
 
     // Auto-select if only one option exists
@@ -800,7 +802,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
         }
-        // REDIRECTION REMOVED: Logic changed to save data only.
+        // Redirection removed: Logic changed to save data only.
     } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
   };
 
@@ -1048,7 +1050,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
       <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
       <Dialog open={dialogState.type === 'reorderSite'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl flex flex-col p-0"><ReorderSitesDialog initialData={dialogState.data || []} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
       <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
-    </div>
+    </FormProvider>
   );
 }
 
@@ -1064,7 +1066,7 @@ function ReorderSitesDialog({ initialData, onConfirm, onCancel }: { initialData:
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
-            <DialogHeader className="p-6 pb-4 shrink-0">
+            <DialogHeader className="p-6 pb-4 shrink-0 border-b">
                 <DialogTitle>Reorder Sites</DialogTitle>
                 <DialogDescription>Adjust the sequence of sites using the up and down arrows.</DialogDescription>
             </DialogHeader>
