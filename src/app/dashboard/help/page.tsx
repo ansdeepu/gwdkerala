@@ -28,7 +28,12 @@ import {
     History,
     MapPin,
     Save,
-    ExternalLink
+    ExternalLink,
+    Briefcase,
+    Zap,
+    ShieldAlert,
+    Image as ImageIcon,
+    FileStack
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -36,16 +41,17 @@ export const dynamic = 'force-dynamic';
 export default function HelpPage() {
   const { setHeader } = usePageHeader();
   const { user } = useAuth();
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => {
     setHeader("Help & About", "Find answers to common questions and learn more about the application.");
-    setLastUpdated(new Date());
+    setLastUpdated(format(new Date(), 'dd MMM yyyy, hh:mm a'));
   }, [setHeader]);
 
   return (
     <div className="space-y-6">
-       <Card>
+      {/* 1. About Section */}
+      <Card>
         <CardHeader>
           <div className="flex items-center space-x-3">
             <Building className="h-5 w-5 text-primary" />
@@ -57,9 +63,9 @@ export default function HelpPage() {
         </CardHeader>
         <CardContent className="space-y-4 text-justify">
           <div>
-            <h3 className="font-semibold text-foreground mb-2">Ground Water Department, {user?.officeLocation ? capitalize(user.officeLocation) : 'Directorate'}</h3>
+            <h3 className="font-semibold text-foreground mb-2">Ground Water Department, {user?.officeLocation ? capitalize(user.officeLocation) : 'Kerala'}</h3>
             <p className="text-sm text-muted-foreground">
-              The Ground Water Department is the state-level agency entrusted with the development, management, conservation, and regulation of precious ground water resources. The department provides technical guidance for various schemes, including well construction, groundwater recharge projects, and water supply systems for both government and private sectors.
+              The Ground Water Department is the state-level agency entrusted with the development, management, conservation, and regulation of precious ground water resources. The department provides technical guidance for various schemes, including well construction, groundwater recharge projects, and water supply systems for both government and private sectors. Its key services involve hydrogeological surveys, drilling, and monitoring to ensure the sustainable use of groundwater for drinking, agriculture, and industrial purposes.
             </p>
           </div>
            <div className="pt-4 border-t">
@@ -71,6 +77,39 @@ export default function HelpPage() {
         </CardContent>
       </Card>
 
+      {/* 2. Admin & Super Admin Guides */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-blue-200 bg-blue-50/30">
+            <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2 text-blue-700"><Briefcase className="h-4 w-4"/>Office Onboarding Guide</CardTitle>
+                <CardDescription className="text-blue-600/80">Essential first steps for new Sub-Office Administrators.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-blue-900/80 space-y-3">
+                <p>When an office is first activated, the Office Admin should perform these actions in order:</p>
+                <ol className="list-decimal pl-5 space-y-2">
+                    <li><strong>Configure Office Details:</strong> Go to the Settings page and fill in the office address (English & Malayalam), bank account details, and the District Officer's name. This information is used for auto-generating PDF reports.</li>
+                    <li><strong>Register Staff:</strong> Go to the Establishment page and add all employees. Ensure accurate designations and PEN numbers.</li>
+                    <li><strong>Create User Accounts:</strong> While adding or editing a staff member, check the "Create User Account" box to provide them with dashboard access (e.g., for Supervisors or Investigators).</li>
+                </ol>
+            </CardContent>
+        </Card>
+
+        <Card className="border-amber-200 bg-amber-50/30">
+            <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2 text-amber-700"><ShieldCheck className="h-4 w-4"/>Super Admin Functions</CardTitle>
+                <CardDescription className="text-amber-600/80">Management of sub-offices and global settings.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-amber-900/80 space-y-3">
+                <ul className="list-disc pl-5 space-y-2">
+                    <li><strong>Sub-Office Setup:</strong> Super Admins can create new office locations. This automatically provisions three core accounts: Admin, Scientist, and Engineer with a default password of "123456".</li>
+                    <li><strong>Global Data:</strong> Super Admins manage departmental drilling rates and global user accounts across the entire state.</li>
+                    <li><strong>Transfer Approval:</strong> When an Office Admin initiates a staff transfer, it must be approved by the Super Admin to move the record to the target office.</li>
+                </ul>
+            </CardContent>
+        </Card>
+      </div>
+
+      {/* 3. Recent Updates Highlight */}
       <Card className="border-primary/20 bg-primary/5">
         <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2 text-primary"><History className="h-5 w-5" />Recent System Enhancements</CardTitle>
@@ -92,12 +131,13 @@ export default function HelpPage() {
                 </div>
                 <div className="space-y-2">
                     <h4 className="font-semibold flex items-center gap-2 text-sm"><Palette className="h-4 w-4 text-primary"/>Status Color Coding</h4>
-                    <p className="text-xs text-muted-foreground">Site names are now color-coded: <span className="text-green-600 font-bold">Green</span> for Ongoing, <span className="text-amber-600 font-bold">Yellow</span> for Refunds, and <span className="text-red-600 font-bold">Red</span> for Completed/Failed.</p>
+                    <p className="text-xs text-muted-foreground">Site names in tables are now color-coded: <span className="text-green-600 font-bold">Green</span> for Ongoing, <span className="text-amber-600 font-bold">Yellow</span> for Refunds, and <span className="text-red-600 font-bold">Red</span> for Completed/Failed.</p>
                 </div>
             </div>
         </CardContent>
       </Card>
 
+      {/* 4. Features Modules */}
       <Card>
         <CardHeader>
           <CardTitle>Key Features & Modules</CardTitle>
@@ -125,14 +165,21 @@ export default function HelpPage() {
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="deposit">
-              <AccordionTrigger>Site Management (Copy & Reorder)</AccordionTrigger>
-              <AccordionContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">In Deposit Work modules, you can now manage multiple sites more efficiently:</p>
-                <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                    <li><strong>Copy Site:</strong> Use the copy icon to duplicate an existing site's details, useful for schemes with identical specifications.</li>
-                    <li><strong>Reorder Sites:</strong> Use the sort icon to rearrange the sequence of sites within a file.</li>
-                </ul>
+            <AccordionItem value="reapp">
+              <AccordionTrigger>Re-appropriation & Fund Transfers</AccordionTrigger>
+              <AccordionContent>
+                <p className="text-sm text-muted-foreground">
+                    This module tracks the movement of funds between files. When funds are moved "Outward" from one file, the system automatically creates a "Credit" entry in the destination file, ensuring a clear audit trail of departmental funds.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="gallery">
+              <AccordionTrigger>Image & Video Gallery</AccordionTrigger>
+              <AccordionContent>
+                <p className="text-sm text-muted-foreground">
+                    Users can attach media links to specific work sites. This allows for visual monitoring of project progress. Direct links to images (from sites like Postimages) and video embeds (from YouTube/Vimeo) are supported.
+                </p>
               </AccordionContent>
             </AccordionItem>
 
@@ -153,6 +200,7 @@ export default function HelpPage() {
         </CardContent>
       </Card>
 
+      {/* 5. FAQ & Image Hosting Guide */}
       <Card>
         <CardHeader>
           <CardTitle>Frequently Asked Questions (FAQ)</CardTitle>
@@ -160,8 +208,8 @@ export default function HelpPage() {
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="faq-3">
-              <AccordionTrigger>How do I save images for Staff or Work Sites?</AccordionTrigger>
+            <AccordionItem value="faq-images">
+              <AccordionTrigger className="text-primary font-bold">How do I save images for Staff or Work Sites?</AccordionTrigger>
               <AccordionContent className="space-y-4 text-sm text-muted-foreground text-justify">
                 <p>Direct file uploading is not supported to ensure database performance. You must provide a <strong>direct public link</strong> to your image.</p>
                 <div className="p-4 rounded-lg bg-secondary/30 border space-y-2">
@@ -175,6 +223,7 @@ export default function HelpPage() {
                 </div>
               </AccordionContent>
             </AccordionItem>
+            
             <AccordionItem value="faq-1">
               <AccordionTrigger>How are new user accounts created?</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground">
@@ -184,6 +233,14 @@ export default function HelpPage() {
                 </ul>
               </AccordionContent>
             </AccordionItem>
+
+            <AccordionItem value="faq-icon">
+              <AccordionTrigger>What does the 'Eye' icon do?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                The 'Eye' icon opens a detailed view of the record. In list views, it allows you to see the full information of a file or staff member. In forms, it allows you to edit the specific details of a site or remittance entry.
+              </AccordionContent>
+            </AccordionItem>
+
             <AccordionItem value="faq-4">
               <AccordionTrigger>How does the LSG and Constituency mapping work?</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground">
@@ -194,6 +251,7 @@ export default function HelpPage() {
         </CardContent>
       </Card>
       
+      {/* 6. Footer Support */}
       <Card className="mt-6 border-primary/20 bg-primary/5">
         <CardHeader>
            <div className="flex items-center space-x-3">
@@ -210,7 +268,7 @@ export default function HelpPage() {
           </p>
            {lastUpdated && (
             <p className="text-xs text-muted-foreground">
-              Help page last updated: {format(lastUpdated, 'dd MMM yyyy, hh:mm a')}
+              Help page last updated: {lastUpdated}
             </p>
           )}
         </CardContent>
