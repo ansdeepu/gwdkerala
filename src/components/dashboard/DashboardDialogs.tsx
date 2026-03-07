@@ -11,7 +11,13 @@ import ExcelJS from 'exceljs';
 import { format, isWithinInterval, startOfDay, endOfDay, isValid, parseISO } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import type { DataEntryFormData } from '@/lib/schemas';
-import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
+import { 
+    LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
+    PUBLIC_DEPOSIT_APPLICATION_TYPES,
+    PRIVATE_APPLICATION_TYPES,
+    COLLECTOR_APPLICATION_TYPES,
+    PLAN_FUND_APPLICATION_TYPES
+} from '@/lib/schemas';
 import type { ArsEntry } from '@/hooks/useArsEntries';
 import { FileDown } from 'lucide-react';
 
@@ -52,15 +58,30 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
       const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
 
       let workType = '';
-      if (hasInvestigationPurpose && !hasLoggingPumpingPurpose) workType = 'gwInvestigation';
-      else if (hasLoggingPumpingPurpose && !hasInvestigationPurpose) workType = 'loggingPumpingTest';
+      const appType = entry.applicationType as any;
+
+      if (hasInvestigationPurpose && !hasLoggingPumpingPurpose) {
+          workType = 'gwInvestigation';
+      } else if (hasLoggingPumpingPurpose && !hasInvestigationPurpose) {
+          workType = 'loggingPumpingTest';
+      } else if (appType && (PUBLIC_DEPOSIT_APPLICATION_TYPES as any).includes(appType)) {
+          workType = 'public';
+      } else if (appType && (PRIVATE_APPLICATION_TYPES as any).includes(appType)) {
+          workType = 'private';
+      } else if (appType && (COLLECTOR_APPLICATION_TYPES as any).includes(appType)) {
+          workType = 'collector';
+      } else if (appType && (PLAN_FUND_APPLICATION_TYPES as any).includes(appType)) {
+          workType = 'planFund';
+      } else {
+          // Default fallback for deposit works
+          workType = 'public';
+      }
 
       const queryParams = new URLSearchParams({ id: entry.id });
       if (workType) queryParams.set('workType', workType);
       
       const url = `/dashboard/data-entry?${queryParams.toString()}`;
       window.open(url, '_blank');
-      // We no longer close the dialog here so it remains visible in the original window
       return;
     }
 
