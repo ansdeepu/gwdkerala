@@ -149,7 +149,7 @@ export default function AppNavMenu() {
                     isActive={isActive}
                     tooltip={{ children: item.label, side: "right", align: "center" }}
                     className={cn(
-                        "justify-start pr-8 transition-all",
+                        "justify-start pr-8 transition-all relative overflow-hidden",
                         isActive ? "bg-primary/10 text-primary border-l-4 border-primary rounded-none shadow-inner" : "hover:bg-sidebar-accent"
                     )}
                   >

@@ -70,7 +70,7 @@ export default function AppSidebar() {
     <Sidebar side="left" variant="sidebar" collapsible="icon" className="flex flex-col">
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2">
-          <Link href="/dashboard" className="shrink-0">
+          <div className="shrink-0">
             <Image 
               src="https://placehold.co/40x40/2563EB/FFFFFF.png?text=G" 
               alt="GWD Logo" 
@@ -79,8 +79,8 @@ export default function AppSidebar() {
               className="rounded-sm"
               data-ai-hint="logo abstract"
             />
-          </Link>
-          <div className="flex flex-col items-start -space-y-1 group-data-[collapsible=icon]:hidden select-none">
+          </div>
+          <div className="flex flex-col items-start -space-y-1 group-data-[collapsible=icon]:hidden select-none cursor-default">
              {user?.officeLocation ? (
                 <span className="font-bold text-lg text-sidebar-foreground">
                   GWD {user.officeLocation.charAt(0).toUpperCase() + user.officeLocation.slice(1).toLowerCase()}
