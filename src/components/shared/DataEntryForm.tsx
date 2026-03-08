@@ -195,6 +195,7 @@ interface DataEntryFormProps {
     returnPath: string; 
     pageToReturnTo: string | null;
     isFormDisabled?: boolean;
+    formOptions: readonly ApplicationType[] | ApplicationType[];
 }
 
 const formatDateForInput = (date: Date | string | null | undefined): string => {
@@ -216,6 +217,12 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
     const [isChecking, setIsChecking] = useState(false);
 
     const uniqueOptions = useMemo(() => Array.from(new Set(formOptions)), [formOptions]);
+
+    useEffect(() => {
+        if (uniqueOptions.length === 1 && data.applicationType !== uniqueOptions[0]) {
+            setData((prev: any) => ({ ...prev, applicationType: uniqueOptions[0] }));
+        }
+    }, [uniqueOptions, data.applicationType]);
 
     const handleChange = (key: string, value: any) => {
         setData((prev: any) => ({ ...prev, [key]: value }));
@@ -293,12 +300,20 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} disabled={isChecking}/></div>
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType} disabled={isChecking}>
-                        <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
-                        <SelectContent className="max-h-80">
-                            {uniqueOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as ApplicationType] || o}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    {uniqueOptions.length === 1 ? (
+                        <Input 
+                            value={applicationTypeDisplayMap[uniqueOptions[0]] || uniqueOptions[0]} 
+                            readOnly 
+                            className="bg-muted font-semibold"
+                        />
+                    ) : (
+                        <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType}>
+                            <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
+                            <SelectContent className="max-h-80">
+                                {uniqueOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as ApplicationType] || o}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    )}
                      {errors?.applicationType && <p className="text-xs text-destructive mt-1">{errors.applicationType}</p>}
                 </div>
             </div>
@@ -330,7 +345,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
     }, [isDeferredFunding]);
 
     return (
-      <FormProvider {...form}>
+      <Form {...form}>
         <form
           onSubmit={(e) => {
             e.stopPropagation();
@@ -359,7 +374,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
                 <Button type="submit">Save</Button>
             </DialogFooter>
         </form>
-      </FormProvider>
+    </Form>
     );
 };
 
@@ -438,7 +453,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
     ];
 
     return (
-      <FormProvider {...form}>
+      <Form {...form}>
         <form onSubmit={(e) => { e.stopPropagation(); e.preventDefault(); form.handleSubmit(handleConfirmSubmit)(e); }}>
             <DialogHeader>
                 <DialogTitle>Re-appropriation Details</DialogTitle>
@@ -489,7 +504,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                 <Button type="submit">Save</Button>
             </DialogFooter>
         </form>
-      </FormProvider>
+      </Form>
     );
 };
 
@@ -517,7 +532,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
     }, [isDeferredFunding]);
 
     return (
-        <FormProvider {...form}>
+        <Form {...form}>
              <form onSubmit={(e) => e.preventDefault()} className="flex flex-col h-full">
                 <DialogHeader className="p-6 pb-4 shrink-0">
                     <DialogTitle>Payment Details</DialogTitle>
@@ -572,11 +587,11 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                     <Button type="button" onClick={form.handleSubmit(handleConfirmSubmit)}>Save</Button>
                 </DialogFooter>
             </form>
-        </FormProvider>
+        </Form>
     );
 };
 
-export default function DataEntryFormComponent({ fileNoToEdit, initialData, supervisorList, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false }: DataEntryFormProps) {
+export default function DataEntryFormComponent({ fileNoToEdit, initialData, supervisorList, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, formOptions }: DataEntryFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileIdToEdit = searchParams.get("id");
@@ -608,17 +623,6 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   }, [workTypeContext]);
 
   const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction Details" : "2. Remittance Details";
-  const formOptions = useMemo(() => {
-    if (['public', 'private', 'collector', 'planFund'].includes(workTypeContext as string)) {
-        return [
-            ...PUBLIC_DEPOSIT_APPLICATION_TYPES,
-            ...PRIVATE_APPLICATION_TYPES,
-            ...COLLECTOR_APPLICATION_TYPES,
-            ...PLAN_FUND_APPLICATION_TYPES
-        ];
-    }
-    return applicationTypeOptions;
-  }, [workTypeContext]);
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
   const { control, handleSubmit, setValue, getValues, watch } = form;

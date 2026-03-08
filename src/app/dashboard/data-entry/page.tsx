@@ -4,9 +4,9 @@
 import DataEntryFormComponent from "@/components/shared/DataEntryForm";
 import InvestigationDataEntryFormComponent from "@/components/investigation/InvestigationDataEntryForm";
 import LoggingPumpingTestDataEntryFormComponent from "@/components/investigation/LoggingPumpingTestDataEntryForm";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Loader2 } from "lucide-react";
+import { ShieldAlert, Loader2, ArrowLeft } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useFileEntries } from "@/hooks/useFileEntries";
@@ -18,6 +18,11 @@ import { format, isValid, parseISO } from 'date-fns';
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { useDataStore } from "@/hooks/use-data-store";
 import { 
+    PUBLIC_DEPOSIT_APPLICATION_TYPES,
+    PRIVATE_APPLICATION_TYPES,
+    COLLECTOR_APPLICATION_TYPES,
+    PLAN_FUND_APPLICATION_TYPES,
+    applicationTypeOptions,
     LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
 } from '@/lib/schemas';
 
@@ -71,7 +76,7 @@ const getFormDefaults = (workType: string | null): DataEntryFormData => ({
   phoneNo: "", 
   secondaryMobileNo: "",
   category: undefined,
-  applicationType: undefined, // Removed pre-fill for Plan Fund
+  applicationType: undefined, 
   constituency: undefined,
   assignedSupervisorUids: [],
   remittanceDetails: [], 
@@ -229,12 +234,27 @@ export default function DataEntryPage() {
    const isGwInvestigationType = workTypeContext === 'gwInvestigation' || (!!fileIdToEdit && hasInvestigationPurpose && !hasLoggingPumpingPurpose);
   const isLoggingPumpingTestType = workTypeContext === 'loggingPumpingTest' || (!!fileIdToEdit && hasLoggingPumpingPurpose && !hasInvestigationPurpose);
   
+  const formOptions = useMemo(() => {
+    if (workTypeContext === 'planFund') return PLAN_FUND_APPLICATION_TYPES;
+    if (workTypeContext === 'collector') return COLLECTOR_APPLICATION_TYPES;
+    if (workTypeContext === 'private') return PRIVATE_APPLICATION_TYPES;
+    if (workTypeContext === 'public') return PUBLIC_DEPOSIT_APPLICATION_TYPES;
+    
+    return applicationTypeOptions;
+  }, [workTypeContext]);
+
   if (authIsLoading || dataLoading) return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (errorState) return <div className="flex h-screen items-center justify-center text-center p-6"><Card><CardContent className="pt-6"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-xl font-bold">{errorState}</h1><Button className="mt-4" variant="outline" onClick={() => router.back()}>Go Back</Button></CardContent></Card></div>;
   
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
+        <CardHeader className="flex flex-row items-center justify-end p-4 border-b space-y-0">
+            <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+            </Button>
+        </CardHeader>
         <CardContent className="p-6">
           {pageData && pageData.initialData ? (
              isGwInvestigationType ? (
@@ -271,6 +291,7 @@ export default function DataEntryPage() {
                     returnPath={returnPath}
                     pageToReturnTo={pageToReturnTo}
                     isFormDisabled={isFormDisabledForSupervisor}
+                    formOptions={formOptions}
                 />
               )
           ) : <div className="flex h-64 items-center justify-center"><p className="text-muted-foreground">Loading entry details...</p></div>}
