@@ -5,6 +5,7 @@ import DataEntryFormComponent from "@/components/shared/DataEntryForm";
 import InvestigationDataEntryFormComponent from "@/components/investigation/InvestigationDataEntryForm";
 import LoggingPumpingTestDataEntryFormComponent from "@/components/investigation/LoggingPumpingTestDataEntryForm";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { ShieldAlert, Loader2 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
@@ -17,9 +18,10 @@ import { format, isValid, parseISO } from 'date-fns';
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { useDataStore } from "@/hooks/use-data-store";
 import { 
+    PUBLIC_DEPOSIT_APPLICATION_TYPES, 
+    PRIVATE_APPLICATION_TYPES, 
     COLLECTOR_APPLICATION_TYPES, 
     PLAN_FUND_APPLICATION_TYPES, 
-    PRIVATE_APPLICATION_TYPES, 
     LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
 } from '@/lib/schemas';
 
@@ -234,6 +236,13 @@ export default function DataEntryPage() {
   if (authIsLoading || dataLoading) return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (errorState) return <div className="flex h-screen items-center justify-center text-center p-6"><Card><CardContent className="pt-6"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-xl font-bold">{errorState}</h1><Button className="mt-4" variant="outline" onClick={() => router.back()}>Go Back</Button></CardContent></Card></div>;
   
+  const formOptions = [
+      ...PUBLIC_DEPOSIT_APPLICATION_TYPES,
+      ...PRIVATE_APPLICATION_TYPES,
+      ...COLLECTOR_APPLICATION_TYPES,
+      ...PLAN_FUND_APPLICATION_TYPES
+  ];
+
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">

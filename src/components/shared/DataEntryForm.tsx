@@ -218,13 +218,6 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
     // Filter unique options
     const uniqueOptions = useMemo(() => Array.from(new Set(formOptions)), [formOptions]);
 
-    // Auto-select if only one option exists
-    useEffect(() => {
-        if (uniqueOptions.length === 1 && (!data.applicationType || data.applicationType === "")) {
-            setData((prev: any) => ({ ...prev, applicationType: uniqueOptions[0] }));
-        }
-    }, [uniqueOptions, data.applicationType]);
-
     const handleChange = (key: string, value: any) => {
         setData((prev: any) => ({ ...prev, [key]: value }));
         if (value && String(value).trim()) {
@@ -253,41 +246,22 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
             setIsChecking(true);
             try {
                 const fileNoTrimmed = data.fileNo.trim().toUpperCase();
-                
-                const depositWorkTypes: string[] = [
-                    ...PUBLIC_DEPOSIT_APPLICATION_TYPES,
-                    ...PRIVATE_APPLICATION_TYPES,
-                    ...COLLECTOR_APPLICATION_TYPES,
-                    ...PLAN_FUND_APPLICATION_TYPES
-                ];
-
                 const q = query(
                     collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), 
                     where("fileNo", "==", fileNoTrimmed)
                 );
-                
                 const querySnapshot = await getDocs(q);
-
-                const hasDuplicate = querySnapshot.docs.some(doc => {
-                    const docAppType = doc.data().applicationType;
-                    return docAppType && depositWorkTypes.includes(docAppType);
-                });
-                
-                if (hasDuplicate) {
+                if (!querySnapshot.empty) {
                     toast({
                         title: "Duplicate File Number",
-                        description: `This file number is already used for another Deposit Work file.`,
+                        description: `This file number is already used for another file.`,
                         variant: "destructive",
                     });
                     setIsChecking(false);
                     return; 
                 }
             } catch (error) {
-                toast({
-                    title: "Validation Error",
-                    description: "Could not verify file number. Please try again.",
-                    variant: "destructive",
-                });
+                toast({ title: "Validation Error", description: "Could not verify file number.", variant: "destructive" });
                 setIsChecking(false);
                 return;
             }
@@ -320,18 +294,12 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} disabled={isChecking}/></div>
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
-                    {uniqueOptions.length === 1 ? (
-                        <div className="p-2 border rounded-md bg-muted font-semibold text-sm">
-                            {applicationTypeDisplayMap[uniqueOptions[0] as ApplicationType] || uniqueOptions[0]}
-                        </div>
-                    ) : (
-                        <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType} disabled={isChecking}>
-                            <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
-                            <SelectContent className="max-h-80">
-                                {uniqueOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as ApplicationType] || o}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    )}
+                    <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType} disabled={isChecking}>
+                        <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
+                        <SelectContent className="max-h-80">
+                            {uniqueOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as ApplicationType] || o}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                      {errors?.applicationType && <p className="text-xs text-destructive mt-1">{errors.applicationType}</p>}
                 </div>
             </div>
@@ -642,10 +610,14 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
   const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction Details" : "2. Remittance Details";
   const formOptions = useMemo(() => {
-    if (workTypeContext === 'public') return PUBLIC_DEPOSIT_APPLICATION_TYPES;
-    if (workTypeContext === 'private') return PRIVATE_APPLICATION_TYPES;
-    if (workTypeContext === 'collector') return COLLECTOR_APPLICATION_TYPES;
-    if (workTypeContext === 'planFund') return PLAN_FUND_APPLICATION_TYPES;
+    if (['public', 'private', 'collector', 'planFund'].includes(workTypeContext as string)) {
+        return [
+            ...PUBLIC_DEPOSIT_APPLICATION_TYPES,
+            ...PRIVATE_APPLICATION_TYPES,
+            ...COLLECTOR_APPLICATION_TYPES,
+            ...PLAN_FUND_APPLICATION_TYPES
+        ];
+    }
     return applicationTypeOptions;
   }, [workTypeContext]);
   
@@ -796,7 +768,6 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
         }
-        // Redirection removed: Logic changed to save data only.
     } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
   };
 
