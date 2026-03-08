@@ -714,7 +714,7 @@ export default function TenderDetails() {
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <Select onValueChange={(value) => { field.onChange(value); updateTender({ presentStatus: value as any }); }} value={field.value || undefined} disabled={isReadOnly}>
-                                                            <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Select current status" /></SelectTrigger></FormControl>
+                                                            <FormControl><SelectTrigger><SelectValue placeholder="Select current status" /></SelectTrigger></FormControl>
                                                             <SelectContent>{dynamicStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
                                                         </Select>
                                                         <FormMessage />
@@ -749,25 +749,20 @@ export default function TenderDetails() {
                             </CardContent>
                         </Card>
                         
-                        <div className="mt-6 flex flex-col items-center gap-6">
+                        <div className="mt-6 flex items-center justify-center gap-4">
                             {!isReadOnly && 
-                              <div className="flex items-center gap-2">
-                                <TooltipProvider>
-                                  <Tooltip>
-                                      <TooltipTrigger asChild>
-                                          <Button type="button" size="lg" onClick={handleFinalSave} disabled={isSubmitting}>
-                                              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                                              Save
-                                          </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                          <p>Persists all locally made changes to the database.</p>
-                                      </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              </div>
+                              <Button type="button" size="lg" onClick={handleFinalSave} disabled={isSubmitting}>
+                                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                                  Save
+                              </Button>
                             }
+                            <Button type="button" variant="outline" size="lg" onClick={() => router.push('/dashboard/e-tender')}>
+                                <X className="mr-2 h-4 w-4" />
+                                Close
+                            </Button>
+                        </div>
 
+                        <div className="mt-6 flex flex-col items-center">
                              <PdfReportDialogs />
                         </div>
                     </CardContent>

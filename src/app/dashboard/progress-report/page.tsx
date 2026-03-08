@@ -66,8 +66,7 @@ interface ProgressStats {
   balanceData: SiteDetailWithFileContext[];
 }
 
-type DiameterProgress = Record<string, ProgressStats>;
-type ApplicationTypeProgress = Record<ApplicationType, any>; // Loosen this for the nested structure
+type ApplicationTypeProgress = Record<ApplicationType, any>; 
 type OtherServiceProgress = Record<SitePurpose, ProgressStats>;
 
 interface FinancialSummary {
@@ -104,11 +103,11 @@ const ReportCategoryTable = ({
 }: {
   accordionId: string;
   title: string;
-  data: Record<string, any>; // More generic to handle nested data
+  data: Record<string, any>; 
   categoryKeys: readonly string[];
   categoryLabels: Record<string, string>;
   onCountClick: (data: SiteDetailWithFileContext[], title: string) => void;
-  diameter?: string; // Optional: specify which diameter to extract
+  diameter?: string; 
 }) => {
   const metrics: Array<{ key: keyof ProgressStats; label: string }> = [
     { key: 'previousBalance', label: 'Previous Balance' },
@@ -344,7 +343,7 @@ export default function ProgressReportPage() {
           if (twcData[applicationType]?.[diameter]) { updateStats(twcData[applicationType][diameter]); }
         } else if (INVESTIGATION_WELL_TYPE_PURPOSES.includes(purpose as SitePurpose)) {
             const wellType = (site as any).typeOfWell;
-            if (wellType && gwInvestigationData[wellType]) { // Check if wellType exists
+            if (wellType && gwInvestigationData[wellType]) { 
                 const targetData = purpose === "GW Investigation" ? gwInvestigationData : vesData;
                 updateStats(targetData[wellType]);
             }
@@ -386,7 +385,7 @@ export default function ProgressReportPage() {
     
     setReportData({ 
         bwcData, twcData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
-        privateFinancialSummaryData: {} as FinancialSummaryReport, // These are not used here, but kept for type consistency
+        privateFinancialSummaryData: {} as FinancialSummaryReport, 
         governmentFinancialSummaryData: {} as FinancialSummaryReport,
         totalRevenueHeadCredit: 0,
         revenueHeadCreditData: []
@@ -411,7 +410,7 @@ export default function ProgressReportPage() {
     setEndDate(endOfMonth(today));
   };
   
-  const handleExportExcel = async () => { /* ... (existing export logic, can be enhanced to include new sections) ... */ };
+  const handleExportExcel = async () => { /* ... */ };
 
   const handleCountClick = (data: Array<SiteDetailWithFileContext | DataEntryFormData | Record<string, any>>, title: string) => {
     if (!data || data.length === 0) return;
@@ -433,10 +432,8 @@ export default function ProgressReportPage() {
     setIsDetailDialogOpen(true);
   };
   
-  const exportDialogDataToExcel = async () => { /* ... (existing logic) ... */ };
+  const exportDialogDataToExcel = async () => { /* ... */ };
 
-  const FinancialSummaryTable = ({ title, summaryData }: { title: string; summaryData: FinancialSummaryReport }) => { /* ... (existing component logic) ... */ return null };
-  
   const uniqueApplicationTypes = useMemo(() => [...new Set(applicationTypeOptions.filter(type => !['GW_Investigation', 'Logging_Pumping_Test'].some(prefix => type.startsWith(prefix))))], []);
 
   if (entriesLoading) {
@@ -479,8 +476,17 @@ export default function ProgressReportPage() {
                 <div className="flex items-center justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2 text-muted-foreground">Generating reports...</p></div>
             ) : reportData ? (
             <>
+                {/* Specific Investigation Accordion at the top as requested */}
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation', 'ves', 'pumping-test', 'geo-logging', 'geophys-logging']}>
+                  <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                </Accordion>
+
                 <Card className="shadow-lg">
-                    <CardHeader><CardTitle>Progress Summary</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>Progress Summary (Aggregate)</CardTitle></CardHeader>
                     <CardContent>
                         <div className="relative overflow-x-auto">
                             <Table className="min-w-full border-collapse">
@@ -504,12 +510,8 @@ export default function ProgressReportPage() {
                         </div>
                     </CardContent>
                 </Card>
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
-                  <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
                   <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
@@ -521,7 +523,7 @@ export default function ProgressReportPage() {
             )}
         </div>
       </ScrollArea>
-      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}><DialogContent className="sm:max-w-4xl flex flex-col h-[90vh]"><DialogHeader className="p-6 pb-4 border-b"><DialogTitle>{detailDialogTitle}</DialogTitle><DialogDescription>Showing {detailDialogData.length} records.</DialogDescription></DialogHeader><div className="flex-1 min-h-0 px-6 py-4"><ScrollArea className="h-full pr-4 -mr-4">{detailDialogData.length > 0 ? (<Table><TableHeader className="sticky top-0 bg-background z-10"><TableRow>{detailDialogColumns.map(col => <TableHead key={col.key} className={cn(col.isNumeric && 'text-right')}>{col.label}</TableHead>)}</TableRow></TableHeader><TableBody>{detailDialogData.map((row, rowIndex) => (<TableRow key={rowIndex}>{detailDialogColumns.map(col => <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>{row[col.key]}</TableCell>)}</TableRow>))}</TableBody></Table>) : (<p className="text-center text-muted-foreground py-8">No details found for this selection.</p>)}</ScrollArea></div><DialogFooter className="p-6 pt-4 border-t"><Button variant="outline" disabled={detailDialogData.length === 0} onClick={exportDialogDataToExcel}><FileDown className="mr-2 h-4 w-4" /> Export to Excel</Button><DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose></DialogFooter></DialogContent></Dialog>
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}><DialogContent className="sm:max-w-4xl flex flex-col h-[90vh]"><DialogHeader className="p-6 pb-4 border-b"><DialogTitle>{detailDialogTitle}</DialogTitle><DialogDescription>Showing {detailDialogData.length} records.</DialogDescription></DialogHeader><div className="flex-1 min-h-0 px-6 py-4"><ScrollArea className="h-full pr-4 -mr-4">{detailDialogData.length > 0 ? (<Table><TableHeader className="sticky top-0 bg-background z-10"><TableRow>{detailDialogColumns.map(col => <TableHead key={col.key} className={cn(col.isNumeric && 'text-right')}>{col.label}</TableHead>)}</TableRow></TableHeader><TableBody>{detailDialogData.map((row, rowIndex) => (<TableRow key={rowIndex}>{detailDialogColumns.map(col => <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>{row[col.key]}</TableCell>)}</TableRow>))}</TableBody></Table>) : (<p className="text-center text-muted-foreground py-8">No details found for this selection.</p>)}</ScrollArea></div><DialogFooter className="p-6 pt-4 border-t"><Button variant="outline" disabled={detailDialogData.length === 0} onClick={() => {}}><FileDown className="mr-2 h-4 w-4" /> Export to Excel</Button><DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose></DialogFooter></DialogContent></Dialog>
     </div>
   );
 }
