@@ -750,16 +750,16 @@ export default function TenderDetails() {
                         </Card>
                         
                         <div className="mt-6 flex items-center justify-center gap-4">
+                            <Button type="button" variant="outline" size="lg" onClick={() => router.push('/dashboard/e-tender')}>
+                                <X className="mr-2 h-4 w-4" />
+                                Close
+                            </Button>
                             {!isReadOnly && 
                               <Button type="button" size="lg" onClick={handleFinalSave} disabled={isSubmitting}>
                                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                   Save
                               </Button>
                             }
-                            <Button type="button" variant="outline" size="lg" onClick={() => router.push('/dashboard/e-tender')}>
-                                <X className="mr-2 h-4 w-4" />
-                                Close
-                            </Button>
                         </div>
 
                         <div className="mt-6 flex flex-col items-center">

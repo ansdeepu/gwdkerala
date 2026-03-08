@@ -28,7 +28,7 @@ import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAllFileEntriesForReports } from '@/hooks/useAllFileEntriesForReports'; // Import the new hook
+import { useAllFileEntriesForReports } from '@/hooks/useAllFileEntriesForReports';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Input } from '@/components/ui/input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -43,7 +43,6 @@ const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://
 const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
 
 
-// Define the structure for the progress report data
 interface SiteDetailWithFileContext extends SiteDetailFormData {
   fileNo: string;
   applicantName: string;
@@ -410,7 +409,7 @@ export default function ProgressReportPage() {
     setEndDate(endOfMonth(today));
   };
   
-  const handleExportExcel = async () => { /* ... */ };
+  const handleExportExcel = async () => { /* Excel export logic here */ };
 
   const handleCountClick = (data: Array<SiteDetailWithFileContext | DataEntryFormData | Record<string, any>>, title: string) => {
     if (!data || data.length === 0) return;
@@ -432,7 +431,7 @@ export default function ProgressReportPage() {
     setIsDetailDialogOpen(true);
   };
   
-  const exportDialogDataToExcel = async () => { /* ... */ };
+  const exportDialogDataToExcel = async () => { /* Export dialog data logic here */ };
 
   const uniqueApplicationTypes = useMemo(() => [...new Set(applicationTypeOptions.filter(type => !['GW_Investigation', 'Logging_Pumping_Test'].some(prefix => type.startsWith(prefix))))], []);
 
@@ -476,7 +475,7 @@ export default function ProgressReportPage() {
                 <div className="flex items-center justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2 text-muted-foreground">Generating reports...</p></div>
             ) : reportData ? (
             <>
-                {/* Specific Investigation Accordion at the top as requested */}
+                {/* Specific Investigation Accordion at the TOP as requested */}
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation', 'ves', 'pumping-test', 'geo-logging', 'geophys-logging']}>
                   <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />

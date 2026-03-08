@@ -18,10 +18,6 @@ import { format, isValid, parseISO } from 'date-fns';
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { useDataStore } from "@/hooks/use-data-store";
 import { 
-    PUBLIC_DEPOSIT_APPLICATION_TYPES, 
-    PRIVATE_APPLICATION_TYPES, 
-    COLLECTOR_APPLICATION_TYPES, 
-    PLAN_FUND_APPLICATION_TYPES, 
     LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
 } from '@/lib/schemas';
 
@@ -75,7 +71,7 @@ const getFormDefaults = (workType: string | null): DataEntryFormData => ({
   phoneNo: "", 
   secondaryMobileNo: "",
   category: undefined,
-  applicationType: workType === 'planFund' ? 'GWBDWS' as ApplicationType : undefined, 
+  applicationType: undefined, // Removed pre-fill for Plan Fund
   constituency: undefined,
   assignedSupervisorUids: [],
   remittanceDetails: [], 
@@ -136,11 +132,11 @@ export default function DataEntryPage() {
             base = '/dashboard/logging-pumping-test';
         } else {
              const appType = pageData?.initialData.applicationType;
-             if (COLLECTOR_APPLICATION_TYPES.includes(appType as any)) {
+             if (appType?.includes("Collector")) {
                 base = '/dashboard/collectors-deposit-works';
-            } else if (PLAN_FUND_APPLICATION_TYPES.includes(appType as any)) {
+            } else if (appType === "GWBDWS") {
                 base = '/dashboard/plan-fund-works';
-            } else if (PRIVATE_APPLICATION_TYPES.includes(appType as any)) {
+            } else if (appType?.includes("Private")) {
                 base = '/dashboard/private-deposit-works';
             }
         }
@@ -236,13 +232,6 @@ export default function DataEntryPage() {
   if (authIsLoading || dataLoading) return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (errorState) return <div className="flex h-screen items-center justify-center text-center p-6"><Card><CardContent className="pt-6"><ShieldAlert className="h-12 w-12 text-destructive mx-auto mb-4" /><h1 className="text-xl font-bold">{errorState}</h1><Button className="mt-4" variant="outline" onClick={() => router.back()}>Go Back</Button></CardContent></Card></div>;
   
-  const formOptions = [
-      ...PUBLIC_DEPOSIT_APPLICATION_TYPES,
-      ...PRIVATE_APPLICATION_TYPES,
-      ...COLLECTOR_APPLICATION_TYPES,
-      ...PLAN_FUND_APPLICATION_TYPES
-  ];
-
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
