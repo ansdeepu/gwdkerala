@@ -38,7 +38,7 @@ export const designationMalayalamOptions = [
     "അസിസ്റ്റന്റ് എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "ഹൈഡ്രോജിയോളജിസ്റ്റ്", "ജിയോഫിസിസ്റ്റ്",
     "അസിസ്റ്റന്റ് എഞ്ചിനീയർ", "ജൂനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്", "ജൂനിയർ ജിയോഫിസിസ്റ്റ്",
     "ജിയോളജിക്കൽ അസിസ്റ്റന്റ്", "ജിയോഫിസിക്കൽ അസിസ്റ്റന്റ്", "മാസ്റ്റർ ഡ്രില്ലർ",
-    "സീനിയർ ഡ്രില്ലർ", "ഡ്രില്ലർ", "ഡ്രില്ലർ മെക്കാനിക്ക്", "ഡրില്ലിംഗ് അസിസ്റ്റന്റ്",
+    "സീനിയർ ഡ്രില്ലർ", "ഡ്രില്ലർ", "ഡ്രില്ലർ മെക്കാനിക്ക്", "ഡരില്ലിംഗ് അസിസ്റ്റന്റ്",
     "കംപ്രസ്സർ ഡ്രൈവർ", "പമ്പ് ഓപ്പറേറ്റർ", "ഡ്രൈവർ, എച്ച്ഡിവി", "ഡ്രൈവർ, എൽഡിവി",
     "സീനിയർ ക്ലർക്ക്", "ക്ലർക്ക്", "യു.ഡി ടൈപ്പിസ്റ്റ്", "എൽ.ഡി ടൈപ്പിസ്റ്റ്",
     "ട്രേസർ", "ഡ്രാഫ്റ്റ്‌സ്മാൻ", "ലാസ്കർ", "ഓഫീസ് അറ്റൻഡന്റ്", "വാച്ചർ", "പിടിഎസ്"
@@ -132,7 +132,27 @@ export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = ["Geological logging", "Geop
 export const sitePurposeOptions = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS", "GW Investigation", "Geological logging", "Geophysical Logging", "VES", "Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others", "Pumping Test Others"] as const;
 export type SitePurpose = typeof sitePurposeOptions[number];
 
-export const REPORTING_PURPOSE_ORDER = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS", "GW Investigation", "VES", "Pumping test"] as const;
+export const REPORTING_PURPOSE_ORDER = [
+  "GW Investigation",
+  "VES",
+  "Pumping test",
+  "Geological logging",
+  "Geophysical Logging",
+  "BWC",
+  "TWC",
+  "FPW",
+  "BW Dev",
+  "TW Dev",
+  "FPW Dev",
+  "MWSS",
+  "MWSS Ext",
+  "Pumping Scheme",
+  "MWSS Pump Reno",
+  "HPS",
+  "HPR",
+  "ARS"
+] as const;
+
 export const PUMPING_TEST_AGGREGATE_PURPOSES = ["Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others", "Pumping Test Others"] as const;
 export const INVESTIGATION_APP_TYPE_PURPOSES = ["Geological logging", "Geophysical Logging"] as const;
 export const INVESTIGATION_WELL_TYPE_PURPOSES = ["GW Investigation", "VES"] as const;
