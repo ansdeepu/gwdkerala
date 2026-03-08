@@ -1,3 +1,4 @@
+
 // src/components/investigation/InvestigationDataEntryForm.tsx
 "use client";
 
@@ -101,7 +102,7 @@ const toDateOrNull = (value: any): Date | null => {
         if (isValid(d)) return d;
     }
     return null;
-};
+ };
 
 const processDataForForm = (data: any): any => {
   const transform = (obj: any): any => {
@@ -842,7 +843,19 @@ const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly,
                                     <CardHeader><CardTitle>Recommended Measurements</CardTitle></CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                            <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => ( <FormItem><FormLabel>Diameter (mm)</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isFieldReadOnly(true)}><FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl><SelectContent>{siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
+                                            <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Diameter (mm)</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value || ""} disabled={isFieldReadOnly(true)}>
+                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                            {siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}/>
                                             <FormField name="surveyRecommendedTD" control={control} render={({ field }) => <FormItem><FormLabel>TD (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
 
                                             {watchedTypeOfWell === 'Bore Well' && (
@@ -865,8 +878,20 @@ const InvestigationSiteDialog = ({ initialData, onConfirm, onCancel, isReadOnly,
                                             )}
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField name="surveyLocation" control={control} render={({ field }) => ( <FormItem><FormLabel>Location of well</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[60px]" /></FormControl><FormMessage /></FormItem> )}/>
-                                            <FormField name="surveyRemarks" control={control} render={({ field }) => ( <FormItem><FormLabel>Survey Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[60px]" /></FormControl><FormMessage /></FormItem> )}/>
+                                            <FormField name="surveyLocation" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Location of well</FormLabel>
+                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[60px]" /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}/>
+                                            <FormField name="surveyRemarks" control={control} render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Survey Remarks</FormLabel>
+                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[60px]" /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}/>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -1309,7 +1334,17 @@ const handleDeleteItem = () => {
             <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
             <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
             <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent className="max-h-80">{INVESTIGATION_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
-        {!(isViewer || isFormDisabled) && (<CardFooter className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save'}</Button></CardFooter>)}
+        
+        <CardFooter className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}>
+                <X className="mr-2 h-4 w-4" /> Close
+            </Button>
+            {!(isViewer || isFormDisabled) && (
+                <Button type="submit" disabled={isSubmitting}>
+                    <Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save'}
+                </Button>
+            )}
+        </CardFooter>
       </form>
 
       <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>

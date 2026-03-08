@@ -13,14 +13,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { getFirestore, collection, addDoc, getDocs, query, doc, updateDoc, deleteDoc, writeBatch, setDoc, orderBy } from "firebase/firestore";
+import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, writeBatch, query, orderBy } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import NewBidderForm from '@/components/e-tender/NewBidderForm';
 import type { NewBidderFormData, Bidder as BidderType } from '@/lib/schemas/eTenderSchema';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, UserPlus, ArrowLeft, Trash2, Move, Eye } from 'lucide-react';
+import { Loader2, UserPlus, Trash2, Move, Eye } from 'lucide-react';
 
 const db = getFirestore(app);
 

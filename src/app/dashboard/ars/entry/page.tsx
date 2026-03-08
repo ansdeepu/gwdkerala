@@ -366,7 +366,7 @@ export default function ArsEntryPage() {
         if (selectedTender) {
              const validBidders = (selectedTender.bidders || []).filter((b: Bidder) => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
             const l1Bidder = validBidders.length > 0 
-                ? validBidders.reduce((lowest: Bidder, current: Bidder) => (lowest.quotedAmount! < current.quotedAmount!) ? lowest : current)
+                ? validBidders.reduce((lowest: Bidder, current: Bidder) => (lowest.quotedAmount! < lowest.quotedAmount!) ? lowest : current)
                 : null;
             form.setValue('arsContractorName', l1Bidder ? `${l1Bidder.name}, ${l1Bidder.address}` : '');
 

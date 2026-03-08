@@ -4,9 +4,9 @@
 import DataEntryFormComponent from "@/components/shared/DataEntryForm";
 import InvestigationDataEntryFormComponent from "@/components/investigation/InvestigationDataEntryForm";
 import LoggingPumpingTestDataEntryFormComponent from "@/components/investigation/LoggingPumpingTestDataEntryForm";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Loader2, ArrowLeft } from "lucide-react";
+import { ShieldAlert, Loader2 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useFileEntries } from "@/hooks/useFileEntries";
@@ -249,12 +249,6 @@ export default function DataEntryPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-row items-center justify-end p-4 border-b space-y-0">
-            <Button variant="destructive" size="sm" onClick={() => router.push(returnPath)}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-            </Button>
-        </CardHeader>
         <CardContent className="p-6">
           {pageData && pageData.initialData ? (
              isGwInvestigationType ? (
