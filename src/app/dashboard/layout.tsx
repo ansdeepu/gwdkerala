@@ -132,8 +132,15 @@ function BreadcrumbNav() {
           label = 'File Entry';
       }
       
-      const displayLabel = isLast && title && !title.includes('Loading') ? title : label;
-      result.push({ href, label: displayLabel, isLast });
+      const detailId = searchParams?.get('id');
+      // If we are at the end of the path but have an ID, we want to show the category segment AND the detail title
+      if (isLast && detailId && title && !title.includes('Loading') && segment !== 'data-entry') {
+          result.push({ href, label, isLast: false });
+          result.push({ href: `${href}?id=${detailId}`, label: title, isLast: true });
+      } else {
+          const displayLabel = isLast && title && !title.includes('Loading') ? title : label;
+          result.push({ href, label: displayLabel, isLast });
+      }
     });
 
     return result;
