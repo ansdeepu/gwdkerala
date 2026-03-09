@@ -88,6 +88,35 @@ function BreadcrumbNav() {
 
   const breadcrumbs = useMemo(() => {
     if (!pathname) return [];
+
+    const labelMap: Record<string, string> = {
+      'dashboard': 'Dashboard',
+      'gw-investigation': 'GW Investigation',
+      'logging-pumping-test': 'Logging & Pumping Test',
+      'file-room': 'Deposit Works',
+      'collectors-deposit-works': "Collector's Deposit Works",
+      'private-deposit-works': 'Private Deposit Works',
+      'plan-fund-works': 'Plan Fund Works',
+      'agency-registration': 'Rig Registration',
+      'rig-registration': 'Rig Registration',
+      'e-tender': 'e-Tender',
+      'vehicles': 'Vehicle & Rig',
+      'pending-updates': 'Pending Actions',
+      'report-format-suggestion': 'Report Builders',
+      'gwd-rates': 'GWD Rates',
+      'super-admin': 'Super Admin',
+      'establishment': 'Establishment',
+      'user-management': 'User Management',
+      'settings': 'Settings',
+      'help': 'Help & About',
+      'ars': 'ARS',
+      'ars-plan': 'ARS - Plan',
+      'office-management': 'Office Management',
+      'progress-reports': 'Progress Reports',
+      'report-builder': 'Report Builder',
+      'profile': 'My Profile',
+    };
+
     const segments = pathname.split('/').filter(Boolean);
     const result: Array<{ href: string; label: string; isLast: boolean }> = [];
     
@@ -95,23 +124,9 @@ function BreadcrumbNav() {
       const href = `/${segments.slice(0, index + 1).join('/')}`;
       const isLast = index === segments.length - 1;
       
-      let label = segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      let label = labelMap[segment] || segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       
-      if (segment === 'dashboard') label = 'Dashboard';
-      else if (segment === 'gw-investigation') label = 'GW Investigation';
-      else if (segment === 'logging-pumping-test') label = 'Logging & Pumping Test';
-      else if (segment === 'file-room') label = 'Deposit Works';
-      else if (segment === 'collectors-deposit-works') label = "Collector's Deposit Works";
-      else if (segment === 'private-deposit-works') label = 'Private Deposit Works';
-      else if (segment === 'plan-fund-works') label = 'Plan Fund Works';
-      else if (segment === 'agency-registration') label = 'Rig Registration';
-      else if (segment === 'e-tender') label = 'e-Tender';
-      else if (segment === 'vehicles') label = 'Vehicle & Rig';
-      else if (segment === 'pending-updates') label = 'Pending Actions';
-      else if (segment === 'report-format-suggestion') label = 'Report Builders';
-      else if (segment === 'gwd-rates') label = 'GWD Rates';
-      else if (segment === 'super-admin') label = 'Super Admin';
-      else if (segment === 'data-entry') {
+      if (segment === 'data-entry') {
           const workType = searchParams?.get('workType');
           const workTypeMapping: Record<string, { label: string, href: string }> = {
               'gwInvestigation': { label: 'GW Investigation', href: '/dashboard/gw-investigation' },
@@ -133,24 +148,26 @@ function BreadcrumbNav() {
       }
       
       const detailId = searchParams?.get('id');
-      // If we are at the end of the path but have an ID, we want to show the category segment AND the detail title
+      
       if (isLast && detailId && title && !title.includes('Loading') && segment !== 'data-entry') {
           result.push({ href, label, isLast: false });
           result.push({ href: `${href}?id=${detailId}`, label: title, isLast: true });
       } else {
-          const displayLabel = isLast && title && !title.includes('Loading') ? title : label;
-          result.push({ href, label: displayLabel, isLast });
+          result.push({ href, label, isLast });
       }
     });
 
     return result;
   }, [pathname, title, searchParams]);
 
+  const isSuperAdminPath = pathname?.startsWith('/dashboard/super-admin');
+  const homeHref = isSuperAdminPath ? '/dashboard/super-admin' : '/dashboard';
+
   if (pathname === '/dashboard' || pathname === '/dashboard/super-admin') return null;
 
   return (
     <nav className="flex items-center space-x-1 text-xs text-muted-foreground mb-4 px-1" aria-label="Breadcrumb">
-      <Link href="/dashboard" className="hover:text-primary transition-colors flex items-center">
+      <Link href={homeHref} className="hover:text-primary transition-colors flex items-center">
         <Home className="h-3 w-3 mr-1" />
         <span>Dashboard</span>
       </Link>
