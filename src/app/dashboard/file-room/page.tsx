@@ -1,3 +1,4 @@
+
 // src/app/dashboard/file-room/page.tsx
 "use client";
 
@@ -34,7 +35,7 @@ const Clock = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 
-const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig"];
+const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -70,6 +71,8 @@ export default function FileManagerPage() {
     const page = searchParams?.get('page');
     if (page && !isNaN(parseInt(page))) {
       setCurrentPage(parseInt(page));
+    } else {
+      setCurrentPage(1);
     }
   }, [searchParams]);
 
@@ -137,7 +140,7 @@ export default function FileManagerPage() {
     setCurrentPage(page);
     const params = new URLSearchParams(searchParams?.toString());
     params.set('page', String(page));
-    router.push(`?${params.toString()}`);
+    router.push(`?${params.toString()}`, { scroll: false });
   };
 
   return (

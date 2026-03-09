@@ -65,10 +65,23 @@ export default function CollectorsDepositWorksPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setIsNavigating } = usePageNavigation();
   
   const canCreate = user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist';
   
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
+
+  useEffect(() => {
+    const page = searchParams?.get('page');
+    if (page && !isNaN(parseInt(page))) {
+      setCurrentPage(parseInt(page));
+    } else {
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
+
   const { collectorDepositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => 
         !!entry.applicationType && COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType)
@@ -167,8 +180,6 @@ export default function CollectorsDepositWorksPage() {
     router.push('/dashboard/data-entry?workType=collector');
   };
 
-  const ITEMS_PER_PAGE = 50;
-  const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
 
   const paginatedEntries = useMemo(() => {
@@ -178,6 +189,9 @@ export default function CollectorsDepositWorksPage() {
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', String(page));
+    router.push(`?${params.toString()}`, { scroll: false });
   };
 
   return (
@@ -238,6 +252,7 @@ export default function CollectorsDepositWorksPage() {
         isLoading={isLoading}
         searchActive={!!searchTerm}
         totalEntries={filteredEntries.length}
+        currentPage={currentPage}
       />
       
       {totalPages > 1 && (

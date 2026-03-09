@@ -119,9 +119,11 @@ function BreadcrumbNav() {
 
     const segments = pathname.split('/').filter(Boolean);
     const result: Array<{ href: string; label: string; isLast: boolean }> = [];
+    const detailId = searchParams?.get('id');
+    const pageNum = searchParams?.get('page');
     
     segments.forEach((segment, index) => {
-      const href = `/${segments.slice(0, index + 1).join('/')}`;
+      let href = `/${segments.slice(0, index + 1).join('/')}`;
       const isLast = index === segments.length - 1;
       
       let label = labelMap[segment] || segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -138,22 +140,36 @@ function BreadcrumbNav() {
           };
           
           if (workType && workTypeMapping[workType]) {
-              result.push({ 
-                  href: workTypeMapping[workType].href, 
-                  label: workTypeMapping[workType].label, 
-                  isLast: false 
-              });
+              const listHref = pageNum ? `${workTypeMapping[workType].href}?page=${pageNum}` : workTypeMapping[workType].href;
+              result.push({ href: listHref, label: workTypeMapping[workType].label, isLast: false });
           }
           label = 'File Entry';
       }
-      
-      const detailId = searchParams?.get('id');
-      
-      if (isLast && detailId && title && !title.includes('Loading') && segment !== 'data-entry') {
-          result.push({ href, label, isLast: false });
-          result.push({ href: `${href}?id=${detailId}`, label: title, isLast: true });
-      } else {
-          result.push({ href, label, isLast });
+
+      // Handle query-param based detail views (Rig Registration, ARS)
+      if (isLast && detailId && segment !== 'data-entry') {
+          // Push the list crumb first (as non-last)
+          const listHref = pageNum ? `${href}?page=${pageNum}` : href;
+          result.push({ href: listHref, label, isLast: false });
+          
+          // Push the specific item crumb
+          let detailLabel = title;
+          if (!detailLabel || detailLabel.includes('Loading')) {
+              detailLabel = detailId === 'new' ? 'New Registration' : 'View Details';
+          }
+          const detailHref = `${href}?id=${detailId}${pageNum ? `&page=${pageNum}` : ''}`;
+          result.push({ href: detailHref, label: detailLabel, isLast: true });
+      } else if (isLast) {
+          // Standard last crumb
+          const finalHref = pageNum ? `${href}?page=${pageNum}` : href;
+          result.push({ href: finalHref, label, isLast: true });
+      } else if (segment !== 'data-entry') {
+          // Normal intermediate crumb - preserve page if next is 'new' or 'entry'
+          const nextSegment = segments[index + 1];
+          const preservedHref = (pageNum && (nextSegment === 'new' || nextSegment === 'entry')) 
+            ? `${href}?page=${pageNum}` 
+            : href;
+          result.push({ href: preservedHref, label, isLast: false });
       }
     });
 
@@ -190,6 +206,7 @@ function BreadcrumbNav() {
 function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, isLoading, logout } = useAuth();
   const idleTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastActivityFirestoreUpdateRef = React.useRef<number>(0); 
@@ -263,7 +280,7 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
       setIsNavigating(false);
-  }, [pathname, setIsNavigating]);
+  }, [pathname, searchParams, setIsNavigating]);
 
   const isRedirecting = !isLoading && user && (
     (user.email === SUPER_ADMIN_EMAIL && pathname === '/dashboard') ||

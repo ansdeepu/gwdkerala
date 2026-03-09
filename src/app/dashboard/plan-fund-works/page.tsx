@@ -31,7 +31,7 @@ const Clock = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 
-const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Awaiting Dept. Rig"];
+const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
 
 
 // Helper function to safely parse dates, whether they are strings or Date objects
@@ -82,6 +82,18 @@ export default function PlanFundWorksPage() {
   
   const canCreate = (user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist') && !isSuperAdmin;
   
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
+
+  useEffect(() => {
+    const page = searchParams?.get('page');
+    if (page && !isNaN(parseInt(page))) {
+      setCurrentPage(parseInt(page));
+    } else {
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
+
   const { filteredEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => 
         !!entry.applicationType && PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)
@@ -184,8 +196,6 @@ export default function PlanFundWorksPage() {
     router.push('/dashboard/data-entry?workType=planFund');
   };
   
-  const ITEMS_PER_PAGE = 50;
-  const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
 
   const paginatedEntries = useMemo(() => {
@@ -195,6 +205,9 @@ export default function PlanFundWorksPage() {
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', String(page));
+    router.push(`?${params.toString()}`, { scroll: false });
   };
 
   return (
@@ -256,6 +269,7 @@ export default function PlanFundWorksPage() {
         searchActive={!!searchTerm}
         totalEntries={filteredEntries.length}
         isReadOnly={isSuperAdmin}
+        currentPage={currentPage}
       />
        {totalPages > 1 && (
         <div className="flex items-center justify-center pt-4">

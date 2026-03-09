@@ -145,6 +145,8 @@ export default function ArsPage() {
     const page = searchParams?.get('page');
     if (page && !isNaN(parseInt(page))) {
       setCurrentPage(parseInt(page));
+    } else {
+      setCurrentPage(1);
     }
   }, [searchParams]);
 
@@ -172,6 +174,13 @@ export default function ArsPage() {
   const handleViewClick = (siteId: string) => {
     const pageParam = currentPage > 1 ? `?page=${currentPage}` : '';
     router.push(`/dashboard/ars/entry?id=${siteId}${pageParam ? `&${pageParam.substring(1)}` : ''}`);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', String(page));
+    router.push(`?${params.toString()}`, { scroll: false });
   };
 
   const { filteredSites, lastCreatedDate } = useMemo(() => {
@@ -247,16 +256,6 @@ export default function ArsPage() {
 
     return { filteredSites: sites, lastCreatedDate: lastCreated };
   }, [arsEntries, searchTerm, startDate, endDate, schemeTypeFilter, constituencyFilter]);
-
-  useEffect(() => {
-    const pageFromUrl = searchParams?.get('page');
-    const pageNum = pageFromUrl ? parseInt(pageFromUrl, 10) : 1;
-    if (!isNaN(pageNum) && pageNum > 0) {
-      setCurrentPage(pageNum);
-    } else {
-      setCurrentPage(1);
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     const newTotalPages = Math.ceil(filteredSites.length / ITEMS_PER_PAGE);
@@ -644,7 +643,7 @@ export default function ArsPage() {
               </div>
             </div>
              <div className="flex items-center justify-center pt-4 border-t">
-                <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
             </div>
         </CardContent>
        </Card>
@@ -670,7 +669,7 @@ export default function ArsPage() {
                                 paginatedSites.map((site, index) => {
                                     return (
                                         <TableRow key={site.id} className={getStatusRowClass(site.arsStatus as SiteWorkStatus)}>
-                                            <TableCell className="w-[80px]">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
+                                            <TableCell className="w-[80px]">{offset + index + 1}</TableCell>
                                             <TableCell className="w-[150px] font-medium">{site.fileNo}</TableCell>
                                             <TableCell className="font-semibold whitespace-normal break-words">
                                               {site.nameOfSite}
@@ -721,7 +720,7 @@ export default function ArsPage() {
                         <p className="text-sm text-muted-foreground">
                             Showing <strong>{filteredSites.length > 0 ? startEntryNum : 0}</strong>-<strong>{endEntryNum}</strong> of <strong>{filteredSites.length}</strong> sites.
                         </p>
-                        <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                        <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                     </div>
                 )}
             </CardContent>

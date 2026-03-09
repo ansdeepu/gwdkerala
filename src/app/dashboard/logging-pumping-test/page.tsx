@@ -7,7 +7,7 @@ import LoggingPumpingTestTable from "@/components/investigation/LoggingPumpingTe
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { parseISO, isValid, format } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -45,12 +45,22 @@ export default function LoggingPumpingTestPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("Geological");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setIsNavigating } = usePageNavigation();
   const [currentPage, setCurrentPage] = useState(1);
   
   useEffect(() => { setHeader('Logging & Pumping Test', 'List of all Logging & Pumping Test files.'); }, [setHeader]);
 
   const canCreate = user?.role === 'admin' || user?.role === 'scientist' || user?.role === 'investigator';
+
+  useEffect(() => {
+    const page = searchParams?.get('page');
+    if (page && !isNaN(parseInt(page))) {
+      setCurrentPage(parseInt(page));
+    } else {
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
 
   const { geologicalLoggingEntries, geophysicalLoggingEntries, pumpingTestEntries, lastCreatedDate } = useMemo(() => {
     const allLoggingAndPumpingEntries = fileEntries.filter(entry => {
@@ -117,8 +127,10 @@ export default function LoggingPumpingTestPage() {
   }, [activeTab, geologicalLoggingEntries, geophysicalLoggingEntries, pumpingTestEntries, searchTerm]);
   
   useEffect(() => {
-    setCurrentPage(1);
-  }, [filteredEntries, activeTab]);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', '1');
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [activeTab, router, searchParams]);
 
   const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
 
@@ -129,6 +141,9 @@ export default function LoggingPumpingTestPage() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', String(page));
+    router.push(`?${params.toString()}`, { scroll: false });
   };
 
   return (
@@ -207,5 +222,3 @@ export default function LoggingPumpingTestPage() {
     </div>
   );
 }
-
-    

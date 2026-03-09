@@ -33,7 +33,7 @@ import { usePageHeader } from "@/hooks/usePageHeader";
 import { usePageNavigation } from "@/hooks/usePageNavigation";
 import PaginationControls from "@/components/shared/PaginationControls";
 import ExcelJS from "exceljs";
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAgencyApplications } from '@/hooks/useAgencyApplications';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Loader2, Search, PlusCircle, Save, X, Trash2, ShieldAlert, UserPlus, FilePlus, ChevronsUpDown, RotateCcw, RefreshCw, CheckCircle, Info, Ban, FileUp, MoreVertical, ArrowLeft, Eye, FileDown, Clock } from 'lucide-react';
@@ -482,6 +482,7 @@ export default function AgencyRegistrationPage() {
   const { toast } = useToast();
   const { setIsNavigating } = usePageNavigation();
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -504,14 +505,14 @@ export default function AgencyRegistrationPage() {
 
 
   useEffect(() => {
-    if (pageFromUrl) {
-      const pageNum = parseInt(pageFromUrl, 10);
-      if (!isNaN(pageNum)) {
-        setCurrentPage(pageNum);
-      }
-    }
-    if (idFromUrl) {
-      setSelectedApplicationId(idFromUrl);
+    // Sync state with URL
+    setSelectedApplicationId(idFromUrl);
+
+    const pageNum = pageFromUrl ? parseInt(pageFromUrl, 10) : 1;
+    if (!isNaN(pageNum)) {
+      setCurrentPage(pageNum);
+    } else {
+      setCurrentPage(1);
     }
   }, [pageFromUrl, idFromUrl]);
 
@@ -732,19 +733,25 @@ export default function AgencyRegistrationPage() {
 
   const handleAddNew = () => {
     setIsNavigating(true);
-    setSelectedApplicationId('new');
+    router.push(`${pathname}?id=new`);
   }
 
   const handleView = (id: string) => {
     const pageParam = currentPage > 1 ? `&page=${currentPage}` : '';
-    router.push(`/dashboard/agency-registration?id=${id}${pageParam}`);
-    setSelectedApplicationId(id);
+    router.push(`${pathname}?id=${id}${pageParam}`);
   }
 
   const handleClose = () => {
     setSelectedApplicationId(null);
     router.push(returnPath);
   }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', String(page));
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   const handleAddRig = () => {
     if (activeRigCount >= 3) {
@@ -1055,8 +1062,10 @@ export default function AgencyRegistrationPage() {
   const [activeTab, setActiveTab] = useState('completed');
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab]);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', '1');
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [activeTab, router, searchParams]);
 
   const onTabChange = (value: string) => {
     setActiveTab(value);
@@ -1616,7 +1625,7 @@ export default function AgencyRegistrationPage() {
             <TabsContent value="completed" className="mt-4">
                 {totalCompletedPages > 1 && (
                     <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={setCurrentPage} />
+                        <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
                     </div>
                 )}
                 <RegistrationTable 
@@ -1630,14 +1639,14 @@ export default function AgencyRegistrationPage() {
                 />
                  {totalCompletedPages > 1 && (
                     <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={setCurrentPage} />
+                        <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
                     </div>
                 )}
             </TabsContent>
             <TabsContent value="pending" className="mt-4">
                  {totalPendingPages > 1 && (
                     <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={setCurrentPage} />
+                        <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={handlePageChange} />
                     </div>
                 )}
                 <RegistrationTable 
@@ -1652,7 +1661,7 @@ export default function AgencyRegistrationPage() {
                 />
                  {totalPendingPages > 1 && (
                     <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={setCurrentPage} />
+                        <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={handlePageChange} />
                     </div>
                 )}
             </TabsContent>

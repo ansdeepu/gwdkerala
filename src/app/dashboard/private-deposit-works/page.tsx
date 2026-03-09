@@ -66,9 +66,22 @@ export default function PrivateDepositWorksPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setIsNavigating } = usePageNavigation();
   
   const canCreate = user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist';
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
+
+  useEffect(() => {
+    const page = searchParams?.get('page');
+    if (page && !isNaN(parseInt(page))) {
+      setCurrentPage(parseInt(page));
+    } else {
+      setCurrentPage(1);
+    }
+  }, [searchParams]);
 
   const { privateDepositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     const privateEntries = fileEntries.filter(entry => 
@@ -169,8 +182,6 @@ export default function PrivateDepositWorksPage() {
     router.push('/dashboard/data-entry?workType=private');
   };
   
-  const ITEMS_PER_PAGE = 50;
-  const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
 
   const paginatedEntries = useMemo(() => {
@@ -180,6 +191,9 @@ export default function PrivateDepositWorksPage() {
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', String(page));
+    router.push(`?${params.toString()}`, { scroll: false });
   };
 
   return (
@@ -236,10 +250,11 @@ export default function PrivateDepositWorksPage() {
       </Card>
       
       <FileDatabaseTable 
-        fileEntries={filteredEntries} 
+        fileEntries={paginatedEntries} 
         isLoading={isLoading}
         searchActive={!!searchTerm}
         totalEntries={filteredEntries.length}
+        currentPage={currentPage}
       />
 
       {totalPages > 1 && (
