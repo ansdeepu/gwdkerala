@@ -89,7 +89,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     const isARSPurpose = useMemo(() => watchedPurpose === 'ARS', [watchedPurpose]);
 
     const filteredPurposeOptions = useMemo(() => {
-        const arsIndex = sitePurposeOptions.indexOf("ARS");
+        const arsIndex = (sitePurposeOptions || []).indexOf("ARS");
         if (arsIndex === -1) return sitePurposeOptions;
         return sitePurposeOptions.slice(0, arsIndex + 1);
     }, []);
@@ -182,7 +182,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             targetDesignations.includes(s.designation as any)
         );
 
-        const designationOrder = (designationOptions as unknown as string[]);
+        const designationOrder = (designationOptions as unknown as string[]) || [];
         return filtered.sort((a, b) => {
             const indexA = a.designation ? designationOrder.indexOf(a.designation) : 999;
             const indexB = b.designation ? designationOrder.indexOf(b.designation) : 999;
@@ -241,7 +241,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                        {filteredPurposeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                        {(filteredPurposeOptions || []).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -254,7 +254,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                        {sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}
+                                                        {(sortedLsgMaps || []).map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage/>
@@ -267,7 +267,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                     <FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                        {constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                        {(constituencyOptionsForLsg || []).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage/>
@@ -291,7 +291,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
                                                         <SelectContent>
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                            {siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                            {(siteDiameterOptions || []).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                     <FormMessage />
@@ -349,7 +349,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Conditions" /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                        {siteConditionsOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                        {(siteConditionsOptions || []).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -426,7 +426,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Supervisor" /></SelectTrigger></FormControl>
                                                         <SelectContent className="max-h-80">
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                            {quotationSupervisorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}
+                                                            {(quotationSupervisorList || []).map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 ) : (
@@ -458,7 +458,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
                                                         <SelectContent>
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                            {siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                            {(siteDiameterOptions || []).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                     <FormMessage />
@@ -499,7 +499,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Rig" /></SelectTrigger></FormControl>
                                                         <SelectContent>
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                            {rigOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                            {(rigOptions || []).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                     <FormMessage />
@@ -529,7 +529,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
                                                         <SelectContent>
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                            {siteDiameterOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                            {(siteDiameterOptions || []).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                     <FormMessage />
@@ -626,7 +626,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                        {SITE_DIALOG_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                        {(SITE_DIALOG_WORK_STATUS_OPTIONS || []).map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />

@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ShieldCheck, ShieldAlert, Trash2, Eye, UserCog } from "lucide-react";
+import { Loader2, Trash2, Eye, UserCog } from "lucide-react";
 import type { UserProfile } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { userRoleOptions, type UserRole, type StaffMember } from "@/lib/schemas";
@@ -59,7 +59,7 @@ const getColorClass = (nameOrEmail: string): string => {
         "bg-violet-200 text-violet-800", "bg-purple-200 text-purple-800", "bg-fuchsia-200 text-fuchsia-800",
         "bg-pink-200 text-pink-800", "bg-rose-200 text-rose-800"
     ];
-    const hash = hashCode(nameOrEmail);
+    const hash = hashCode(nameOrEmail || 'user');
     const index = Math.abs(hash) % colors.length;
     return colors[index];
 };
@@ -99,10 +99,10 @@ export default function UserManagementTable({
   const isSuperAdmin = currentUser?.role === 'superAdmin';
 
   const sortedUsers = useMemo(() => {
-    const roleOrder: Record<UserRole, number> = { 'superAdmin': 0, 'admin': 1, 'scientist': 2, 'engineer': 3, 'investigator': 4, 'supervisor': 5, 'viewer': 6 };
-    return [...users].sort((a, b) => {
-      const roleA = roleOrder[a.role] || 10;
-      const roleB = roleOrder[b.role] || 10;
+    const roleOrder: Record<string, number> = { 'superAdmin': 0, 'admin': 1, 'scientist': 2, 'engineer': 3, 'investigator': 4, 'supervisor': 5, 'viewer': 6 };
+    return [...(users || [])].sort((a, b) => {
+      const roleA = a.role ? roleOrder[a.role] ?? 10 : 10;
+      const roleB = b.role ? roleOrder[b.role] ?? 10 : 10;
       if (roleA !== roleB) return roleA - roleB;
       const timeA = a.createdAt?.getTime() ?? 0;
       const timeB = b.createdAt?.getTime() ?? 0;

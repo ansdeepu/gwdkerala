@@ -4,7 +4,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format, startOfDay, endOfDay, isValid, isWithinInterval, parse, parseISO } from 'date-fns';
@@ -95,7 +94,7 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
     }
 
     const arsStatusCounts = new Map<string, { count: number, data: ArsEntry[], expenditure: number }>();
-    arsWorkStatusOptions.forEach(status => arsStatusCounts.set(status, { count: 0, data: [], expenditure: 0 }));
+    (arsWorkStatusOptions || []).forEach(status => arsStatusCounts.set(status, { count: 0, data: [], expenditure: 0 }));
   
     let totalExpenditure = 0;
   
@@ -110,12 +109,13 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
       }
     });
   
+    const statusOrder = Array.from(arsWorkStatusOptions || []);
     const arsStatusCountsData = Array.from(arsStatusCounts.entries())
       .map(([status, { count, data, expenditure }]) => ({ status, count, data, expenditure }))
       .filter(item => item.count > 0)
       .sort((a,b) => {
-          const indexA = arsWorkStatusOptions.indexOf(a.status as any);
-          const indexB = arsWorkStatusOptions.indexOf(b.status as any);
+          const indexA = statusOrder.indexOf(a.status);
+          const indexB = statusOrder.indexOf(b.status);
           return indexA - indexB;
       });
   
