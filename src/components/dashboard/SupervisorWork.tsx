@@ -26,7 +26,7 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
   const supervisorList = useMemo(() => {
     const staffMap = new Map(staffMembers.map(s => [s.id, s]));
     
-    // Only include users whose role is explicitly 'supervisor' or 'investigator'
+    // Filter strictly by the Investigator or Supervisor roles as defined in the User Management system
     return allUsers
       .filter(u => u.isApproved && (u.role === 'supervisor' || u.role === 'investigator'))
       .map(u => {
@@ -38,7 +38,8 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
           uid: u.uid,
           name,
           designation,
-          displayName: `${name} (${designation})`
+          displayName: `${name} (${designation})`,
+          staffId: u.staffId
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -48,7 +49,8 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
     const byPurpose = sitePurposeOptions.reduce((acc, p) => ({ ...acc, [p]: 0 }), {} as Record<SitePurpose, number>);
     if (!selectedSupervisorId) return { works: [], byPurpose, totalCount: 0 };
 
-    const selectedStaffName = supervisorList.find(s => s.uid === selectedSupervisorId)?.name;
+    const selectedStaff = supervisorList.find(s => s.uid === selectedSupervisorId);
+    const selectedStaffName = selectedStaff?.name;
     
     const ongoingWorkStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated", "Pending", "VES Pending"];
     let works: Array<{ fileNo: string; applicantName: string; siteName: string; workStatus: string; purpose?: SitePurpose; supervisorName?: string | null }> = [];
@@ -103,7 +105,11 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
             <SelectContent>
               {supervisorList.length > 0 ? (
                 supervisorList.map(s => <SelectItem key={s.uid} value={s.uid}>{s.displayName}</SelectItem>)
-              ) : (<p className="p-2 text-sm text-muted-foreground text-center italic">No Supervisors or Investigators found</p>)}
+              ) : (
+                <div className="p-4 text-sm text-muted-foreground text-center italic border-2 border-dashed rounded-md m-2">
+                    No active Investigators or Supervisors identified in User Management.
+                </div>
+              )}
             </SelectContent>
           </Select>
         </div>

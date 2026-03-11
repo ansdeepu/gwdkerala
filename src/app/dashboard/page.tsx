@@ -1,3 +1,4 @@
+
 // src/app/dashboard/page.tsx
 "use client"; 
 
@@ -153,14 +154,17 @@ export default function DashboardPage() {
   useEffect(() => {
     if (authLoading || !currentUser) return;
 
-    if (currentUser.role !== 'editor' && currentUser.role !== 'viewer' && currentUser.email !== SUPER_ADMIN_EMAIL) {
+    // Allow Admins, Scientists, Engineers, and Super Admins to view user-based metrics on the dashboard
+    const allowedRoles = ['superAdmin', 'admin', 'scientist', 'engineer', 'viewer'];
+    const isSuperAdmin = currentUser.email === SUPER_ADMIN_EMAIL;
+
+    if (!allowedRoles.includes(currentUser.role) && !isSuperAdmin) {
         setUsersLoading(false);
         return;
     }
 
     setUsersLoading(true);
     let q;
-    const isSuperAdmin = currentUser.email === SUPER_ADMIN_EMAIL;
 
     if (isSuperAdmin) {
         q = query(collection(db, 'users'));
