@@ -1,3 +1,4 @@
+
 // src/hooks/useAuth.ts
 "use client";
 
@@ -94,7 +95,7 @@ export function useAuth() {
         const userDocSnap = await getDoc(userDocRef);
 
         let userProfile: UserProfile | null = null;
-        const isAdminByEmail = firebaseUser.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
+        const isAdminByEmail = firebaseUser.email?.toLowerCase() === (SUPER_ADMIN_EMAIL || '').toLowerCase();
 
         if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
@@ -187,7 +188,7 @@ export function useAuth() {
         isApproved: false,
         createdAt: Timestamp.now(),
         lastActiveAt: Timestamp.now(),
-        officeLocation: officeLocation.toLowerCase(),
+        officeLocation: (officeLocation || '').toLowerCase(),
       };
       
       const officeProfileData = {
@@ -196,7 +197,7 @@ export function useAuth() {
       
       const batch = writeBatch(db);
       batch.set(doc(db, "users", newFirebaseUser.uid), globalProfileData);
-      batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, newFirebaseUser.uid), officeProfileData);
+      batch.set(doc(db, `offices/${(officeLocation || '').toLowerCase()}/users`, newFirebaseUser.uid), officeProfileData);
   
       await batch.commit();
       await signOut(tempAuth);
@@ -220,7 +221,7 @@ export function useAuth() {
     const defaultPassword = "123456";
 
     try {
-      const emailPrefix = email.split('@')[0];
+      const emailPrefix = (email || '').split('@')[0];
       const accounts = [
         { email, name, role: 'admin' as UserRole },
         { email: `${emailPrefix}001@gmail.com`, name: `Scientist - ${officeLocation}`, role: 'scientist' as UserRole },
@@ -240,7 +241,7 @@ export function useAuth() {
           isApproved: true,
           createdAt: Timestamp.now(),
           lastActiveAt: Timestamp.now(),
-          officeLocation: officeLocation.toLowerCase(),
+          officeLocation: (officeLocation || '').toLowerCase(),
         };
 
         const officeProfile = {
@@ -248,7 +249,7 @@ export function useAuth() {
         };
 
         batch.set(doc(db, "users", uid), globalProfile);
-        batch.set(doc(db, `offices/${officeLocation.toLowerCase()}/users`, uid), officeProfile);
+        batch.set(doc(db, `offices/${(officeLocation || '').toLowerCase()}/users`, uid), officeProfile);
       }
       
       await batch.commit();
@@ -298,35 +299,38 @@ export function useAuth() {
     if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
       throw new Error("Permission denied.");
     }
+    if (!targetUserUid) throw new Error("Target user ID is missing.");
+
     const batch = writeBatch(db);
     batch.update(doc(db, "users", targetUserUid), { isApproved });
     if (officeLocation) {
-        batch.update(doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid), { isApproved });
+        batch.update(doc(db, `offices/${(officeLocation || '').toLowerCase()}/users`, targetUserUid), { isApproved });
     }
     await batch.commit();
   }, [authState.user]);
 
   const handleSupervisorCleanup = useCallback(async (uid: string, officeId: string) => {
+    if (!uid || !officeId) return;
     const batch = writeBatch(db);
-    const officePath = `offices/${officeId.toLowerCase()}`;
+    const officePath = `offices/${(officeId || '').toLowerCase()}`;
     
     const filesQuery = query(collection(db, `${officePath}/fileEntries`));
     const filesSnap = await getDocs(filesQuery);
     filesSnap.forEach(fDoc => {
         const data = fDoc.data();
         let changed = false;
-        const newSites = data.siteDetails?.map((s: any) => {
-            if (s.supervisorUid === uid && s.workStatus && ["Work Order Issued", "Work in Progress"].includes(s.workStatus)) {
+        const newSites = (data.siteDetails || []).map((s: any) => {
+            if (s.supervisorUid === uid && s.workStatus && (["Work Order Issued", "Work in Progress"] || []).includes(s.workStatus)) {
                 changed = true;
                 return { ...s, supervisorUid: null, supervisorName: null, supervisorDesignation: null };
             }
             return s;
-        }) || [];
+        });
         if (changed) {
             batch.update(fDoc.ref, { siteDetails: newSites });
             const notifRef = doc(collection(db, `${officePath}/pendingUpdates`));
             batch.set(notifRef, {
-                fileNo: data.fileNo,
+                fileNo: data.fileNo || 'N/A',
                 status: 'supervisor-unassigned',
                 notes: 'Work status file has no assigned Supervisor (user account deleted).',
                 submittedAt: serverTimestamp(),
@@ -341,12 +345,12 @@ export function useAuth() {
     const arsSnap = await getDocs(arsQuery);
     arsSnap.forEach(aDoc => {
         const data = aDoc.data();
-        if (data.arsStatus && ["Work Order Issued", "Work in Progress"].includes(data.arsStatus)) {
+        if (data.arsStatus && (["Work Order Issued", "Work in Progress"] || []).includes(data.arsStatus)) {
             batch.update(aDoc.ref, { supervisorUid: null, supervisorName: null });
             const notifRef = doc(collection(db, `${officePath}/pendingUpdates`));
             batch.set(notifRef, {
                 arsId: aDoc.id,
-                fileNo: data.fileNo,
+                fileNo: data.fileNo || 'N/A',
                 status: 'supervisor-unassigned',
                 notes: 'ARS Work status file has no assigned Supervisor (user account deleted).',
                 submittedAt: serverTimestamp(),
@@ -364,10 +368,11 @@ export function useAuth() {
     if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
         throw new Error("Permission denied.");
     }
+    if (!targetUserUid) throw new Error("Target user ID is missing.");
     
     const userRef = doc(db, "users", targetUserUid);
     const oldSnap = await getDoc(userRef);
-    const oldRole = oldSnap.data()?.role;
+    const oldRole = oldSnap.exists() ? oldSnap.data()?.role : null;
 
     const batch = writeBatch(db);
     const updates: any = { role: newRole };
@@ -376,7 +381,7 @@ export function useAuth() {
 
     batch.update(userRef, updates);
     if (officeLocation) {
-        batch.update(doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid), updates);
+        batch.update(doc(db, `offices/${(officeLocation || '').toLowerCase()}/users`, targetUserUid), updates);
     }
     await batch.commit();
 
@@ -389,6 +394,7 @@ export function useAuth() {
     if (!authState.user || (authState.user.role !== 'admin' && authState.user.role !== 'superAdmin')) {
         throw new Error("Permission denied.");
     }
+    if (!targetUserUid) throw new Error("Target user ID is missing.");
     if (authState.user.uid === targetUserUid) {
         throw new Error("You cannot delete yourself.");
     }
@@ -400,7 +406,6 @@ export function useAuth() {
     const effectiveOfficeLocation = officeLocation || userToDeleteData?.officeLocation;
     const userRole = userToDeleteData?.role;
 
-    // Guard clause: Only run cleanup if we have a valid office location string
     if (effectiveOfficeLocation && typeof effectiveOfficeLocation === 'string') {
         if (userRole === 'supervisor' || userRole === 'investigator') {
             await handleSupervisorCleanup(targetUserUid, effectiveOfficeLocation);
@@ -409,12 +414,10 @@ export function useAuth() {
 
     const batch = writeBatch(db);
     
-    // Always attempt to delete from the top-level 'users' collection
     if (userSnap.exists()) {
         batch.delete(userRef);
     }
     
-    // Also attempt to delete from the office-specific subcollection if we know where it is
     if (effectiveOfficeLocation && typeof effectiveOfficeLocation === 'string') {
         const officeUserRef = doc(db, `offices/${effectiveOfficeLocation.toLowerCase()}/users`, targetUserUid);
         batch.delete(officeUserRef);
@@ -442,6 +445,7 @@ export function useAuth() {
   }, []);
   
   const updateUserProfileByAdmin = useCallback(async (targetUserUid: string, data: { name?: string; officeLocation?: string; role?: UserRole; isApproved?: boolean }): Promise<{ success: boolean; error?: any }> => {
+    if (!targetUserUid) return { success: false, error: { message: "User ID is required." } };
     if (authState.user?.role !== 'superAdmin') {
         return { success: false, error: { message: "Permission denied." } };
     }
@@ -455,8 +459,8 @@ export function useAuth() {
         }
 
         if (officeLocation) {
-            const officePayload = { ...data, officeLocation: officeLocation.toLowerCase() };
-            batch.update(doc(db, `offices/${officeLocation.toLowerCase()}/users`, targetUserUid), officePayload);
+            const officePayload = { ...data, officeLocation: (officeLocation || '').toLowerCase() };
+            batch.update(doc(db, `offices/${(officeLocation || '').toLowerCase()}/users`, targetUserUid), officePayload);
         }
         await batch.commit();
         return { success: true };

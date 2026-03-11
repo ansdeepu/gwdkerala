@@ -9,9 +9,9 @@ import { useAuth, type UserProfile } from './useAuth';
 import type { DataEntryFormData } from '@/lib/schemas/DataEntrySchema';
 import type { ArsEntry } from './useArsEntries';
 import type { StaffMember, LsgConstituencyMap, Designation, Bidder as MasterBidder, DepartmentVehicle, HiredVehicle, RigCompressor } from '@/lib/schemas';
+import { designationOptions } from '@/lib/schemas';
 import type { AgencyApplication } from './useAgencyApplications';
 import { toast } from './use-toast';
-import { designationOptions } from '@/lib/schemas';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
@@ -214,7 +214,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
           return;
       }
   
-      const globalOffice = globalOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === officeLocation.toLowerCase());
+      const globalOffice = globalOfficeAddresses.find(oa => (oa.officeLocation || '').toLowerCase() === officeLocation.toLowerCase());
       
       const subOfficeCollectionPath = `offices/${officeLocation.toLowerCase()}/officeAddresses`;
       const q = query(collection(db, subOfficeCollectionPath));
@@ -291,8 +291,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 const dataRaw = snapshot.docs.map(docSnap => {
                     const processedData = processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() }) as any;
                     
-                    const pathSegments = docSnap.ref.path.split('/');
-                    const officeIdIndex = (pathSegments || []).includes('offices') ? pathSegments.indexOf('offices') : -1;
+                    const pathSegments = (docSnap.ref.path || '').split('/');
+                    const officeIdIndex = (pathSegments || []).indexOf('offices');
                     if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
                         processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
                     }
@@ -321,13 +321,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     data = Array.from(mergedMap.values());
                 }
                 
-                if (needsSpecialSort && collectionName === 'staffMembers') {
-                    const designationSortOrder = (designationOptions as unknown as string[]).reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
+                if (needsSpecialSort && collectionName === 'staffMembers' && designationOptions) {
+                    const designationSortOrder = (designationOptions || []).reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
                     (data as StaffMember[]).sort((a, b) => {
-                        const orderA = a.designation ? designationSortOrder[a.designation] ?? designationOptions.length : designationOptions.length;
-                        const orderB = b.designation ? designationSortOrder[b.designation] ?? designationOptions.length : designationOptions.length;
+                        const orderA = a.designation ? (designationSortOrder[a.designation] ?? designationOptions.length) : designationOptions.length;
+                        const orderB = b.designation ? (designationSortOrder[b.designation] ?? designationOptions.length) : designationOptions.length;
                         if (orderA !== orderB) return orderA - orderB;
-                        return a.name.localeCompare(b.name);
+                        return (a.name || '').localeCompare(b.name || '');
                     });
                 } else if (needsSpecialSort && collectionName === 'eTenders') {
                     (data as E_tender[]).sort((a, b) => {

@@ -42,8 +42,9 @@ import { getInitials } from "@/lib/utils";
 
 const hashCode = (str: string): number => {
     let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
+    const s = str || 'user';
+    for (let i = 0; i < s.length; i++) {
+        const char = s.charCodeAt(i);
         hash = (hash << 5) - hash + char;
         hash |= 0; 
     }
@@ -101,8 +102,8 @@ export default function UserManagementTable({
   const sortedUsers = useMemo(() => {
     const roleOrder: Record<string, number> = { 'superAdmin': 0, 'admin': 1, 'scientist': 2, 'engineer': 3, 'investigator': 4, 'supervisor': 5, 'viewer': 6 };
     return [...(users || [])].sort((a, b) => {
-      const roleA = a.role ? roleOrder[a.role] ?? 10 : 10;
-      const roleB = b.role ? roleOrder[b.role] ?? 10 : 10;
+      const roleA = a.role ? (roleOrder[a.role] ?? 10) : 10;
+      const roleB = b.role ? (roleOrder[b.role] ?? 10) : 10;
       if (roleA !== roleB) return roleA - roleB;
       const timeA = a.createdAt?.getTime() ?? 0;
       const timeB = b.createdAt?.getTime() ?? 0;
@@ -249,7 +250,7 @@ export default function UserManagementTable({
                 </TableCell>
                 <TableCell className="px-3 py-2 text-center">
                     <Select
-                      value={userRow.role}
+                      value={userRow.role || ''}
                       onValueChange={(newRole) => handleRoleChange(userRow, newRole as UserRole)}
                       disabled={isViewer || disableActions || updatingUsers[userRow.uid]?.role}
                     >
@@ -257,17 +258,10 @@ export default function UserManagementTable({
                          {updatingUsers[userRow.uid]?.role ? <Loader2 className="h-3 w-3 animate-spin" /> : <SelectValue />}
                       </SelectTrigger>
                       <SelectContent>
-                        {userRoleOptions
+                        {(userRoleOptions || [])
                           .filter(r => {
-                            // Always include the user's current role to prevent a blank display
                             if (r === userRow.role) return true;
-
-                            // SuperAdmin can manage all roles except other SuperAdmins
-                            if (isSuperAdmin) {
-                              return r !== 'superAdmin';
-                            }
-                            
-                            // Regular admins cannot assign 'superAdmin' or 'admin' roles to others
+                            if (isSuperAdmin) return r !== 'superAdmin';
                             return r !== 'superAdmin' && r !== 'admin';
                           })
                           .map(roleOption => (
@@ -281,7 +275,7 @@ export default function UserManagementTable({
                 <TableCell className="px-3 py-2 text-center">
                   <div className="flex items-center justify-center space-x-2">
                     <Switch
-                      checked={userRow.isApproved}
+                      checked={userRow.isApproved || false}
                       onCheckedChange={() => handleApprovalChange(userRow)}
                       disabled={isViewer || disableActions || updatingUsers[userRow.uid]?.approval}
                       className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-destructive/30"
