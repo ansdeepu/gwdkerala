@@ -276,10 +276,25 @@ export default function UserManagementTable({
                       </SelectTrigger>
                       <SelectContent>
                         {(userRoleOptions || [])
-                          .filter(r => {
-                            if (r === userRow.role) return true;
-                            if (isSuperAdmin) return r !== 'superAdmin';
-                            return r !== 'superAdmin' && r !== 'admin';
+                          .filter(roleOption => {
+                            // 1. Never show superAdmin
+                            if (roleOption === 'superAdmin') return false;
+                            
+                            // 2. Always show the current role so the picker has a value
+                            if (roleOption === userRow.role) return true;
+
+                            // 3. If current user is superAdmin, they can see everything else
+                            if (isSuperAdmin) {
+                                return true;
+                            } 
+                            
+                            // 4. If current user is sub-office admin (admin)
+                            if (currentUser?.role === 'admin') {
+                                // Only show investigator, supervisor, viewer
+                                return ['investigator', 'supervisor', 'viewer'].includes(roleOption);
+                            }
+
+                            return false;
                           })
                           .map(roleOption => (
                           <SelectItem key={roleOption} value={roleOption} className="text-xs">
