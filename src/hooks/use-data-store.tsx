@@ -8,7 +8,7 @@ import { app } from '@/lib/firebase';
 import { useAuth, type UserProfile } from './useAuth';
 import type { DataEntryFormData } from '@/lib/schemas/DataEntrySchema';
 import type { ArsEntry } from './useArsEntries';
-import type { StaffMember, LsgConstituencyMap, Designation, Bidder as MasterBidder, DepartmentVehicle, HiredVehicle, RigCompressor } from '@/lib/schemas';
+import type { StaffMember, LsgConstituencyMap, Designation, Bidder as MasterBidder, DepartmentVehicle, HiredVehicle, RigCompressor, OfficeAddress as OfficeAddressType } from '@/lib/schemas';
 import { designationOptions } from '@/lib/schemas';
 import type { AgencyApplication } from './useAgencyApplications';
 import { toast } from './use-toast';
@@ -16,7 +16,6 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { E_tender } from './useE_tenders';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { isValid, parse } from 'date-fns';
 
 const db = getFirestore(app);
 
@@ -52,8 +51,9 @@ const processFirestoreDoc = <T,>(docSnap: any): T => {
     const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
     if (!data) return {} as T;
     const processed = processFirestoreData(data);
-    // Standardize ID mapping: Provide both 'id' and 'uid' for maximum compatibility
-    return { ...processed, id: docSnap.id, uid: docSnap.id } as T;
+    // Standardize ID mapping: Always provide both 'id' and 'uid'
+    const id = docSnap.id || (processed as any).id || (processed as any).uid;
+    return { ...processed, id: id, uid: id } as T;
 };
 
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
@@ -294,8 +294,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     
                     const path = docSnap.ref.path || '';
                     const pathSegments = (path || '').split('/');
-                    const officesArr = (pathSegments || []).filter(s => s === 'offices');
-                    if (officesArr.length > 0) {
+                    if (Array.isArray(pathSegments)) {
                         const officeIdIndex = pathSegments.indexOf('offices');
                         if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
                             processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
@@ -329,7 +328,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 }
                 
                 if (needsSpecialSort && collectionName === 'staffMembers' && designationOptions) {
-                    const dOptions = designationOptions || [];
+                    const dOptions = Array.isArray(designationOptions) ? [...designationOptions] : [];
                     const designationSortOrder = dOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
                     (data as StaffMember[]).sort((a, b) => {
                         const orderA = a.designation ? (designationSortOrder[a.designation] ?? dOptions.length) : dOptions.length;

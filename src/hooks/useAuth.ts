@@ -191,13 +191,9 @@ export function useAuth() {
         officeLocation: (officeLocation || '').toLowerCase(),
       };
       
-      const officeProfileData = {
-        ...globalProfileData
-      };
-      
       const batch = writeBatch(db);
       batch.set(doc(db, "users", newFirebaseUser.uid), globalProfileData);
-      batch.set(doc(db, `offices/${(officeLocation || '').toLowerCase()}/users`, newFirebaseUser.uid), officeProfileData);
+      batch.set(doc(db, `offices/${(officeLocation || '').toLowerCase()}/users`, newFirebaseUser.uid), globalProfileData);
   
       await batch.commit();
       await signOut(tempAuth);
@@ -244,12 +240,8 @@ export function useAuth() {
           officeLocation: (officeLocation || '').toLowerCase(),
         };
 
-        const officeProfile = {
-            ...globalProfile,
-        };
-
         batch.set(doc(db, "users", uid), globalProfile);
-        batch.set(doc(db, `offices/${(officeLocation || '').toLowerCase()}/users`, uid), officeProfile);
+        batch.set(doc(db, `offices/${(officeLocation || '').toLowerCase()}/users`, uid), globalProfile);
       }
       
       await batch.commit();
@@ -282,9 +274,11 @@ export function useAuth() {
       return querySnapshot.docs.map(docSnap => {
           const data = docSnap.data();
           const processed = processData(data);
+          const id = docSnap.id;
           return {
-              uid: docSnap.id,
               ...processed,
+              uid: id,
+              id: id,
               email: data.email || null,
               role: data.role || 'viewer',
               isApproved: data.isApproved === true,

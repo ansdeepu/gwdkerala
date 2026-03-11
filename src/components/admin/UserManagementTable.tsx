@@ -113,26 +113,38 @@ export default function UserManagementTable({
 
 
   const handleApprovalChange = async (userRow: UserProfile) => {
-    const isEditingRestricted = currentUser?.uid === userRow.uid || (!isSuperAdmin && (userRow.role === 'admin' || userRow.role === 'scientist' || userRow.role === 'engineer'));
+    const targetUid = userRow.uid || userRow.id;
+    if (!targetUid) {
+        toast({ title: "Error", description: "Target user ID is missing.", variant: "destructive" });
+        return;
+    }
+
+    const isEditingRestricted = currentUser?.uid === targetUid || (!isSuperAdmin && (userRow.role === 'admin' || userRow.role === 'scientist' || userRow.role === 'engineer'));
     
     if (isEditingRestricted) {
       toast({ title: "Action Restricted", description: "This account status can only be modified by Super Admin.", variant: "default" });
       return;
     }
-    setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], approval: true } }));
+    setUpdatingUsers(prev => ({ ...prev, [targetUid]: { ...prev[targetUid], approval: true } }));
     try {
-      await updateUserApproval(userRow.uid, !userRow.isApproved, userRow.officeLocation);
+      await updateUserApproval(targetUid, !userRow.isApproved, userRow.officeLocation);
       toast({ title: "Approval Updated", description: `User approval status changed to ${!userRow.isApproved ? 'Approved' : 'Pending'}.` });
       onDataChange();
     } catch (error: any) {
       toast({ title: "Update Failed", description: error.message || "Could not update approval status.", variant: "destructive" });
     } finally {
-      setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], approval: false } }));
+      setUpdatingUsers(prev => ({ ...prev, [targetUid]: { ...prev[targetUid], approval: false } }));
     }
   };
 
   const handleRoleChange = async (userRow: UserProfile, newRole: UserRole) => {
-    const isEditingRestricted = currentUser?.uid === userRow.uid || (!isSuperAdmin && (userRow.role === 'admin' || userRow.role === 'scientist' || userRow.role === 'engineer'));
+    const targetUid = userRow.uid || userRow.id;
+    if (!targetUid) {
+        toast({ title: "Error", description: "Target user ID is missing.", variant: "destructive" });
+        return;
+    }
+
+    const isEditingRestricted = currentUser?.uid === targetUid || (!isSuperAdmin && (userRow.role === 'admin' || userRow.role === 'scientist' || userRow.role === 'engineer'));
 
     if (isEditingRestricted) {
       toast({ title: "Action Restricted", description: "This account role can only be modified by Super Admin.", variant: "default" });
@@ -147,20 +159,21 @@ export default function UserManagementTable({
         }
     }
 
-    setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], role: true } }));
+    setUpdatingUsers(prev => ({ ...prev, [targetUid]: { ...prev[targetUid], role: true } }));
     try {
-      await updateUserRole(userRow.uid, newRole, staffIdToLink, userRow.officeLocation);
+      await updateUserRole(targetUid, newRole, staffIdToLink, userRow.officeLocation);
       toast({ title: "Role Updated", description: `User role for ${userRow?.name || 'user'} changed to ${newRole}.` });
       onDataChange();
     } catch (error: any) {
       toast({ title: "Update Failed", description: error.message || "Could not update role.", variant: "destructive" });
     } finally {
-      setUpdatingUsers(prev => ({ ...prev, [userRow.uid]: { ...prev[userRow.uid], role: false } }));
+      setUpdatingUsers(prev => ({ ...prev, [targetUid]: { ...prev[targetUid], role: false } }));
     }
   };
 
   const handleDeleteUserClick = (user: UserProfile) => {
-    const isEditingRestricted = currentUser?.uid === user.uid || (!isSuperAdmin && (user.role === 'admin' || user.role === 'scientist' || user.role === 'engineer'));
+    const targetUid = user.uid || user.id;
+    const isEditingRestricted = currentUser?.uid === targetUid || (!isSuperAdmin && (user.role === 'admin' || user.role === 'scientist' || user.role === 'engineer'));
 
     if (isEditingRestricted) {
       toast({ title: "Action Restricted", description: "This account can only be removed by Super Admin.", variant: "default" });
@@ -171,9 +184,12 @@ export default function UserManagementTable({
 
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
+    const targetUid = userToDelete.uid || userToDelete.id;
+    if (!targetUid) return;
+
     setIsDeletingUser(true);
     try {
-      await deleteUserDocument(userToDelete.uid, userToDelete.officeLocation);
+      await deleteUserDocument(targetUid, userToDelete.officeLocation);
       toast({ title: "User Removed", description: `Profile for ${userToDelete.name || userToDelete.email} has been removed.` });
       onDataChange();
     } catch (error: any) {
@@ -220,17 +236,18 @@ export default function UserManagementTable({
           </TableHeader>
           <TableBody>
             {sortedUsers.map((userRow, index) => {
-              const isCurrentUserTheUserInRow = currentUser?.uid === userRow.uid;
+              const targetUid = userRow.uid || userRow.id;
+              const isCurrentUserTheUserInRow = currentUser?.uid === targetUid;
               const isEditingRestricted = isCurrentUserTheUserInRow || (!isSuperAdmin && (userRow.role === 'admin' || userRow.role === 'scientist' || userRow.role === 'engineer'));
               
-              const disableActions = updatingUsers[userRow.uid]?.approval || updatingUsers[userRow.uid]?.role || isEditingRestricted;
+              const disableActions = updatingUsers[targetUid]?.approval || updatingUsers[targetUid]?.role || isEditingRestricted;
               const staffInfo = (staffMembers || []).find(s => s.id === userRow.staffId);
               const photoUrl = staffInfo?.photoUrl;
               const avatarColorClass = getColorClass(userRow.name || userRow.email || 'user');
 
 
               return (
-              <TableRow key={userRow.uid} className="hover:bg-primary/5">
+              <TableRow key={targetUid} className="hover:bg-primary/5">
                 <TableCell className="px-3 py-2 font-medium text-center">{index + 1}</TableCell>
                 <TableCell className="px-3 py-2">
                   <Avatar className="h-9 w-9 mx-auto">
@@ -252,10 +269,10 @@ export default function UserManagementTable({
                     <Select
                       value={userRow.role || ''}
                       onValueChange={(newRole) => handleRoleChange(userRow, newRole as UserRole)}
-                      disabled={isViewer || disableActions || updatingUsers[userRow.uid]?.role}
+                      disabled={isViewer || disableActions || updatingUsers[targetUid]?.role}
                     >
                       <SelectTrigger className="w-[120px] h-8 text-xs focus:ring-primary" aria-label={`Change role for ${userRow.name}`}>
-                         {updatingUsers[userRow.uid]?.role ? <Loader2 className="h-3 w-3 animate-spin" /> : <SelectValue />}
+                         {updatingUsers[targetUid]?.role ? <Loader2 className="h-3 w-3 animate-spin" /> : <SelectValue />}
                       </SelectTrigger>
                       <SelectContent>
                         {(userRoleOptions || [])
@@ -277,7 +294,7 @@ export default function UserManagementTable({
                     <Switch
                       checked={userRow.isApproved || false}
                       onCheckedChange={() => handleApprovalChange(userRow)}
-                      disabled={isViewer || disableActions || updatingUsers[userRow.uid]?.approval}
+                      disabled={isViewer || disableActions || updatingUsers[targetUid]?.approval}
                       className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-destructive/30"
                     />
                     <Badge variant={userRow.isApproved ? "secondary" : "outline"} className={cn("text-xs", userRow.isApproved ? "border-green-600/50 text-green-700 bg-green-500/10" : "border-destructive/50 text-destructive bg-destructive/10")}>
