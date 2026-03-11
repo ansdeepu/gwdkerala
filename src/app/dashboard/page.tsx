@@ -14,7 +14,7 @@ import { format, addYears, isValid, isWithinInterval, startOfMonth, endOfMonth }
 import FileStatusOverview from '@/components/dashboard/FileStatusOverview';
 import NoticeBoard from '@/components/dashboard/NoticeBoard';
 import ImportantUpdates from '@/components/dashboard/ImportantUpdates';
-import ETenderNoticeBoard from '@/components/dashboard/ETenderNoticeBoard'; // New import
+import ETenderNoticeBoard from '@/components/dashboard/ETenderNoticeBoard'; 
 import WorkStatusByService from '@/components/dashboard/WorkStatusByService';
 import ArsStatusOverview from '@/components/dashboard/ArsStatusOverview';
 import RigRegistrationOverview from '@/components/dashboard/RigRegistrationOverview';

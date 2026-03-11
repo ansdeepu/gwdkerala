@@ -172,7 +172,7 @@ export default function ArsPage() {
   };
   
   const handleViewClick = (siteId: string) => {
-    const pageParam = currentPage > 1 ? `?page=${currentPage}` : '';
+    const pageParam = currentPage > 1 ? `&page=${currentPage}` : '';
     router.push(`/dashboard/ars/entry?id=${siteId}${pageParam ? `&${pageParam.substring(1)}` : ''}`);
   };
 
@@ -543,7 +543,8 @@ export default function ArsPage() {
     );
   }
 
-  const startEntryNum = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+  const startEntryNum = offset + 1;
   const endEntryNum = Math.min(currentPage * ITEMS_PER_PAGE, filteredSites.length);
 
   return (
