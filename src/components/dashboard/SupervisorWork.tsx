@@ -24,39 +24,24 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
   const [selectedSupervisorId, setSelectedSupervisorId] = useState<string | undefined>(undefined);
 
   const supervisorList = useMemo(() => {
-    const investigatorDesignations: Designation[] = [
-        "Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant", 
-        "Geophysicist", "Junior Geophysicist", "Geophysical Assistant"
-    ];
-
     const staffMap = new Map(staffMembers.map(s => [s.id, s]));
     
-    const potentialSupervisors = new Map<string, { uid: string, name: string }>();
-
-    allUsers.forEach(u => {
-      if (!u.isApproved) return;
-
-      let isAdded = false;
-
-      // Condition 1: User has 'supervisor' role.
-      if (u.role === 'supervisor') {
-          // Use staff name if available, otherwise user name.
-          const staffInfo = u.staffId ? staffMap.get(u.staffId) : null;
-          const name = staffInfo?.name || u.name || u.email || "";
-          potentialSupervisors.set(u.uid, { uid: u.uid, name });
-          isAdded = true;
-      }
-
-      // Condition 2: User is linked to an investigator staff member.
-      if (!isAdded && u.staffId) {
-        const staff = staffMap.get(u.staffId);
-        if (staff && staff.designation && investigatorDesignations.includes(staff.designation as Designation)) {
-          potentialSupervisors.set(u.uid, { uid: u.uid, name: staff.name });
-        }
-      }
-    });
-    
-    return Array.from(potentialSupervisors.values()).sort((a, b) => a.name.localeCompare(b.name));
+    // Only include users whose role is explicitly 'supervisor' or 'investigator'
+    return allUsers
+      .filter(u => u.isApproved && (u.role === 'supervisor' || u.role === 'investigator'))
+      .map(u => {
+        const staffInfo = u.staffId ? staffMap.get(u.staffId) : null;
+        const name = staffInfo?.name || u.name || u.email?.split('@')[0] || "User";
+        const designation = staffInfo?.designation || (u.role.charAt(0).toUpperCase() + u.role.slice(1));
+        
+        return {
+          uid: u.uid,
+          name,
+          designation,
+          displayName: `${name} (${designation})`
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [allUsers, staffMembers]);
 
   const supervisorOngoingWorks = useMemo(() => {
@@ -73,15 +58,15 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
             const isAssignedSupervisor = site.supervisorUid === selectedSupervisorId;
             const isAssignedInvestigator = selectedStaffName && (site.nameOfInvestigator === selectedStaffName || site.vesInvestigator === selectedStaffName);
             
-            const isOngoing = site.workStatus && ongoingWorkStatuses.includes(site.workStatus as SiteWorkStatus);
+            const isOngoing = site.workStatus && (ongoingWorkStatuses as any).includes(site.workStatus);
 
             if ((isAssignedSupervisor || isAssignedInvestigator) && isOngoing) {
                 works.push({
                     fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A',
                     siteName: site.nameOfSite || 'Unnamed Site', workStatus: site.workStatus!,
-                    purpose: site.purpose, supervisorName: site.supervisorName || site.nameOfInvestigator || site.vesInvestigator,
+                    purpose: site.purpose as SitePurpose, supervisorName: site.supervisorName || site.nameOfInvestigator || site.vesInvestigator,
                 });
-                if(site.purpose && (sitePurposeOptions.includes(site.purpose as SitePurpose))) {
+                if(site.purpose && (sitePurposeOptions as any).includes(site.purpose)) {
                     byPurpose[site.purpose as SitePurpose]++;
                 }
             }
@@ -117,8 +102,8 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
             <SelectTrigger id="supervisor-select-trigger"><SelectValue placeholder="Select a Staff Member" /></SelectTrigger>
             <SelectContent>
               {supervisorList.length > 0 ? (
-                supervisorList.map(s => <SelectItem key={s.uid} value={s.uid}>{s.name}</SelectItem>)
-              ) : (<p className="p-2 text-sm text-muted-foreground">No Supervisors or Investigators found</p>)}
+                supervisorList.map(s => <SelectItem key={s.uid} value={s.uid}>{s.displayName}</SelectItem>)
+              ) : (<p className="p-2 text-sm text-muted-foreground text-center italic">No Supervisors or Investigators found</p>)}
             </SelectContent>
           </Select>
         </div>
