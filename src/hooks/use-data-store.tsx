@@ -52,7 +52,8 @@ const processFirestoreDoc = <T,>(docSnap: any): T => {
     const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
     if (!data) return {} as T;
     const processed = processFirestoreData(data);
-    return { ...processed, id: docSnap.id } as T;
+    // Standardize ID mapping: Provide both 'id' and 'uid' for maximum compatibility
+    return { ...processed, id: docSnap.id, uid: docSnap.id } as T;
 };
 
 export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | 'additionalPerformanceGuarantee' | 'stampPaper';
@@ -291,10 +292,14 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 const dataRaw = snapshot.docs.map(docSnap => {
                     const processedData = processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() }) as any;
                     
-                    const pathSegments = (docSnap.ref.path || '').split('/');
-                    const officeIdIndex = (pathSegments || []).indexOf('offices');
-                    if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                        processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
+                    const path = docSnap.ref.path || '';
+                    const pathSegments = (path || '').split('/');
+                    const officesArr = (pathSegments || []).filter(s => s === 'offices');
+                    if (officesArr.length > 0) {
+                        const officeIdIndex = pathSegments.indexOf('offices');
+                        if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
+                            processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
+                        }
                     }
 
                     return processedData;
@@ -305,9 +310,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 if (collectionName === 'users') {
                     const mergedMap = new Map<string, any>();
                     dataRaw.forEach((item: any) => {
-                        const existing = mergedMap.get(item.id);
+                        // Ensure uid is standardized for the UserManagement module
+                        const uid = item.uid || item.id;
+                        const existing = mergedMap.get(uid);
                         if (!existing) {
-                            mergedMap.set(item.id, item);
+                            mergedMap.set(uid, { ...item, uid });
                         } else {
                             const merged = { ...existing };
                             Object.entries(item).forEach(([k, v]) => {
@@ -315,17 +322,18 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                                     (merged as any)[k] = v;
                                 }
                             });
-                            mergedMap.set(item.id, merged);
+                            mergedMap.set(uid, merged);
                         }
                     });
                     data = Array.from(mergedMap.values());
                 }
                 
                 if (needsSpecialSort && collectionName === 'staffMembers' && designationOptions) {
-                    const designationSortOrder = (designationOptions || []).reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
+                    const dOptions = designationOptions || [];
+                    const designationSortOrder = dOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
                     (data as StaffMember[]).sort((a, b) => {
-                        const orderA = a.designation ? (designationSortOrder[a.designation] ?? designationOptions.length) : designationOptions.length;
-                        const orderB = b.designation ? (designationSortOrder[b.designation] ?? designationOptions.length) : designationOptions.length;
+                        const orderA = a.designation ? (designationSortOrder[a.designation] ?? dOptions.length) : dOptions.length;
+                        const orderB = b.designation ? (designationSortOrder[b.designation] ?? dOptions.length) : dOptions.length;
                         if (orderA !== orderB) return orderA - orderB;
                         return (a.name || '').localeCompare(b.name || '');
                     });
