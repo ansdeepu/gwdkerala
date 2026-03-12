@@ -69,7 +69,7 @@ export function useFileEntries() {
   const [pendingUpdatesMap, setPendingUpdatesMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (user?.role === 'supervisor' && user.uid) {
+    if (user?.uid && (user.role === 'supervisor' || user.role === 'investigator')) {
         getPendingUpdates(null, user.uid).then(updates => {
             const map: Record<string, boolean> = {};
             updates.forEach(u => {
@@ -91,20 +91,29 @@ export function useFileEntries() {
       }
       setIsLoading(true);
 
-      if (user.role === 'supervisor' && user.uid) {
-        // For supervisors, filter to show only files that are either assigned and ongoing OR have a pending update from them.
-        const supervisorEntries: DataEntryFormData[] = allFileEntries.filter(entry => {
-            const isAssignedAndOngoing = entry.siteDetails?.some(site => 
-                site.supervisorUid === user.uid && 
-                site.workStatus && 
-                SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus)
-            );
+      const isSupervisor = user.role === 'supervisor';
+      const isInvestigator = user.role === 'investigator';
+
+      if ((isSupervisor || isInvestigator) && user.uid) {
+        // For supervisors and investigators, filter to show only files that are explicitly assigned to them.
+        const filteredEntries: DataEntryFormData[] = allFileEntries.filter(entry => {
+            const isAssigned = entry.siteDetails?.some(site => {
+                if (isSupervisor) {
+                    // Supervisor sees ongoing implementation works assigned to their UID
+                    return site.supervisorUid === user.uid && 
+                           site.workStatus && 
+                           SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
+                } else {
+                    // Investigator sees investigation works assigned to their Name
+                    return (site.nameOfInvestigator === user.name || site.vesInvestigator === user.name);
+                }
+            });
             const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
-            return isAssignedAndOngoing || hasPendingUpdate;
+            return isAssigned || hasPendingUpdate;
         });
-        setFileEntries(supervisorEntries);
+        setFileEntries(filteredEntries);
       } else {
-        // For other roles, show all entries.
+        // For other roles (Admin, Engineer, Scientist, Viewer), show all entries.
         setFileEntries(allFileEntries);
       }
 
@@ -222,12 +231,33 @@ export function useFileEntries() {
       }
       
       let entry = { id: docSnap.id, ...(docSnap.data()) } as DataEntryFormData;
+
+      // Visibility check for Supervisors and Investigators on direct fetch
+      if (user.role === 'supervisor' || user.role === 'investigator') {
+          const isAssigned = entry.siteDetails?.some(site => {
+              if (user.role === 'supervisor') {
+                  return site.supervisorUid === user.uid;
+              } else {
+                  return site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
+              }
+          });
+          
+          if (!isAssigned) {
+              // Check if they have a pending update for this specific file
+              const updates = await getPendingUpdates(entry.fileNo, user.uid);
+              const hasUpdate = updates.some(u => u.status === 'pending');
+              if (!hasUpdate) {
+                  return null;
+              }
+          }
+      }
+
       return entry;
     } catch (error) {
       console.error(`[fetchEntryForEditing] Error fetching docId ${docId}:`, error);
       return null;
     }
-  }, [user]);
+  }, [user, getPendingUpdates]);
 
   return { 
       fileEntries, 

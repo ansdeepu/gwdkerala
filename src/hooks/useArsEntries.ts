@@ -77,13 +77,14 @@ export function useArsEntries() {
       setIsLoading(true);
       let finalEntries = allArsEntries;
   
-      // SUPERVISOR VISIBILITY LOGIC
-      if (user?.role === "supervisor") {
+      // VISIBILITY LOGIC FOR FIELD STAFF
+      if (user.role === "supervisor" || user.role === "investigator") {
         finalEntries = finalEntries.filter((entry) => {
-            // Supervisor should only see files assigned to them
+            // Both roles should only see schemes assigned to their UID
+            // (Note: Investigators typically aren't assigned to ARS, but the logic is enforced)
             const isAssigned = entry.supervisorUid === user.uid;
     
-            // Supervisor should only see files that are actionable for them
+            // Show only files that are actionable/ongoing for them
             const actionableStatuses: ArsStatus[] = ["Work Order Issued", "Work in Progress"];
             const isActionable = actionableStatuses.includes(entry.arsStatus ?? "");
     
@@ -171,8 +172,16 @@ export function useArsEntries() {
   const getArsEntryById = useCallback(async (id: string): Promise<ArsEntry | null> => {
     // Find the entry from the already loaded data in the central store.
     const entry = allArsEntries.find(e => e.id === id);
+    
+    // Visibility check for Field Staff
+    if (entry && (user?.role === 'supervisor' || user?.role === 'investigator')) {
+        if (entry.supervisorUid !== user.uid) {
+            return null;
+        }
+    }
+
     return entry || null;
-  }, [allArsEntries]);
+  }, [allArsEntries, user]);
 
   const clearAllArsData = useCallback(async () => {
     if (!user || user.role !== 'admin' || !user.officeLocation) {
