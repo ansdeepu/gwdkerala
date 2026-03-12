@@ -39,14 +39,15 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
     const [detailSearch, setDetailSearch] = useState("");
 
     const filteredDesignations = useMemo(() => {
-        return designationOptions.filter(d => d !== "District Officer");
+        return (designationOptions || []).filter(d => d !== "District Officer");
     }, []);
 
     const vacancyData = useMemo(() => {
-        const activeStaff = allStaffMembers.filter(s => s.status === 'Active');
+        const activeStaff = (allStaffMembers || []).filter(s => s.status === 'Active');
+        const sanctionedStrength = allSanctionedStrength || {};
         
         const data = filteredDesignations.map(designation => {
-            const sanctioned = (allSanctionedStrength && allSanctionedStrength[designation]) || 0;
+            const sanctioned = sanctionedStrength[designation] || 0;
             const current = activeStaff.filter(s => s.designation === designation).length;
             const vacancy = Math.max(0, sanctioned - current);
             return {
@@ -111,7 +112,7 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
                 .filter(row => row.designation.toLowerCase().includes(lowerSearch));
         }
         if (detailType === 'active') {
-            const allActiveStaff = allStaffMembers.filter(s => s.status === 'Active' && s.designation !== "District Officer");
+            const allActiveStaff = (allStaffMembers || []).filter(s => s.status === 'Active' && s.designation !== "District Officer");
             return allActiveStaff.filter(s => 
                 s.name.toLowerCase().includes(lowerSearch) || 
                 s.designation?.toLowerCase().includes(lowerSearch) ||

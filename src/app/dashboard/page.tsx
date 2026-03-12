@@ -226,7 +226,7 @@ export default function DashboardPage() {
           const hasGwPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
           const hasLpPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
           if (hasGwPurpose || hasLpPurpose) return false;
-          if (entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)) return false;
+          if (entry.applicationType && (PRIVATE_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as any)) return false;
           return true;
       });
 
@@ -268,9 +268,9 @@ export default function DashboardPage() {
           if (siteCount === 0) return;
 
           if (entry.applicationType) {
-              if (PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(entry.applicationType as any)) depositWorksCount += siteCount;
-              else if (COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)) collectorWorksCount += siteCount;
-              else if (PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)) planFundWorksCount += siteCount;
+              if ((PUBLIC_DEPOSIT_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as any)) depositWorksCount += siteCount;
+              else if ((COLLECTOR_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as any)) collectorWorksCount += siteCount;
+              else if ((PLAN_FUND_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as any)) planFundWorksCount += siteCount;
           } else {
               depositWorksCount += siteCount;
           }
