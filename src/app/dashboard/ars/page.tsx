@@ -272,6 +272,9 @@ export default function ArsPage() {
   }, [filteredSites, currentPage]);
   
   const totalPages = Math.ceil(filteredSites.length / ITEMS_PER_PAGE);
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+  const startEntryNum = offset + 1;
+  const endEntryNum = Math.min(currentPage * ITEMS_PER_PAGE, filteredSites.length);
   
   const handleDeleteSite = async () => {
     if (!deletingSite || !deletingSite.id) return;
@@ -543,10 +546,6 @@ export default function ArsPage() {
     );
   }
 
-  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-  const startEntryNum = offset + 1;
-  const endEntryNum = Math.min(currentPage * ITEMS_PER_PAGE, filteredSites.length);
-
   return (
     <div className="space-y-6">
       <TooltipProvider>
@@ -623,7 +622,7 @@ export default function ArsPage() {
                   </Select>
                 <Button onClick={() => {setStartDate(""); setEndDate(""); setSchemeTypeFilter("all"); setConstituencyFilter("all");}} variant="ghost" className="h-9 px-3"><XCircle className="mr-2 h-4 w-4"/>Clear Filters</Button>
               </div>
-              <div className="flex justify-between items-center gap-4">
+              <div className="flex justify-between items-center gap-4 mt-4 pt-4 border-t">
                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span className="font-semibold">Row Color Legend:</span>
                         <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-green-500/80"></div><span>Ongoing</span></div>

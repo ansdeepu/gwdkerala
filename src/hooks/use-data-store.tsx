@@ -222,7 +222,12 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
           if (!snapshot.empty) {
-              const subOfficeDoc = processFirestoreDoc<OfficeAddressType>(snapshot.docs[0]);
+              // Find the document with the most fields to ensure we pick the correct one
+              const bestDocSnap = snapshot.docs.reduce((prev, curr) => {
+                  return Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev;
+              }, snapshot.docs[0]);
+
+              const subOfficeDoc = processFirestoreDoc<OfficeAddressType>(bestDocSnap);
               setOfficeAddress({
                   ...subOfficeDoc,
                   officeLocation: officeLocation, // Standardise case from auth/selection
