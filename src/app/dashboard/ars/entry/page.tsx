@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ArsEntrySchema, type ArsEntryFormData, arsStatusOptions, type Bidder, arsTypeOfSchemeOptions, type Constituency } from "@/lib/schemas";
+import { ArsEntrySchema, type ArsEntryFormData, arsStatusOptions, type Bidder, arsTypeOfSchemeOptions, type Constituency, type StaffMember } from "@/lib/schemas";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -145,7 +145,8 @@ export default function ArsEntryPage() {
     const isEditing = !!entryIdToEdit;
     const isAdmin = user?.role === 'admin';
     const isEngineer = user?.role === 'engineer';
-    const canEdit = isAdmin || isEngineer;
+    const isScientist = user?.role === 'scientist';
+    const canEdit = isAdmin || isEngineer || isScientist;
     const isSupervisor = user?.role === 'supervisor';
     const isViewer = user?.role === 'viewer' || readOnlyParam === 'true';
     const isApprovingUpdate = isAdmin && !!approveUpdateId;
@@ -176,7 +177,7 @@ export default function ArsEntryPage() {
     const watchedTenderNo = formWatch('arsTenderNo');
 
     const isFieldReadOnly = (fieldName: keyof ArsEntryFormData): boolean => {
-        if (isAdmin || isEngineer) return isViewer; 
+        if (isAdmin || isEngineer || isScientist) return isViewer; 
         if (isViewer) return true; 
     
         if (isSupervisor) {
@@ -241,16 +242,16 @@ export default function ArsEntryPage() {
     }, [isEditing, isViewer, isSupervisor, setHeader, isApprovingUpdate]);
 
     useEffect(() => {
-        if (isAdmin || isEngineer) {
+        if (canEdit || isApprovingUpdate) {
             fetchAllUsers().then(setAllUsers);
         }
-    }, [isAdmin, isEngineer, fetchAllUsers]);
+    }, [canEdit, isApprovingUpdate, fetchAllUsers]);
     
     const staffMap = React.useMemo(() => {
-        if (!isAdmin && !isEngineer) return new Map();
+        if (isViewer) return new Map();
         const map = new Map<string, StaffMember & { uid: string }>();
         allUsers
-            .filter(u => u.role === 'supervisor' && u.isApproved && u.staffId)
+            .filter(u => (u.role === 'supervisor' || u.role === 'investigator') && u.isApproved && u.staffId)
             .forEach(u => {
                 const staffInfo = staffMembers.find(s => s.id === u.staffId && s.status === 'Active');
                 if (staffInfo) {
@@ -258,7 +259,7 @@ export default function ArsEntryPage() {
                 }
             });
         return map;
-    }, [allUsers, staffMembers, isAdmin, isEngineer]);
+    }, [allUsers, staffMembers, isViewer]);
 
     const supervisorList = useMemo(() => Array.from(staffMap.values()), [staffMap]);
     
@@ -377,7 +378,7 @@ export default function ArsEntryPage() {
                 const supervisor = tenderSupervisors[0];
                 form.setValue('supervisorUid', supervisor.id);
                 form.setValue('supervisorName', supervisor.name);
-            } else {
+            } else if (tenderSupervisors.length > 1) {
                 form.setValue('supervisorUid', null);
                 form.setValue('supervisorName', null);
             }
@@ -458,6 +459,8 @@ export default function ArsEntryPage() {
             SUPERVISOR_EDITABLE_STATUSES.includes(status as (typeof arsStatusOptions)[number])
           )
         : arsStatusOptions;
+
+    const availableSupervisors = tenderSupervisors.length > 0 ? tenderSupervisors : supervisorList;
 
     return (
         <div className="space-y-6">
@@ -557,7 +560,7 @@ export default function ArsEntryPage() {
                                 </FormItem>
                               )}
                             />
-                          <FormField name="arsTenderedAmount" control={form.control} render={({ field }) => (<FormItem><FormLabel>Tendered Amount (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly('arsTenderedAmount')}/></FormControl><FormMessage /></FormItem>)} />
+                          <FormField name="arsTenderedAmount" control={form.control} render={({ field }) => (<FormItem><FormLabel>Tendered Amount (₹)</FormLabel><FormControl><Input type="number" step="any" placeholder="e.g., 450000" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly('arsTenderedAmount')}/></FormControl><FormMessage /></FormItem>)} />
                           <FormField name="arsAwardedAmount" control={form.control} render={({ field }) => (<FormItem><FormLabel>Awarded Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly('arsAwardedAmount')}/></FormControl><FormMessage /></FormItem>)} />
                           <FormField name="arsTenderNo" control={form.control} render={({ field }) => (
                               <FormItem>
@@ -573,14 +576,15 @@ export default function ArsEntryPage() {
                               </FormItem>
                           )} />
                            <FormField name="arsContractorName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Contractor</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} readOnly className="bg-muted min-h-[40px]"/></FormControl><FormMessage/></FormItem> )}/>
-                           {tenderSupervisors.length > 1 ? (
+                           
+                           {availableSupervisors.length > 0 ? (
                               <FormField name="supervisorUid" control={form.control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Supervisor</FormLabel>
                                     <Select onValueChange={(uid) => handleSupervisorDropdownChange(uid)} value={field.value || ""} disabled={isFieldReadOnly('supervisorUid')}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Select a Supervisor" /></SelectTrigger></FormControl>
                                         <SelectContent>
-                                            {tenderSupervisors.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name} ({s.designation})</SelectItem>))}
+                                            {availableSupervisors.map((s) => (<SelectItem key={s.id} value={s.uid}>{s.name} ({s.designation})</SelectItem>))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -590,11 +594,12 @@ export default function ArsEntryPage() {
                                <FormItem>
                                     <FormLabel>Supervisor</FormLabel>
                                     <FormControl>
-                                        <Textarea value={form.getValues('supervisorName') ? `${form.getValues('supervisorName')}, ${supervisorList.find(s => s.uid === form.getValues('supervisorUid'))?.designation || ''}` : ''} readOnly className="bg-muted min-h-[40px]" />
+                                        <Textarea value={form.getValues('supervisorName') ? `${form.getValues('supervisorName')}` : ''} readOnly className="bg-muted min-h-[40px]" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
+
                            <FormField name="arsStatus" control={form.control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>ARS Status <span className="text-destructive">*</span></FormLabel>
