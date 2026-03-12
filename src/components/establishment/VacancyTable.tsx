@@ -46,7 +46,7 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
         const activeStaff = allStaffMembers.filter(s => s.status === 'Active');
         
         const data = filteredDesignations.map(designation => {
-            const sanctioned = allSanctionedStrength[designation] || 0;
+            const sanctioned = (allSanctionedStrength && allSanctionedStrength[designation]) || 0;
             const current = activeStaff.filter(s => s.designation === designation).length;
             const vacancy = Math.max(0, sanctioned - current);
             return {

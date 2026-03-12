@@ -3,7 +3,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { getFirestore, collection, onSnapshot, query, Timestamp, DocumentData, orderBy, getDocs, type QuerySnapshot, where, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, writeBatch, collectionGroup } from 'firebase/firestore';
+import { getFirestore, collection, onSnapshot, query, Timestamp, DocumentData, orderBy, getDocs, type QuerySnapshot, where, deleteDoc, doc, addDoc, updateDoc, serverTimestamp, writeBatch, collectionGroup, setDoc } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 import { useAuth, type UserProfile } from './useAuth';
 import type { DataEntryFormData } from '@/lib/schemas/DataEntrySchema';
@@ -51,7 +51,6 @@ const processFirestoreDoc = <T,>(docSnap: any): T => {
     const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
     if (!data) return {} as T;
     const processed = processFirestoreData(data);
-    // Standardize ID mapping: Always provide both 'id' and 'uid'
     const id = docSnap.id || (processed as any).id || (processed as any).uid;
     return { ...processed, id: id, uid: id } as T;
 };
@@ -112,6 +111,8 @@ interface DataStoreContextType {
     allHiredVehicles: HiredVehicle[];
     allRigCompressors: RigCompressor[];
     allOfficeAddresses: OfficeAddress[];
+    allSanctionedStrength: Record<string, number>;
+    updateSanctionedStrength: (designation: string, count: number) => Promise<void>;
     officeAddress: OfficeAddress | null;
     isLoading: boolean;
     refetchRateDescriptions: () => void;
@@ -145,10 +146,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const [allRigCompressors, setAllRigCompressors] = useState<RigCompressor[]>([]);
     const [globalOfficeAddresses, setGlobalOfficeAddresses] = useState<OfficeAddress[]>([]);
     const [officeAddress, setOfficeAddress] = useState<OfficeAddress | null>(null);
+    const [allSanctionedStrength, setAllSanctionedStrength] = useState<Record<string, number>>({});
 
     const [loadingStates, setLoadingStates] = useState({
         users: true, files: true, ars: true, staff: true, agencies: true, lsg: true, rates: true, bidders: true, eTenders: true,
-        departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true,
+        departmentVehicles: true, hiredVehicles: true, rigCompressors: true, officeAddress: true, sanctionedStrength: true,
     });
     
     const refetchRateDescriptions = useCallback(() => setLoadingStates(prev => ({...prev, rates: true})), []);
@@ -162,6 +164,15 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         if (!officeLoc) throw new Error("An office location must be selected.");
         const collectionPath = `offices/${officeLoc.toLowerCase()}/arsEntries`;
         await deleteDoc(doc(db, collectionPath, id));
+    }, [user, selectedOffice]);
+
+    const updateSanctionedStrength = useCallback(async (designation: string, count: number) => {
+        if (!user) throw new Error("User must be logged in.");
+        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+        if (!officeLoc) throw new Error("An office location must be selected.");
+        
+        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/sanctionedStrength`, designation);
+        await setDoc(docRef, { count, updatedAt: serverTimestamp() });
     }, [user, selectedOffice]);
 
     // Effect for GLOBAL (non-office-specific) data
@@ -255,7 +266,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setAllUsers([]); setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); 
             setAllAgencyApplications([]); setAllE_tenders([]); setAllDepartmentVehicles([]); 
             setAllHiredVehicles([]); setAllRigCompressors([]); setAllLsgConstituencyMaps([]);
-            setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false }));
+            setAllSanctionedStrength({});
+            setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, sanctionedStrength: false }));
             return;
         }
         
@@ -362,7 +374,31 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             });
         });
 
-        return () => unsubscribes.forEach(unsub => unsub());
+        // Dedicated listener for sanctioned strength (Record, not Array)
+        let sanctionedUnsub = () => {};
+        if (officeToQuery) {
+            setLoadingStates(prev => ({...prev, sanctionedStrength: true}));
+            const sanctionedRef = collection(db, `offices/${officeToQuery.toLowerCase()}/sanctionedStrength`);
+            sanctionedUnsub = onSnapshot(query(sanctionedRef), (snapshot) => {
+                const strength: Record<string, number> = {};
+                snapshot.docs.forEach(doc => {
+                    strength[doc.id] = doc.data().count || 0;
+                });
+                setAllSanctionedStrength(strength);
+                setLoadingStates(prev => ({...prev, sanctionedStrength: false}));
+            }, (error) => {
+                console.error("Error fetching sanctionedStrength:", error);
+                setLoadingStates(prev => ({...prev, sanctionedStrength: false}));
+            });
+        } else {
+            setAllSanctionedStrength({});
+            setLoadingStates(prev => ({...prev, sanctionedStrength: false}));
+        }
+
+        return () => {
+            unsubscribes.forEach(unsub => unsub());
+            sanctionedUnsub();
+        };
     }, [user, selectedOffice]);
     
 
@@ -437,6 +473,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             allUsers,
             allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
+            allSanctionedStrength, updateSanctionedStrength,
             allOfficeAddresses: globalOfficeAddresses,
             officeAddress, 
             isLoading,
