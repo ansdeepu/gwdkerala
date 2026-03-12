@@ -169,7 +169,7 @@ export default function ArsEntryPage() {
         },
     });
 
-    const { control, watch: formWatch } = form;
+    const { control, watch: formWatch, setValue, trigger } = form;
     const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
     const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
 
@@ -187,6 +187,12 @@ export default function ArsEntryPage() {
     
         return true; 
     };
+
+    const returnPath = useMemo(() => {
+        const page = searchParams?.get('page');
+        const base = user?.role === 'superAdmin' ? '/dashboard/super-admin/ars-plan' : '/dashboard/ars';
+        return page ? `${base}?page=${page}` : base;
+    }, [searchParams, user]);
     
     const sortedTenders = useMemo(() => {
         return [...allE_tenders].sort((a, b) => {
@@ -205,6 +211,10 @@ export default function ArsEntryPage() {
             return numB - numA;
         });
     }, [allE_tenders]);
+
+    const sortedLsgMaps = useMemo(() => {
+        return [...allLsgConstituencyMaps].sort((a, b) => a.name.localeCompare(b.name));
+    }, [allLsgConstituencyMaps]);
 
     const constituencyOptionsForLsg = useMemo(() => {
         if (!watchedLsg) return [];
@@ -323,6 +333,23 @@ export default function ArsEntryPage() {
         form.setValue('supervisorName', staff?.name || null);
     };
 
+    const handleLsgChange = useCallback((lsgName: string) => {
+        const normalized = lsgName === '_clear_' ? '' : lsgName;
+        setValue('localSelfGovt', normalized);
+        
+        const map = allLsgConstituencyMaps.find(m => m.name === normalized);
+        const constituencies = map?.constituencies || [];
+        setValue('constituency', undefined);
+        if (constituencies.length === 1) {
+            setValue('constituency', constituencies[0] as any);
+        }
+        trigger('constituency');
+    }, [setValue, allLsgConstituencyMaps, trigger]);
+
+    const handleLsgChangeInternal = useCallback((lsgName: string) => {
+        handleLsgChange(lsgName);
+    }, [handleLsgChange]);
+
     const handleFormSubmit = async (data: ArsEntryFormData) => {
         if (!user || isViewer) {
             toast({ title: "Permission Denied", description: "You do not have permission to perform this action.", variant: "destructive" });
@@ -371,11 +398,6 @@ export default function ArsEntryPage() {
         }
     };
     
-    const handleLsgChangeInternal = useCallback((lsgName: string) => {
-        const normalized = lsgName === '_clear_' ? '' : lsgName;
-        handleLsgChange(normalized);
-    }, [handleLsgChange]);
-
     if (entriesLoading || staffIsLoading) {
         return ( <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"> <Loader2 className="h-12 w-12 animate-spin text-primary" /> <p className="ml-3 text-muted-foreground">Loading form data...</p> </div> );
     }
@@ -413,9 +435,7 @@ export default function ArsEntryPage() {
                                 <FormLabel>Local Self Govt.</FormLabel>
                                 <Select
                                 onValueChange={(value) => {
-                                    const normalized = value === '_clear_' ? '' : value;
-                                    field.onChange(normalized);
-                                    handleLsgChangeInternal(normalized);
+                                    handleLsgChangeInternal(value);
                                 }}
                                 value={field.value ?? ""}
                                 disabled={isFieldReadOnly('localSelfGovt')}
