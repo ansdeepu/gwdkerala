@@ -222,10 +222,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
           if (!snapshot.empty) {
-              const subOfficeDoc = processFirestoreDoc(snapshot.docs[0]);
+              const subOfficeDoc = processFirestoreDoc<OfficeAddressType>(snapshot.docs[0]);
               setOfficeAddress({
-                  ...subOfficeDoc as any,
-                  officeCode: globalOffice?.officeCode || '',
+                  ...subOfficeDoc,
+                  officeLocation: officeLocation, // Standardise case from auth/selection
+                  officeCode: globalOffice?.officeCode || subOfficeDoc.officeCode || '',
               });
           } else {
               if (globalOffice) {

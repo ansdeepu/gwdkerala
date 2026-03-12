@@ -65,12 +65,12 @@ const officerDesignations: Designation[] = [
     "Executive Engineer", "Senior Hydrogeologist", "Assistant Executive Engineer", "Hydrogeologist"
 ];
 
-const DetailRow = ({ label, value }: { label: string, value?: string | number | null }) => {
+const DetailRow = ({ label, value, isUppercase = false }: { label: string, value?: string | number | null, isUppercase?: boolean }) => {
     if (value === null || value === undefined || value === '') return null;
     return (
         <div className="text-sm">
             <span className="font-medium text-muted-foreground">{label}:</span>{" "}
-            <span className="font-semibold text-foreground">{value}</span>
+            <span className={cn("font-semibold text-foreground", isUppercase && "uppercase")}>{value}</span>
         </div>
     );
 };
@@ -117,6 +117,12 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
     }, [initialData, form]);
 
     const handleOfficerChange = (staffId: string) => {
+        if (staffId === '_clear_') {
+            form.setValue('districtOfficerStaffId', '');
+            form.setValue('districtOfficer', '');
+            form.setValue('districtOfficerPhotoUrl', '');
+            return;
+        }
         const selectedStaff = officerList.find(s => s.id === staffId);
         form.setValue('districtOfficerStaffId', staffId);
         form.setValue('districtOfficer', selectedStaff?.name || '');
@@ -270,13 +276,14 @@ export default function SettingsPage() {
               officeName: formatCase(data.officeName) ?? data.officeName,
               address: formatCase(data.address) ?? data.address,
             };
-            delete payload.officeCode;
-            delete payload.officeLocation;
-            Object.keys(payload).forEach(key => { if (payload[key] === undefined) { delete payload[key]; } });
-
-            const docId = officeAddress.id || "default";
+            
+            // We use a fixed document ID "settings" in the sub-collection to ensure consistency
+            const docId = "settings";
             const docRef = doc(db, `offices/${officeAddress.officeLocation.toLowerCase()}/officeAddresses`, docId);
             payload.updatedAt = serverTimestamp();
+            
+            // Critical: Don't store officeLocation/Code in the sub-doc payload if they are purely global config
+            // However, keeping them for redundancy/metadata is fine as long as we merge them back correctly in use-data-store
             
             await setDoc(docRef, payload, { merge: true });
             
@@ -411,7 +418,7 @@ export default function SettingsPage() {
             });
             
             if(officeAddress.id) {
-                const globalDocRef = allOfficeAddresses.find(g => g.officeLocation.toLowerCase() === officeLocation)?.id;
+                const globalDocRef = allOfficeAddresses.find(g => g.officeLocation.toLowerCase() === officeLocation.toLowerCase())?.id;
                 if (globalDocRef) {
                   batch.delete(doc(db, 'officeAddresses', globalDocRef));
                 }
@@ -457,8 +464,8 @@ export default function SettingsPage() {
                         </div>
                         {canManage && (
                             <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" onClick={handleOpenEditDialog} disabled={!officeAddress}><Eye className="h-4 w-4 mr-2" /> {officeAddress?.id ? 'Edit Details' : 'Add Details'}</Button>
-                                {isSuperAdmin && officeAddress && <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isDeleting}>{isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Delete</Button>}
+                            <Button variant="outline" size="sm" onClick={handleOpenEditDialog} disabled={!officeAddress}><Eye className="h-4 w-4 mr-2" /> {officeAddress?.officeName ? 'Edit Details' : 'Add Details'}</Button>
+                                {isSuperAdmin && officeAddress && <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)} disabled={isDeleting}>{isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}Deactivate</Button>}
                             </div>
                         )}
                     </div>
@@ -481,7 +488,7 @@ export default function SettingsPage() {
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-3 pt-3 border-t">
-                                <DetailRow label="Office Code" value={officeAddress.officeCode} />
+                                <DetailRow label="Office Code" value={officeAddress.officeCode} isUppercase />
                                 <DetailRow label="Phone No." value={officeAddress.phoneNo} />
                                 <DetailRow label="Email" value={officeAddress.email} />
                                 <DetailRow label="GST No." value={officeAddress.gstNo} />
