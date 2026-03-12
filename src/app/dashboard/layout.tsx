@@ -115,6 +115,7 @@ function BreadcrumbNav() {
       'progress-reports': 'Progress Reports',
       'report-builder': 'Report Builder',
       'profile': 'My Profile',
+      'entry': 'Entry',
     };
 
     const segments = pathname.split('/').filter(Boolean);
@@ -148,9 +149,12 @@ function BreadcrumbNav() {
 
       // Handle query-param based detail views (Rig Registration, ARS)
       if (isLast && detailId && segment !== 'data-entry') {
-          // Push the list crumb first (as non-last)
-          const listHref = pageNum ? `${href}?page=${pageNum}` : href;
-          result.push({ href: listHref, label, isLast: false });
+          // If the segment is 'entry', it's just a routing placeholder for a form
+          // so we don't add a crumb for it, the parent (like 'ars') is enough.
+          if (segment !== 'entry') {
+              const listHref = pageNum ? `${href}?page=${pageNum}` : href;
+              result.push({ href: listHref, label, isLast: false });
+          }
           
           // Push the specific item crumb
           let detailLabel = title;
@@ -163,8 +167,8 @@ function BreadcrumbNav() {
           // Standard last crumb
           const finalHref = pageNum ? `${href}?page=${pageNum}` : href;
           result.push({ href: finalHref, label, isLast: true });
-      } else if (segment !== 'data-entry') {
-          // Normal intermediate crumb - preserve page if next is 'new' or 'entry'
+      } else if (segment !== 'data-entry' && segment !== 'entry') {
+          // Normal intermediate crumb
           const nextSegment = segments[index + 1];
           const preservedHref = (pageNum && (nextSegment === 'new' || nextSegment === 'entry')) 
             ? `${href}?page=${pageNum}` 

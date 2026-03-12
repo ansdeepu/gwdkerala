@@ -138,20 +138,19 @@ export default function ArsEntryPage() {
     const readOnlyParam = searchParams?.get('readOnly');
     
     const { isLoading: entriesLoading, getArsEntryById, updateArsEntry, addArsEntry } = useArsEntries();
-    const { createArsPendingUpdate, getPendingUpdateById, hasPendingUpdateForFile } = usePendingUpdates();
+    const { createArsPendingUpdate, getPendingUpdateById } = usePendingUpdates();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
     
-    const isEditing = !!entryIdToEdit;
+    const isEditing = !!entryIdToEdit && entryIdToEdit !== 'new';
     const isAdmin = user?.role === 'admin';
     const isEngineer = user?.role === 'engineer';
     const isScientist = user?.role === 'scientist';
-    const canEdit = isAdmin || isEngineer || isScientist;
+    const canEdit = isAdmin || isEngineer;
     const isSupervisor = user?.role === 'supervisor';
-    const isViewer = user?.role === 'viewer' || readOnlyParam === 'true';
+    const isInvestigator = user?.role === 'investigator';
+    const isViewer = user?.role === 'viewer' || readOnlyParam === 'true' || isScientist || isInvestigator;
     const isApprovingUpdate = isAdmin && !!approveUpdateId;
-    
-    const [isFormDisabledForSupervisor, setIsFormDisabledForSupervisor] = useState(false);
     
     const form = useForm<ArsEntryFormData>({
         resolver: zodResolver(ArsEntrySchema),
@@ -177,11 +176,11 @@ export default function ArsEntryPage() {
     const watchedTenderNo = formWatch('arsTenderNo');
 
     const isFieldReadOnly = (fieldName: keyof ArsEntryFormData): boolean => {
-        if (isAdmin || isEngineer || isScientist) return isViewer; 
-        if (isViewer) return true; 
+        if (isAdmin || isEngineer) return isViewer; 
+        if (isViewer || isScientist || isInvestigator) return true; 
     
         if (isSupervisor) {
-            if (!isEditing || isFormDisabledForSupervisor) return true;
+            if (!isEditing) return true;
             return !SUPERVISOR_EDITABLE_FIELDS.includes(fieldName);
         }
     
@@ -193,6 +192,34 @@ export default function ArsEntryPage() {
         const base = user?.role === 'superAdmin' ? '/dashboard/super-admin/ars-plan' : '/dashboard/ars';
         return page ? `${base}?page=${page}` : base;
     }, [searchParams, user]);
+
+    useEffect(() => {
+        const loadEntry = async () => {
+            if (isApprovingUpdate && approveUpdateId) {
+                const pendingUpdate = await getPendingUpdateById(approveUpdateId);
+                if (pendingUpdate && pendingUpdate.updatedSiteDetails?.[0]) {
+                    form.reset(processDataForForm(pendingUpdate.updatedSiteDetails[0]));
+                }
+                return;
+            }
+
+            if (entryIdToEdit && entryIdToEdit !== 'new') {
+                const entry = await getArsEntryById(entryIdToEdit);
+                if (entry) {
+                    form.reset(processDataForForm(entry));
+                }
+            } else {
+                form.reset({
+                    fileNo: "",
+                    nameOfSite: "",
+                    arsStatus: "Proposal Submitted",
+                    workImages: [],
+                    workVideos: []
+                });
+            }
+        };
+        loadEntry();
+    }, [entryIdToEdit, isApprovingUpdate, approveUpdateId, getArsEntryById, getPendingUpdateById, form]);
     
     const sortedTenders = useMemo(() => {
         return [...allE_tenders].sort((a, b) => {
@@ -292,7 +319,6 @@ export default function ArsEntryPage() {
             }
         };
 
-        // AE check by name if ID not in tender
         const aeStaff = Array.from(staffMap.values()).find(s => s.name === selectedTender.nameOfAssistantEngineer);
         if (aeStaff) addSupervisor(aeStaff.id);
 
@@ -312,7 +338,6 @@ export default function ArsEntryPage() {
                 : null;
             form.setValue('arsContractorName', l1Bidder ? `${l1Bidder.name}, ${l1Bidder.address}` : '');
 
-            // Auto-select if there is only one valid supervisor user
             if (tenderSupervisors.length === 1) {
                 const s = tenderSupervisors[0];
                 if (form.getValues('supervisorUid') !== s.uid) {
@@ -333,7 +358,7 @@ export default function ArsEntryPage() {
         form.setValue('supervisorName', staff?.name || null);
     };
 
-    const handleLsgChange = useCallback((lsgName: string) => {
+    const handleLsgChangeInternal = useCallback((lsgName: string) => {
         const normalized = lsgName === '_clear_' ? '' : lsgName;
         setValue('localSelfGovt', normalized);
         
@@ -345,10 +370,6 @@ export default function ArsEntryPage() {
         }
         trigger('constituency');
     }, [setValue, allLsgConstituencyMaps, trigger]);
-
-    const handleLsgChangeInternal = useCallback((lsgName: string) => {
-        handleLsgChange(lsgName);
-    }, [handleLsgChange]);
 
     const handleFormSubmit = async (data: ArsEntryFormData) => {
         if (!user || isViewer) {
@@ -379,7 +400,7 @@ export default function ArsEntryPage() {
                 if (!querySnapshot.empty) {
                     toast({
                         title: "Duplicate File Number",
-                        description: `An ARS entry with File No. "${data.fileNo}" already exists. Please use a unique file number.`,
+                        description: `An ARS entry with File No. "${data.fileNo}" already exists.`,
                         variant: "destructive",
                     });
                     setIsSubmitting(false);
@@ -604,7 +625,7 @@ export default function ArsEntryPage() {
 
                         <div className="flex justify-end pt-8 space-x-3 border-t mt-6">
                            <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}><X className="mr-2 h-4 w-4" />Close</Button>
-                           {!(isViewer || isFormDisabledForSupervisor) && <Button type="submit" disabled={isSubmitting}> {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save </Button>}
+                           {!isViewer && <Button type="submit" disabled={isSubmitting}> {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Save </Button>}
                         </div>
                       </form>
                     </FormProvider>
