@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { Loader2, CheckCircle, XCircle, UserX, ListChecks, Trash2, FolderOpen, Waves, TestTube2, Droplets } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, UserX, ListChecks, Trash2, FolderOpen, Waves, TestTube2, Droplets, Info } from 'lucide-react';
 
 
 const toDateOrNull = (value: any): Date | null => {
@@ -74,8 +74,6 @@ const UpdateTable = ({
   isDeleting: boolean;
   arsEntries: any[];
 }) => {
-  if (updates.length === 0) return null;
-
   return (
     <Card className="overflow-hidden shadow-md">
       <CardHeader className="bg-secondary/10">
@@ -89,7 +87,7 @@ const UpdateTable = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Sl. No.</TableHead>
+                <TableHead className="w-[60px]">Sl. No.</TableHead>
                 <TableHead>File No.</TableHead>
                 {!isArsTable && <TableHead>Applicant Name</TableHead>}
                 <TableHead>Site Name(s)</TableHead>
@@ -131,7 +129,7 @@ const UpdateTable = ({
 
                   return (
                     <TableRow key={update.id}>
-                      <TableCell>{index + 1}</TableCell>
+                      <TableCell className="text-center">{index + 1}</TableCell>
                       <TableCell className="font-medium font-mono text-xs">{update.fileNo}</TableCell>
                       {!isArsTable && <TableCell className="max-w-[150px] truncate">{applicantName}</TableCell>}
                       <TableCell className="max-w-[150px] truncate">{siteNames}</TableCell>
@@ -151,7 +149,7 @@ const UpdateTable = ({
                           {(isUnassigned || isRejected) && update.notes && <TooltipContent><p>{update.notes}</p></TooltipContent>}
                         </Tooltip>
                       </TableCell>
-                      <TableCell className="text-center space-x-1">
+                      <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
                             <Button variant="link" className="p-0 h-auto text-xs" onClick={() => handleViewChanges(update)}><ListChecks className="mr-1 h-3 w-3" />Diff</Button>
                             {reviewLink ? (
@@ -180,7 +178,7 @@ const UpdateTable = ({
                 })
               ) : (
                 <TableRow>
-                  <TableCell colSpan={isArsTable ? 7 : 9} className="h-24 text-center">No pending updates in this category.</TableCell>
+                  <TableCell colSpan={isArsTable ? 7 : 9} className="h-20 text-center text-muted-foreground italic">No pending updates in this category.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -370,72 +368,58 @@ export default function PendingUpdatesPage() {
     );
   }
 
-  const noUpdates = pendingUpdates.length === 0;
-
   return (
     <TooltipProvider>
       <div className="space-y-8">
-        {noUpdates ? (
-            <Card className="border-dashed py-20 text-center">
-                <CardContent className="space-y-3">
-                    <ListChecks className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <h3 className="text-xl font-semibold">All Caught Up!</h3>
-                    <p className="text-muted-foreground">There are no pending actions or updates to review at this time.</p>
-                </CardContent>
-            </Card>
-        ) : (
-            <>
-                <UpdateTable
-                    title="GW Investigation Updates"
-                    icon={TestTube2}
-                    updates={gwInvestigationUpdates}
-                    fileEntries={fileEntries}
-                    arsEntries={arsEntries}
-                    handleViewChanges={handleViewChanges}
-                    setUpdateToReject={setUpdateToReject}
-                    setUpdateToDelete={setUpdateToDelete}
-                    isRejecting={isRejecting}
-                    isDeleting={isDeleting}
-                />
-                <UpdateTable
-                    title="Logging & Pumping Test Updates"
-                    icon={Droplets}
-                    updates={loggingPumpingTestUpdates}
-                    fileEntries={fileEntries}
-                    arsEntries={arsEntries}
-                    handleViewChanges={handleViewChanges}
-                    setUpdateToReject={setUpdateToReject}
-                    setUpdateToDelete={setUpdateToDelete}
-                    isRejecting={isRejecting}
-                    isDeleting={isDeleting}
-                />
-                <UpdateTable
-                    title="Deposit Work Updates"
-                    icon={FolderOpen}
-                    updates={depositWorkUpdates}
-                    fileEntries={fileEntries}
-                    arsEntries={arsEntries}
-                    handleViewChanges={handleViewChanges}
-                    setUpdateToReject={setUpdateToReject}
-                    setUpdateToDelete={setUpdateToDelete}
-                    isRejecting={isRejecting}
-                    isDeleting={isDeleting}
-                />
-                <UpdateTable
-                    title="ARS Updates"
-                    icon={Waves}
-                    updates={arsUpdates}
-                    isArsTable={true}
-                    fileEntries={fileEntries}
-                    arsEntries={arsEntries}
-                    handleViewChanges={handleViewChanges}
-                    setUpdateToReject={setUpdateToReject}
-                    setUpdateToDelete={setUpdateToDelete}
-                    isRejecting={isRejecting}
-                    isDeleting={isDeleting}
-                />
-            </>
-        )}
+        <UpdateTable
+            title="GW Investigation Updates"
+            icon={TestTube2}
+            updates={gwInvestigationUpdates}
+            fileEntries={fileEntries}
+            arsEntries={arsEntries}
+            handleViewChanges={handleViewChanges}
+            setUpdateToReject={setUpdateToReject}
+            setUpdateToDelete={setUpdateToDelete}
+            isRejecting={isRejecting}
+            isDeleting={isDeleting}
+        />
+        <UpdateTable
+            title="Logging & Pumping Test Updates"
+            icon={Droplets}
+            updates={loggingPumpingTestUpdates}
+            fileEntries={fileEntries}
+            arsEntries={arsEntries}
+            handleViewChanges={handleViewChanges}
+            setUpdateToReject={setUpdateToReject}
+            setUpdateToDelete={setUpdateToDelete}
+            isRejecting={isRejecting}
+            isDeleting={isDeleting}
+        />
+        <UpdateTable
+            title="Deposit Work Updates"
+            icon={FolderOpen}
+            updates={depositWorkUpdates}
+            fileEntries={fileEntries}
+            arsEntries={arsEntries}
+            handleViewChanges={handleViewChanges}
+            setUpdateToReject={setUpdateToReject}
+            setUpdateToDelete={setUpdateToDelete}
+            isRejecting={isRejecting}
+            isDeleting={isDeleting}
+        />
+        <UpdateTable
+            title="ARS Updates"
+            icon={Waves}
+            updates={arsUpdates}
+            isArsTable={true}
+            fileEntries={fileEntries}
+            arsEntries={arsEntries}
+            handleViewChanges={handleViewChanges}
+            setUpdateToReject={setUpdateToReject}
+            setUpdateToDelete={setUpdateToDelete}
+            isRejecting={isRejecting}
+            isDeleting={isDeleting}
+        />
       </div>
       
       <AlertDialog open={!!updateToReject} onOpenChange={() => setUpdateToReject(null)}>
