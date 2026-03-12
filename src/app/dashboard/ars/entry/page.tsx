@@ -248,119 +248,47 @@ export default function ArsEntryPage() {
     }, [canEdit, isApprovingUpdate, fetchAllUsers]);
     
     const staffMap = React.useMemo(() => {
-        if (isViewer) return new Map();
         const map = new Map<string, StaffMember & { uid: string }>();
         allUsers
-            .filter(u => (u.role === 'supervisor' || u.role === 'investigator') && u.isApproved && u.staffId)
+            .filter(u => u.isApproved && u.staffId)
             .forEach(u => {
-                const staffInfo = staffMembers.find(s => s.id === u.staffId && s.status === 'Active');
+                const staffInfo = staffMembers.find(s => s.id === u.staffId);
                 if (staffInfo) {
                     map.set(staffInfo.id, { ...staffInfo, uid: u.uid });
                 }
             });
         return map;
-    }, [allUsers, staffMembers, isViewer]);
-
-    const supervisorList = useMemo(() => Array.from(staffMap.values()), [staffMap]);
-    
-    const handleLsgChange = useCallback((lsgName: string) => {
-        form.setValue('localSelfGovt', lsgName);
-        const map = allLsgConstituencyMaps.find(m => m.name === lsgName);
-        const constituencies = map?.constituencies || [];
-        
-        form.setValue('constituency', undefined);
-        
-        if (constituencies.length === 1) {
-          form.setValue('constituency', constituencies[0] as Constituency);
-        }
-        form.trigger('constituency');
-    }, [form, allLsgConstituencyMaps]);
-
-    useEffect(() => {
-        const lsgName = form.watch("localSelfGovt");
-        if (!lsgName) return;
-
-        const map = allLsgConstituencyMaps.find(m => m.name === lsgName);
-        const constituencies = map?.constituencies || [];
-        
-        if (constituencies.length === 1 && form.getValues("constituency") !== constituencies[0]) {
-            form.setValue('constituency', constituencies[0] as Constituency);
-        }
-    }, [watchedLsg, allLsgConstituencyMaps, form]);
-
-    const sortedLsgMaps = useMemo(() => {
-        return [...allLsgConstituencyMaps].sort((a, b) => a.name.localeCompare(b.name));
-    }, [allLsgConstituencyMaps]);
-    
-    const returnPath = useMemo(() => {
-        if (isApprovingUpdate) return '/dashboard/pending-updates';
-        if (user?.email === 'keralagwd@gmail.com') return '/dashboard/super-admin/ars-plan';
-        return '/dashboard/ars';
-    }, [isApprovingUpdate, user]);
-
-
-    useEffect(() => {
-        const loadArsEntry = async () => {
-            if (!isEditing || !entryIdToEdit) return;
-            
-            const [originalEntry, pendingUpdate] = await Promise.all([
-                getArsEntryById(entryIdToEdit),
-                approveUpdateId ? getPendingUpdateById(approveUpdateId) : Promise.resolve(null)
-            ]);
-
-            if (!originalEntry) {
-                toast({ title: "Error", description: `ARS Entry with ID "${entryIdToEdit}" not found.`, variant: "destructive" });
-                router.push('/dashboard/ars');
-                return;
-            }
-            
-             if (isSupervisor && user) {
-                const hasPending = await hasPendingUpdateForFile(originalEntry.fileNo, user.uid);
-                
-                if (hasPending) {
-                    setIsFormDisabledForSupervisor(true);
-                    toast({ title: "Edits Locked", description: "This site has a pending update and cannot be edited until reviewed.", duration: 6000 });
-                }
-            }
-
-
-            if (isApprovingUpdate && pendingUpdate) {
-                const mergedData = { ...originalEntry, ...pendingUpdate.updatedSiteDetails[0] };
-                form.reset(processDataForForm(mergedData));
-                 toast({ title: "Reviewing Update", description: `Loading changes from ${pendingUpdate.submittedByName}. Please review and save.` });
-            } else {
-                form.reset(processDataForForm(originalEntry));
-            }
-        };
-        if (isEditing) {
-          loadArsEntry();
-        }
-    }, [isEditing, entryIdToEdit, approveUpdateId, getArsEntryById, getPendingUpdateById, form, router, toast, isApprovingUpdate, isSupervisor, user, hasPendingUpdateForFile]);
+    }, [allUsers, staffMembers]);
 
     const tenderSupervisors = useMemo(() => {
         if (!watchedTenderNo) return [];
-        const tender = allE_tenders.find(t => t.eTenderNo === watchedTenderNo);
-        if (!tender) return [];
+        const selectedTender = allE_tenders.find(t => t.eTenderNo === watchedTenderNo);
+        if (!selectedTender) return [];
 
-        const supervisors: { id: string; name: string; designation?: string }[] = [];
+        const supervisors: { uid: string; name: string; designation?: string; staffId: string }[] = [];
         const addedUids = new Set<string>();
 
         const addSupervisor = (staffId: string | null | undefined) => {
-            if (!staffId || addedUids.has(staffId)) return;
-            const supervisorUser = staffMap.get(staffId);
-            if (supervisorUser) {
-                supervisors.push({ id: supervisorUser.uid, name: supervisorUser.name, designation: supervisorUser.designation });
-                addedUids.add(staffId);
+            if (!staffId) return;
+            const staffUser = staffMap.get(staffId);
+            if (staffUser && !addedUids.has(staffUser.uid)) {
+                supervisors.push({ 
+                    uid: staffUser.uid, 
+                    name: staffUser.name, 
+                    designation: staffUser.designation,
+                    staffId: staffId
+                });
+                addedUids.add(staffUser.uid);
             }
         };
 
-        if (tender.nameOfAssistantEngineer) {
-            const ae = Array.from(staffMap.values()).find(s => s.name === tender.nameOfAssistantEngineer);
-            if (ae) addSupervisor(ae.id);
-        }
-        addSupervisor(tender.supervisor1Id);
-        addSupervisor(tender.supervisor2Id);
-        addSupervisor(tender.supervisor3Id);
+        // AE check by name if ID not in tender
+        const aeStaff = Array.from(staffMap.values()).find(s => s.name === selectedTender.nameOfAssistantEngineer);
+        if (aeStaff) addSupervisor(aeStaff.id);
+
+        addSupervisor(selectedTender.supervisor1Id);
+        addSupervisor(selectedTender.supervisor2Id);
+        addSupervisor(selectedTender.supervisor3Id);
 
         return supervisors;
     }, [watchedTenderNo, allE_tenders, staffMap]);
@@ -368,25 +296,29 @@ export default function ArsEntryPage() {
     useEffect(() => {
         const selectedTender = allE_tenders.find(t => t.eTenderNo === watchedTenderNo);
         if (selectedTender) {
-             const validBidders = (selectedTender.bidders || []).filter((b: Bidder) => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
+            const validBidders = (selectedTender.bidders || []).filter((b: Bidder) => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
             const l1Bidder = validBidders.length > 0 
                 ? validBidders.reduce((lowest: Bidder, current: Bidder) => (lowest.quotedAmount! < current.quotedAmount!) ? lowest : current)
                 : null;
             form.setValue('arsContractorName', l1Bidder ? `${l1Bidder.name}, ${l1Bidder.address}` : '');
 
+            // Auto-select if there is only one valid supervisor user
             if (tenderSupervisors.length === 1) {
-                const supervisor = tenderSupervisors[0];
-                form.setValue('supervisorUid', supervisor.id);
-                form.setValue('supervisorName', supervisor.name);
-            } else if (tenderSupervisors.length > 1) {
-                form.setValue('supervisorUid', null);
-                form.setValue('supervisorName', null);
+                const s = tenderSupervisors[0];
+                if (form.getValues('supervisorUid') !== s.uid) {
+                    form.setValue('supervisorUid', s.uid);
+                    form.setValue('supervisorName', s.name);
+                }
             }
+        } else if (!watchedTenderNo) {
+            form.setValue('arsContractorName', '');
+            form.setValue('supervisorUid', null);
+            form.setValue('supervisorName', null);
         }
     }, [watchedTenderNo, allE_tenders, form, tenderSupervisors]);
 
     const handleSupervisorDropdownChange = (uid: string) => {
-        const staff = supervisorList.find(s => s.uid === uid);
+        const staff = tenderSupervisors.find(s => s.uid === uid);
         form.setValue('supervisorUid', uid);
         form.setValue('supervisorName', staff?.name || null);
     };
@@ -439,6 +371,11 @@ export default function ArsEntryPage() {
         }
     };
     
+    const handleLsgChangeInternal = useCallback((lsgName: string) => {
+        const normalized = lsgName === '_clear_' ? '' : lsgName;
+        handleLsgChange(normalized);
+    }, [handleLsgChange]);
+
     if (entriesLoading || staffIsLoading) {
         return ( <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"> <Loader2 className="h-12 w-12 animate-spin text-primary" /> <p className="ml-3 text-muted-foreground">Loading form data...</p> </div> );
     }
@@ -453,14 +390,12 @@ export default function ArsEntryPage() {
             </div>
         );
     }
-    
+
     const supervisorWorkStatusOptions = isSupervisor
         ? arsStatusOptions.filter(status =>
             SUPERVISOR_EDITABLE_STATUSES.includes(status as (typeof arsStatusOptions)[number])
           )
         : arsStatusOptions;
-
-    const availableSupervisors = tenderSupervisors.length > 0 ? tenderSupervisors : supervisorList;
 
     return (
         <div className="space-y-6">
@@ -480,7 +415,7 @@ export default function ArsEntryPage() {
                                 onValueChange={(value) => {
                                     const normalized = value === '_clear_' ? '' : value;
                                     field.onChange(normalized);
-                                    handleLsgChange(normalized);
+                                    handleLsgChangeInternal(normalized);
                                 }}
                                 value={field.value ?? ""}
                                 disabled={isFieldReadOnly('localSelfGovt')}
@@ -489,7 +424,7 @@ export default function ArsEntryPage() {
                                     <SelectTrigger><SelectValue placeholder="Select Local Self Govt."/></SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(''); handleLsgChange(''); }}>
+                                    <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(''); handleLsgChangeInternal(''); }}>
                                     -- Clear Selection --
                                     </SelectItem>
                                     {sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}
@@ -577,28 +512,34 @@ export default function ArsEntryPage() {
                           )} />
                            <FormField name="arsContractorName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Contractor</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} readOnly className="bg-muted min-h-[40px]"/></FormControl><FormMessage/></FormItem> )}/>
                            
-                           {availableSupervisors.length > 0 ? (
-                              <FormField name="supervisorUid" control={form.control} render={({ field }) => (
+                           <FormField name="supervisorUid" control={form.control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Supervisor</FormLabel>
-                                    <Select onValueChange={(uid) => handleSupervisorDropdownChange(uid)} value={field.value || ""} disabled={isFieldReadOnly('supervisorUid')}>
-                                        <FormControl><SelectTrigger><SelectValue placeholder="Select a Supervisor" /></SelectTrigger></FormControl>
-                                        <SelectContent>
-                                            {availableSupervisors.map((s) => (<SelectItem key={s.id} value={s.uid}>{s.name} ({s.designation})</SelectItem>))}
-                                        </SelectContent>
-                                    </Select>
+                                    {watchedTenderNo ? (
+                                        <Select 
+                                            onValueChange={(uid) => handleSupervisorDropdownChange(uid)} 
+                                            value={field.value || ""} 
+                                            disabled={isFieldReadOnly('supervisorUid')}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder={tenderSupervisors.length > 0 ? "Select a Supervisor" : "No supervisors linked to this tender"} />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {tenderSupervisors.map((s) => (
+                                                    <SelectItem key={s.uid} value={s.uid}>{s.name} ({s.designation})</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    ) : (
+                                        <FormControl>
+                                            <Input placeholder="Select a Tender No. first" readOnly className="bg-muted" />
+                                        </FormControl>
+                                    )}
                                     <FormMessage />
                                 </FormItem>
                             )}/>
-                            ) : (
-                               <FormItem>
-                                    <FormLabel>Supervisor</FormLabel>
-                                    <FormControl>
-                                        <Textarea value={form.getValues('supervisorName') ? `${form.getValues('supervisorName')}` : ''} readOnly className="bg-muted min-h-[40px]" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
 
                            <FormField name="arsStatus" control={form.control} render={({ field }) => (
                                 <FormItem>
