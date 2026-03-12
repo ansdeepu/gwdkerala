@@ -174,6 +174,7 @@ export default function ArsEntryPage() {
 
     const watchedLsg = useWatch({ control, name: "localSelfGovt" });
     const watchedTenderNo = formWatch('arsTenderNo');
+    const watchedSiteName = useWatch({ control, name: "nameOfSite" });
 
     const isFieldReadOnly = (fieldName: keyof ArsEntryFormData): boolean => {
         if (isAdmin || isEngineer) return isViewer; 
@@ -260,23 +261,26 @@ export default function ArsEntryPage() {
      useEffect(() => {
         let title = 'Add New ARS Entry';
         let description = 'Fill in the details to create a new ARS site entry.';
-        if (isEditing) {
-            title = 'Edit ARS Entry';
-            description = 'Update the details for the ARS site below.';
-        }
+        
+        const displaySiteName = watchedSiteName || 'ARS Site';
+
         if (isApprovingUpdate) {
             title = 'Approve ARS Update';
-            description = 'Review the changes below and click "Save Changes" to approve.';
+            description = `Reviewing changes for ${displaySiteName}.`;
+        } else if (isEditing) {
+            title = watchedSiteName ? `Edit: ${watchedSiteName}` : 'Edit ARS Entry';
+            description = 'Update the details for the ARS site below.';
         }
+        
         if (isViewer) {
-            title = 'View ARS Entry';
+            title = watchedSiteName ? `View: ${watchedSiteName}` : 'View ARS Entry';
             description = 'Viewing ARS site details in read-only mode.';
         } else if (isSupervisor && isEditing) {
-            title = 'Edit Assigned ARS Site';
+            title = watchedSiteName ? `Update: ${watchedSiteName}` : 'Edit Assigned ARS Site';
             description = 'Update your assigned site. Changes will be submitted for approval.';
         }
         setHeader(title, description);
-    }, [isEditing, isViewer, isSupervisor, setHeader, isApprovingUpdate]);
+    }, [isEditing, isViewer, isSupervisor, setHeader, isApprovingUpdate, watchedSiteName]);
 
     useEffect(() => {
         if (canEdit || isApprovingUpdate) {
