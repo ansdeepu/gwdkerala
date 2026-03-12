@@ -168,7 +168,7 @@ const RegistrationTable = ({
   onView,
   onDelete, 
   searchTerm,
-  canEdit,
+  canDelete,
   currentPage,
   itemsPerPage,
   isPendingTable = false,
@@ -177,7 +177,7 @@ const RegistrationTable = ({
   onView: (id: string) => void,
   onDelete: (id: string) => void,
   searchTerm: string,
-  canEdit: boolean,
+  canDelete: boolean,
   currentPage: number,
   itemsPerPage: number,
   isPendingTable?: boolean,
@@ -208,7 +208,7 @@ const RegistrationTable = ({
                           <TableCell className="text-center">
                               <div className="flex items-center justify-center">
                                   <Button variant="ghost" size="icon" onClick={() => onView(app.id!)}><Eye className="h-4 w-4" /></Button>
-                                  {canEdit && (
+                                  {canDelete && (
                                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => onDelete(app.id!)}><Trash2 className="h-4 w-4" /></Button>
                                   )}
                               </div>
@@ -523,6 +523,7 @@ export default function AgencyRegistrationPage() {
   
   const isReadOnly = isViewer || isSupervisor || readOnlyParam === 'true';
   const canEdit = (isAdmin || isEngineer) && !isReadOnly;
+  const canDelete = isAdmin;
 
   useEffect(() => {
     let title = 'Rig Registration';
@@ -555,7 +556,7 @@ export default function AgencyRegistrationPage() {
   
   const { fields: partnerFields, append: appendPartner, remove: removePartner, update: updatePartner } = useFieldArray({ control: form.control, name: "partners" });
   const { fields: feeFields, append: appendFee, remove: removeFee, update: updateFee } = useFieldArray({ control: form.control, name: "applicationFees" });
-  const { fields: rigFields, append: appendRig, remove: removeRig, update: updateRig } = useFieldArray({ control: form.control, name: "rigs" });
+  const { fields: rigFields, append: appendRig, remove: removeRig, update: updateRig } = useFieldArray({ control, name: "rigs" });
   
   const activeRigCount = useMemo(() => rigFields.filter(rig => rig.status === 'Active').length, [rigFields]);
   
@@ -1633,7 +1634,7 @@ export default function AgencyRegistrationPage() {
                     onView={handleView}
                     onDelete={handleDeleteApplication}
                     searchTerm={searchTerm}
-                    canEdit={canEdit}
+                    canDelete={canDelete}
                     currentPage={currentPage}
                     itemsPerPage={ITEMS_PER_PAGE}
                 />
@@ -1654,7 +1655,7 @@ export default function AgencyRegistrationPage() {
                     onView={handleView}
                     onDelete={handleDeleteApplication}
                     searchTerm={searchTerm}
-                    canEdit={canEdit}
+                    canDelete={canDelete}
                     currentPage={currentPage}
                     itemsPerPage={ITEMS_PER_PAGE}
                     isPendingTable={true}
@@ -1743,7 +1744,7 @@ function AgencyRegistrationDialogContent({ initialData, onConfirm, onCancel }: {
                                     <Input id="agencyAdditionalRegFee" type="number" value={data.agencyAdditionalRegFee ?? ''} onChange={(e) => setData(d => ({ ...d, agencyAdditionalRegFee: e.target.value === '' ? undefined : +e.target.value }))} />
                                     </div>
                                     <div className="space-y-2">
-                                    <Label htmlFor="agencyAdditionalPaymentDate">Payment Date</Label>
+                                    <Label htmlFor="agencyPaymentDate">Payment Date</Label>
                                     <Input id="agencyAdditionalPaymentDate" type="date" value={data.agencyAdditionalPaymentDate} onChange={(e) => setData(d => ({ ...d, agencyAdditionalPaymentDate: e.target.value }))} />
                                     </div>
                                     <div className="space-y-2">

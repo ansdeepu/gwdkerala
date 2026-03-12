@@ -116,6 +116,8 @@ const WorkProgressCategoryView = ({
         const completedWorkStatuses: SiteWorkStatus[] = ["Work Failed", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued"];
         
         const isSupervisor = currentUser?.role === 'supervisor';
+        const isInvestigator = currentUser?.role === 'investigator';
+        
         const uniqueCompletedSites = new Map<string, SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; }>();
         const ongoingSites: Array<SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; }> = [];
 
@@ -123,6 +125,7 @@ const WorkProgressCategoryView = ({
             if (!entry.siteDetails) continue;
             for (const site of entry.siteDetails) {
                 if (isSupervisor && site.supervisorUid !== currentUser.uid) continue;
+                if (isInvestigator && site.nameOfInvestigator !== currentUser.name && site.vesInvestigator !== currentUser.name) continue;
 
                 if (site.workStatus && completedWorkStatuses.includes(site.workStatus as SiteWorkStatus) && site.dateOfCompletion) {
                     const completionDate = safeParseDate(site.dateOfCompletion);

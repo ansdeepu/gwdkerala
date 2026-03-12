@@ -237,7 +237,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                         <FormField name="purpose" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -250,10 +250,10 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                         <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Local Self Govt.</FormLabel>
-                                                <Select onValueChange={(value) => handleLsgChange(value)} value={field.value || ""}>
+                                                <Select onValueChange={(value) => handleLsgChange(value)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
-                                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                        <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>
                                                         {(sortedLsgMaps || []).map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
@@ -263,7 +263,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                         <FormField name="constituency" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Constituency (LAC)</FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isConstituencyDisabled}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -273,8 +273,8 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                 <FormMessage/>
                                             </FormItem>
                                         )} />
-                                        <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
                                     </div>
                                 </CardContent>
                             </Card>
@@ -287,7 +287,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                             <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Diameter (mm)</FormLabel>
-                                                    <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                    <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
                                                         <SelectContent>
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -297,39 +297,39 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                     <FormMessage />
                                                 </FormItem>
                                             )}/>
-                                            <FormField name="surveyRecommendedTD" control={control} render={({ field }) => <FormItem><FormLabel>Total Depth (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                            <FormField name="surveyRecommendedTD" control={control} render={({ field }) => <FormItem><FormLabel>Total Depth (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)}/></FormControl><FormMessage /></FormItem>} />
                                             
                                             {watchedPurpose === 'BWC' && (
                                                 <>
-                                                    <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                                    <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)}/></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)}/></FormControl><FormMessage /></FormItem>} />
                                                 </>
                                             )}
 
                                             {watchedPurpose === 'TWC' && (
                                                 <>
-                                                    <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                                    <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
-                                                    <FormField name="surveyRecommendedMsCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)}/></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)}/></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedMsCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)}/></FormControl><FormMessage /></FormItem>} />
                                                 </>
                                             )}
 
                                             {watchedPurpose === 'FPW' && (
-                                                <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)}/></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)}/></FormControl><FormMessage /></FormItem>} />
                                             )}
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <FormField name="surveyLocation" control={control} render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Well Location</FormLabel>
-                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[40px]" /></FormControl>
+                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} className="min-h-[40px]" /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}/>
                                             <FormField name="surveyRemarks" control={control} render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Investigation Remarks</FormLabel>
-                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(true)} className="min-h-[40px]" /></FormControl>
+                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} className="min-h-[40px]" /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}/>
@@ -345,7 +345,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                         <FormField name="siteConditions" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Rig and Site Accessibility</FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Conditions" /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -363,7 +363,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                         <FormField name="tenderNo" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Tender No.</FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Tender or Quotation" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -388,6 +388,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                             }
                                                         }} 
                                                         value={watchedContractorName ? watchedContractorName.split(',')[0].trim() : ""}
+                                                        disabled={isFieldReadOnly(false)}
                                                     >
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Contractor" /></SelectTrigger></FormControl>
                                                         <SelectContent className="max-h-80">
@@ -396,7 +397,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                         </SelectContent>
                                                     </Select>
                                                 ) : (
-                                                    <FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isTenderSelected} className={cn(isTenderSelected && "bg-muted min-h-[40px]")} /></FormControl>
+                                                    <FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isTenderSelected || isFieldReadOnly(false)} className={cn((isTenderSelected || isFieldReadOnly(false)) && "bg-muted min-h-[40px]")} /></FormControl>
                                                 )}
                                                 <FormMessage />
                                             </FormItem>
@@ -422,6 +423,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                             }
                                                         }} 
                                                         value={watchedSupervisorName || ""}
+                                                        disabled={isFieldReadOnly(false)}
                                                     >
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Supervisor" /></SelectTrigger></FormControl>
                                                         <SelectContent className="max-h-80">
@@ -430,7 +432,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                         </SelectContent>
                                                     </Select>
                                                 ) : (
-                                                    <FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isTenderSelected} className={cn(isTenderSelected && "bg-muted min-h-[40px]")} /></FormControl>
+                                                    <FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isTenderSelected || isFieldReadOnly(false)} className={cn((isTenderSelected || isFieldReadOnly(false)) && "bg-muted min-h-[40px]")} /></FormControl>
                                                 )}
                                                 <FormMessage />
                                             </FormItem>
@@ -454,7 +456,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                             <FormField name="diameter" control={control} render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Actual Diameter <span className="text-destructive">*</span></FormLabel>
-                                                    <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                    <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(true)}>
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
                                                         <SelectContent>
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -495,7 +497,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                             <FormField name="typeOfRig" control={control} render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Type of Rig</FormLabel>
-                                                    <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                    <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(true)}>
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Rig" /></SelectTrigger></FormControl>
                                                         <SelectContent>
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -525,7 +527,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                             <FormField name="diameter" control={control} render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Actual Diameter <span className="text-destructive">*</span></FormLabel>
-                                                    <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                    <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(true)}>
                                                         <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
                                                         <SelectContent>
                                                             <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -622,7 +624,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                         <FormField name="workStatus" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Work Status <span className="text-destructive">*</span></FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""}>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(true)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_">-- Clear Selection --</SelectItem>

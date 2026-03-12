@@ -165,7 +165,6 @@ export default function ReportsPage() {
 
 
   useEffect(() => {
-    // This now runs only on the client, after hydration
     const now = new Date();
     setCurrentDate(format(now, 'dd/MM/yyyy'));
     setCurrentTime(format(now, 'hh:mm:ss a'));
@@ -187,13 +186,11 @@ export default function ReportsPage() {
       }
     });
 
-    // Sort departmental categories
     internalRigs.sort((a, b) => a.localeCompare(b));
     externalRigs.sort((a, b) => a.localeCompare(b));
 
     const privateRigs = ["Private Rig - DTH", "Private Rig - Rotary", "Private Rig - Calyx"];
 
-    // Combine all in the specific order requested
     return Array.from(new Set([...internalRigs, ...externalRigs, ...privateRigs]));
   }, [allRigCompressors]);
 
@@ -217,9 +214,6 @@ export default function ReportsPage() {
       });
     }
 
-    // --- Start Filtering `currentEntries` based on all active filters ---
-    
-    // Date Filters
     if ((startDate || endDate) && dateFilterType && dateFilterType !== 'all') {
       currentEntries = currentEntries.filter(entry => {
         let dateFoundInRange = false;
@@ -244,7 +238,6 @@ export default function ReportsPage() {
       });
     }
 
-    // Dropdown Filters
     if (statusFilter !== "all") {
       currentEntries = currentEntries.filter(entry => entry.fileStatus === statusFilter);
     }
@@ -255,7 +248,6 @@ export default function ReportsPage() {
       currentEntries = currentEntries.filter(entry => entry.constituency === constituencyFilter || entry.siteDetails?.some(sd => sd.constituency === constituencyFilter));
     }
     
-    // Site-specific dropdowns need to filter the whole entry if any site matches
     if (workCategoryFilter !== "all") {
       currentEntries = currentEntries.filter(entry => entry.siteDetails?.some(sd => sd.workStatus === workCategoryFilter));
     }
@@ -266,7 +258,6 @@ export default function ReportsPage() {
       currentEntries = currentEntries.filter(entry => entry.siteDetails?.some(site => site.typeOfRig === typeOfRigFilter));
     }
     
-    // Global Search Term
     if (lowerSearchTerm) {
       currentEntries = currentEntries.filter(entry => {
         const appTypeDisplay = entry.applicationType ? applicationTypeDisplayMap[entry.applicationType as ApplicationType] : "";
@@ -284,7 +275,6 @@ export default function ReportsPage() {
       });
     }
 
-    // Sort entries by the first remittance date in descending order (newest first)
     currentEntries.sort((a, b) => {
       const dateAValue = a.remittanceDetails?.[0]?.dateOfRemittance;
       const dateBValue = b.remittanceDetails?.[0]?.dateOfRemittance;
@@ -299,12 +289,7 @@ export default function ReportsPage() {
       return dateB.getTime() - dateA.getTime();
     });
 
-
-    // --- End Filtering `currentEntries` ---
-
-    // --- Start Flattening logic ---
     const flattenedRows: FlattenedReportRow[] = [];
-    const isFileLevelFilterActive = statusFilter !== "all" || constituencyFilter !== "all" || (dateFilterType !== "all" && (!!startDate || !!endDate));
     const isSiteLevelFilterActive = workCategoryFilter !== "all" || serviceTypeFilter !== "all" || typeOfRigFilter !== "all" || applicationTypeFilter !== "all";
 
     currentEntries.forEach(entry => {
@@ -312,10 +297,8 @@ export default function ReportsPage() {
       const parsedRemittanceDate = safeParseDate(fileFirstRemittanceDateStr);
       const fileFirstRemittanceDate = parsedRemittanceDate ? format(parsedRemittanceDate, "dd/MM/yyyy") : "-";
 
-      // If a site-level filter is active, we must expand to show matching sites.
       if (isSiteLevelFilterActive) {
         entry.siteDetails?.forEach(site => {
-          // Check if this specific site meets the active site-level filters
           const workCategoryMatch = workCategoryFilter === "all" || site.workStatus === workCategoryFilter;
           const serviceTypeMatch = serviceTypeFilter === "all" || site.purpose === serviceTypeFilter;
           const rigTypeMatch = typeOfRigFilter === "all" || site.typeOfRig === typeOfRigFilter;
@@ -331,7 +314,6 @@ export default function ReportsPage() {
           }
         });
       } 
-      // If a pending report is active, expand sites to show which ones are pending.
       else if (reportType === "pendingDashboardTasks") {
         const isFileLevelPending = entry.fileStatus && fileStatusesForPendingReport.includes(entry.fileStatus as FileStatus);
 
@@ -362,7 +344,6 @@ export default function ReportsPage() {
           });
         }
       }
-      // Otherwise (only file-level or search filters active), show one row per file, aggregating site info.
       else { 
         const siteNames = entry.siteDetails?.map(sd => sd.nameOfSite || 'N/A').filter(Boolean).join(', ') || '-';
         const sitePurposes = entry.siteDetails?.map(sd => sd.purpose || 'N/A').filter(Boolean).join(', ') || '-';
@@ -378,7 +359,6 @@ export default function ReportsPage() {
         });
       }
     });
-    // --- End Flattening logic ---
     
     setFilteredReportRows(flattenedRows);
   }, [
@@ -387,7 +367,6 @@ export default function ReportsPage() {
     applicationTypeFilter, typeOfRigFilter, constituencyFilter, searchParams
   ]);
 
-  // This effect runs once on mount to set initial filter states from URL
   useEffect(() => {
     if (!entriesLoading && !authIsLoading) {
       const statusFromQuery = searchParams?.get("status");
@@ -398,21 +377,19 @@ export default function ReportsPage() {
       setWorkCategoryFilter(workCategoryFromQuery && siteWorkStatusOptions.includes(workCategoryFromQuery as any) ? workCategoryFromQuery : "all");
       setServiceTypeFilter(serviceTypeFromQuery && (sitePurposeOptions.includes(serviceTypeFromQuery as any) || serviceTypeFromQuery === 'all') ? serviceTypeFromQuery : "all");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, entriesLoading, authIsLoading]);
 
-  // This effect runs whenever filters change to re-generate the report
   useEffect(() => {
     if (!entriesLoading && !authIsLoading) {
       applyFilters();
     }
   }, [
-    fileEntries, // Re-run when base data changes
+    fileEntries, 
     searchTerm, statusFilter, serviceTypeFilter, workCategoryFilter, 
     startDate, endDate, dateFilterType,
     applicationTypeFilter, typeOfRigFilter, constituencyFilter, 
     entriesLoading, authIsLoading,
-    applyFilters // The memoized function
+    applyFilters 
   ]);
   
   useEffect(() => {
@@ -466,7 +443,6 @@ export default function ReportsPage() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Report");
 
-    // Add Title and Generation Date
     worksheet.addRow([`Ground Water Department, ${officeAddress?.officeLocation || 'Default Office'}`]).commit();
     worksheet.addRow([reportTitle]).commit();
     worksheet.addRow([`Report generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`]).commit();
@@ -483,7 +459,6 @@ export default function ReportsPage() {
     worksheet.getRow(1).font = { bold: true, size: 16 };
     worksheet.getRow(2).font = { bold: true, size: 14 };
 
-    // Add Header Row
     const headerRow = worksheet.addRow(header);
     headerRow.font = { bold: true };
     headerRow.eachCell(cell => {
@@ -491,7 +466,6 @@ export default function ReportsPage() {
       cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
     });
 
-    // Add Data Rows
     filteredReportRows.forEach(row => {
       const rowData = [
         row.fileNo, row.applicantName, row.fileFirstRemittanceDate, row.sitePurpose, row.fileStatus,
@@ -503,7 +477,6 @@ export default function ReportsPage() {
       });
     });
 
-    // Auto-fit columns
     worksheet.columns.forEach(column => {
       let maxLength = 0;
       column.eachCell!({ includeEmpty: true }, cell => {
@@ -515,7 +488,6 @@ export default function ReportsPage() {
       column.width = maxLength < 15 ? 15 : maxLength + 2;
     });
 
-    // Save the file
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);

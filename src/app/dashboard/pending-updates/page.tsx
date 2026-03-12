@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2, CheckCircle, XCircle, UserX, ListChecks, Trash2, FolderOpen, Waves, TestTube2, Droplets, Info } from 'lucide-react';
 
 
@@ -61,6 +62,7 @@ const UpdateTable = ({
   isRejecting,
   isDeleting,
   arsEntries,
+  canApprove,
 }: {
   title: string;
   icon: React.ElementType;
@@ -73,6 +75,7 @@ const UpdateTable = ({
   isRejecting: boolean;
   isDeleting: boolean;
   arsEntries: any[];
+  canApprove: boolean;
 }) => {
   return (
     <Card className="overflow-hidden shadow-md">
@@ -152,17 +155,19 @@ const UpdateTable = ({
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
                             <Button variant="link" className="p-0 h-auto text-xs" onClick={() => handleViewChanges(update)}><ListChecks className="mr-1 h-3 w-3" />Diff</Button>
-                            {reviewLink ? (
+                            {canApprove && reviewLink ? (
                             <Button asChild size="sm" variant="outline" className="h-8 text-xs"><Link href={reviewLink}><CheckCircle className="mr-1 h-3 w-3" /> Review</Link></Button>
                             ) : (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                 <Button size="sm" variant="outline" className="h-8 text-xs" disabled><CheckCircle className="mr-1 h-3 w-3" /> Review</Button>
                                 </TooltipTrigger>
-                                <TooltipContent><p>Original file could not be found to start review.</p></TooltipContent>
+                                <TooltipContent><p>{!canApprove ? "Only assigned role (Scientist/Engineer) can approve this." : "Original file could not be found to start review."}</p></TooltipContent>
                             </Tooltip>
                             )}
-                            <Button size="sm" variant="destructive" className="h-8 text-xs" onClick={() => setUpdateToReject(update.id)} disabled={isRejecting || isRejected}><XCircle className="mr-1 h-3 w-3" /> Reject</Button>
+                            {canApprove && (
+                                <Button size="sm" variant="destructive" className="h-8 text-xs" onClick={() => setUpdateToReject(update.id)} disabled={isRejecting || isRejected}><XCircle className="mr-1 h-3 w-3" /> Reject</Button>
+                            )}
                             <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => setUpdateToDelete(update.id)} disabled={isDeleting}>
@@ -192,6 +197,7 @@ const UpdateTable = ({
 
 export default function PendingUpdatesPage() {
   const { setHeader } = usePageHeader();
+  const { user } = useAuth();
   const { rejectUpdate, deleteUpdate, subscribeToPendingUpdates } = usePendingUpdates();
   const { allFileEntries: fileEntries, isLoading: filesLoading } = useDataStore();
   const { allArsEntries: arsEntries, isLoading: arsLoading } = useDataStore();
@@ -359,6 +365,10 @@ export default function PendingUpdatesPage() {
     }
   };
 
+  const isAdmin = user?.role === 'admin';
+  const isScientist = user?.role === 'scientist';
+  const isEngineer = user?.role === 'engineer';
+
   if (isLoading || filesLoading || arsLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
@@ -371,55 +381,68 @@ export default function PendingUpdatesPage() {
   return (
     <TooltipProvider>
       <div className="space-y-8">
-        <UpdateTable
-            title="GW Investigation Updates"
-            icon={TestTube2}
-            updates={gwInvestigationUpdates}
-            fileEntries={fileEntries}
-            arsEntries={arsEntries}
-            handleViewChanges={handleViewChanges}
-            setUpdateToReject={setUpdateToReject}
-            setUpdateToDelete={setUpdateToDelete}
-            isRejecting={isRejecting}
-            isDeleting={isDeleting}
-        />
-        <UpdateTable
-            title="Logging & Pumping Test Updates"
-            icon={Droplets}
-            updates={loggingPumpingTestUpdates}
-            fileEntries={fileEntries}
-            arsEntries={arsEntries}
-            handleViewChanges={handleViewChanges}
-            setUpdateToReject={setUpdateToReject}
-            setUpdateToDelete={setUpdateToDelete}
-            isRejecting={isRejecting}
-            isDeleting={isDeleting}
-        />
-        <UpdateTable
-            title="Deposit Work Updates"
-            icon={FolderOpen}
-            updates={depositWorkUpdates}
-            fileEntries={fileEntries}
-            arsEntries={arsEntries}
-            handleViewChanges={handleViewChanges}
-            setUpdateToReject={setUpdateToReject}
-            setUpdateToDelete={setUpdateToDelete}
-            isRejecting={isRejecting}
-            isDeleting={isDeleting}
-        />
-        <UpdateTable
-            title="ARS Updates"
-            icon={Waves}
-            updates={arsUpdates}
-            isArsTable={true}
-            fileEntries={fileEntries}
-            arsEntries={arsEntries}
-            handleViewChanges={handleViewChanges}
-            setUpdateToReject={setUpdateToReject}
-            setUpdateToDelete={setUpdateToDelete}
-            isRejecting={isRejecting}
-            isDeleting={isDeleting}
-        />
+        {(isAdmin || isScientist) && (
+            <>
+                <UpdateTable
+                    title="GW Investigation Updates"
+                    icon={TestTube2}
+                    updates={gwInvestigationUpdates}
+                    fileEntries={fileEntries}
+                    arsEntries={arsEntries}
+                    handleViewChanges={handleViewChanges}
+                    setUpdateToReject={setUpdateToReject}
+                    setUpdateToDelete={setUpdateToDelete}
+                    isRejecting={isRejecting}
+                    isDeleting={isDeleting}
+                    canApprove={isAdmin || isScientist}
+                />
+                <UpdateTable
+                    title="Logging & Pumping Test Updates"
+                    icon={Droplets}
+                    updates={loggingPumpingTestUpdates}
+                    fileEntries={fileEntries}
+                    arsEntries={arsEntries}
+                    handleViewChanges={handleViewChanges}
+                    setUpdateToReject={setUpdateToReject}
+                    setUpdateToDelete={setUpdateToDelete}
+                    isRejecting={isRejecting}
+                    isDeleting={isDeleting}
+                    canApprove={isAdmin || isScientist}
+                />
+            </>
+        )}
+        
+        {(isAdmin || isEngineer) && (
+            <>
+                <UpdateTable
+                    title="Deposit Work Updates"
+                    icon={FolderOpen}
+                    updates={depositWorkUpdates}
+                    fileEntries={fileEntries}
+                    arsEntries={arsEntries}
+                    handleViewChanges={handleViewChanges}
+                    setUpdateToReject={setUpdateToReject}
+                    setUpdateToDelete={setUpdateToDelete}
+                    isRejecting={isRejecting}
+                    isDeleting={isDeleting}
+                    canApprove={isAdmin || isEngineer}
+                />
+                <UpdateTable
+                    title="ARS Updates"
+                    icon={Waves}
+                    updates={arsUpdates}
+                    isArsTable={true}
+                    fileEntries={fileEntries}
+                    arsEntries={arsEntries}
+                    handleViewChanges={handleViewChanges}
+                    setUpdateToReject={setUpdateToReject}
+                    setUpdateToDelete={setUpdateToDelete}
+                    isRejecting={isRejecting}
+                    isDeleting={isDeleting}
+                    canApprove={isAdmin || isEngineer}
+                />
+            </>
+        )}
       </div>
       
       <AlertDialog open={!!updateToReject} onOpenChange={() => setUpdateToReject(null)}>

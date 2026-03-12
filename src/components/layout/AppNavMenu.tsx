@@ -30,24 +30,24 @@ export interface NavItem {
 
 export const regularNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/gw-investigation', label: 'GW Investigation', icon: TestTube2 },
-  { href: '/dashboard/logging-pumping-test', label: 'Logging & Pumping Test', icon: Droplets },
-  { href: '/dashboard/file-room', label: 'Deposit Works', icon: FolderOpen },
-  { href: '/dashboard/collectors-deposit-works', label: "Collector's Deposit Works", icon: Landmark },
-  { href: '/dashboard/private-deposit-works', label: 'Private Deposit Works', icon: Building },
-  { href: '/dashboard/plan-fund-works', label: 'Plan Fund Works', icon: Landmark },
-  { href: '/dashboard/ars', label: 'ARS', icon: Waves },
-  { href: '/dashboard/agency-registration', label: 'Rig Registration', icon: ClipboardList },
-  { href: '/dashboard/e-tender', label: 'e-Tender', icon: Hammer },
-  { href: '/dashboard/vehicles', label: 'Vehicle & Rig', icon: Truck },
-  { href: '/dashboard/pending-updates', label: 'Pending Actions', icon: Hourglass, roles: ['superAdmin', 'admin'] },
+  { href: '/dashboard/gw-investigation', label: 'GW Investigation', icon: TestTube2, roles: ['admin', 'scientist', 'investigator', 'viewer'] },
+  { href: '/dashboard/logging-pumping-test', label: 'Logging & Pumping Test', icon: Droplets, roles: ['admin', 'scientist', 'investigator', 'viewer'] },
+  { href: '/dashboard/file-room', label: 'Deposit Works', icon: FolderOpen, roles: ['admin', 'engineer', 'supervisor', 'viewer'] },
+  { href: '/dashboard/collectors-deposit-works', label: "Collector's Deposit Works", icon: Landmark, roles: ['admin', 'engineer', 'supervisor', 'viewer'] },
+  { href: '/dashboard/private-deposit-works', label: 'Private Deposit Works', icon: Building, roles: ['admin', 'engineer', 'supervisor', 'viewer'] },
+  { href: '/dashboard/plan-fund-works', label: 'Plan Fund Works', icon: Landmark, roles: ['admin', 'engineer', 'supervisor', 'viewer'] },
+  { href: '/dashboard/ars', label: 'ARS', icon: Waves, roles: ['admin', 'engineer', 'supervisor', 'viewer'] },
+  { href: '/dashboard/agency-registration', label: 'Rig Registration', icon: ClipboardList, roles: ['admin', 'engineer', 'viewer'] },
+  { href: '/dashboard/e-tender', label: 'e-Tender', icon: Hammer, roles: ['admin', 'engineer', 'viewer'] },
+  { href: '/dashboard/vehicles', label: 'Vehicle & Rig', icon: Truck, roles: ['admin', 'engineer', 'viewer'] },
+  { href: '/dashboard/pending-updates', label: 'Pending Actions', icon: Hourglass, roles: ['admin', 'scientist', 'engineer'] },
   { href: '/dashboard/reports', label: 'Reports', icon: FileText },
   { href: '/dashboard/progress-report', label: 'Progress Reports', icon: BarChart3 },
   { href: '/dashboard/report-format-suggestion', label: 'Report Builders', icon: ClipboardList },
   { href: '/dashboard/gwd-rates', label: 'GWD Rates', icon: DollarSign },
-  { href: '/dashboard/establishment', label: 'Establishment', icon: Briefcase },
-  { href: '/dashboard/user-management', label: 'User Management', icon: Users, roles: ['superAdmin', 'admin'] },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+  { href: '/dashboard/establishment', label: 'Establishment', icon: Briefcase, roles: ['admin', 'engineer', 'scientist', 'viewer'] },
+  { href: '/dashboard/user-management', label: 'User Management', icon: Users, roles: ['admin'] },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings, roles: ['admin'] },
   { href: '/dashboard/help', label: 'Help & About', icon: HelpCircle },
 ];
 
@@ -86,7 +86,7 @@ export default function AppNavMenu() {
   const isSuperAdmin = user?.role === 'superAdmin';
 
   useEffect(() => {
-    if (!user || (user.role !== 'admin' && !isSuperAdmin)) {
+    if (!user || (user.role !== 'admin' && user.role !== 'scientist' && user.role !== 'engineer' && !isSuperAdmin)) {
         setPendingCount(0);
         return;
     }
@@ -135,7 +135,6 @@ export default function AppNavMenu() {
         } else if (pathname.startsWith('/dashboard/agency-registration')) {
             isActive = cleanHref === '/dashboard/agency-registration' || cleanHref === '/dashboard/super-admin/rig-registration';
         } else {
-            // Default logic for all other pages
             isActive = isDashboard ? pathname === cleanHref : pathname.startsWith(cleanHref);
         }
 

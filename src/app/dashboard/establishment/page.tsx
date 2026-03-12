@@ -75,8 +75,10 @@ export default function EstablishmentPage() {
   const [imageForModal, setImageForModal] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   
-  const canManage = user?.role === 'admin' && user.isApproved;
-  const isViewer = user?.role === 'viewer';
+  const isAdmin = user?.role === 'admin';
+  const isEngineer = user?.role === 'engineer';
+  const canManage = (isAdmin || isEngineer) && user?.isApproved;
+  const isViewer = user?.role === 'viewer' || user?.role === 'scientist';
 
   const handleAddNewStaff = () => {
     setEditingStaff(null);
@@ -86,7 +88,7 @@ export default function EstablishmentPage() {
 
   const handleEditStaff = (staff: StaffMember, viewOnly: boolean = false) => {
     setEditingStaff(staff);
-    setIsViewOnly(viewOnly);
+    setIsViewOnly(viewOnly || !canManage);
     setIsFormOpen(true);
   };
 
@@ -261,9 +263,9 @@ export default function EstablishmentPage() {
                 <StaffTable
                   staffData={activeStaffList}
                   onEdit={(s) => handleEditStaff(s, s.status === 'Pending Transfer')}
-                  onDelete={canManage ? deleteStaffMember : undefined}
+                  onDelete={isAdmin ? deleteStaffMember : undefined}
                   onSetStatus={undefined}
-                  isViewer={isViewer}
+                  isViewer={isViewer || !canManage}
                   onImageClick={handleOpenImageModal}
                   isLoading={isFiltering}
                   searchActive={!!debouncedSearchTerm}
@@ -298,7 +300,7 @@ export default function EstablishmentPage() {
             </TabsContent>
             <TabsContent value="vacancy" className="mt-4">
                 <div className="max-h-[70vh] overflow-auto">
-                    <VacancyTable canManage={canManage} />
+                    <VacancyTable canManage={isAdmin} />
                 </div>
             </TabsContent>
           </Tabs>

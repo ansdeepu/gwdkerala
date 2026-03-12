@@ -31,8 +31,9 @@ export const dynamic = 'force-dynamic';
 
 const db = getFirestore(app);
 
+// Supervisor can edit: ARS Status, Completion Date, Expenditure, Beneficiaries, Remarks.
 const SUPERVISOR_EDITABLE_FIELDS: (keyof ArsEntryFormData)[] = [
-  'latitude', 'longitude', 'arsStatus', 'dateOfCompletion', 'noOfBeneficiary', 'workRemarks', 'workImages', 'workVideos'
+  'arsStatus', 'dateOfCompletion', 'totalExpenditure', 'noOfBeneficiary', 'workRemarks'
 ];
 const SUPERVISOR_EDITABLE_STATUSES: (typeof arsStatusOptions)[number][] = ["Work Order Issued", "Work in Progress", "Work Completed", "Work Failed"];
 
@@ -142,10 +143,12 @@ export default function ArsEntryPage() {
     const { toast } = useToast();
     
     const isEditing = !!entryIdToEdit;
-    const canEdit = user?.role === 'admin' || user?.role === 'engineer';
+    const isAdmin = user?.role === 'admin';
+    const isEngineer = user?.role === 'engineer';
+    const canEdit = isAdmin || isEngineer;
     const isSupervisor = user?.role === 'supervisor';
     const isViewer = user?.role === 'viewer' || readOnlyParam === 'true';
-    const isApprovingUpdate = user?.role === 'admin' && !!approveUpdateId;
+    const isApprovingUpdate = isAdmin && !!approveUpdateId;
     
     const [isFormDisabledForSupervisor, setIsFormDisabledForSupervisor] = useState(false);
     
@@ -173,7 +176,7 @@ export default function ArsEntryPage() {
     const watchedTenderNo = formWatch('arsTenderNo');
 
     const isFieldReadOnly = (fieldName: keyof ArsEntryFormData): boolean => {
-        if ((user?.role === 'admin' || user?.role === 'engineer') && !isViewer) return false; 
+        if (isAdmin || isEngineer) return isViewer; 
         if (isViewer) return true; 
     
         if (isSupervisor) {
@@ -238,13 +241,13 @@ export default function ArsEntryPage() {
     }, [isEditing, isViewer, isSupervisor, setHeader, isApprovingUpdate]);
 
     useEffect(() => {
-        if (user?.role === 'admin' || user?.role === 'engineer') {
+        if (isAdmin || isEngineer) {
             fetchAllUsers().then(setAllUsers);
         }
-    }, [user, fetchAllUsers]);
+    }, [isAdmin, isEngineer, fetchAllUsers]);
     
     const staffMap = React.useMemo(() => {
-        if (user?.role !== 'admin' && user?.role !== 'engineer') return new Map();
+        if (!isAdmin && !isEngineer) return new Map();
         const map = new Map<string, StaffMember & { uid: string }>();
         allUsers
             .filter(u => u.role === 'supervisor' && u.isApproved && u.staffId)
@@ -255,7 +258,7 @@ export default function ArsEntryPage() {
                 }
             });
         return map;
-    }, [allUsers, staffMembers, user]);
+    }, [allUsers, staffMembers, isAdmin, isEngineer]);
 
     const supervisorList = useMemo(() => Array.from(staffMap.values()), [staffMap]);
     
@@ -366,7 +369,7 @@ export default function ArsEntryPage() {
         if (selectedTender) {
              const validBidders = (selectedTender.bidders || []).filter((b: Bidder) => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
             const l1Bidder = validBidders.length > 0 
-                ? validBidders.reduce((lowest: Bidder, current: Bidder) => (lowest.quotedAmount! < lowest.quotedAmount!) ? lowest : current)
+                ? validBidders.reduce((lowest: Bidder, current: Bidder) => (lowest.quotedAmount! < current.quotedAmount!) ? lowest : current)
                 : null;
             form.setValue('arsContractorName', l1Bidder ? `${l1Bidder.name}, ${l1Bidder.address}` : '');
 
@@ -405,10 +408,10 @@ export default function ArsEntryPage() {
             if (isApprovingUpdate && entryIdToEdit && approveUpdateId) {
                 await updateArsEntry(entryIdToEdit, payload, approveUpdateId, user);
                 toast({ title: "Update Approved", description: `Changes for site "${data.nameOfSite}" have been saved.` });
-            } else if ((user?.role === 'admin' || user?.role === 'engineer') && isEditing && entryIdToEdit) {
+            } else if (canEdit && isEditing && entryIdToEdit) {
                 await updateArsEntry(entryIdToEdit, payload);
                 toast({ title: "ARS Site Updated", description: `Site "${data.nameOfSite}" has been updated.` });
-            } else if ((user?.role === 'admin' || user?.role === 'engineer') && !isEditing) {
+            } else if (canEdit && !isEditing) {
                  if (!user.officeLocation) { throw new Error("User has no office location.") };
                 const fileNoTrimmed = data.fileNo.trim().toUpperCase();
                 const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/arsEntries`), where("fileNo", "==", fileNoTrimmed));
@@ -574,7 +577,7 @@ export default function ArsEntryPage() {
                               <FormField name="supervisorUid" control={form.control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Supervisor</FormLabel>
-                                    <Select onValueChange={(uid) => handleSupervisorDropdownChange(uid)} value={field.value || ""}>
+                                    <Select onValueChange={(uid) => handleSupervisorDropdownChange(uid)} value={field.value || ""} disabled={isFieldReadOnly('supervisorUid')}>
                                         <FormControl><SelectTrigger><SelectValue placeholder="Select a Supervisor" /></SelectTrigger></FormControl>
                                         <SelectContent>
                                             {tenderSupervisors.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name} ({s.designation})</SelectItem>))}
