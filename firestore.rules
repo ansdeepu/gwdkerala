@@ -70,8 +70,8 @@ service cloud.firestore {
         return isSubOfficeAdmin() && request.resource.data.officeLocation.lower() == getUserData().officeLocation.lower();
       }
       
-      allow get: if isSuperAdmin() || (isSignedIn() && request.auth.uid == userId);
-      allow list: if isSuperAdmin() || isSubOfficeAdmin();
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if isSuperAdmin() || isSubOfficeAdmin() || isSupervisor() || isInvestigator();
       allow create: if isSuperAdmin() || isManagingOwnOfficeUser();
       allow update: if isSuperAdmin() || isManagingOwnOfficeUser() || (isApproved() && request.auth.uid == userId);
       allow delete: if isSuperAdmin() || (isSubOfficeAdmin() && getUserData().officeLocation.lower() == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation.lower());
@@ -153,58 +153,68 @@ service cloud.firestore {
       }
       
       match /staffMembers/{docId} {
-        allow read: if officeRead() || isSupervisor() || isInvestigator();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow write: if canManageAll();
       }
 
       match /agencyApplications/{docId} {
-        allow read: if officeRead() || isSupervisor() || isInvestigator();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow delete: if canManageAll();
         allow write: if canEditEngineering();
       }
 
       match /eTenders/{docId} {
-        allow read: if officeRead() || isSupervisor() || isInvestigator();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow delete: if canManageAll();
         allow write: if canEditEngineering();
       }
 
       match /departmentVehicles/{docId} {
-        allow read: if officeRead() || isSupervisor() || isInvestigator();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow delete: if canManageAll();
         allow write: if canEditEngineering();
       }
 
       match /hiredVehicles/{docId} {
-        allow read: if officeRead() || isSupervisor() || isInvestigator();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow delete: if canManageAll();
         allow write: if canEditEngineering();
       }
 
       match /rigCompressors/{docId} {
-        allow read: if officeRead() || isSupervisor() || isInvestigator();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow delete: if canManageAll();
         allow write: if canEditEngineering();
       }
       
       match /bidders/{docId} {
-        allow read: if officeRead() || isSupervisor() || isInvestigator();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow write: if canEditEngineering();
       }
       
       match /localSelfGovernments/{docId} {
-          allow read: if officeRead() || isSupervisor() || isInvestigator();
-          allow write: if canManageAll();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow write: if canManageAll();
       }
       
        match /officeAddresses/{docId} {
-          allow read: if officeRead() || isSupervisor() || isInvestigator();
-          allow write: if canManageAll();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow write: if canManageAll();
       }
 
       match /sanctionedStrength/{docId} {
-          allow read: if officeRead() || isSupervisor() || isInvestigator();
-          allow write: if canManageAll();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
+        allow write: if canManageAll();
       }
     }
     
