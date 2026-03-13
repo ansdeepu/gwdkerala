@@ -100,13 +100,25 @@ export default function OfficeManagementPage() {
             officeMap.get(loc)!.push(user);
         }
     });
-    return Array.from(officeMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+    const customOfficeOrder = districts.map(d => d.toLowerCase());
+
+    return Array.from(officeMap.entries()).sort((a, b) => {
+        const indexA = customOfficeOrder.indexOf(a[0].toLowerCase());
+        const indexB = customOfficeOrder.indexOf(b[0].toLowerCase());
+
+        if (indexA === -1 && indexB === -1) return a[0].localeCompare(b[0]);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+
+        return indexA - indexB;
+    });
   }, [allUsers]);
 
   const handleCreateOfficeSetup = async (data: NewOfficeAdminFormData) => {
     setIsSubmitting(true);
     const lowerCaseOfficeLocation = data.officeLocation.toLowerCase();
-    const formattedName = formatCase(data.name) || data.name;
+    const formattedName = formatCase(data.name) ?? data.name;
     try {
         const result = await createOfficeAdmin(data.email, formattedName, data.officeLocation);
         if (result.success) {
