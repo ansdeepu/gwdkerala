@@ -1,7 +1,7 @@
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useE_tenders, type E_tender } from '@/hooks/useE_tenders';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -15,18 +15,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { E_tenderStatus } from '@/lib/schemas/eTenderSchema';
+import type { E_tenderStatus, Bidder } from '@/lib/schemas/eTenderSchema';
 import { eTenderStatusOptions } from '@/lib/schemas/eTenderSchema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter } from 'date-fns';
+import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter, addDays } from 'date-fns';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import PaginationControls from '@/components/shared/PaginationControls';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { useDataStore } from '@/hooks/use-data-store';
-import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock, FolderOpen, Bell, Hammer } from 'lucide-react';
-
+import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock, FolderOpen, Bell, Hammer, FileDown } from 'lucide-react';
+import ExcelJS from 'exceljs';
 
 const ITEMS_PER_PAGE = 50;
 
@@ -71,6 +71,161 @@ const StatCard = ({ title, count, onClick, colorClass, icon: Icon }: { title: st
     </button>
 );
 
+function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolean, onOpenChange: (open: boolean) => void, tenders: E_tender[] }) {
+    const workOrderData = useMemo(() => {
+        return tenders
+            .filter(t => (t.presentStatus === 'Work Order Issued' || t.presentStatus === 'Supply Order Issued') && t.dateWorkOrder && t.periodOfCompletion)
+            .map((tender, index) => {
+                const l1Bidder = (tender.bidders || [])
+                    .filter(b => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0)
+                    .reduce((lowest, current) => (lowest.quotedAmount ?? Infinity) < (current.quotedAmount ?? Infinity) ? lowest : current, { quotedAmount: Infinity } as Bidder);
+
+                const hasRejectedBids = tender.bidders?.some(b => b.status === 'Rejected');
+                const contractAmount = (hasRejectedBids && tender.agreedAmount) ? tender.agreedAmount : (l1Bidder && l1Bidder.id ? l1Bidder.quotedAmount : undefined);
+
+                const supervisorNames = [
+                    tender.nameOfAssistantEngineer,
+                    tender.supervisor1Name,
+                    tender.supervisor2Name,
+                    tender.supervisor3Name,
+                ].filter(Boolean).join(', ');
+
+                const workOrderDate = toDateOrNull(tender.dateWorkOrder);
+                let expectedDateOfCompletion: Date | null = null;
+                if (workOrderDate && tender.periodOfCompletion) {
+                    expectedDateOfCompletion = addDays(workOrderDate, tender.periodOfCompletion);
+                }
+
+                const isOverdue = expectedDateOfCompletion ? new Date() > expectedDateOfCompletion : false;
+
+                return {
+                    id: tender.id,
+                    slNo: index + 1,
+                    dateOfWorkOrder: tender.dateWorkOrder ? formatDateSafe(tender.dateWorkOrder) : 'N/A',
+                    nameOfWork: tender.nameOfWork,
+                    contractor: l1Bidder && l1Bidder.id ? l1Bidder.name : 'N/A',
+                    supervisor: supervisorNames || 'N/A',
+                    quotedAmount: contractAmount,
+                    expectedDateOfCompletion: expectedDateOfCompletion ? formatDateSafe(expectedDateOfCompletion) : 'N/A',
+                    isOverdue,
+                };
+            });
+    }, [tenders]);
+    
+    const handleExportExcel = useCallback(async () => {
+        if (workOrderData.length === 0) {
+            toast({ title: "No Data", description: "There is no work order data to export." });
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("WorkOrderData");
+        
+        const headers = ["Sl. No.", "Date of Work Order", "Name of Work", "Contractor", "Supervisor", "Quoted Amount (Rs.)", "Expected Date of Completion"];
+        const headerRow = worksheet.addRow(headers);
+        headerRow.font = { bold: true };
+        headerRow.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F0F0F0' } };
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+        });
+
+        workOrderData.forEach(row => {
+            const newRow = worksheet.addRow([
+                row.slNo,
+                row.dateOfWorkOrder,
+                row.nameOfWork,
+                row.contractor,
+                row.supervisor,
+                row.quotedAmount,
+                row.expectedDateOfCompletion,
+            ]);
+            if (row.isOverdue) {
+                newRow.eachCell(cell => {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFCCCC' } }; // Light red fill
+                });
+            }
+            newRow.eachCell(cell => {
+                 cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            });
+        });
+
+        worksheet.columns.forEach(column => {
+            let maxLength = 0;
+            column.eachCell!({ includeEmpty: true }, (cell) => {
+                let columnLength = cell.value ? cell.value.toString().length : 10;
+                if (columnLength > maxLength) {
+                    maxLength = columnLength;
+                }
+            });
+            column.width = maxLength < 15 ? 15 : maxLength + 2;
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `GWD_WorkOrderData_${format(new Date(), 'yyyyMMdd')}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [workOrderData]);
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0">
+                <DialogHeader className="p-6 pb-4 border-b">
+                    <DialogTitle>Work Order Data</DialogTitle>
+                    <DialogDescription>List of all tenders with work orders issued. Overdue projects are marked in red.</DialogDescription>
+                </DialogHeader>
+                <div className="flex-1 min-h-0">
+                    <ScrollArea className="h-full">
+                        <Table>
+                            <TableHeader className="sticky top-0 bg-background z-10">
+                                <TableRow>
+                                    <TableHead>Sl. No.</TableHead>
+                                    <TableHead>Date of Work Order</TableHead>
+                                    <TableHead>Name of Work</TableHead>
+                                    <TableHead>Contractor</TableHead>
+                                    <TableHead>Supervisor</TableHead>
+                                    <TableHead className="text-right">Quoted Amount</TableHead>
+                                    <TableHead>Expected Date of Completion</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {workOrderData.length > 0 ? (
+                                    workOrderData.map(row => (
+                                        <TableRow key={row.id} className={cn(row.isOverdue && "bg-red-500/10")}>
+                                            <TableCell>{row.slNo}</TableCell>
+                                            <TableCell>{row.dateOfWorkOrder}</TableCell>
+                                            <TableCell className="font-medium">{row.nameOfWork}</TableCell>
+                                            <TableCell>{row.contractor}</TableCell>
+                                            <TableCell className="text-xs max-w-[200px] break-words">{row.supervisor}</TableCell>
+                                            <TableCell className="text-right font-mono">{row.quotedAmount?.toLocaleString('en-IN')}</TableCell>
+                                            <TableCell>{row.expectedDateOfCompletion}</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="h-24 text-center">
+                                            No tenders with active work orders found.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </div>
+                <DialogFooter className="p-6 pt-4 border-t">
+                    <Button variant="outline" onClick={handleExportExcel} disabled={workOrderData.length === 0}>
+                        <FileDown className="mr-2 h-4 w-4" /> Export to Excel
+                    </Button>
+                    <DialogClose asChild><Button>Close</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 export default function ETenderListPage() {
     const { setHeader } = usePageHeader();
@@ -91,6 +246,8 @@ export default function ETenderListPage() {
     // State for Dialogs
     const [dialogContent, setDialogContent] = useState<{ title: string; tenders: E_tender[] } | null>(null);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+    const [isWorkOrderDialogOpen, setIsWorkOrderDialogOpen] = useState(false);
+
 
     // State for L1 Leaderboard date filters
     const [l1StartDate, setL1StartDate] = useState('');
@@ -407,6 +564,9 @@ export default function ETenderListPage() {
                                         <Button size="sm" onClick={() => router.push('/dashboard/bidders')} variant="secondary" className="shrink-0">
                                             <Users className="mr-2 h-4 w-4" /> Bidders List
                                         </Button>
+                                        <Button size="sm" onClick={() => setIsWorkOrderDialogOpen(true)} variant="outline" className="shrink-0">
+                                            <FolderOpen className="mr-2 h-4 w-4" /> Work Order Data
+                                        </Button>
                                         <Button size="sm" onClick={handleCreateNew} className="w-full sm:w-auto shrink-0">
                                             <PlusCircle className="mr-2 h-4 w-4" /> Create New
                                         </Button>
@@ -651,6 +811,12 @@ export default function ETenderListPage() {
                 </div>
               </DialogContent>
             </Dialog>
+
+            <WorkOrderDataDialog 
+                isOpen={isWorkOrderDialogOpen} 
+                onOpenChange={setIsWorkOrderDialogOpen} 
+                tenders={allE_tenders} 
+            />
         </div>
     );
 }
