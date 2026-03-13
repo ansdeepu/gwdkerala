@@ -2,7 +2,7 @@
 // src/app/dashboard/ars/entry/page.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ArsEntrySchema, type ArsEntryFormData, arsStatusOptions, type Bidder, arsTypeOfSchemeOptions, type Constituency, type StaffMember } from "@/lib/schemas";
 import { Card, CardContent } from "@/components/ui/card";
@@ -174,7 +174,7 @@ export default function ArsEntryPage() {
 
     const watchedLsg = useWatch({ control, name: "localSelfGovt" });
     const watchedTenderNo = formWatch('arsTenderNo');
-    const watchedSiteName = useWatch({ control, name: "nameOfSite" });
+    const watchedFileNo = useWatch({ control, name: "fileNo" });
 
     const isFieldReadOnly = (fieldName: keyof ArsEntryFormData): boolean => {
         if (isAdmin || isEngineer) return isViewer; 
@@ -262,25 +262,25 @@ export default function ArsEntryPage() {
         let title = 'Add New ARS Entry';
         let description = 'Fill in the details to create a new ARS site entry.';
         
-        const displaySiteName = watchedSiteName || 'ARS Site';
+        const displayId = watchedFileNo || 'New';
 
         if (isApprovingUpdate) {
             title = 'Approve ARS Update';
-            description = `Reviewing changes for ${displaySiteName}.`;
+            description = `Reviewing changes for File: ${displayId}.`;
         } else if (isEditing) {
-            title = watchedSiteName ? `Edit: ${watchedSiteName}` : 'Edit ARS Entry';
+            title = watchedFileNo ? `Edit: ${watchedFileNo}` : 'Edit ARS Entry';
             description = 'Update the details for the ARS site below.';
         }
         
         if (isViewer) {
-            title = watchedSiteName ? `View: ${watchedSiteName}` : 'View ARS Entry';
+            title = watchedFileNo ? `View: ${watchedFileNo}` : 'View ARS Entry';
             description = 'Viewing ARS site details in read-only mode.';
         } else if (isSupervisor && isEditing) {
-            title = watchedSiteName ? `Update: ${watchedSiteName}` : 'Edit Assigned ARS Site';
+            title = watchedFileNo ? `Update: ${watchedFileNo}` : 'Edit Assigned ARS Site';
             description = 'Update your assigned site. Changes will be submitted for approval.';
         }
         setHeader(title, description);
-    }, [isEditing, isViewer, isSupervisor, setHeader, isApprovingUpdate, watchedSiteName]);
+    }, [isEditing, isViewer, isSupervisor, setHeader, isApprovingUpdate, watchedFileNo]);
 
     useEffect(() => {
         if (canEdit || isApprovingUpdate) {
@@ -392,10 +392,10 @@ export default function ArsEntryPage() {
         try {
             if (isApprovingUpdate && entryIdToEdit && approveUpdateId) {
                 await updateArsEntry(entryIdToEdit, payload, approveUpdateId, user);
-                toast({ title: "Update Approved", description: `Changes for site "${data.nameOfSite}" have been saved.` });
+                toast({ title: "Update Approved", description: `Changes for File "${data.fileNo}" have been saved.` });
             } else if (canEdit && isEditing && entryIdToEdit) {
                 await updateArsEntry(entryIdToEdit, payload);
-                toast({ title: "ARS Site Updated", description: `Site "${data.nameOfSite}" has been updated.` });
+                toast({ title: "ARS Site Updated", description: `File "${data.fileNo}" has been updated.` });
             } else if (canEdit && !isEditing) {
                  if (!user.officeLocation) { throw new Error("User has no office location.") };
                 const fileNoTrimmed = data.fileNo.trim().toUpperCase();
@@ -411,10 +411,10 @@ export default function ArsEntryPage() {
                     return;
                 }
                 await addArsEntry({ ...payload, fileNo: fileNoTrimmed });
-                toast({ title: "ARS Site Added", description: `Site "${data.nameOfSite}" has been created.` });
+                toast({ title: "ARS Site Added", description: `File "${data.fileNo}" has been created.` });
             } else if (isSupervisor && isEditing && entryIdToEdit) {
                 await createArsPendingUpdate(entryIdToEdit, payload, user);
-                 toast({ title: "Update Submitted", description: `Your changes for site "${data.nameOfSite}" have been submitted for approval.` });
+                 toast({ title: "Update Submitted", description: `Your changes for File "${data.fileNo}" have been submitted for approval.` });
             }
         } catch (error: any) {
              toast({ title: "Error Processing Site", description: error.message, variant: "destructive" });

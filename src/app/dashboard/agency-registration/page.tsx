@@ -529,11 +529,11 @@ export default function AgencyRegistrationPage() {
     let title = 'Rig Registration';
     if (selectedApplicationId) {
       const app = allAgencyApplications.find((a: AgencyApplication) => a.id === selectedApplicationId);
-      const appName = app?.agencyName || 'New Application';
+      const appFileNo = app?.fileNo || 'New';
       if (selectedApplicationId === 'new') {
         title = 'New Rig Registration';
       } else {
-        title = isReadOnly ? `View: ${appName}` : `Edit: ${appName}`;
+        title = isReadOnly ? `View: ${appFileNo}` : `Edit: ${appFileNo}`;
       }
     }
     setHeader(title, 'Manage agency and rig registrations.');
@@ -737,7 +737,7 @@ export default function AgencyRegistrationPage() {
   const handleAddNew = () => {
     setIsNavigating(true);
     router.push(`${pathname}?id=new`);
-  }
+  };
 
   const handleView = (id: string) => {
     const pageParam = currentPage > 1 ? `&page=${currentPage}` : '';
@@ -888,7 +888,7 @@ export default function AgencyRegistrationPage() {
         await deleteApplication(deletingApplicationId);
         toast({ title: "Registration Removed", description: `The registration has been permanently deleted.` });
       } catch (error: any) {
-        toast({ title: "Error", description: error.message, variant: 'destructive' });
+        toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
         setIsSubmitting(false);
         setDeletingApplicationId(null);

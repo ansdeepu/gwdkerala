@@ -130,7 +130,7 @@ function BreadcrumbNav() {
       let label = labelMap[segment] || segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       
       if (segment === 'data-entry') {
-          const workType = searchParams?.get('workType');
+          const workType = searchParams.get('workType');
           const workTypeMapping: Record<string, { label: string, href: string }> = {
               'gwInvestigation': { label: 'GW Investigation', href: '/dashboard/gw-investigation' },
               'loggingPumpingTest': { label: 'Logging & Pumping Test', href: '/dashboard/logging-pumping-test' },
@@ -144,19 +144,20 @@ function BreadcrumbNav() {
               const listHref = pageNum ? `${workTypeMapping[workType].href}?page=${pageNum}` : workTypeMapping[workType].href;
               result.push({ href: listHref, label: workTypeMapping[workType].label, isLast: false });
           }
-          label = 'File Entry';
+          
+          // Use the dynamic page title if it's the last segment
+          if (isLast) {
+              label = title;
+          }
       }
 
       // Handle query-param based detail views (Rig Registration, ARS)
       if (isLast && detailId && segment !== 'data-entry') {
-          // If the segment is 'entry', it's just a routing placeholder for a form
-          // so we don't add a crumb for it, the parent (like 'ars') is enough.
           if (segment !== 'entry') {
               const listHref = pageNum ? `${href}?page=${pageNum}` : href;
               result.push({ href: listHref, label, isLast: false });
           }
           
-          // Push the specific item crumb
           let detailLabel = title;
           if (!detailLabel || detailLabel.includes('Loading')) {
               detailLabel = detailId === 'new' ? 'New Registration' : 'View Details';

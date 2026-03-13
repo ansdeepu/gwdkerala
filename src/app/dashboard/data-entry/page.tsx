@@ -196,7 +196,8 @@ export default function DataEntryPage() {
     let description = "";
     if (!dataLoading) {
         if (errorState) { title = "Error"; description = errorState; } 
-        else if (user?.role === 'admin') {
+        else {
+            const displayId = fileNoForHeader || 'New';
             if (!fileIdToEdit) {
                 if (workTypeContext === 'private') title = "New Private Deposit Work";
                 else if (workTypeContext === 'collector') title = "New Collector's Deposit Work";
@@ -204,14 +205,17 @@ export default function DataEntryPage() {
                 else if (workTypeContext === 'gwInvestigation') title = "New GW Investigation"; 
                 else if (workTypeContext === 'loggingPumpingTest') title = "New Logging & Pumping Test";
                 else title = "New Deposit Work";
-            } else if (approveUpdateId) title = "Approve Pending Updates";
-            else if (fileNoForHeader) title = `Edit File: ${fileNoForHeader}`;
-        } else if (user?.role === 'viewer' || readOnlyParam === 'true') {
-            if (fileNoForHeader) title = `View File: ${fileNoForHeader}`;
+            } else if (approveUpdateId) {
+                title = `Approve Update: ${displayId}`;
+            } else if (effectiveUserRole === 'viewer' || readOnlyParam === 'true') {
+                title = `View File: ${displayId}`;
+            } else {
+                title = `Edit File: ${displayId}`;
+            }
         }
     }
     setHeader(title, description);
-  }, [fileIdToEdit, user, approveUpdateId, setHeader, fileNoForHeader, workTypeContext, dataLoading, errorState, readOnlyParam]);
+  }, [fileIdToEdit, user, approveUpdateId, setHeader, fileNoForHeader, workTypeContext, dataLoading, errorState, readOnlyParam, effectiveUserRole]);
 
   const supervisorList = useMemo(() => {
     if (!user || !pageData) return [];
