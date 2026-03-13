@@ -216,6 +216,7 @@ export const gwdRateCategories = [
     "Borewell Construction 150 mm dia (6\")",
     "Tubewell Construction 150 mm dia (6\")",
     "Tubewell Construction 200 mm dia (8\")",
+    "Rotary cum DTH Drilling",
     "Filter Point Well Construction 110 mm (4.5\")",
     "Well Developing",
     "Logging & Pumping Test"

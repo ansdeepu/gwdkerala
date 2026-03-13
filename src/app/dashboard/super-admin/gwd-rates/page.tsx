@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/gwd-rates/page.tsx
 "use client";
 
@@ -65,7 +64,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useDataStore, type RateDescriptionId } from "@/hooks/use-data-store";
 import { useRouter } from "next/navigation";
-import { DollarSign, PlusCircle, Trash2, Loader2, Save, X, ShieldAlert, Eye } from 'lucide-react';
+import { DollarSign, PlusCircle, Trash2, Loader2, Save, X, ShieldAlert, Eye, Move } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 
@@ -235,7 +234,7 @@ const RigFeeDetailsContent = () => {
     );
 };
 
-const RateCategoryTable = ({ title, items, canManage, handleOpenItemForm, setItemToDelete }: { title: string, items: GwdRateItem[], canManage: boolean, handleOpenItemForm: (item: GwdRateItem | null) => void, setItemToDelete: (item: GwdRateItem | null) => void }) => {
+const RateCategoryTable = ({ title, items, canManage, handleOpenItemForm, setItemToReorder, setItemToDelete }: { title: string, items: GwdRateItem[], canManage: boolean, handleOpenItemForm: (item: GwdRateItem | null) => void, setItemToReorder: (item: GwdRateItem) => void, setItemToDelete: (item: GwdRateItem | null) => void }) => {
     return (
         <AccordionItem value={title.toLowerCase().replace(/ /g, '-').replace(/[."()]/g, '')} className="border rounded-lg bg-background">
             <AccordionTrigger className="text-lg font-semibold text-primary p-4 hover:no-underline">
@@ -265,6 +264,7 @@ const RateCategoryTable = ({ title, items, canManage, handleOpenItemForm, setIte
                                         <TableCell className="text-center">
                                             <div className="flex items-center justify-center space-x-1">
                                                 <Button variant="ghost" size="icon" onClick={() => handleOpenItemForm(item)}><Eye className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" onClick={() => setItemToReorder(item)}><Move className="h-4 w-4"/></Button>
                                                 <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setItemToDelete(item)}><Trash2 className="h-4 w-4" /></Button>
                                             </div>
                                         </TableCell>
@@ -283,6 +283,7 @@ const RateCategoryTable = ({ title, items, canManage, handleOpenItemForm, setIte
     );
 };
 
+
 export default function GwdRatesPage() {
   const { setHeader } = usePageHeader();
   const { user, isLoading: authLoading } = useAuth();
@@ -297,6 +298,7 @@ export default function GwdRatesPage() {
   const [isItemFormOpen, setIsItemFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<GwdRateItem | null>(null);
   const [itemToDelete, setItemToDelete] = useState<GwdRateItem | null>(null);
+  const [itemToReorder, setItemToReorder] = useState<GwdRateItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canManage = user?.role === 'superAdmin';
@@ -451,6 +453,61 @@ export default function GwdRatesPage() {
       return categories;
   }, [rateItems]);
 
+  const handleReorderSubmit = useCallback(async (newPosition: number) => {
+    if (!itemToReorder || isSubmitting) return;
+    const category = itemToReorder.category;
+    if (!category) {
+        toast({ title: "Error", description: "Item has no category.", variant: "destructive" });
+        return;
+    }
+
+    setIsSubmitting(true);
+
+    const categoryItems = categorizedItems[category];
+    if (!categoryItems || categoryItems.length === 0) {
+        toast({ title: "Error", description: "Category not found or is empty.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+    }
+
+    const fromIndex = categoryItems.findIndex(i => i.id === itemToReorder.id);
+    if (fromIndex === -1) {
+        toast({ title: "Error", description: "Item to move not found in its category.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+    }
+    
+    if (newPosition < 1 || newPosition > categoryItems.length) {
+        toast({ title: "Invalid Position", description: `Please enter a number between 1 and ${categoryItems.length}.`, variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+    }
+
+    const reorderedCategoryItems = [...categoryItems];
+    const [movedItem] = reorderedCategoryItems.splice(fromIndex, 1);
+    reorderedCategoryItems.splice(newPosition - 1, 0, movedItem);
+
+    const originalOrders = categoryItems.map(item => item.order).sort((a,b) => (a ?? 0) - (b ?? 0));
+
+    try {
+        const batch = writeBatch(db);
+        reorderedCategoryItems.forEach((item, index) => {
+            const docRef = doc(db, RATES_COLLECTION, item.id);
+            batch.update(docRef, { order: originalOrders[index] });
+        });
+
+        await batch.commit();
+        setItemToReorder(null);
+        toast({ title: "Reorder Successful", description: `Item moved to position ${newPosition} in its category.` });
+        await fetchData();
+    } catch (error: any) {
+        console.error("Could not reorder item:", error);
+        toast({ title: "Error Reordering", description: `Could not move item: ${error.message}`, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
+  }, [itemToReorder, isSubmitting, categorizedItems, toast, fetchData]);
+
 
   if (authLoading || isLoading) {
     return (
@@ -496,6 +553,7 @@ export default function GwdRatesPage() {
                               items={categorizedItems[category] || []}
                               canManage={canManage}
                               handleOpenItemForm={handleOpenItemForm}
+                              setItemToReorder={setItemToReorder}
                               setItemToDelete={setItemToDelete}
                           />
                       ))}
@@ -608,6 +666,33 @@ export default function GwdRatesPage() {
         </AlertDialogContent>
       </AlertDialog>
       
+      {itemToReorder && (
+          <Dialog open={!!itemToReorder} onOpenChange={() => setItemToReorder(null)}>
+              <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-md">
+                  <DialogHeader className="p-6 pb-2">
+                      <DialogTitle>Move Item</DialogTitle>
+                      <DialogDescription>Move "{itemToReorder?.itemName}" to a new position in its category.</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={(e) => {
+                      e.preventDefault();
+                      const newPosition = parseInt((e.target as any).position.value);
+                      handleReorderSubmit(newPosition);
+                  }}>
+                      <div className="p-6 pt-2 space-y-2">
+                          <Label htmlFor="position">New Position (1 to {categorizedItems[itemToReorder.category!]?.length || 1})</Label>
+                          <Input id="position" type="number" min="1" max={categorizedItems[itemToReorder.category!]?.length || 1} required />
+                      </div>
+                      <DialogFooter className="p-6 pt-4">
+                          <Button type="button" variant="outline" onClick={() => setItemToReorder(null)} disabled={isSubmitting}>Cancel</Button>
+                          <Button type="submit" disabled={isSubmitting}>
+                              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Move"}
+                          </Button>
+                      </DialogFooter>
+                  </form>
+              </DialogContent>
+          </Dialog>
+      )}
+
       {editingRate && (
         <EditRateDescriptionDialog
             isOpen={!!editingRate}
