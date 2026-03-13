@@ -73,19 +73,28 @@ export function usePendingUpdates(): PendingUpdatesState {
   const { user } = useAuth();
   
   const getPendingUpdates = useCallback(async (fileNo: string | null, submittedByUid?: string): Promise<PendingUpdate[]> => {
+    if (!user || !user.officeLocation) {
+        return [];
+    }
+    const collectionPath = `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`;
+
     let conditions = [];
     if (fileNo) conditions.push(where('fileNo', '==', fileNo));
     if (submittedByUid) conditions.push(where('submittedByUid', '==', submittedByUid));
     
-    const q = query(collection(db, PENDING_UPDATES_COLLECTION), ...conditions);
+    const q = query(collection(db, collectionPath), ...conditions);
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => convertTimestampToDate({ id: doc.id, ...doc.data() }));
-  }, []);
+  }, [user]);
   
   const hasPendingUpdateForFile = useCallback(async (fileNo: string, submittedByUid: string): Promise<boolean> => {
+    if (!user || !user.officeLocation) {
+        return false;
+    }
     try {
+      const collectionPath = `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`;
       const q = query(
-        collection(db, PENDING_UPDATES_COLLECTION),
+        collection(db, collectionPath),
         where('fileNo', '==', fileNo),
         where('status', '==', 'pending'),
         where('submittedByUid', '==', submittedByUid)
@@ -96,7 +105,7 @@ export function usePendingUpdates(): PendingUpdatesState {
       console.error("Error checking for pending file updates:", error);
       return false; 
     }
-  }, []);
+  }, [user]);
   
   const subscribeToPendingUpdates = useCallback((
     callback: (updates: PendingUpdate[]) => void
@@ -106,12 +115,12 @@ export function usePendingUpdates(): PendingUpdatesState {
       return () => {};
     }
 
-    const statusesToQuery = user.role === 'admin' 
+    const statusesToQuery = user.role === 'admin' || user.role === 'scientist' || user.role === 'engineer'
       ? ['pending', 'supervisor-unassigned'] 
       : ['pending', 'rejected'];
       
     let conditions = [where('status', 'in', statusesToQuery)];
-    if (user.role === 'supervisor' && user.uid) {
+    if (user.role === 'supervisor' || user.role === 'investigator') {
         conditions.push(where('submittedByUid', '==', user.uid));
     }
     
@@ -211,7 +220,7 @@ export function usePendingUpdates(): PendingUpdatesState {
   }, [user]);
 
   const rejectUpdate = useCallback(async (updateId: string, reason?: string) => {
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'scientist' && user.role !== 'engineer')) {
       throw new Error("You do not have permission to reject updates.");
     }
     if (!user.officeLocation) throw new Error("User has no office location.");
@@ -226,7 +235,7 @@ export function usePendingUpdates(): PendingUpdatesState {
   }, [user]);
 
   const deleteUpdate = useCallback(async (updateId: string) => {
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && user.role !== 'scientist' && user.role !== 'engineer')) {
         throw new Error("You do not have permission to delete updates.");
     }
     if (!user.officeLocation) throw new Error("User has no office location.");
