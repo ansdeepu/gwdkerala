@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import type { E_tenderStatus, Bidder } from '@/lib/schemas/eTenderSchema';
 import { eTenderStatusOptions } from '@/lib/schemas/eTenderSchema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter, addDays } from 'date-fns';
+import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter, addDays, isValid } from 'date-fns';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import PaginationControls from '@/components/shared/PaginationControls';
 import { Label } from '@/components/ui/label';
@@ -200,7 +200,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
         a.download = `GWD_WorkOrderData_${format(new Date(), 'yyyyMMdd')}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
-    }, [workOrderData]);
+    }, [workOrderData, toast]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
