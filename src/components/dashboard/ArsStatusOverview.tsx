@@ -1,4 +1,3 @@
-
 // src/components/dashboard/ArsStatusOverview.tsx
 "use client";
 
@@ -41,21 +40,6 @@ const FileText = (props: React.SVGProps<SVGSVGElement>) => (
 const DollarSign = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
 );
-
-
-const statusIcons: Record<string, React.ElementType> = {
-    "Proposal Submitted": FileText,
-    "AS & TS Issued": CheckCircle2,
-    "Tendered": Hammer,
-    "Selection Notice Issued": Hammer,
-    "Work Order Issued": Hammer,
-    "Work Initiated": Construction,
-    "Work in Progress": Wrench,
-    "Work Failed": AlertTriangle,
-    "Work Completed": CheckCircle2,
-    "Bill Prepared": FileText,
-    "Payment Completed": DollarSign,
-};
 
 
 interface ArsStatusOverviewProps {
@@ -184,15 +168,15 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
       <CardContent className="flex-1 p-0">
           <ScrollArea className="h-full">
               <div className="p-6 pt-0">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
                     <button onClick={() => handleWorkStatusCellClick(arsDashboardData?.allArsSites ?? [], 'All ARS Sites')} disabled={(arsDashboardData?.totalArsSites ?? 0) === 0} className="p-4 border rounded-lg bg-blue-500/10 text-center hover:bg-blue-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         <p className="text-sm font-medium text-blue-600">Total ARS Sites</p>
                         <p className="text-4xl font-bold text-blue-700">{arsDashboardData?.totalArsSites ?? 0}</p>
                     </button>
-                    <div className="p-4 border rounded-lg bg-green-500/10 text-center">
+                    <button disabled className="p-4 border rounded-lg bg-green-500/10 text-center disabled:opacity-50 disabled:cursor-not-allowed">
                         <p className="text-sm font-medium text-green-600">Total Expenditure</p>
                         <p className="text-3xl font-bold text-green-700 font-mono">₹{(arsDashboardData?.totalArsExpenditure ?? 0).toLocaleString('en-IN')}</p>
-                    </div>
+                    </button>
                 </div>
                 {arsDashboardData && arsDashboardData.arsStatusCountsData.length > 0 ? (
                     <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
