@@ -264,7 +264,7 @@ export default function EstablishmentPage() {
                   staffData={activeStaffList}
                   onEdit={(s) => handleEditStaff(s, s.status === 'Pending Transfer')}
                   onDelete={isAdmin ? deleteStaffMember : undefined}
-                  onSetStatus={undefined}
+                  onSetStatus={canManage ? updateStaffStatus : undefined}
                   isViewer={isViewer || !canManage}
                   onImageClick={handleOpenImageModal}
                   isLoading={isFiltering}
@@ -277,7 +277,7 @@ export default function EstablishmentPage() {
                 <TransferredStaffTable
                     staffData={transferredStaffList}
                     onEdit={(s) => handleEditStaff(s, true)}
-                    onSetStatus={undefined}
+                    onSetStatus={canManage ? updateStaffStatus : undefined}
                     isViewer={true}
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}
@@ -290,7 +290,7 @@ export default function EstablishmentPage() {
                 <RetiredStaffTable
                     staffData={retiredStaffList}
                     onEdit={(s) => handleEditStaff(s, true)}
-                    onSetStatus={undefined}
+                    onSetStatus={canManage ? updateStaffStatus : undefined}
                     isViewer={true}
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}

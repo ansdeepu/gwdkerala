@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/establishment/page.tsx
 "use client";
 
@@ -10,9 +11,10 @@ import StaffForm from "@/components/establishment/StaffForm";
 import StaffTable from "@/components/establishment/StaffTable";
 import TransferredStaffTable from "@/components/establishment/TransferredStaffTable";
 import RetiredStaffTable from "@/components/establishment/RetiredStaffTable";
+import VacancyTable from "@/components/establishment/VacancyTable";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
-import type { StaffMember, StaffMemberFormData, StaffStatusType } from "@/lib/schemas";
+import type { StaffMember, StaffMemberFormData, StaffStatusType, Designation } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -31,6 +33,8 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Search, FileDown, UserPlus, Loader2, Expand, Edit, XCircle, Clock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { designationOptions } from "@/lib/schemas";
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +69,7 @@ export default function SuperAdminEstablishmentPage() {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(""); 
   const [isFiltering, setIsFiltering] = useState(false);
   const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([]);
+  const [designationFilter, setDesignationFilter] = useState('all');
 
   const [imageForModal, setImageForModal] = useState<string | null>(null);
   
@@ -155,19 +160,23 @@ export default function SuperAdminEstablishmentPage() {
     const lowerSearchTerm = debouncedSearchTerm.toLowerCase();
     
     requestAnimationFrame(() => {
-      if (!lowerSearchTerm) {
-          setFilteredStaff(staffMembers);
-      } else {
-          const filtered = staffMembers.filter(staff => 
-              (staff.name?.toLowerCase().includes(lowerSearchTerm)) ||
-              (staff.designation?.toLowerCase().includes(lowerSearchTerm)) ||
-              (staff.pen?.toLowerCase().includes(lowerSearchTerm))
-          );
-          setFilteredStaff(filtered);
+      let tempFilteredStaff = [...staffMembers];
+      
+      if (designationFilter !== 'all') {
+        tempFilteredStaff = tempFilteredStaff.filter(s => s.designation === designationFilter);
       }
+
+      if (lowerSearchTerm) {
+        tempFilteredStaff = tempFilteredStaff.filter(staff => 
+            (staff.name?.toLowerCase().includes(lowerSearchTerm)) ||
+            (staff.designation?.toLowerCase().includes(lowerSearchTerm)) ||
+            (staff.pen?.toLowerCase().includes(lowerSearchTerm))
+        );
+      }
+      setFilteredStaff(tempFilteredStaff);
       setIsFiltering(false);
     });
-  }, [debouncedSearchTerm, staffMembers, staffLoadingHook]);
+  }, [debouncedSearchTerm, staffMembers, staffLoadingHook, designationFilter]);
 
   const allActiveStaff = useMemo(() => filteredStaff.filter(s => s.status === 'Active'), [filteredStaff]);
         
@@ -204,21 +213,30 @@ export default function SuperAdminEstablishmentPage() {
               />
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
+              <Select value={designationFilter} onValueChange={setDesignationFilter}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Filter by Designation" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Designations</SelectItem>
+                  {designationOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Button onClick={handleAddNewStaff} size="sm" className="w-full sm:w-auto">
                 <UserPlus className="mr-2 h-4 w-4" /> Add New Staff
               </Button>
             </div>
           </div>
-          <Tabs defaultValue="activeStaff" className="w-full pt-4 border-t">
+          <Tabs defaultValue="allStaff" className="w-full pt-4 border-t">
             <TabsList className="grid w-full grid-cols-5 sm:w-[900px]">
-              <TabsTrigger value="activeStaff">All Staff ({otherOfficesStaffList.length})</TabsTrigger>
+              <TabsTrigger value="allStaff">All Staff ({otherOfficesStaffList.length})</TabsTrigger>
               <TabsTrigger value="directorateStaff">Directorate Staff ({directorateStaffList.length})</TabsTrigger>
               <TabsTrigger value="transfers" className="text-amber-700 data-[state=active]:bg-amber-50">Transfers ({transfersList.length})</TabsTrigger>
-              <TabsTrigger value="transferredStaff">History ({transferredStaffList.length})</TabsTrigger>
               <TabsTrigger value="retiredStaff">Retired ({retiredStaffList.length})</TabsTrigger>
+              <TabsTrigger value="vacancy">Vacancy</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="activeStaff" className="mt-4">
+            <TabsContent value="allStaff" className="mt-4">
               <div className="max-h-[70vh] overflow-auto">
                 <StaffTable
                   staffData={otherOfficesStaffList}
@@ -307,19 +325,6 @@ export default function SuperAdminEstablishmentPage() {
                 </div>
             </TabsContent>
 
-            <TabsContent value="transferredStaff" className="mt-4">
-              <div className="max-h-[70vh] overflow-auto">
-                <TransferredStaffTable
-                    staffData={transferredStaffList}
-                    onEdit={handleEditStaff}
-                    onSetStatus={updateStaffStatus}
-                    isViewer={isViewer}
-                    onImageClick={setImageForModal}
-                    isLoading={isFiltering}
-                    searchActive={!!debouncedSearchTerm}
-                />
-              </div>
-            </TabsContent>
             <TabsContent value="retiredStaff" className="mt-4">
               <div className="max-h-[70vh] overflow-auto">
                 <RetiredStaffTable
@@ -332,6 +337,9 @@ export default function SuperAdminEstablishmentPage() {
                     searchActive={!!debouncedSearchTerm}
                 />
               </div>
+            </TabsContent>
+            <TabsContent value="vacancy" className="mt-4">
+              <VacancyTable canManage={canManage} />
             </TabsContent>
           </Tabs>
         </CardContent>

@@ -426,7 +426,7 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
                     <DialogFooter className="p-6 pt-4 border-t shrink-0">
                         <Button variant="outline" onClick={() => setIsConfigDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleSaveStrength} disabled={!configData.designation || isSubmitting}>
-                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="mr-2 h-4 w-4 mr-2" />}
+                            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="mr-2 h-4 mr-2" />}
                             Save Configuration
                         </Button>
                     </DialogFooter>
