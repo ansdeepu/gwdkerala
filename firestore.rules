@@ -75,7 +75,7 @@ service cloud.firestore {
       }
 
       allow get: if isSuperAdmin() || (isApproved() && request.auth.uid == userId) || isReadingOwnOfficeUser();
-      allow list: if isSuperAdmin() || isSubOfficeAdmin();
+      allow list: if isSuperAdmin() || isSubOfficeAdmin() || isSupervisor() || isInvestigator();
       allow create: if isSuperAdmin() || isManagingOwnOfficeUser();
       allow update: if isSuperAdmin() || isManagingOwnOfficeUser() || (isApproved() && request.auth.uid == userId);
       allow delete: if isSuperAdmin() || (isSubOfficeAdmin() && getUserData().officeLocation.lower() == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation.lower());
@@ -143,7 +143,7 @@ service cloud.firestore {
 
       match /arsEntries/{docId} {
         allow get: if officeRead() || ((isSupervisor() || isInvestigator()) && resource.data.supervisorUid == request.auth.uid);
-        allow list: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if officeRead() || isSupervisor();
         allow delete: if canManageAll();
         allow write: if canEditEngineering();
       }
