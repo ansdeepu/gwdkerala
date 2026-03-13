@@ -219,7 +219,7 @@ export default function SuperAdminEstablishmentPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Designations</SelectItem>
-                  {designationOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  {designationOptions.filter(d => d !== "District Officer").map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Button onClick={handleAddNewStaff} size="sm" className="w-full sm:w-auto">
@@ -227,19 +227,19 @@ export default function SuperAdminEstablishmentPage() {
               </Button>
             </div>
           </div>
-          <Tabs defaultValue="allStaff" className="w-full pt-4 border-t">
+          <Tabs defaultValue="directorateStaff" className="w-full pt-4 border-t">
             <TabsList className="grid w-full grid-cols-5 sm:w-[900px]">
-              <TabsTrigger value="allStaff">All Staff ({otherOfficesStaffList.length})</TabsTrigger>
               <TabsTrigger value="directorateStaff">Directorate Staff ({directorateStaffList.length})</TabsTrigger>
+              <TabsTrigger value="allStaff">All Staff ({otherOfficesStaffList.length})</TabsTrigger>
               <TabsTrigger value="transfers" className="text-amber-700 data-[state=active]:bg-amber-50">Transfers ({transfersList.length})</TabsTrigger>
               <TabsTrigger value="retiredStaff">Retired ({retiredStaffList.length})</TabsTrigger>
               <TabsTrigger value="vacancy">Vacancy</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="allStaff" className="mt-4">
+            <TabsContent value="directorateStaff" className="mt-4">
               <div className="max-h-[70vh] overflow-auto">
                 <StaffTable
-                  staffData={otherOfficesStaffList}
+                  staffData={directorateStaffList}
                   onEdit={handleEditStaff}
                   onSetStatus={updateStaffStatus}
                   isViewer={isViewer}
@@ -249,11 +249,11 @@ export default function SuperAdminEstablishmentPage() {
                 />
               </div>
             </TabsContent>
-            
-            <TabsContent value="directorateStaff" className="mt-4">
+
+            <TabsContent value="allStaff" className="mt-4">
               <div className="max-h-[70vh] overflow-auto">
                 <StaffTable
-                  staffData={directorateStaffList}
+                  staffData={otherOfficesStaffList}
                   onEdit={handleEditStaff}
                   onSetStatus={updateStaffStatus}
                   isViewer={isViewer}
@@ -368,7 +368,7 @@ export default function SuperAdminEstablishmentPage() {
       <Dialog open={!!imageForModal} onOpenChange={(open) => !open && setImageForModal(null)}>
         <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="p-0 border-0 bg-transparent shadow-none w-auto max-w-[90vw]">
           <div className="flex justify-center items-center max-h-[90vh] overflow-hidden">
-            {imageForModal && <img src={imageForModal} alt="Staff photo enlarged" className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"/>}
+            {imageForModal && <img src={imageForModal} alt="Staff photo enlarged" className="max-w-full max-h-full object-contain rounded-md shadow-2xl"/>}
           </div>
         </DialogContent>
       </Dialog>
