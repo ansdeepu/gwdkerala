@@ -542,9 +542,9 @@ export default function SettingsPage() {
                     <div className="flex justify-between items-center">
                         <div>
                             <CardTitle className="flex items-center gap-2"><FileUp className="h-5 w-5 text-primary" />Bulk Data Management</CardTitle>
-                            <CardDescription>Import or clear Local Self Governments and their associated Constituencies.</CardDescription>
+                            <CardDescription>View Local Self Governments and their associated Constituencies.</CardDescription>
                         </div>
-                        {canManage && (
+                        {isAdmin && (
                             <div className="flex items-center gap-2">
                             <input type="file" ref={fileInputRef} onChange={handleExcelImport} className="hidden" accept=".xlsx, .xls" />
                             <Button onClick={() => fileInputRef.current?.click()} disabled={isSubmitting}>
