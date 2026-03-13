@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/establishment/page.tsx
 "use client";
 
@@ -170,8 +169,18 @@ export default function SuperAdminEstablishmentPage() {
     });
   }, [debouncedSearchTerm, staffMembers, staffLoadingHook]);
 
-
-  const activeStaffList = useMemo(() => filteredStaff.filter(s => s.status === 'Active'), [filteredStaff]);
+  const allActiveStaff = useMemo(() => filteredStaff.filter(s => s.status === 'Active'), [filteredStaff]);
+        
+  const directorateStaffList = useMemo(() => allActiveStaff.filter(s => {
+      const loc = (s as any).officeLocationFromPath || s.officeLocation;
+      return !loc || loc.toLowerCase() === 'directorate';
+  }), [allActiveStaff]);
+  
+  const otherOfficesStaffList = useMemo(() => allActiveStaff.filter(s => {
+      const loc = (s as any).officeLocationFromPath || s.officeLocation;
+      return loc && loc.toLowerCase() !== 'directorate';
+  }), [allActiveStaff]);
+  
   const transfersList = useMemo(() => filteredStaff.filter(s => s.status === 'Pending Transfer'), [filteredStaff]);
   const transferredStaffList = useMemo(() => filteredStaff.filter(s => s.status === 'Transferred'), [filteredStaff]);
   const retiredStaffList = useMemo(() => filteredStaff.filter(s => s.status === 'Retired'), [filteredStaff]);
@@ -201,8 +210,9 @@ export default function SuperAdminEstablishmentPage() {
             </div>
           </div>
           <Tabs defaultValue="activeStaff" className="w-full pt-4 border-t">
-            <TabsList className="grid w-full grid-cols-4 sm:w-[800px]">
-              <TabsTrigger value="activeStaff">Active ({activeStaffList.length})</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 sm:w-[900px]">
+              <TabsTrigger value="activeStaff">All Staff ({otherOfficesStaffList.length})</TabsTrigger>
+              <TabsTrigger value="directorateStaff">Directorate Staff ({directorateStaffList.length})</TabsTrigger>
               <TabsTrigger value="transfers" className="text-amber-700 data-[state=active]:bg-amber-50">Transfers ({transfersList.length})</TabsTrigger>
               <TabsTrigger value="transferredStaff">History ({transferredStaffList.length})</TabsTrigger>
               <TabsTrigger value="retiredStaff">Retired ({retiredStaffList.length})</TabsTrigger>
@@ -211,7 +221,21 @@ export default function SuperAdminEstablishmentPage() {
             <TabsContent value="activeStaff" className="mt-4">
               <div className="max-h-[70vh] overflow-auto">
                 <StaffTable
-                  staffData={activeStaffList}
+                  staffData={otherOfficesStaffList}
+                  onEdit={handleEditStaff}
+                  onSetStatus={updateStaffStatus}
+                  isViewer={isViewer}
+                  onImageClick={setImageForModal}
+                  isLoading={isFiltering}
+                  searchActive={!!debouncedSearchTerm}
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="directorateStaff" className="mt-4">
+              <div className="max-h-[70vh] overflow-auto">
+                <StaffTable
+                  staffData={directorateStaffList}
                   onEdit={handleEditStaff}
                   onSetStatus={updateStaffStatus}
                   isViewer={isViewer}
