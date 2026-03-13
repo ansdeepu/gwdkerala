@@ -213,43 +213,43 @@ service cloud.firestore {
     /* ================= COLLECTION GROUP RULES FOR SUPER ADMIN LISTS ================= */
 
     match /{path=**}/fileEntries/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/arsEntries/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/staffMembers/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/agencyApplications/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/eTenders/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/departmentVehicles/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/hiredVehicles/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/rigCompressors/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/bidders/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/localSelfGovernments/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/officeAddresses/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
     match /{path=**}/users/{userId} {
       allow read: if isSuperAdmin();
     }
     match /{path=**}/sanctionedStrength/{docId} {
-      allow read: if isSuperAdmin();
+      allow read: if isApproved();
     }
   }
 }
