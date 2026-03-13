@@ -76,12 +76,13 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
         return tenders
             .filter(t => (t.presentStatus === 'Work Order Issued' || t.presentStatus === 'Supply Order Issued') && t.dateWorkOrder && t.periodOfCompletion)
             .map((tender, index) => {
-                const l1Bidder = (tender.bidders || [])
+                const acceptedBidders = (tender.bidders || [])
                     .filter(b => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0)
-                    .reduce((lowest, current) => (lowest.quotedAmount ?? Infinity) < (current.quotedAmount ?? Infinity) ? lowest : current, { quotedAmount: Infinity } as Bidder);
+                    .sort((a, b) => (a.quotedAmount ?? Infinity) - (b.quotedAmount ?? Infinity));
+                const l1Bidder = acceptedBidders.length > 0 ? acceptedBidders[0] : null;
 
                 const hasRejectedBids = tender.bidders?.some(b => b.status === 'Rejected');
-                const contractAmount = (hasRejectedBids && tender.agreedAmount) ? tender.agreedAmount : (l1Bidder && l1Bidder.id ? l1Bidder.quotedAmount : undefined);
+                const contractAmount = (hasRejectedBids && tender.agreedAmount) ? tender.agreedAmount : (l1Bidder ? l1Bidder.quotedAmount : undefined);
 
                 const supervisorNames = [
                     tender.nameOfAssistantEngineer,
@@ -103,7 +104,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                     slNo: index + 1,
                     dateOfWorkOrder: tender.dateWorkOrder ? formatDateSafe(tender.dateWorkOrder) : 'N/A',
                     nameOfWork: tender.nameOfWork,
-                    contractor: l1Bidder && l1Bidder.id ? l1Bidder.name : 'N/A',
+                    contractor: l1Bidder ? l1Bidder.name : 'N/A',
                     supervisor: supervisorNames || 'N/A',
                     quotedAmount: contractAmount,
                     expectedDateOfCompletion: expectedDateOfCompletion ? formatDateSafe(expectedDateOfCompletion) : 'N/A',
@@ -194,7 +195,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                             <TableBody>
                                 {workOrderData.length > 0 ? (
                                     workOrderData.map(row => (
-                                        <TableRow key={row.id} className={cn(row.isOverdue && "bg-red-500/10")}>
+                                        <TableRow key={row.id} className={cn(row.isOverdue && "text-destructive font-bold")}>
                                             <TableCell>{row.slNo}</TableCell>
                                             <TableCell>{row.dateOfWorkOrder}</TableCell>
                                             <TableCell className="font-medium">{row.nameOfWork}</TableCell>
@@ -609,7 +610,7 @@ export default function ETenderListPage() {
                         {lastCreatedDate && (
                             <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
                                 <Clock className="h-3 w-3"/>
-                                Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                                Last created: <span className="font-mono font-bold">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                             </div>
                         )}
                     </div>
