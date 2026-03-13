@@ -48,6 +48,20 @@ interface ArsStatusOverviewProps {
   onSetDates: (dates: { start?: Date, end?: Date }) => void;
 }
 
+const statusIcons: { [key: string]: React.ElementType } = {
+  "Proposal Submitted": FileText,
+  "AS & TS Issued": FileText,
+  "Tendered": Hammer,
+  "Selection Notice Issued": FileText,
+  "Work Order Issued": Hammer,
+  "Work Initiated": Construction,
+  "Work in Progress": Wrench,
+  "Work Failed": AlertTriangle,
+  "Work Completed": CheckCircle2,
+  "Bill Prepared": DollarSign,
+  "Payment Completed": DollarSign,
+};
+
 export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: ArsStatusOverviewProps) {
   const { arsEntries, isLoading } = useArsEntries();
   const [schemeTypeFilter, setSchemeTypeFilter] = useState<string>('all');
@@ -168,7 +182,7 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
       <CardContent className="flex-1 p-0">
           <ScrollArea className="h-full">
               <div className="p-6 pt-0">
-                <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <button onClick={() => handleWorkStatusCellClick(arsDashboardData?.allArsSites ?? [], 'All ARS Sites')} disabled={(arsDashboardData?.totalArsSites ?? 0) === 0} className="p-4 border rounded-lg bg-blue-500/10 text-center hover:bg-blue-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         <p className="text-sm font-medium text-blue-600">Total ARS Sites</p>
                         <p className="text-4xl font-bold text-blue-700">{arsDashboardData?.totalArsSites ?? 0}</p>
