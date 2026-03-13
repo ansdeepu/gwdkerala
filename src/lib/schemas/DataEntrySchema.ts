@@ -24,7 +24,12 @@ export const MediaItemSchema = z.object({
 export type MediaItem = z.infer<typeof MediaItemSchema>;
 
 export const designationOptions = [
-    "District Officer", "Executive Engineer", "Senior Hydrogeologist", "Assistant Executive Engineer",
+    "Director",
+    "Superintending Engineer (General)",
+    "Superintending Engineer (NHP)",
+    "Superintending Hydrogeologist (General)",
+    "Superintending Hydrogeologist (NHP)",
+    "District Officer", "Executive Engineer", "Senior Hydrogeologist", "Senior Geophysicist", "Assistant Executive Engineer",
     "Hydrogeologist", "Geophysicist", "Assistant Engineer", "Junior Hydrogeologist",
     "Junior Geophysicist", "Geological Assistant", "Geophysical Assistant", "Master Driller",
     "Senior Driller", "Driller", "Driller Mechanic", "Drilling Assistant", "Compressor Driver",
@@ -34,7 +39,12 @@ export const designationOptions = [
 export type Designation = typeof designationOptions[number];
 
 export const designationMalayalamOptions = [
-    "ജില്ലാ ഓഫീസർ", "എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "സീനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്",
+    "Director",
+    "Superintending Engineer (General)",
+    "Superintending Engineer (NHP)",
+    "Superintending Hydrogeologist (General)",
+    "Superintending Hydrogeologist (NHP)",
+    "ജില്ലാ ഓഫീസർ", "എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "സീനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്", "Senior Geophysicist",
     "അസിസ്റ്റന്റ് എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "ഹൈഡ്രോജിയോളജിസ്റ്റ്", "ജിയോഫിസിസ്റ്റ്",
     "അസിസ്റ്റന്റ് എഞ്ചിനീയർ", "ജൂനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്", "ജൂനിയർ ജിയോഫിസിസ്റ്റ്",
     "ജിയോളജിക്കൽ അസിസ്റ്റന്റ്", "ജിയോഫിസിക്കൽ അസിസ്റ്റന്റ്", "മാസ്റ്റർ ഡ്രില്ലർ",
@@ -281,7 +291,7 @@ export const reportableFields = [
     { id: 'appType', label: 'App Type', accessor: (e: any) => applicationTypeDisplayMap[e.applicationType as ApplicationType] || e.applicationType, sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'] },
     { id: 'remittance', label: 'Remittance (₹)', accessor: (e: any) => e.totalRemittance, sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'] },
     { id: 'reappropriation', label: 'Re-appropriation (₹)', accessor: (e: any) => e.totalReappropriation, sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'] },
-    { id: 'expenditure', label: 'Expenditure (₹)', accessor: (e: any) => e.totalPaymentAllEntries, sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'] },
+    { id: 'expenditure', label: 'Expenditure (₹)', accessor: (e: any) => e.totalPaymentAllEntries, sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], arsApplicable: true },
     { id: 'balance', label: 'Balance (₹)', accessor: (e: any) => e.overallBalance, sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], arsApplicable: true },
     { id: 'siteName', label: 'Site Name', accessor: (e: any) => e.nameOfSite, sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], arsApplicable: true },
     { id: 'purpose', label: 'Purpose', accessor: (e: any) => e.purpose, sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'] },

@@ -1,4 +1,3 @@
-
 // src/components/establishment/StaffForm.tsx
 "use client";
 
@@ -113,6 +112,18 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const [imageLoadError, setImageLoadError] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
+  const formDesignationOptions = useMemo(() => {
+    if (user?.role === 'superAdmin') {
+        return designationOptions;
+    }
+    // For regular admins, filter out directorate-level roles
+    const directorateRoles = [
+        "Director", "Superintending Engineer (General)", "Superintending Engineer (NHP)",
+        "Superintending Hydrogeologist (General)", "Superintending Hydrogeologist (NHP)", "Senior Geophysicist"
+    ];
+    return designationOptions.filter(d => !directorateRoles.includes(d));
+  }, [user]);
+
   const defaultValues = useMemo((): StaffMemberFormData => {
     const rawData = initialData || {};
     
@@ -159,7 +170,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     return {
         name: normalize(getField(rawData, 'name')),
         nameMalayalam: normalize(getField(rawData, 'nameMalayalam')),
-        designation: designationOptions.find(o => o.toLowerCase().trim() === designationValue.toLowerCase()) as any,
+        designation: formDesignationOptions.find(o => o.toLowerCase().trim() === designationValue.toLowerCase()) as any,
         designationMalayalam: designationMalayalamOptions.find(o => o.toLowerCase().trim() === designationMalayalamValue.toLowerCase()) as any,
         pen: normalize(getField(rawData, 'pen')),
         email,
@@ -174,7 +185,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         officeLocation: officeLocationValue,
         createUserAccount: false,
     };
-  }, [initialData, allUsers]);
+  }, [initialData, allUsers, formDesignationOptions]);
 
   const form = useForm<StaffMemberFormData>({
     resolver: zodResolver(StaffMemberFormDataSchema),
@@ -267,7 +278,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {designationOptions.map(option => (
+                        {formDesignationOptions.map(option => (
                           <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}
                       </SelectContent>
