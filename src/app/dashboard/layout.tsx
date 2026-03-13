@@ -126,9 +126,13 @@ function BreadcrumbNav() {
     segments.forEach((segment, index) => {
       let href = `/${segments.slice(0, index + 1).join('/')}`;
       const isLast = index === segments.length - 1;
+      const prevSegment = index > 0 ? segments[index - 1] : null;
       
       let label = labelMap[segment] || segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       
+      // Pattern to detect if a segment is a technical ID (e.g. Firebase ID or 'new')
+      const isIdSegment = segment.length > 15 || segment === 'new' || (prevSegment && ['e-tender', 'ars', 'agency-registration'].includes(prevSegment));
+
       if (segment === 'data-entry') {
           const workType = searchParams.get('workType');
           const workTypeMapping: Record<string, { label: string, href: string }> = {
@@ -145,24 +149,33 @@ function BreadcrumbNav() {
               result.push({ href: listHref, label: workTypeMapping[workType].label, isLast: false });
           }
           
-          // Use the dynamic page title if it's the last segment
           if (isLast) {
               label = title;
           }
       }
 
-      // Handle query-param based detail views (Rig Registration, ARS)
-      if (isLast && detailId && segment !== 'data-entry') {
-          if (segment !== 'entry') {
+      // Handle ID-based detail segments (either as path param /id or query param ?id=...)
+      if (isLast && (isIdSegment || detailId) && segment !== 'data-entry') {
+          // If query-param based detail (where parent crumb isn't in segments naturally)
+          if (detailId && segment !== 'entry') {
               const listHref = pageNum ? `${href}?page=${pageNum}` : href;
               result.push({ href: listHref, label, isLast: false });
           }
           
+          // Use dynamic title for the last crumb, cleaning up prefixes
           let detailLabel = title;
+          const prefixes = [
+            /^Edit e-Tender: /, /^Create New e-Tender/, /^Edit File: /, /^View File: /,
+            /^Approve Update: /, /^Approve ARS Update/, /^Edit: /, /^View: /, /^Update: /,
+            /^New Rig Registration/
+          ];
+          prefixes.forEach(p => detailLabel = detailLabel.replace(p, ''));
+          
           if (!detailLabel || detailLabel.includes('Loading')) {
-              detailLabel = detailId === 'new' ? 'New Registration' : 'View Details';
+              detailLabel = (detailId === 'new' || segment === 'new') ? 'New' : 'Details';
           }
-          const detailHref = `${href}?id=${detailId}${pageNum ? `&page=${pageNum}` : ''}`;
+          
+          const detailHref = detailId ? `${href}?id=${detailId}${pageNum ? `&page=${pageNum}` : ''}` : href;
           result.push({ href: detailHref, label: detailLabel, isLast: true });
       } else if (isLast) {
           // Standard last crumb
