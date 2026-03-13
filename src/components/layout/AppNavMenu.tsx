@@ -1,3 +1,4 @@
+
 // src/components/layout/AppNavMenu.tsx
 "use client";
 
@@ -63,6 +64,7 @@ export const superAdminNavItems: NavItem[] = [
     { href: '/dashboard/super-admin/office-management', label: 'Office Management', icon: Building },
     { href: '/dashboard/super-admin/user-management', label: 'Directorate Users', icon: Users },
     { href: '/dashboard/super-admin/settings', label: 'Settings', icon: Settings },
+    { href: '/dashboard/help', label: 'Help & About', icon: HelpCircle },
 ];
 
 const navItemColors = [
