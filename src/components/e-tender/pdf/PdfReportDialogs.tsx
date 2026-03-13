@@ -235,11 +235,11 @@ export default function PdfReportDialogs() {
                                     <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <ReportButton 
                                             label="Notice Inviting Tender (NIT)"
-                                            onClick={() => handleGeneratePdf(generateNIT, `Retender_NIT_${index+1}${formattedTenderNo}.pdf`, 'Retender NIT downloaded.', { dateTimeOfReceipt: retender.lastDateOfReceipt, dateTimeOfOpening: retender.dateOfOpeningTender })}
+                                            onClick={() => handleGeneratePdf(generateNIT, `Retender_NIT_${index+1}${formattedTenderNo}.pdf`, 'Retender NIT downloaded.', { tenderDate: retender.retenderDate, dateTimeOfReceipt: retender.lastDateOfReceipt, dateTimeOfOpening: retender.dateOfOpeningTender })}
                                         />
                                         <ReportButton 
                                             label="Tender Form"
-                                            onClick={() => handleGeneratePdf(generateTenderForm, `Retender_Form_${index+1}${formattedTenderNo}.pdf`, 'Retender Form downloaded.', { dateTimeOfReceipt: retender.lastDateOfReceipt, dateTimeOfOpening: retender.dateOfOpeningTender })}
+                                            onClick={() => handleGeneratePdf(generateTenderForm, `Retender_Form_${index+1}${formattedTenderNo}.pdf`, 'Retender Form downloaded.', { tenderDate: retender.retenderDate, dateTimeOfReceipt: retender.lastDateOfReceipt, dateTimeOfOpening: retender.dateOfOpeningTender })}
                                         />
                                     </div>
                                 </div>
