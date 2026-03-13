@@ -54,13 +54,13 @@ service cloud.firestore {
     function isViewer() {
       return isApproved() && getRole() == 'viewer';
     }
-
+    
     function sameOffice(officeId) {
       let data = getUserData();
-      return isApproved() &&
-             data != null &&
+      return data != null &&
+             data.isApproved == true &&
              'officeLocation' in data &&
-             officeId.lower() == data.officeLocation.lower();
+             data.officeLocation.lower() == officeId.lower();
     }
 
     /* ================= GLOBAL COLLECTIONS ================= */
