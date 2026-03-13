@@ -210,10 +210,23 @@ export const StaffMemberSchema = BaseStaffMemberFormDataSchema.extend({
 });
 export type StaffMember = z.infer<typeof StaffMemberSchema>;
 
+export const gwdRateCategories = [
+    "GW Investigation",
+    "Borewell Construction 110 mm dia (4.5\")",
+    "Borewell Construction 150 mm dia (6\")",
+    "Tubewell Construction 150 mm dia (6\")",
+    "Tubewell Construction 200 mm dia (8\")",
+    "Filter Point Well Construction 110 mm (4.5\")",
+    "Well Developing",
+    "Logging & Pumping Test"
+] as const;
+export type GwdRateCategory = typeof gwdRateCategories[number];
+
 // GWD Rates Schemas
 export const GwdRateItemFormDataSchema = z.object({
   itemName: z.string().min(1, 'Item name is required.'),
   rate: z.coerce.number({ invalid_type_error: 'Rate must be a number.'}).min(0, 'Rate cannot be negative.'),
+  category: z.enum(gwdRateCategories).optional(),
 });
 export type GwdRateItemFormData = z.infer<typeof GwdRateItemFormDataSchema>;
 
@@ -222,6 +235,7 @@ export const GwdRateItemSchema = GwdRateItemFormDataSchema.extend({
   order: z.number().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
+  category: z.enum(gwdRateCategories).optional(),
 });
 export type GwdRateItem = z.infer<typeof GwdRateItemSchema>;
 

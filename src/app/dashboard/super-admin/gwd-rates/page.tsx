@@ -56,7 +56,7 @@ import ExcelJS from "exceljs";
 import { format } from "date-fns";
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, getDocs, query, writeBatch, setDoc, orderBy } from "firebase/firestore";
 import { app } from "@/lib/firebase";
-import { GwdRateItemFormDataSchema, type GwdRateItem, type GwdRateItemFormData } from "@/lib/schemas";
+import { GwdRateItemFormDataSchema, type GwdRateItem, type GwdRateItemFormData, gwdRateCategories } from "@/lib/schemas";
 import { z } from 'zod';
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -66,6 +66,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDataStore, type RateDescriptionId } from "@/hooks/use-data-store";
 import { useRouter } from "next/navigation";
 import { DollarSign, PlusCircle, Trash2, Loader2, Save, X, ShieldAlert, Eye } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 
 
 export const dynamic = 'force-dynamic';
@@ -233,6 +235,54 @@ const RigFeeDetailsContent = () => {
     );
 };
 
+const RateCategoryTable = ({ title, items, canManage, handleOpenItemForm, setItemToDelete }: { title: string, items: GwdRateItem[], canManage: boolean, handleOpenItemForm: (item: GwdRateItem | null) => void, setItemToDelete: (item: GwdRateItem | null) => void }) => {
+    return (
+        <AccordionItem value={title.toLowerCase().replace(/ /g, '-').replace(/[."()]/g, '')} className="border rounded-lg bg-background">
+            <AccordionTrigger className="text-lg font-semibold text-primary p-4 hover:no-underline">
+                <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    {title} <Badge variant="secondary">{items.length}</Badge>
+                </div>
+            </AccordionTrigger>
+            <AccordionContent className="p-0">
+                <div className="border-t p-4">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[80px]">Sl. No.</TableHead>
+                                <TableHead>Name of Item</TableHead>
+                                <TableHead className="text-right">Rate (₹)</TableHead>
+                                {canManage && <TableHead className="w-[140px] text-center">Actions</TableHead>}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {items.length > 0 ? items.map((item, index) => (
+                                <TableRow key={item.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell className="font-medium">{item.itemName}</TableCell>
+                                    <TableCell className="text-right">{item.rate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                    {canManage && (
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center space-x-1">
+                                                <Button variant="ghost" size="icon" onClick={() => handleOpenItemForm(item)}><Eye className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setItemToDelete(item)}><Trash2 className="h-4 w-4" /></Button>
+                                            </div>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={canManage ? 4 : 3} className="text-center h-24 text-muted-foreground">No items in this category.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+    );
+};
+
 export default function GwdRatesPage() {
   const { setHeader } = usePageHeader();
   const { user, isLoading: authLoading } = useAuth();
@@ -274,6 +324,7 @@ export default function GwdRatesPage() {
           itemName: data.itemName || "",
           rate: data.rate ?? 0,
           order: data.order,
+          category: data.category,
           createdAt,
           updatedAt,
         } as GwdRateItem;
@@ -305,7 +356,7 @@ export default function GwdRatesPage() {
   const handleOpenItemForm = (item: GwdRateItem | null) => {
     if (!canManage) return;
     setEditingItem(item);
-    itemForm.reset(item ? { itemName: item.itemName, rate: item.rate } : { itemName: "", rate: undefined });
+    itemForm.reset(item ? { itemName: item.itemName, rate: item.rate, category: item.category } : { itemName: "", rate: undefined, category: undefined });
     setIsItemFormOpen(true);
   };
 
@@ -320,6 +371,7 @@ export default function GwdRatesPage() {
       const payload = {
         itemName: data.itemName,
         rate: Number(data.rate),
+        category: data.category,
       };
 
       if (editingItem) {
@@ -380,6 +432,24 @@ export default function GwdRatesPage() {
         setIsSubmitting(false);
     }
   };
+  
+  const categorizedItems = useMemo(() => {
+      const categories: Record<string, GwdRateItem[]> = {};
+      gwdRateCategories.forEach(cat => categories[cat] = []);
+      
+      rateItems.forEach(item => {
+          if (item.category && gwdRateCategories.includes(item.category as any)) {
+              categories[item.category].push(item);
+          }
+      });
+
+      // Sort items within each category
+      for (const category in categories) {
+          categories[category].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      }
+
+      return categories;
+  }, [rateItems]);
 
 
   if (authLoading || isLoading) {
@@ -418,41 +488,18 @@ export default function GwdRatesPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="max-h-[60vh] overflow-auto">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-secondary/80 backdrop-blur-sm">
-                        <TableRow>
-                          <TableHead className="w-[80px] h-auto py-3 px-4">Sl. No.</TableHead>
-                          <TableHead className="h-auto py-3 px-4">Name of Item</TableHead>
-                          <TableHead className="text-right h-auto py-3 px-4">Rate (₹)</TableHead>
-                          <TableHead className="w-[140px] text-center h-auto py-3 px-4">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {rateItems.length > 0 ? rateItems.map((item, index) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="py-2 px-4">{index + 1}</TableCell>
-                            <TableCell className="font-medium py-2 px-4">{item.itemName}</TableCell>
-                            <TableCell className="text-right py-2 px-4">{item.rate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                            <TableCell className="text-center py-2 px-4">
-                              {canManage ? (
-                                <div className="flex items-center justify-center space-x-1">
-                                  <Button variant="ghost" size="icon" onClick={() => handleOpenItemForm(item)}><Eye className="h-4 w-4" /></Button>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setItemToDelete(item)}><Trash2 className="h-4 w-4" /></Button>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">View Only</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        )) : (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center py-10">No items found. {canManage && "Add one to get started."}</TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <Accordion type="multiple" className="w-full space-y-4">
+                      {gwdRateCategories.map(category => (
+                          <RateCategoryTable
+                              key={category}
+                              title={category}
+                              items={categorizedItems[category] || []}
+                              canManage={canManage}
+                              handleOpenItemForm={handleOpenItemForm}
+                              setItemToDelete={setItemToDelete}
+                          />
+                      ))}
+                  </Accordion>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -499,6 +546,18 @@ export default function GwdRatesPage() {
           <div className="px-6 pb-6">
             <Form {...itemForm}>
               <form onSubmit={itemForm.handleSubmit(onItemFormSubmit)} className="space-y-4">
+                <FormField name="category" control={itemForm.control} render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select a category" /></SelectTrigger></FormControl>
+                            <SelectContent className="max-h-80">
+                                {gwdRateCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )} />
                 <FormField name="itemName" control={itemForm.control} render={({ field }) => (
                   <FormItem>
                     <FormLabel>Name of Item</FormLabel>

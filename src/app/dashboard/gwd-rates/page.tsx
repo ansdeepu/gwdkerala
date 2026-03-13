@@ -56,7 +56,7 @@ import ExcelJS from "exceljs";
 import { format } from "date-fns";
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp, getDocs, query, writeBatch, setDoc, orderBy } from "firebase/firestore";
 import { app } from "@/lib/firebase";
-import { GwdRateItemFormDataSchema, type GwdRateItem, type GwdRateItemFormData } from "@/lib/schemas";
+import { GwdRateItemFormDataSchema, type GwdRateItem, type GwdRateItemFormData, gwdRateCategories } from "@/lib/schemas";
 import { z } from 'zod';
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -66,6 +66,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDataStore, type RateDescriptionId } from "@/hooks/use-data-store";
 import { useRouter } from "next/navigation";
 import { DollarSign, PlusCircle, Trash2, Loader2, Save, X, ShieldAlert, Eye } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 
 
 export const dynamic = 'force-dynamic';
@@ -233,6 +235,55 @@ const RigFeeDetailsContent = () => {
     );
 };
 
+const RateCategoryTable = ({ title, items, canManage, handleOpenItemForm, setItemToDelete }: { title: string, items: GwdRateItem[], canManage: boolean, handleOpenItemForm: (item: GwdRateItem | null) => void, setItemToDelete: (item: GwdRateItem | null) => void }) => {
+    return (
+        <AccordionItem value={title.toLowerCase().replace(/ /g, '-').replace(/[."()]/g, '')} className="border rounded-lg bg-background">
+            <AccordionTrigger className="text-lg font-semibold text-primary p-4 hover:no-underline">
+                <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    {title} <Badge variant="secondary">{items.length}</Badge>
+                </div>
+            </AccordionTrigger>
+            <AccordionContent className="p-0">
+                <div className="border-t p-4">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[80px]">Sl. No.</TableHead>
+                                <TableHead>Name of Item</TableHead>
+                                <TableHead className="text-right">Rate (₹)</TableHead>
+                                {canManage && <TableHead className="w-[140px] text-center">Actions</TableHead>}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {items.length > 0 ? items.map((item, index) => (
+                                <TableRow key={item.id}>
+                                    <TableCell>{index + 1}</TableCell>
+                                    <TableCell className="font-medium">{item.itemName}</TableCell>
+                                    <TableCell className="text-right">{item.rate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                    {canManage && (
+                                        <TableCell className="text-center">
+                                            <div className="flex items-center justify-center space-x-1">
+                                                <Button variant="ghost" size="icon" onClick={() => handleOpenItemForm(item)}><Eye className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setItemToDelete(item)}><Trash2 className="h-4 w-4" /></Button>
+                                            </div>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            )) : (
+                                <TableRow>
+                                    <TableCell colSpan={canManage ? 4 : 3} className="text-center h-24 text-muted-foreground">No items in this category.</TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            </AccordionContent>
+        </AccordionItem>
+    );
+};
+
+
 export default function GwdRatesPage() {
   const { setHeader } = usePageHeader();
   const { user, isLoading: authLoading } = useAuth();
@@ -274,6 +325,7 @@ export default function GwdRatesPage() {
           itemName: data.itemName || "",
           rate: data.rate ?? 0,
           order: data.order,
+          category: data.category,
           createdAt,
           updatedAt,
         } as GwdRateItem;
@@ -299,87 +351,24 @@ export default function GwdRatesPage() {
       fetchData();
     }
   }, [user, authLoading, fetchData]);
-
-  const itemForm = useForm<GwdRateItemFormData>({ resolver: zodResolver(GwdRateItemFormDataSchema) });
-
-  const handleOpenItemForm = (item: GwdRateItem | null) => {
-    if (!canManage) return;
-    setEditingItem(item);
-    itemForm.reset(item ? { itemName: item.itemName, rate: item.rate } : { itemName: "", rate: undefined });
-    setIsItemFormOpen(true);
-  };
-
-  const onItemFormSubmit = async (data: GwdRateItemFormData) => {
-    if (!canManage) {
-        toast({ title: "Permission Denied", description: "You do not have permission to perform this action.", variant: "destructive" });
-        return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const payload = {
-        itemName: data.itemName,
-        rate: Number(data.rate),
-      };
-
-      if (editingItem) {
-        const itemDocRef = doc(db, RATES_COLLECTION, editingItem.id);
-        await updateDoc(itemDocRef, { ...payload, updatedAt: serverTimestamp() });
-        toast({ title: "Item Updated", description: "The rate item has been successfully updated." });
-      } else {
-        const newOrder = rateItems.length > 0 ? Math.max(...rateItems.map(item => item.order ?? -1)) + 1 : 0;
-        await addDoc(collection(db, RATES_COLLECTION), { ...payload, order: newOrder, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-        toast({ title: "Item Added", description: "The new rate item has been added." });
-      }
-      setIsItemFormOpen(false);
-      setEditingItem(null);
-      await fetchData();
-    } catch (error: any) {
-      console.error("Item form submission error:", error);
-      toast({ title: "Error", description: error.message || "Could not save the item.", variant: "destructive" });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteItem = async () => {
-    if (!canManage || !itemToDelete) return;
-    setIsSubmitting(true);
-    try {
-      await deleteDoc(doc(db, RATES_COLLECTION, itemToDelete.id));
-      toast({ title: "Item Deleted", description: `"${itemToDelete.itemName}" has been removed.` });
-      setItemToDelete(null);
-      await fetchData();
-    } catch (error: any) {
-      console.error("Item deletion error:", error);
-      toast({ title: "Error", description: error.message || "Could not delete the item.", variant: "destructive" });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleOpenRateDescriptionEditor = (id: RateDescriptionId, title: string) => {
-    if (!canManage) return;
-    setEditingRate({ id, title });
-  };
   
-  const handleSaveRateDescription = async (newDescription: string) => {
-    if (!editingRate || !canManage) return;
+  const categorizedItems = useMemo(() => {
+      const categories: Record<string, GwdRateItem[]> = {};
+      gwdRateCategories.forEach(cat => categories[cat] = []);
+      
+      rateItems.forEach(item => {
+          if (item.category && gwdRateCategories.includes(item.category as any)) {
+              categories[item.category].push(item);
+          }
+      });
 
-    setIsSubmitting(true);
-    try {
-        const docRef = doc(db, RATE_DESCRIPTIONS_COLLECTION, editingRate.id);
-        await setDoc(docRef, { description: newDescription, updatedAt: serverTimestamp() }, { merge: true });
-        refetchRateDescriptions();
-        toast({ title: `${editingRate.title} Updated`, description: 'The description has been saved.' });
-    } catch (error: any) {
-        console.error("Error saving rate description:", error);
-        toast({ title: "Save Failed", description: error.message, variant: "destructive" });
-    } finally {
-        setEditingRate(null);
-        setIsSubmitting(false);
-    }
-  };
+      // Sort items within each category
+      for (const category in categories) {
+          categories[category].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      }
+
+      return categories;
+  }, [rateItems]);
 
 
   if (authLoading || isLoading) {
@@ -415,45 +404,21 @@ export default function GwdRatesPage() {
                  <CardHeader>
                     <div className="flex justify-between items-center">
                         <CardTitle>Master Rate List</CardTitle>
-                        {canManage && <Button size="sm" onClick={() => handleOpenItemForm(null)}><PlusCircle className="mr-2 h-4 w-4"/>Add New Item</Button>}
                     </div>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <div className="max-h-[60vh] overflow-auto">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-secondary/80 backdrop-blur-sm">
-                        <TableRow>
-                          <TableHead className="w-[80px] h-auto py-3 px-4">Sl. No.</TableHead>
-                          <TableHead className="h-auto py-3 px-4">Name of Item</TableHead>
-                          <TableHead className="text-right h-auto py-3 px-4">Rate (₹)</TableHead>
-                          <TableHead className="w-[140px] text-center h-auto py-3 px-4">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {rateItems.length > 0 ? rateItems.map((item, index) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="py-2 px-4">{index + 1}</TableCell>
-                            <TableCell className="font-medium py-2 px-4">{item.itemName}</TableCell>
-                            <TableCell className="text-right py-2 px-4">{item.rate.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                            <TableCell className="text-center py-2 px-4">
-                              {canManage ? (
-                                <div className="flex items-center justify-center space-x-1">
-                                  <Button variant="ghost" size="icon" onClick={() => handleOpenItemForm(item)}><Eye className="h-4 w-4" /></Button>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setItemToDelete(item)}><Trash2 className="h-4 w-4" /></Button>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">View Only</span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        )) : (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center py-10">No items found. {canManage && "Add one to get started."}</TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <Accordion type="multiple" className="w-full space-y-4">
+                      {gwdRateCategories.map(category => (
+                          <RateCategoryTable
+                              key={category}
+                              title={category}
+                              items={categorizedItems[category] || []}
+                              canManage={canManage}
+                              handleOpenItemForm={() => {}}
+                              setItemToDelete={() => {}}
+                          />
+                      ))}
+                  </Accordion>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -465,102 +430,28 @@ export default function GwdRatesPage() {
                 <RateDescriptionCard
                     title="Tender Fee"
                     description={allRateDescriptions.tenderFee}
-                    onEditClick={canManage ? () => handleOpenRateDescriptionEditor('tenderFee', "Tender Fee") : undefined}
                 />
                 <RateDescriptionCard
                     title="Earnest Money Deposit (EMD)"
                     description={allRateDescriptions.emd}
-                    onEditClick={canManage ? () => handleOpenRateDescriptionEditor('emd', "Earnest Money Deposit (EMD)") : undefined}
                 />
                 <RateDescriptionCard
                     title="Performance Guarantee"
                     description={allRateDescriptions.performanceGuarantee}
-                    onEditClick={canManage ? () => handleOpenRateDescriptionEditor('performanceGuarantee', "Performance Guarantee") : undefined}
                 />
                 <RateDescriptionCard
                     title="Additional Performance Guarantee"
                     description={allRateDescriptions.additionalPerformanceGuarantee}
-                    onEditClick={canManage ? () => handleOpenRateDescriptionEditor('additionalPerformanceGuarantee', "Additional Performance Guarantee") : undefined}
                 />
                 <RateDescriptionCard
                     title="Stamp Paper"
                     description={allRateDescriptions.stampPaper}
-                    onEditClick={canManage ? () => handleOpenRateDescriptionEditor('stampPaper', "Stamp Paper") : undefined}
                 />
               </div>
             </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
-
-      <Dialog open={isItemFormOpen} onOpenChange={setIsItemFormOpen}>
-        <DialogContent>
-          <DialogHeader className="p-6 pb-4">
-            <DialogTitle>{editingItem ? 'Edit Item' : 'Add New Item'}</DialogTitle>
-          </DialogHeader>
-          <div className="px-6 pb-6">
-            <Form {...itemForm}>
-              <form onSubmit={itemForm.handleSubmit(onItemFormSubmit)} className="space-y-4">
-                <FormField name="itemName" control={itemForm.control} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name of Item</FormLabel>
-                    <FormControl><Input placeholder="e.g., BWC 110mm" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField name="rate" control={itemForm.control} render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rate (₹)</FormLabel>
-                    <FormControl><Input
-                      type="number"
-                      placeholder="0.00"
-                      {...field}
-                      onChange={e => field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)}
-                      value={field.value ?? ''}
-                    /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <DialogFooter className="pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsItemFormOpen(false)} disabled={isSubmitting}><X className="mr-2 h-4 w-4" />Cancel</Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                    Save
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-       <AlertDialog open={!!itemToDelete} onOpenChange={() => setItemToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action will permanently delete the item "{itemToDelete?.itemName}". This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteItem} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      {editingRate && (
-        <EditRateDescriptionDialog
-            isOpen={!!editingRate}
-            onClose={() => setEditingRate(null)}
-            title={editingRate.title}
-            initialDescription={allRateDescriptions[editingRate.id]}
-            onSave={handleSaveRateDescription}
-            isSaving={isSubmitting}
-        />
-      )}
     </div>
   );
 }
@@ -577,37 +468,3 @@ const RateDescriptionCard = ({ title, description, onEditClick }: { title: strin
         </div>
     </div>
 );
-
-// New component for the edit description dialog
-const EditRateDescriptionDialog = ({ isOpen, onClose, title, initialDescription, onSave, isSaving }: { isOpen: boolean; onClose: () => void; title: string; initialDescription: string; onSave: (newDescription: string) => void, isSaving: boolean }) => {
-    const [description, setDescription] = useState(initialDescription);
-    
-    const handleSave = () => {
-        onSave(description);
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader className="p-6 pb-4">
-                    <DialogTitle>Edit Rate Description: {title}</DialogTitle>
-                </DialogHeader>
-                <div className="px-6 space-y-4">
-                    <Textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        rows={10}
-                        placeholder="Enter the rate description..."
-                    />
-                </div>
-                <DialogFooter className="p-6 pt-4">
-                    <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancel</Button>
-                    <Button onClick={handleSave} disabled={isSaving}>
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                        Save Description
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-};
