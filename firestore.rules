@@ -74,7 +74,7 @@ service cloud.firestore {
           return isSubOfficeAdmin() && resource.data.officeLocation.lower() == getUserData().officeLocation.lower();
       }
 
-      allow get: if isSuperAdmin() || (isApproved() && request.auth.uid == userId) || isReadingOwnOfficeUser();
+      allow get: if isSuperAdmin() || (isSignedIn() && request.auth.uid == userId) || isReadingOwnOfficeUser();
       allow list: if isSuperAdmin() || isSubOfficeAdmin() || isSupervisor() || isInvestigator();
       allow create: if isSuperAdmin() || isManagingOwnOfficeUser();
       allow update: if isSuperAdmin() || isManagingOwnOfficeUser() || (isApproved() && request.auth.uid == userId);
@@ -150,7 +150,8 @@ service cloud.firestore {
       
       match /pendingUpdates/{docId} {
         allow create: if (isSupervisor() || isInvestigator()) && sameOffice(officeId);
-        allow read, list: if canManageAll() || ((isSupervisor() || isInvestigator()) && resource.data.submittedByUid == request.auth.uid);
+        allow get: if canManageAll() || ((isSupervisor() || isInvestigator()) && resource.data.submittedByUid == request.auth.uid);
+        allow list: if canManageAll() || isSupervisor() || isInvestigator();
         allow update, delete: if canManageAll();
       }
       
