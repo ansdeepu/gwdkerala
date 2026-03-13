@@ -73,14 +73,19 @@ const StatCard = ({ title, count, onClick, colorClass, icon: Icon }: { title: st
 
 function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolean, onOpenChange: (open: boolean) => void, tenders: E_tender[] }) {
     const workOrderData = useMemo(() => {
+        const getL1Bidder = (tender: E_tender) => {
+            if (!tender.bidders || tender.bidders.length === 0) return null;
+            const validBidders = tender.bidders.filter(b => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
+            if (validBidders.length === 0) return null;
+            return validBidders.reduce((lowest, current) => 
+                (current.quotedAmount! < lowest.quotedAmount!) ? current : lowest
+            );
+        };
+
         return tenders
             .filter(t => (t.presentStatus === 'Work Order Issued' || t.presentStatus === 'Supply Order Issued') && t.dateWorkOrder && t.periodOfCompletion)
             .map((tender, index) => {
-                const acceptedBidders = (tender.bidders || [])
-                    .filter(b => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0)
-                    .sort((a, b) => (a.quotedAmount ?? Infinity) - (b.quotedAmount ?? Infinity));
-                const l1Bidder = acceptedBidders.length > 0 ? acceptedBidders[0] : null;
-
+                const l1Bidder = getL1Bidder(tender);
                 const hasRejectedBids = tender.bidders?.some(b => b.status === 'Rejected');
                 const contractAmount = (hasRejectedBids && tender.agreedAmount) ? tender.agreedAmount : (l1Bidder ? l1Bidder.quotedAmount : undefined);
 
@@ -103,6 +108,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                     id: tender.id,
                     slNo: index + 1,
                     dateOfWorkOrder: tender.dateWorkOrder ? formatDateSafe(tender.dateWorkOrder) : 'N/A',
+                    eTenderNo: tender.eTenderNo || 'N/A',
                     nameOfWork: tender.nameOfWork,
                     contractor: l1Bidder ? l1Bidder.name : 'N/A',
                     supervisor: supervisorNames || 'N/A',
@@ -122,7 +128,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("WorkOrderData");
         
-        const headers = ["Sl. No.", "Date of Work Order", "Name of Work", "Contractor", "Supervisor", "Quoted Amount (Rs.)", "Expected Date of Completion"];
+        const headers = ["Sl. No.", "Date of Work Order", "e-Tender No.", "Name of Work", "Contractor", "Supervisor", "Quoted Amount (Rs.)", "Expected Date of Completion"];
         const headerRow = worksheet.addRow(headers);
         headerRow.font = { bold: true };
         headerRow.eachCell(cell => {
@@ -134,6 +140,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             const newRow = worksheet.addRow([
                 row.slNo,
                 row.dateOfWorkOrder,
+                row.eTenderNo,
                 row.nameOfWork,
                 row.contractor,
                 row.supervisor,
@@ -173,7 +180,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0">
+            <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0">
                 <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle>Work Order Data</DialogTitle>
                     <DialogDescription>List of all tenders with work orders issued. Overdue projects are marked in red.</DialogDescription>
@@ -185,6 +192,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                 <TableRow>
                                     <TableHead>Sl. No.</TableHead>
                                     <TableHead>Date of Work Order</TableHead>
+                                    <TableHead>e-Tender No.</TableHead>
                                     <TableHead>Name of Work</TableHead>
                                     <TableHead>Contractor</TableHead>
                                     <TableHead>Supervisor</TableHead>
@@ -195,9 +203,10 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                             <TableBody>
                                 {workOrderData.length > 0 ? (
                                     workOrderData.map(row => (
-                                        <TableRow key={row.id} className={cn(row.isOverdue && "text-destructive font-bold")}>
+                                        <TableRow key={row.id} className={cn(row.isOverdue && "text-destructive")}>
                                             <TableCell>{row.slNo}</TableCell>
                                             <TableCell>{row.dateOfWorkOrder}</TableCell>
+                                            <TableCell>{row.eTenderNo}</TableCell>
                                             <TableCell className="font-medium">{row.nameOfWork}</TableCell>
                                             <TableCell>{row.contractor}</TableCell>
                                             <TableCell className="text-xs max-w-[200px] break-words">{row.supervisor}</TableCell>
@@ -207,7 +216,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="h-24 text-center">
+                                        <TableCell colSpan={8} className="h-24 text-center">
                                             No tenders with active work orders found.
                                         </TableCell>
                                     </TableRow>
