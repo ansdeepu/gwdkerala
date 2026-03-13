@@ -553,9 +553,11 @@ export default function AgencyRegistrationPage() {
       remarks: '',
     },
   });
+
+  const { control } = form;
   
-  const { fields: partnerFields, append: appendPartner, remove: removePartner, update: updatePartner } = useFieldArray({ control: form.control, name: "partners" });
-  const { fields: feeFields, append: appendFee, remove: removeFee, update: updateFee } = useFieldArray({ control: form.control, name: "applicationFees" });
+  const { fields: partnerFields, append: appendPartner, remove: removePartner, update: updatePartner } = useFieldArray({ control, name: "partners" });
+  const { fields: feeFields, append: appendFee, remove: removeFee, update: updateFee } = useFieldArray({ control, name: "applicationFees" });
   const { fields: rigFields, append: appendRig, remove: removeRig, update: updateRig } = useFieldArray({ control, name: "rigs" });
   
   const activeRigCount = useMemo(() => rigFields.filter(rig => rig.status === 'Active').length, [rigFields]);
