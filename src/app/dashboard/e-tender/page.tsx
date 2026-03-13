@@ -72,7 +72,29 @@ const StatCard = ({ title, count, onClick, colorClass, icon: Icon }: { title: st
 );
 
 function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolean, onOpenChange: (open: boolean) => void, tenders: E_tender[] }) {
+    const { allStaffMembers } = useDataStore();
+    const { toast } = useToast();
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
     const workOrderData = useMemo(() => {
+        let filteredTenders = tenders.filter(t => (t.presentStatus === 'Work Order Issued' || t.presentStatus === 'Supply Order Issued') && t.dateWorkOrder && t.periodOfCompletion);
+
+        if (startDate || endDate) {
+            const sDate = startDate ? startOfDay(parse(startDate, 'yyyy-MM-dd', new Date())) : null;
+            const eDate = endDate ? endOfDay(parse(endDate, 'yyyy-MM-dd', new Date())) : null;
+            
+            filteredTenders = filteredTenders.filter(t => {
+                const workOrderDate = toDateOrNull(t.dateWorkOrder);
+                if (!workOrderDate || !isValid(workOrderDate)) return false;
+
+                if (sDate && eDate) return isWithinInterval(workOrderDate, { start: sDate, end: eDate });
+                if (sDate) return workOrderDate >= sDate;
+                if (eDate) return workOrderDate <= eDate;
+                return false;
+            });
+        }
+
         const getL1Bidder = (tender: E_tender) => {
             if (!tender.bidders || tender.bidders.length === 0) return null;
             const validBidders = tender.bidders.filter(b => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
@@ -82,20 +104,21 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             );
         };
 
-        return tenders
-            .filter(t => (t.presentStatus === 'Work Order Issued' || t.presentStatus === 'Supply Order Issued') && t.dateWorkOrder && t.periodOfCompletion)
-            .map((tender, index) => {
+        return filteredTenders.map((tender, index) => {
                 const l1Bidder = getL1Bidder(tender);
                 const hasRejectedBids = tender.bidders?.some(b => b.status === 'Rejected');
                 const contractAmount = (hasRejectedBids && tender.agreedAmount) ? tender.agreedAmount : (l1Bidder ? l1Bidder.quotedAmount : undefined);
 
-                const supervisorNames = [
+                const supervisorStaff = [
                     tender.nameOfAssistantEngineer,
                     tender.supervisor1Name,
                     tender.supervisor2Name,
                     tender.supervisor3Name,
-                ].filter(Boolean).join(', ');
-
+                ].filter(Boolean).map(name => {
+                    const staff = allStaffMembers.find(s => s.name === name);
+                    return staff ? `${staff.name} (${staff.designation})` : name;
+                }).join(', ');
+                
                 const workOrderDate = toDateOrNull(tender.dateWorkOrder);
                 let expectedDateOfCompletion: Date | null = null;
                 if (workOrderDate && tender.periodOfCompletion) {
@@ -111,13 +134,13 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                     eTenderNo: tender.eTenderNo || 'N/A',
                     nameOfWork: tender.nameOfWork,
                     contractor: l1Bidder ? l1Bidder.name : 'N/A',
-                    supervisor: supervisorNames || 'N/A',
+                    supervisor: supervisorStaff || 'N/A',
                     quotedAmount: contractAmount,
                     expectedDateOfCompletion: expectedDateOfCompletion ? formatDateSafe(expectedDateOfCompletion) : 'N/A',
                     isOverdue,
                 };
             });
-    }, [tenders]);
+    }, [tenders, allStaffMembers, startDate, endDate]);
     
     const handleExportExcel = useCallback(async () => {
         if (workOrderData.length === 0) {
@@ -149,7 +172,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             ]);
             if (row.isOverdue) {
                 newRow.eachCell(cell => {
-                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFCCCC' } }; // Light red fill
+                    cell.font = { ...cell.font, color: { argb: 'FF0000' } };
                 });
             }
             newRow.eachCell(cell => {
@@ -184,6 +207,17 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle>Work Order Data</DialogTitle>
                     <DialogDescription>List of all tenders with work orders issued. Overdue projects are marked in red.</DialogDescription>
+                    <div className="flex flex-col sm:flex-row gap-2 pt-4 items-end">
+                        <div className="grid w-full sm:w-auto flex-1 gap-1.5">
+                            <Label htmlFor="wo-start-date">From</Label>
+                            <Input id="wo-start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                        </div>
+                        <div className="grid w-full sm:w-auto flex-1 gap-1.5">
+                            <Label htmlFor="wo-end-date">To</Label>
+                            <Input id="wo-end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                        </div>
+                        <Button variant="ghost" onClick={() => { setStartDate(''); setEndDate(''); }}><XCircle className="h-4 w-4 mr-2" />Clear</Button>
+                    </div>
                 </DialogHeader>
                 <div className="flex-1 min-h-0">
                     <ScrollArea className="h-full">
