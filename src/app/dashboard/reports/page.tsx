@@ -163,6 +163,8 @@ export default function ReportsPage() {
   const [viewItem, setViewItem] = useState<DataEntryFormData | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
+  const uniqueApplicationTypeOptions = useMemo(() => [...new Set(applicationTypeOptions)], []);
+
 
   useEffect(() => {
     const now = new Date();
@@ -530,7 +532,7 @@ export default function ReportsPage() {
                     <SelectTrigger id="report-app-type-trigger"><SelectValue placeholder="Filter by Application Type" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Application Types</SelectItem>
-                        {applicationTypeOptions.map((type) => (<SelectItem key={type} value={type}>{applicationTypeDisplayMap[type as ApplicationType] || type.replace(/_/g, " ")}</SelectItem>))}
+                        {uniqueApplicationTypeOptions.map((type) => (<SelectItem key={type} value={type}>{applicationTypeDisplayMap[type as ApplicationType] || type.replace(/_/g, " ")}</SelectItem>))}
                     </SelectContent>
                 </Select>
                  <Select value={dateFilterType} onValueChange={(value) => setDateFilterType(value as any)} name="dateTypeFilter">
