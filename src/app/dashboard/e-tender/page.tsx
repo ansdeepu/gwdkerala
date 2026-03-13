@@ -1,3 +1,4 @@
+
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
@@ -207,14 +208,14 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle>Work Order Data</DialogTitle>
                     <DialogDescription>List of all tenders with work orders issued. Overdue projects are marked in red.</DialogDescription>
-                    <div className="flex flex-col sm:flex-row gap-2 pt-4 items-end">
-                        <div className="grid w-full sm:w-auto flex-1 gap-1.5">
+                    <div className="flex flex-wrap items-end gap-4 pt-4">
+                        <div className="grid gap-1.5">
                             <Label htmlFor="wo-start-date">From</Label>
-                            <Input id="wo-start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                            <Input id="wo-start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-[180px]" />
                         </div>
-                        <div className="grid w-full sm:w-auto flex-1 gap-1.5">
+                        <div className="grid gap-1.5">
                             <Label htmlFor="wo-end-date">To</Label>
-                            <Input id="wo-end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                            <Input id="wo-end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-[180px]" />
                         </div>
                         <Button variant="ghost" onClick={() => { setStartDate(''); setEndDate(''); }}><XCircle className="h-4 w-4 mr-2" />Clear</Button>
                     </div>
