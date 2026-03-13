@@ -70,12 +70,8 @@ service cloud.firestore {
         return isSubOfficeAdmin() && request.resource.data.officeLocation.lower() == getUserData().officeLocation.lower();
       }
       
-      function isReadingOwnOfficeUser() {
-          return isSubOfficeAdmin() && resource.data.officeLocation.lower() == getUserData().officeLocation.lower();
-      }
-
-      allow get: if isSuperAdmin() || (isSignedIn() && request.auth.uid == userId) || isReadingOwnOfficeUser();
-      allow list: if isSuperAdmin() || isSubOfficeAdmin() || isSupervisor() || isInvestigator();
+      allow get: if isSuperAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow list: if isSuperAdmin() || isSubOfficeAdmin();
       allow create: if isSuperAdmin() || isManagingOwnOfficeUser();
       allow update: if isSuperAdmin() || isManagingOwnOfficeUser() || (isApproved() && request.auth.uid == userId);
       allow delete: if isSuperAdmin() || (isSubOfficeAdmin() && getUserData().officeLocation.lower() == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation.lower());
@@ -128,7 +124,8 @@ service cloud.firestore {
       }
 
       match /users/{userId} {
-        allow get, list: if officeRead() || isSupervisor() || isInvestigator();
+        allow get: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow write: if canManageAll();
       }
 
@@ -136,14 +133,14 @@ service cloud.firestore {
         allow get: if officeRead()
             || (isSupervisor() && request.auth.uid in resource.data.assignedSupervisorUids)
             || (isInvestigator() && request.auth.uid in resource.data.assignedInvestigatorUids);
-        allow list: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow delete: if canManageAll();
         allow create, update: if canEditEngineering() || canEditScience();
       }
 
       match /arsEntries/{docId} {
         allow get: if officeRead() || ((isSupervisor() || isInvestigator()) && resource.data.supervisorUid == request.auth.uid);
-        allow list: if officeRead() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow delete: if canManageAll();
         allow write: if canEditEngineering();
       }
@@ -151,7 +148,7 @@ service cloud.firestore {
       match /pendingUpdates/{docId} {
         allow create: if (isSupervisor() || isInvestigator()) && sameOffice(officeId);
         allow get: if canManageAll() || ((isSupervisor() || isInvestigator()) && resource.data.submittedByUid == request.auth.uid);
-        allow list: if canManageAll() || isSupervisor() || isInvestigator();
+        allow list: if isSignedIn();
         allow update, delete: if canManageAll();
       }
       
