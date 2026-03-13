@@ -135,7 +135,7 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-3xl flex flex-col p-0 h-[90vh]">
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-4xl flex flex-col p-0 h-[90vh]">
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleFormSubmit)} className="flex flex-col h-full">
                     <DialogHeader className="p-6 pb-4">
@@ -145,37 +145,44 @@ const OfficeAddressDialog = ({ isOpen, onClose, onSubmit, isSubmitting, initialD
                     <div className="flex-1 min-h-0">
                         <ScrollArea className="h-full px-6 py-4">
                             <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField name="officeLocation" control={form.control} render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Office Location</FormLabel>
-                                        <FormControl><Input {...field} value={field.value ?? ''} readOnly className="bg-muted/50" /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                <FormField
-                                  name="officeCode"
-                                  control={form.control}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Office Code</FormLabel>
-                                      <FormControl>
-                                        <Input
-                                          {...field}
-                                          value={field.value ?? ''}
-                                          readOnly
-                                          className="bg-muted/50"
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]" value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[40px]" value={field.value ?? ''}/></FormControl><FormMessage /></FormItem> )}/>
-                            </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField name="officeLocation" control={form.control} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Office Location</FormLabel>
+                                            <FormControl><Input {...field} value={field.value ?? ''} readOnly className="bg-muted/50" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                    <FormField
+                                      name="officeCode"
+                                      control={form.control}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Office Code</FormLabel>
+                                          <FormControl>
+                                            <Input
+                                              {...field}
+                                              value={field.value ?? ''}
+                                              readOnly
+                                              className="bg-muted/50"
+                                            />
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-4">
+                                        <FormField name="officeName" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                        <FormField name="address" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <FormField name="officeNameMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Office Name (In Malayalam)</FormLabel><FormControl><Input {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem> )}/>
+                                        <FormField name="addressMalayalam" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Address (In Malayalam)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" value={field.value ?? ''}/></FormControl><FormMessage /></FormItem> )}/>
+                                    </div>
+                                </div>
+                            
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField name="districtOfficerStaffId" control={form.control} render={({ field }) => (<FormItem><FormLabel>Name of District Officer</FormLabel><Select onValueChange={(value) => handleOfficerChange(value)} value={field.value || ""}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="Select an Officer" /></SelectTrigger></FormControl>
@@ -474,13 +481,17 @@ export default function SettingsPage() {
                     {officeAddress ? (
                         <div className="space-y-3 p-4 border rounded-lg bg-secondary/30">
                             <div className="flex flex-col md:flex-row md:items-start gap-4">
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName || "Office Name Pending"}, <span className="text-primary">{capitalize(officeAddress.officeLocation)}</span></h3>
-                                    {officeAddress.address && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.address}</p>}
-                                    {officeAddress.officeNameMalayalam && <p className="text-md text-muted-foreground mt-2 whitespace-pre-wrap">{officeAddress.officeNameMalayalam}</p>}
-                                    {officeAddress.addressMalayalam && <p className="text-sm text-muted-foreground whitespace-pre-wrap">{officeAddress.addressMalayalam}</p>}
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-8">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeName || "Office Name Pending"}, <span className="text-primary">{capitalize(officeAddress.officeLocation)}</span></h3>
+                                        {officeAddress.address && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{officeAddress.address}</p>}
+                                    </div>
+                                    <div>
+                                        {officeAddress.officeNameMalayalam && <h3 className="font-bold text-lg text-foreground whitespace-pre-wrap">{officeAddress.officeNameMalayalam}</h3>}
+                                        {officeAddress.addressMalayalam && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{officeAddress.addressMalayalam}</p>}
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 shrink-0">
                                     {officeAddress.districtOfficerPhotoUrl && (
                                         <Avatar><AvatarImage src={officeAddress.districtOfficerPhotoUrl} alt={officeAddress.districtOfficer || 'District Officer'} data-ai-hint="person face" /><AvatarFallback>{getInitials(officeAddress.districtOfficer)}</AvatarFallback></Avatar>
                                     )}
