@@ -509,8 +509,35 @@ export default function ProgressReportPage() {
 
     const isPaymentData = data[0] && 'paymentAccount' in data[0];
     const isFileLevelData = data[0] && 'siteDetails' in data[0];
+    const isRevenueHeadData = title === 'Revenue Head Credits';
+    
+    if (isRevenueHeadData) {
+        columns = [
+            { key: 'slNo', label: 'Sl. No.' },
+            { key: 'fileNo', label: 'File No.' },
+            { key: 'applicantName', label: 'Applicant' },
+            { key: 'siteName', label: 'Site Name' },
+            { key: 'purpose', label: 'Purpose' },
+            { key: 'workStatus', label: 'Work Status' },
+        ];
+        
+        const uniqueFileNos = [...new Set(data.map(item => item.fileNo))];
+        const relevantFileEntries = fileEntries.filter(entry => uniqueFileNos.includes(entry.fileNo));
+        
+        dialogData = relevantFileEntries.flatMap((entry) => 
+            (entry.siteDetails && entry.siteDetails.length > 0 
+                ? entry.siteDetails 
+                : [{ nameOfSite: 'N/A', purpose: 'N/A', workStatus: entry.fileStatus }]
+            ).map((site) => ({
+                fileNo: entry.fileNo, 
+                applicantName: entry.applicantName,
+                siteName: site.nameOfSite, 
+                purpose: site.purpose, 
+                workStatus: site.workStatus,
+            }))
+        ).map((item, index) => ({...item, slNo: index + 1}));
 
-    if (isPaymentData) {
+    } else if (isPaymentData) {
         columns = [
             { key: 'slNo', label: 'Sl. No.' },
             { key: 'fileNo', label: 'File No.' },
