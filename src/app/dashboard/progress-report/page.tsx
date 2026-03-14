@@ -485,9 +485,25 @@ export default function ProgressReportPage() {
     let columns: DetailDialogColumn[];
     let dialogData: Array<Record<string, any>>;
 
-    if (title.toLowerCase().includes("remittance")) {
-        columns = [ { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' }, { key: 'applicantName', label: 'Applicant' }, { key: 'remittedAmount', label: 'Remitted (₹)', isNumeric: true }, { key: 'remittanceDate', label: 'First Remittance Date' }];
-        dialogData = (data as DataEntryFormData[]).map((entry, index) => ({ slNo: index + 1, fileNo: entry.fileNo, applicantName: entry.applicantName, remittedAmount: (Number(entry.remittanceDetails?.[0]?.amountRemitted) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), remittanceDate: entry.remittanceDetails?.[0]?.dateOfRemittance ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), 'dd/MM/yyyy') : 'N/A' }));
+    const isFileLevelData = 'siteDetails' in data[0];
+
+    if (isFileLevelData) {
+        columns = [
+            { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' },
+            { key: 'applicantName', label: 'Applicant' }, { key: 'siteName', label: 'Site Name' },
+            { key: 'purpose', label: 'Purpose' }, { key: 'workStatus', label: 'Work Status' },
+            { key: 'remittedAmount', label: 'Remitted (₹)', isNumeric: true }, { key: 'remittanceDate', label: 'First Remittance' }
+        ];
+
+        dialogData = (data as DataEntryFormData[]).flatMap((entry, entryIndex) => 
+            (entry.siteDetails && entry.siteDetails.length > 0 ? entry.siteDetails : [{nameOfSite: 'N/A', purpose: 'N/A', workStatus: 'N/A'}]).map((site, siteIndex) => ({
+                slNo: `${entryIndex + 1}.${siteIndex + 1}`,
+                fileNo: entry.fileNo, applicantName: entry.applicantName,
+                siteName: site.nameOfSite, purpose: site.purpose, workStatus: site.workStatus,
+                remittedAmount: (Number(entry.totalRemittance) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                remittanceDate: entry.remittanceDetails?.[0]?.dateOfRemittance ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), 'dd/MM/yyyy') : 'N/A'
+            }))
+        ).map((item, index) => ({...item, slNo: index + 1}));
     } else {
          columns = [ { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' }, { key: 'applicantName', label: 'Applicant' }, { key: 'nameOfSite', label: 'Site Name' }, { key: 'purpose', label: 'Purpose' }, { key: 'workStatus', label: 'Work Status' }, ];
          dialogData = (data as SiteDetailWithFileContext[]).map((site, index) => ({ slNo: index + 1, fileNo: site.fileNo, applicantName: site.applicantName, nameOfSite: site.nameOfSite, purpose: site.purpose, workStatus: site.workStatus }));
@@ -502,7 +518,26 @@ export default function ProgressReportPage() {
 
   const uniqueApplicationTypes = useMemo(() => [...new Set(applicationTypeOptions.filter(type => !['GW_Investigation', 'Logging_Pumping_Test'].some(prefix => type.startsWith(prefix))))], []);
 
-  const FinancialSummaryTable = ({ data, onCellClick }: { data: FinancialSummaryReport, onCellClick: (data: any[], title: string) => void }) => {
+  const handleFinancialTotalClick = (type: 'applications' | 'remittance' | 'completed' | 'payment', financialData: FinancialSummaryReport, category: string) => {
+      const allData = Object.values(financialData);
+      let aggregatedData: any[] = [];
+      let title = '';
+  
+      if (type === 'applications' || type === 'remittance') {
+          aggregatedData = allData.flatMap(d => d.applicationData);
+          title = `All Remitted Applications (${category})`;
+      } else if (type === 'completed' || type === 'payment') {
+          aggregatedData = allData.flatMap(d => d.completedData);
+          title = `All Completed/Paid Works (${category})`;
+      }
+      
+      if (aggregatedData.length > 0) {
+          handleCountClick(aggregatedData, title);
+      }
+  };
+
+
+  const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
     const categories = Object.keys(data);
     const totals = {
         totalApplications: categories.reduce((sum, key) => sum + data[key].totalApplications, 0),
@@ -518,9 +553,9 @@ export default function ProgressReportPage() {
                 {categories.map(key => (
                     <TableRow key={key}>
                         <TableCell className="font-medium">{key}</TableCell>
-                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalApplications === 0} onClick={() => onCellClick(data[key].applicationData, `Applications for ${key}`)}>{data[key].totalApplications}</Button></TableCell>
+                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalApplications === 0} onClick={() => onCellClick(data[key].applicationData, `${category} Applications for ${key}`)}>{data[key].totalApplications}</Button></TableCell>
                         <TableCell className="text-right font-mono">{data[key].totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalCompleted === 0} onClick={() => onCellClick(data[key].completedData, `Completed Works for ${key}`)}>{data[key].totalCompleted}</Button></TableCell>
+                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalCompleted === 0} onClick={() => onCellClick(data[key].completedData, `${category} Completed Works for ${key}`)}>{data[key].totalCompleted}</Button></TableCell>
                         <TableCell className="text-right font-mono">{data[key].totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                     </TableRow>
                 ))}
@@ -528,10 +563,10 @@ export default function ProgressReportPage() {
             <TableFooter>
                 <TableRow className="font-bold bg-secondary">
                     <TableCell>Total</TableCell>
-                    <TableCell className="text-center">{totals.totalApplications}</TableCell>
-                    <TableCell className="text-right font-mono">{totals.totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-center">{totals.totalCompleted}</TableCell>
-                    <TableCell className="text-right font-mono">{totals.totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('applications')}>{totals.totalApplications}</Button></TableCell>
+                    <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('remittance')}>{totals.totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
+                    <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('completed')}>{totals.totalCompleted}</Button></TableCell>
+                    <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('payment')}>{totals.totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
                 </TableRow>
             </TableFooter>
         </Table>
@@ -625,12 +660,12 @@ export default function ProgressReportPage() {
 
                 <Card>
                     <CardHeader><CardTitle>Financial Summary - Private Applications</CardTitle><CardDescription>A summary of financial and application counts for each purpose within the selected period.</CardDescription></CardHeader>
-                    <CardContent><FinancialSummaryTable data={reportData.privateFinancialSummaryData} onCellClick={handleCountClick} /></CardContent>
+                    <CardContent><FinancialSummaryTable data={reportData.privateFinancialSummaryData} onCellClick={handleCountClick} onTotalClick={(type) => handleFinancialTotalClick(type, reportData.privateFinancialSummaryData, "Private")} category="Private" /></CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader><CardTitle>Financial Summary - Government & Other Applications</CardTitle><CardDescription>A summary of financial and application counts for each purpose within the selected period.</CardDescription></CardHeader>
-                    <CardContent><FinancialSummaryTable data={reportData.governmentFinancialSummaryData} onCellClick={handleCountClick} /></CardContent>
+                    <CardContent><FinancialSummaryTable data={reportData.governmentFinancialSummaryData} onCellClick={handleCountClick} onTotalClick={(type) => handleFinancialTotalClick(type, reportData.governmentFinancialSummaryData, "Government")} category="Government" /></CardContent>
                 </Card>
 
                 <Card>
