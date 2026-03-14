@@ -1,4 +1,3 @@
-
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -33,6 +32,9 @@ import { usePageHeader } from '@/hooks/usePageHeader';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { generateProgressReportPdf } from '@/components/reports/pdf/progressReportPdfGenerator';
+import download from 'downloadjs';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -216,6 +218,7 @@ export default function ProgressReportPage() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isFiltering, setIsFiltering] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { toast } = useToast();
 
   const [reportData, setReportData] = useState<{
@@ -391,7 +394,7 @@ export default function ProgressReportPage() {
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
     const revenueHeadCreditData: any[] = [];
-
+    
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
@@ -447,6 +450,7 @@ export default function ProgressReportPage() {
     processFinancialSummary(privateEntries, privateFinancialSummaryData);
     processFinancialSummary(governmentEntries, governmentFinancialSummaryData);
 
+    const uniqueRevenueCredits = new Map<string, { entryId: string; amount: number }>();
     fileEntries.forEach(entry => {
         if (!entry.id) return;
         entry.paymentDetails?.forEach(pd => {
@@ -454,27 +458,25 @@ export default function ProgressReportPage() {
             if (paymentDate && isValid(paymentDate) && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
                 const amount = Number(pd.revenueHead) || 0;
                 if (amount > 0) {
-                    revenueHeadCreditData.push({
-                        entryId: entry.id,
-                        amount: amount
-                    });
+                    const existing = uniqueRevenueCredits.get(entry.id!);
+                    if (existing) {
+                        existing.amount += amount;
+                    } else {
+                        uniqueRevenueCredits.set(entry.id!, { entryId: entry.id!, amount });
+                    }
                 }
             }
         });
     });
 
-    const uniqueRevenueCredits = new Map<string, number>();
-    revenueHeadCreditData.forEach(credit => {
-        uniqueRevenueCredits.set(credit.entryId, (uniqueRevenueCredits.get(credit.entryId) || 0) + credit.amount);
-    });
-    const totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, amount) => sum + amount, 0);
+    const totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, item) => sum + item.amount, 0);
 
     setReportData({ 
         bwcData, twcData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
         privateFinancialSummaryData, 
         governmentFinancialSummaryData,
         totalRevenueHeadCredit,
-        revenueHeadCreditData: Array.from(uniqueRevenueCredits.entries()).map(([entryId, amount]) => ({ entryId, amount }))
+        revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
     });
     setIsFiltering(false);
   }, [fileEntries, startDate, endDate, toast]);
@@ -649,6 +651,30 @@ export default function ProgressReportPage() {
         </Table>
     );
   };
+  
+   const handleGeneratePdfReport = async () => {
+    if (!reportData) {
+      toast({ title: 'No report data to generate PDF.' });
+      return;
+    }
+    setIsGeneratingPdf(true);
+    try {
+      const pdfBytes = await generateProgressReportPdf(
+        reportData,
+        officeAddress,
+        startDate,
+        endDate
+      );
+      download(pdfBytes, `Progress_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`, 'application/pdf');
+      toast({ title: "PDF Generated", description: "Progress report has been downloaded." });
+    } catch (error: any) {
+      console.error("PDF Generation Error:", error);
+      toast({ title: "PDF Generation Failed", description: error.message, variant: 'destructive' });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
 
   if (entriesLoading) {
     return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -680,6 +706,10 @@ export default function ProgressReportPage() {
                 <Button onClick={handleGenerateReport} disabled={isFiltering || !startDate || !endDate}><Play className="mr-2 h-4 w-4" />Generate</Button>
                 <Button onClick={handleResetFilters} variant="outline" className="w-full sm:w-auto flex-grow sm:flex-grow-0"><XCircle className="mr-2 h-4 w-4" />Clear</Button>
                 <Button onClick={handleExportExcel} disabled={!reportData || isFiltering} variant="outline" className="w-full sm:w-auto flex-grow sm:flex-grow-0"><FileDown className="mr-2 h-4 w-4" />Export</Button>
+                <Button onClick={handleGeneratePdfReport} disabled={!reportData || isFiltering || isGeneratingPdf} variant="outline" className="w-full sm:w-auto flex-grow sm:flex-grow-0">
+                  {isGeneratingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}
+                  Progress Report
+                </Button>
             </div>
           </CardHeader>
       </Card>
