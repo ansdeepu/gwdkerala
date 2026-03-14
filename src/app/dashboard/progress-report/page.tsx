@@ -282,7 +282,7 @@ export default function ProgressReportPage() {
         .filter(site => site.workStatus !== "Addl. AS Awaited")
         .map(site => {
             const firstRemittanceDate = safeParseDate(entry.remittanceDetails?.[0]?.dateOfRemittance);
-            return { ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType!, fileRemittanceDate: firstRemittanceDate };
+            return { ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! };
         })
     );
 
@@ -449,13 +449,20 @@ export default function ProgressReportPage() {
     processFinancialSummary(governmentEntries, governmentFinancialSummaryData);
 
     fileEntries.forEach(entry => {
+        if (!entry.id) return; // Ensure entry has an ID
+
         entry.remittanceDetails?.forEach(rd => {
             const remDate = safeParseDate(rd.dateOfRemittance);
             if (remDate && isValid(remDate) && isWithinInterval(remDate, { start: sDate, end: eDate }) && rd.remittedAccount === 'Revenue Head') {
                 const amount = Number(rd.amountRemitted) || 0;
                 totalRevenueHeadCredit += amount;
                 revenueHeadCreditData.push({
-                    fileNo: entry.fileNo, applicantName: entry.applicantName, date: remDate, amount: amount, source: 'Direct Remittance'
+                    entryId: entry.id, // Use unique ID
+                    fileNo: entry.fileNo, 
+                    applicantName: entry.applicantName, 
+                    date: remDate, 
+                    amount: amount, 
+                    source: 'Direct Remittance'
                 });
             }
         });
@@ -465,7 +472,12 @@ export default function ProgressReportPage() {
                 const amount = Number(pd.revenueHead) || 0;
                 totalRevenueHeadCredit += amount;
                 revenueHeadCreditData.push({
-                    fileNo: entry.fileNo, applicantName: entry.applicantName, date: paymentDate, amount: amount, source: 'From Payment'
+                    entryId: entry.id, // Use unique ID
+                    fileNo: entry.fileNo, 
+                    applicantName: entry.applicantName, 
+                    date: paymentDate, 
+                    amount: amount, 
+                    source: 'From Payment'
                 });
             }
         });
@@ -522,18 +534,18 @@ export default function ProgressReportPage() {
             { key: 'amount', label: 'Credited Amount (₹)', isNumeric: true },
         ];
         
-        const creditsByFileNo = new Map<string, number>();
+        const creditsByEntryId = new Map<string, number>();
         data.forEach((creditItem: any) => {
-            if (creditItem.fileNo) {
-                creditsByFileNo.set(creditItem.fileNo, (creditsByFileNo.get(creditItem.fileNo) || 0) + creditItem.amount);
+            if (creditItem.entryId) {
+                creditsByEntryId.set(creditItem.entryId, (creditsByEntryId.get(creditItem.entryId) || 0) + creditItem.amount);
             }
         });
 
-        const uniqueFileNos = Array.from(creditsByFileNo.keys());
-        const relevantFileEntries = fileEntries.filter(entry => uniqueFileNos.includes(entry.fileNo));
+        const uniqueEntryIds = Array.from(creditsByEntryId.keys());
+        const relevantFileEntries = fileEntries.filter(entry => uniqueEntryIds.includes(entry.id!));
         
         dialogData = relevantFileEntries.map((entry, index) => {
-            const totalCreditForFile = creditsByFileNo.get(entry.fileNo) || 0;
+            const totalCreditForFile = creditsByEntryId.get(entry.id!) || 0;
             const sites = (entry.siteDetails && entry.siteDetails.length > 0)
                 ? entry.siteDetails
                 : [{ nameOfSite: 'N/A', purpose: 'N/A', workStatus: entry.fileStatus }];
@@ -565,8 +577,8 @@ export default function ProgressReportPage() {
             fileNo: payment.fileNo,
             applicantName: payment.applicantName,
             siteNames: (payment.siteDetails || []).map((s: any) => s.nameOfSite).join(', ') || 'N/A',
-            purposes: (payment.siteDetails || []).map((s: any) => s.purpose).join(', ') || 'N/A',
-            workStatuses: (payment.siteDetails || []).map((s: any) => s.workStatus).join(', ') || 'N/A',
+            purposes: [...new Set((payment.siteDetails || []).map((s: any) => s.purpose))].join(', ') || 'N/A',
+            workStatuses: [...new Set((payment.siteDetails || []).map((s: any) => s.workStatus))].join(', ') || 'N/A',
             dateOfPayment: payment.dateOfPayment ? format(new Date(payment.dateOfPayment), 'dd/MM/yyyy') : 'N/A',
             totalPaymentPerEntry: (Number(payment.totalPaymentPerEntry) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
         }));
@@ -771,3 +783,4 @@ export default function ProgressReportPage() {
     </div>
   );
 }
+
