@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/rig-registration/page.tsx
 "use client";
 
@@ -52,7 +51,10 @@ const RegistrationTable = ({
   searchTerm: string,
   currentPage: number,
   itemsPerPage: number,
-}) => (
+}) => {
+    const { selectedOffice } = useDataStore();
+    
+    return (
     <div className="max-h-[70vh] overflow-auto no-scrollbar">
       <Table>
           <TableHeader className="bg-secondary sticky top-0">
@@ -73,7 +75,7 @@ const RegistrationTable = ({
                           <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
                           <TableCell>{app.fileNo || 'N/A'}</TableCell>
                            <TableCell className="font-medium capitalize">
-                                {(app as any).officeLocation || 'N/A'}
+                                {selectedOffice || (app as any).officeLocationFromPath || (app as any).officeLocation || 'N/A'}
                             </TableCell>
                           <TableCell className="font-medium">{app.agencyName}</TableCell>
                           <TableCell>{app.owner.name}</TableCell>
@@ -96,6 +98,7 @@ const RegistrationTable = ({
       </Table>
     </div>
 );
+};
 
 
 export default function AgencyRegistrationSuperAdminPage() {
@@ -140,6 +143,7 @@ export default function AgencyRegistrationSuperAdminPage() {
                 app.owner?.name,
                 app.owner?.mobile,
                 (app as any).officeLocation,
+                (app as any).officeLocationFromPath,
                 ...(app.partners || []).flatMap(p => [p.name, p.mobile]),
                 ...(app.rigs || []).flatMap(rig => [
                     rig.rigRegistrationNo,
