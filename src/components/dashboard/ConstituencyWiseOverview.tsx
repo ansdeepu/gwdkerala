@@ -1,4 +1,3 @@
-
 // src/components/dashboard/ConstituencyWiseOverview.tsx
 "use client";
 
@@ -108,8 +107,8 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
     const allDisplayPurposes = [...sitePurposeOptions.filter(p => !arsGrouping.includes(p as any)), "ARS"];
 
     const initialCounts = () => allDisplayPurposes.reduce((acc, purpose) => ({
-      ...acc, [purpose]: { count: 0, data: [], expenditure: 0 }
-    }), {} as Record<string, { count: number; data: any[]; expenditure: number }>);
+      ...acc, [purpose]: { count: 0, completedCount: 0, data: [], expenditure: 0 }
+    }), {} as Record<string, { count: number; completedCount: number; data: any[]; expenditure: number }>);
 
     const constituencyData = constituencyOptions.reduce((acc, constituency) => ({
       ...acc,
@@ -153,6 +152,9 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
                 currentData.byPurpose[purposeKey].count++;
                 currentData.byPurpose[purposeKey].expenditure += expenditure;
                 currentData.byPurpose[purposeKey].data.push(work);
+                if (isCompleted) {
+                    currentData.byPurpose[purposeKey].completedCount++;
+                }
             }
           }
         }
@@ -246,13 +248,15 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
                           </Button>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 gap-x-4 gap-y-2">
                             {summaryData.displayPurposes.map(purpose => {
-                                const count = data.byPurpose[purpose]?.count || 0;
-                                if (count === 0) return null;
+                                const purposeData = data.byPurpose[purpose];
+                                const totalCount = purposeData?.count || 0;
+                                const completedCount = purposeData?.completedCount || 0;
+                                if (totalCount === 0) return null;
                                 return (
                                   <div key={purpose} className="flex items-center justify-between text-xs">
                                     <span className="text-muted-foreground">{purpose}</span>
-                                    <Button variant="link" className="p-0 h-auto text-xs font-semibold" onClick={() => handleCellClick(data.byPurpose[purpose].data, `Works for '${purpose}' in ${constituency}`)} disabled={count === 0}>
-                                      {count}
+                                    <Button variant="link" className="p-0 h-auto text-xs font-semibold" onClick={() => handleCellClick(purposeData.data, `Works for '${purpose}' in ${constituency}`)} disabled={totalCount === 0}>
+                                      {completedCount} ({totalCount})
                                     </Button>
                                   </div>
                                 )
