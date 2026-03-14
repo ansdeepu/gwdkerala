@@ -390,7 +390,6 @@ export default function ProgressReportPage() {
     // Financial Summary Calculation
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
-    let totalRevenueHeadCredit = 0;
     const revenueHeadCreditData: any[] = [];
 
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
@@ -450,24 +449,16 @@ export default function ProgressReportPage() {
 
     fileEntries.forEach(entry => {
         if (!entry.id) return;
-        entry.remittanceDetails?.forEach(rd => {
-            const remDate = safeParseDate(rd.dateOfRemittance);
-            if (remDate && isValid(remDate) && isWithinInterval(remDate, { start: sDate, end: eDate }) && rd.remittedAccount === 'Revenue Head') {
-                const amount = Number(rd.amountRemitted) || 0;
-                revenueHeadCreditData.push({
-                    entryId: entry.id,
-                    amount: amount
-                });
-            }
-        });
         entry.paymentDetails?.forEach(pd => {
             const paymentDate = safeParseDate(pd.dateOfPayment);
             if (paymentDate && isValid(paymentDate) && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
                 const amount = Number(pd.revenueHead) || 0;
-                 revenueHeadCreditData.push({
-                    entryId: entry.id,
-                    amount: amount
-                });
+                if (amount > 0) {
+                    revenueHeadCreditData.push({
+                        entryId: entry.id,
+                        amount: amount
+                    });
+                }
             }
         });
     });
@@ -476,8 +467,7 @@ export default function ProgressReportPage() {
     revenueHeadCreditData.forEach(credit => {
         uniqueRevenueCredits.set(credit.entryId, (uniqueRevenueCredits.get(credit.entryId) || 0) + credit.amount);
     });
-    totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, amount) => sum + amount, 0);
-
+    const totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, amount) => sum + amount, 0);
 
     setReportData({ 
         bwcData, twcData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
@@ -744,6 +734,7 @@ export default function ProgressReportPage() {
                   <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                 </Accordion>
+
                 <Card>
                     <CardHeader><CardTitle>Financial Summary - Private Applications</CardTitle><CardDescription>A summary of financial and application counts for each purpose within the selected period.</CardDescription></CardHeader>
                     <CardContent><FinancialSummaryTable data={reportData.privateFinancialSummaryData} onCellClick={(dataType, purpose, data, title) => handleCountClick(data, title)} onTotalClick={(type) => handleFinancialTotalClick(type, reportData.privateFinancialSummaryData, "Private")} category="Private" /></CardContent>
@@ -772,4 +763,3 @@ export default function ProgressReportPage() {
     </div>
   );
 }
-
