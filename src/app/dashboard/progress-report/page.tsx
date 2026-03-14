@@ -212,10 +212,6 @@ const ReportCategoryTable = ({
 
 export default function ProgressReportPage() {
   const { setHeader } = usePageHeader();
-  useEffect(() => {
-    setHeader('Progress Reports', 'Generate monthly or periodic progress reports for various schemes and services.');
-  }, [setHeader]);
-
   const { reportEntries: fileEntries, isReportLoading: entriesLoading, officeAddress } = useAllFileEntriesForReports();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
@@ -242,6 +238,10 @@ export default function ProgressReportPage() {
   const [detailDialogData, setDetailDialogData] = useState<Array<SiteDetailWithFileContext | DataEntryFormData | Record<string, any>>>([]);
   const [detailDialogColumns, setDetailDialogColumns] = useState<DetailDialogColumn[]>([]);
 
+  useEffect(() => {
+    setHeader('Progress Reports', 'Generate monthly or periodic progress reports for various schemes and services.');
+  }, [setHeader]);
+  
   useEffect(() => {
     setStartDate(startOfMonth(new Date()));
     setEndDate(endOfMonth(new Date()));
@@ -516,14 +516,12 @@ export default function ProgressReportPage() {
             { key: 'slNo', label: 'Sl. No.' },
             { key: 'fileNo', label: 'File No.' },
             { key: 'applicantName', label: 'Applicant' },
-            { key: 'siteName', label: 'Site Name' },
-            { key: 'purpose', label: 'Purpose' },
-            { key: 'workStatus', label: 'Work Status' },
+            { key: 'siteNames', label: 'Site(s)' },
+            { key: 'purposes', label: 'Purpose(s)' },
+            { key: 'workStatuses', label: 'Work Status(es)' },
             { key: 'amount', label: 'Credited Amount (₹)', isNumeric: true },
         ];
         
-        // The 'data' passed in is revenueHeadCreditData, which is an array of transactions.
-        // Group these transactions by fileNo to get a total credited amount per file.
         const creditsByFileNo = new Map<string, number>();
         data.forEach((creditItem: any) => {
             if (creditItem.fileNo) {
@@ -534,21 +532,22 @@ export default function ProgressReportPage() {
         const uniqueFileNos = Array.from(creditsByFileNo.keys());
         const relevantFileEntries = fileEntries.filter(entry => uniqueFileNos.includes(entry.fileNo));
         
-        dialogData = relevantFileEntries.flatMap((entry) => {
+        dialogData = relevantFileEntries.map((entry, index) => {
             const totalCreditForFile = creditsByFileNo.get(entry.fileNo) || 0;
             const sites = (entry.siteDetails && entry.siteDetails.length > 0)
-                ? entry.siteDetails 
+                ? entry.siteDetails
                 : [{ nameOfSite: 'N/A', purpose: 'N/A', workStatus: entry.fileStatus }];
-            
-            return sites.map((site) => ({
-                fileNo: entry.fileNo, 
+
+            return {
+                slNo: index + 1,
+                fileNo: entry.fileNo,
                 applicantName: entry.applicantName,
-                siteName: site.nameOfSite, 
-                purpose: site.purpose, 
-                workStatus: site.workStatus,
+                siteNames: sites.map(s => s.nameOfSite).join(', '),
+                purposes: [...new Set(sites.map(s => s.purpose))].join(', '),
+                workStatuses: [...new Set(sites.map(s => s.workStatus))].join(', '),
                 amount: totalCreditForFile.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-            }));
-        }).map((item, index) => ({...item, slNo: index + 1}));
+            };
+        });
 
     } else if (isPaymentData) {
         columns = [
