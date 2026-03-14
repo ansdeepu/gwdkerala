@@ -390,23 +390,31 @@ export default function ArsEntryPage() {
         };
 
         try {
-            if (isApprovingUpdate && entryIdToEdit && approveUpdateId) {
-                await updateArsEntry(entryIdToEdit, payload, approveUpdateId, user);
-                toast({ title: "Update Approved", description: `Changes for File "${data.fileNo}" have been saved.` });
-            } else if (canEdit && isEditing && entryIdToEdit) {
-                await updateArsEntry(entryIdToEdit, payload);
+            const fileNoTrimmed = payload.fileNo.trim().toUpperCase();
+            
+            if (canEdit && isEditing && entryIdToEdit) {
+                const originalEntry = await getArsEntryById(entryIdToEdit);
+                if (originalEntry && originalEntry.fileNo.trim().toUpperCase() !== fileNoTrimmed) {
+                    if (!user.officeLocation) throw new Error("User has no office location.");
+                    const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/arsEntries`), where("fileNo", "==", fileNoTrimmed));
+                    const querySnapshot = await getDocs(q);
+                    if (!querySnapshot.empty && querySnapshot.docs.some(doc => doc.id !== entryIdToEdit)) {
+                        toast({ title: "Duplicate File Number", description: `An ARS entry with File No. "${data.fileNo}" already exists.`, variant: "destructive" });
+                        setIsSubmitting(false);
+                        return;
+                    }
+                }
+                await updateArsEntry(entryIdToEdit, { ...payload, fileNo: fileNoTrimmed });
                 toast({ title: "ARS Site Updated", description: `File "${data.fileNo}" has been updated.` });
+            } else if (isApprovingUpdate && entryIdToEdit && approveUpdateId) {
+                await updateArsEntry(entryIdToEdit, { ...payload, fileNo: fileNoTrimmed }, approveUpdateId, user);
+                toast({ title: "Update Approved", description: `Changes for File "${data.fileNo}" have been saved.` });
             } else if (canEdit && !isEditing) {
-                 if (!user.officeLocation) { throw new Error("User has no office location.") };
-                const fileNoTrimmed = data.fileNo.trim().toUpperCase();
+                if (!user.officeLocation) { throw new Error("User has no office location.") };
                 const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/arsEntries`), where("fileNo", "==", fileNoTrimmed));
                 const querySnapshot = await getDocs(q);
                 if (!querySnapshot.empty) {
-                    toast({
-                        title: "Duplicate File Number",
-                        description: `An ARS entry with File No. "${data.fileNo}" already exists.`,
-                        variant: "destructive",
-                    });
+                    toast({ title: "Duplicate File Number", description: `An ARS entry with File No. "${data.fileNo}" already exists.`, variant: "destructive" });
                     setIsSubmitting(false);
                     return;
                 }
@@ -638,3 +646,5 @@ export default function ArsEntryPage() {
         </div>
     );
 }
+
+    

@@ -701,13 +701,16 @@ export default function AgencyRegistrationPage() {
                 const querySnapshot = await getDocs(q);
 
                 if (!querySnapshot.empty) {
-                    toast({
-                        title: "Duplicate File Number",
-                        description: `An agency with File No. "${formattedData.fileNo}" already exists.`,
-                        variant: "destructive",
-                    });
-                    setIsSubmitting(false);
-                    return;
+                    const isTrulyDuplicate = querySnapshot.docs.some(doc => doc.id !== selectedApplicationId);
+                    if (isTrulyDuplicate) {
+                        toast({
+                            title: "Duplicate File Number",
+                            description: `An agency with File No. "${formattedData.fileNo}" already exists.`,
+                            variant: "destructive",
+                        });
+                        setIsSubmitting(false);
+                        return;
+                    }
                 }
             }
         }
@@ -2042,3 +2045,5 @@ function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialDat
         </Form>
     );
 }
+
+    
