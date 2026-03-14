@@ -58,7 +58,7 @@ export const superAdminNavItems: NavItem[] = [
     { href: '/dashboard/super-admin/technical-sanction', label: 'Technical Sanction', icon: FileText },
     { href: '/dashboard/super-admin/rig-registration', label: 'Rig Registration', icon: ClipboardList },
     { href: '/dashboard/super-admin/vehicles', label: 'Vehicle & Rig', icon: Truck },
-    { href: '/dashboard/super-admin/progress-reports', label: 'Progress Reports', icon: BarChart3 },
+    { href: '/dashboard/super-admin/progress-report', label: 'Progress Reports', icon: BarChart3 },
     { href: '/dashboard/super-admin/gwd-rates', label: 'GWD Rates', icon: DollarSign },
     { href: '/dashboard/super-admin/establishment', label: 'Establishment', icon: Briefcase },
     { href: '/dashboard/super-admin/office-management', label: 'Office Management', icon: Building },
@@ -141,6 +141,13 @@ export default function AppNavMenu() {
             isActive = cleanHref === '/dashboard/agency-registration' || cleanHref === '/dashboard/super-admin/rig-registration';
         } else {
             isActive = isDashboard ? pathname === cleanHref : pathname.startsWith(cleanHref);
+            // If not active, and user is super-admin, check for shared page paths
+            if (!isActive && isSuperAdmin) {
+                const sharedPath = cleanHref.replace('/super-admin', '');
+                if (pathname === sharedPath) {
+                    isActive = true;
+                }
+            }
         }
 
         return (
