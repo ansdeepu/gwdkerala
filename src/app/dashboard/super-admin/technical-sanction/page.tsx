@@ -1,7 +1,9 @@
+
 // src/app/dashboard/super-admin/technical-sanction/page.tsx
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -9,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import PaginationControls from "@/components/shared/PaginationControls";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { useRouter, useSearchParams } from "next/navigation";
 import { useDataStore } from '@/hooks/use-data-store';
 import { Loader2, Search, Eye, FileText } from 'lucide-react';
 import type { DataEntryFormData, SiteDetailFormData } from '@/lib/schemas';
@@ -46,11 +47,7 @@ export default function TechnicalSanctionPage() {
   }, [searchParams]);
 
   const handleViewClick = (fileId: string, officeLocation: string) => {
-    // This is tricky for super admin. The link should ideally open the data for that office.
-    // For now, let's just create a read-only link. The datastore logic should handle fetching if needed.
     const queryParams = new URLSearchParams({ id: fileId, readOnly: 'true' });
-    // A proper implementation would need to switch office context before navigating,
-    // but for a read-only view, this might suffice if the data-entry page can fetch by ID regardless of current context.
     router.push(`/dashboard/data-entry?${queryParams.toString()}`);
   };
 
@@ -119,9 +116,6 @@ export default function TechnicalSanctionPage() {
       <Card>
         <CardHeader>
           <CardTitle>Works Awaiting Technical Sanction</CardTitle>
-          <CardDescription>
-            A list of all sites from all offices with the status "TS Pending". Total: {filteredSites.length}
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between gap-4 pb-4">
@@ -135,7 +129,12 @@ export default function TechnicalSanctionPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-             {totalPages > 1 && <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />}
+            <div className="flex items-center gap-4">
+                <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                    Total Pending: <span className="font-bold text-destructive">{filteredSites.length}</span>
+                </div>
+                {totalPages > 1 && <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />}
+            </div>
           </div>
           <div className="rounded-md border">
             <Table>
