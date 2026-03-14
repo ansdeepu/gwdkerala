@@ -519,23 +519,36 @@ export default function ProgressReportPage() {
             { key: 'siteName', label: 'Site Name' },
             { key: 'purpose', label: 'Purpose' },
             { key: 'workStatus', label: 'Work Status' },
+            { key: 'amount', label: 'Credited Amount (₹)', isNumeric: true },
         ];
         
-        const uniqueFileNos = [...new Set(data.map(item => item.fileNo))];
+        // The 'data' passed in is revenueHeadCreditData, which is an array of transactions.
+        // Group these transactions by fileNo to get a total credited amount per file.
+        const creditsByFileNo = new Map<string, number>();
+        data.forEach((creditItem: any) => {
+            if (creditItem.fileNo) {
+                creditsByFileNo.set(creditItem.fileNo, (creditsByFileNo.get(creditItem.fileNo) || 0) + creditItem.amount);
+            }
+        });
+
+        const uniqueFileNos = Array.from(creditsByFileNo.keys());
         const relevantFileEntries = fileEntries.filter(entry => uniqueFileNos.includes(entry.fileNo));
         
-        dialogData = relevantFileEntries.flatMap((entry) => 
-            (entry.siteDetails && entry.siteDetails.length > 0 
+        dialogData = relevantFileEntries.flatMap((entry) => {
+            const totalCreditForFile = creditsByFileNo.get(entry.fileNo) || 0;
+            const sites = (entry.siteDetails && entry.siteDetails.length > 0)
                 ? entry.siteDetails 
-                : [{ nameOfSite: 'N/A', purpose: 'N/A', workStatus: entry.fileStatus }]
-            ).map((site) => ({
+                : [{ nameOfSite: 'N/A', purpose: 'N/A', workStatus: entry.fileStatus }];
+            
+            return sites.map((site) => ({
                 fileNo: entry.fileNo, 
                 applicantName: entry.applicantName,
                 siteName: site.nameOfSite, 
                 purpose: site.purpose, 
                 workStatus: site.workStatus,
-            }))
-        ).map((item, index) => ({...item, slNo: index + 1}));
+                amount: totalCreditForFile.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            }));
+        }).map((item, index) => ({...item, slNo: index + 1}));
 
     } else if (isPaymentData) {
         columns = [
@@ -731,7 +744,6 @@ export default function ProgressReportPage() {
                   <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                 </Accordion>
-
                 <Card>
                     <CardHeader><CardTitle>Financial Summary - Private Applications</CardTitle><CardDescription>A summary of financial and application counts for each purpose within the selected period.</CardDescription></CardHeader>
                     <CardContent><FinancialSummaryTable data={reportData.privateFinancialSummaryData} onCellClick={(dataType, purpose, data, title) => handleCountClick(data, title)} onTotalClick={(type) => handleFinancialTotalClick(type, reportData.privateFinancialSummaryData, "Private")} category="Private" /></CardContent>
