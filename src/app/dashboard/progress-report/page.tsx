@@ -282,7 +282,7 @@ export default function ProgressReportPage() {
         .filter(site => site.workStatus !== "Addl. AS Awaited")
         .map(site => {
             const firstRemittanceDate = safeParseDate(entry.remittanceDetails?.[0]?.dateOfRemittance);
-            return { ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! };
+            return { ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType!, fileRemittanceDate: firstRemittanceDate, id: entry.id };
         })
     );
 
@@ -449,20 +449,14 @@ export default function ProgressReportPage() {
     processFinancialSummary(governmentEntries, governmentFinancialSummaryData);
 
     fileEntries.forEach(entry => {
-        if (!entry.id) return; // Ensure entry has an ID
-
+        if (!entry.id) return;
         entry.remittanceDetails?.forEach(rd => {
             const remDate = safeParseDate(rd.dateOfRemittance);
             if (remDate && isValid(remDate) && isWithinInterval(remDate, { start: sDate, end: eDate }) && rd.remittedAccount === 'Revenue Head') {
                 const amount = Number(rd.amountRemitted) || 0;
-                totalRevenueHeadCredit += amount;
                 revenueHeadCreditData.push({
-                    entryId: entry.id, // Use unique ID
-                    fileNo: entry.fileNo, 
-                    applicantName: entry.applicantName, 
-                    date: remDate, 
-                    amount: amount, 
-                    source: 'Direct Remittance'
+                    entryId: entry.id,
+                    amount: amount
                 });
             }
         });
@@ -470,25 +464,27 @@ export default function ProgressReportPage() {
             const paymentDate = safeParseDate(pd.dateOfPayment);
             if (paymentDate && isValid(paymentDate) && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
                 const amount = Number(pd.revenueHead) || 0;
-                totalRevenueHeadCredit += amount;
-                revenueHeadCreditData.push({
-                    entryId: entry.id, // Use unique ID
-                    fileNo: entry.fileNo, 
-                    applicantName: entry.applicantName, 
-                    date: paymentDate, 
-                    amount: amount, 
-                    source: 'From Payment'
+                 revenueHeadCreditData.push({
+                    entryId: entry.id,
+                    amount: amount
                 });
             }
         });
     });
+
+    const uniqueRevenueCredits = new Map<string, number>();
+    revenueHeadCreditData.forEach(credit => {
+        uniqueRevenueCredits.set(credit.entryId, (uniqueRevenueCredits.get(credit.entryId) || 0) + credit.amount);
+    });
+    totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, amount) => sum + amount, 0);
+
 
     setReportData({ 
         bwcData, twcData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
         privateFinancialSummaryData, 
         governmentFinancialSummaryData,
         totalRevenueHeadCredit,
-        revenueHeadCreditData
+        revenueHeadCreditData: Array.from(uniqueRevenueCredits.entries()).map(([entryId, amount]) => ({ entryId, amount }))
     });
     setIsFiltering(false);
   }, [fileEntries, startDate, endDate, toast]);
@@ -534,18 +530,11 @@ export default function ProgressReportPage() {
             { key: 'amount', label: 'Credited Amount (₹)', isNumeric: true },
         ];
         
-        const creditsByEntryId = new Map<string, number>();
-        data.forEach((creditItem: any) => {
-            if (creditItem.entryId) {
-                creditsByEntryId.set(creditItem.entryId, (creditsByEntryId.get(creditItem.entryId) || 0) + creditItem.amount);
-            }
-        });
-
-        const uniqueEntryIds = Array.from(creditsByEntryId.keys());
-        const relevantFileEntries = fileEntries.filter(entry => uniqueEntryIds.includes(entry.id!));
+        const relevantFileEntries = fileEntries.filter(entry => data.some((creditItem: any) => creditItem.entryId === entry.id));
         
         dialogData = relevantFileEntries.map((entry, index) => {
-            const totalCreditForFile = creditsByEntryId.get(entry.id!) || 0;
+            const creditEntry = data.find((creditItem: any) => creditItem.entryId === entry.id);
+            const totalCreditForFile = creditEntry ? creditEntry.amount : 0;
             const sites = (entry.siteDetails && entry.siteDetails.length > 0)
                 ? entry.siteDetails
                 : [{ nameOfSite: 'N/A', purpose: 'N/A', workStatus: entry.fileStatus }];
