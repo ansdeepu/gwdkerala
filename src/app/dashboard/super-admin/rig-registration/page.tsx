@@ -19,25 +19,13 @@ import ExcelJS from "exceljs";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Loader2, Search, Eye, FileDown, Clock, Building } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 
 export const dynamic = 'force-dynamic';
 
 const ITEMS_PER_PAGE = 50;
-
-const formatDateSafe = (d: any): string => {
-    if (!d) return 'N/A';
-    try {
-        const date = new Date(d.seconds * 1000);
-        return format(date, 'dd/MM/yyyy');
-    } catch {
-        try {
-            return format(new Date(d), 'dd/MM/yyyy');
-        } catch {
-            return 'N/A';
-        }
-    }
-};
 
 const RegistrationTable = ({ 
   applications, 
@@ -45,12 +33,14 @@ const RegistrationTable = ({
   searchTerm,
   currentPage,
   itemsPerPage,
+  isPendingTable = false,
 }: { 
   applications: AgencyApplication[],
   onView: (id: string) => void,
   searchTerm: string,
   currentPage: number,
   itemsPerPage: number,
+  isPendingTable?: boolean,
 }) => {
     const { selectedOffice } = useDataStore();
     
@@ -64,7 +54,8 @@ const RegistrationTable = ({
                   <TableHead>Office</TableHead>
                   <TableHead>Agency Name</TableHead>
                   <TableHead>Owner</TableHead>
-                  <TableHead>Active Rigs</TableHead>
+                  {!isPendingTable && <TableHead>Active Rigs</TableHead>}
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
               </TableRow>
           </TableHeader>
@@ -79,7 +70,8 @@ const RegistrationTable = ({
                             </TableCell>
                           <TableCell className="font-medium">{app.agencyName}</TableCell>
                           <TableCell>{app.owner.name}</TableCell>
-                          <TableCell>{(app.rigs || []).filter(r => r.status === 'Active').length} / {(app.rigs || []).length}</TableCell>
+                          {!isPendingTable && <TableCell>{(app.rigs || []).filter(r => r.status === 'Active').length} / {(app.rigs || []).length}</TableCell>}
+                          <TableCell><Badge variant={app.status === 'Active' ? 'default' : 'secondary'}>{app.status}</Badge></TableCell>
                           <TableCell className="text-center">
                               <div className="flex items-center justify-center">
                                   <Button variant="ghost" size="icon" onClick={() => onView(app.id!)}><Eye className="h-4 w-4" /></Button>
@@ -89,7 +81,7 @@ const RegistrationTable = ({
                   ))
               ) : (
                   <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={isPendingTable ? 7 : 8} className="h-24 text-center">
                           No registrations found {searchTerm ? "matching your search" : ""}.
                       </TableCell>
                   </TableRow>
@@ -110,6 +102,7 @@ export default function AgencyRegistrationSuperAdminPage() {
   
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState('completed');
   const pageFromUrl = searchParams?.get('page');
 
   useEffect(() => {
@@ -129,6 +122,23 @@ export default function AgencyRegistrationSuperAdminPage() {
     const pageParam = currentPage > 1 ? `&page=${currentPage}` : '';
     router.push(`/dashboard/agency-registration?id=${id}&readOnly=true${pageParam}`);
   }
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', String(page));
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+  
+  const onTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+  
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', '1');
+    router.replace(`?${params.toString()}`, { scroll: false });
+  }, [activeTab, router, searchParams]);
 
   const filteredApplications = useMemo(() => {
         if (!searchTerm) return allAgencyApplications;
@@ -155,13 +165,27 @@ export default function AgencyRegistrationSuperAdminPage() {
             return searchableContent.includes(lowercasedFilter);
         });
     }, [allAgencyApplications, searchTerm]);
+    
+    const completedApplications = useMemo(() => {
+        return filteredApplications.filter((app: AgencyApplication) => app.status === 'Active');
+    }, [filteredApplications]);
+    
+    const pendingApplications = useMemo(() => {
+        return filteredApplications.filter((app: AgencyApplication) => app.status === 'Pending Verification');
+    }, [filteredApplications]);
   
-  const paginatedApplications = useMemo(() => {
+  const paginatedCompletedApplications = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredApplications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredApplications, currentPage]);
+    return completedApplications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [completedApplications, currentPage]);
 
-  const totalPages = Math.ceil(filteredApplications.length / ITEMS_PER_PAGE);
+  const paginatedPendingApplications = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return pendingApplications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [pendingApplications, currentPage]);
+
+  const totalCompletedPages = Math.ceil(completedApplications.length / ITEMS_PER_PAGE);
+  const totalPendingPages = Math.ceil(pendingApplications.length / ITEMS_PER_PAGE);
 
   if (applicationsLoading || authLoading) {
     return (
@@ -188,23 +212,55 @@ export default function AgencyRegistrationSuperAdminPage() {
                 />
               </div>
           </div>
-          {totalPages > 1 && (
-              <div className="flex items-center justify-center py-4 border-t">
-                  <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-              </div>
-          )}
-          <RegistrationTable 
-              applications={paginatedApplications}
-              onView={handleView}
-              searchTerm={searchTerm}
-              currentPage={currentPage}
-              itemsPerPage={ITEMS_PER_PAGE}
-          />
-           {totalPages > 1 && (
-              <div className="flex items-center justify-center py-4 border-t">
-                  <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-              </div>
-          )}
+          <Tabs defaultValue="completed" onValueChange={onTabChange} className="pt-4 border-t">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="completed">
+                    <div className="flex items-center gap-2">Registration Completed <Badge>{completedApplications.length}</Badge></div>
+                </TabsTrigger>
+                <TabsTrigger value="pending">
+                    <div className="flex items-center gap-2">Pending Applications <Badge>{pendingApplications.length}</Badge></div>
+                </TabsTrigger>
+            </TabsList>
+            <TabsContent value="completed" className="mt-4">
+                {totalCompletedPages > 1 && (
+                    <div className="flex items-center justify-center py-4">
+                        <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
+                    </div>
+                )}
+                <RegistrationTable 
+                    applications={paginatedCompletedApplications}
+                    onView={handleView}
+                    searchTerm={searchTerm}
+                    currentPage={currentPage}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                />
+                 {totalCompletedPages > 1 && (
+                    <div className="flex items-center justify-center py-4">
+                        <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
+                    </div>
+                )}
+            </TabsContent>
+            <TabsContent value="pending" className="mt-4">
+                 {totalPendingPages > 1 && (
+                    <div className="flex items-center justify-center py-4">
+                        <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={handlePageChange} />
+                    </div>
+                )}
+                <RegistrationTable 
+                    applications={paginatedPendingApplications}
+                    onView={handleView}
+                    searchTerm={searchTerm}
+                    currentPage={currentPage}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    isPendingTable={true}
+                />
+                 {totalPendingPages > 1 && (
+                    <div className="flex items-center justify-center py-4">
+                        <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={handlePageChange} />
+                    </div>
+                )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
