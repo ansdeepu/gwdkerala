@@ -1,4 +1,3 @@
-
 // src/components/layout/AppNavMenu.tsx
 "use client";
 
@@ -56,6 +55,7 @@ export const superAdminNavItems: NavItem[] = [
     { href: '/dashboard/plan-fund-works?code=4702-02-102-94', label: 'GWBDWS (4702)', icon: Landmark },
     { href: '/dashboard/plan-fund-works?code=2702-02-103-99', label: 'GWBDWS (2702)', icon: Landmark },
     { href: '/dashboard/super-admin/ars-plan', label: 'ARS - Plan', icon: Waves },
+    { href: '/dashboard/super-admin/technical-sanction', label: 'Technical Sanction', icon: FileText },
     { href: '/dashboard/super-admin/rig-registration', label: 'Rig Registration', icon: ClipboardList },
     { href: '/dashboard/super-admin/vehicles', label: 'Vehicle & Rig', icon: Truck },
     { href: '/dashboard/super-admin/progress-reports', label: 'Progress Reports', icon: BarChart3 },
