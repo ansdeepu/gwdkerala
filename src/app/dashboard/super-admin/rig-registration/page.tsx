@@ -19,7 +19,6 @@ import ExcelJS from "exceljs";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Loader2, Search, Eye, FileDown, Clock, Building } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 
@@ -33,14 +32,12 @@ const RegistrationTable = ({
   searchTerm,
   currentPage,
   itemsPerPage,
-  isPendingTable = false,
 }: { 
   applications: AgencyApplication[],
   onView: (id: string) => void,
   searchTerm: string,
   currentPage: number,
   itemsPerPage: number,
-  isPendingTable?: boolean,
 }) => {
     const { selectedOffice } = useDataStore();
     
@@ -54,7 +51,7 @@ const RegistrationTable = ({
                   <TableHead>Office</TableHead>
                   <TableHead>Agency Name</TableHead>
                   <TableHead>Owner</TableHead>
-                  {!isPendingTable && <TableHead>Active Rigs</TableHead>}
+                  <TableHead>Active Rigs</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
               </TableRow>
@@ -70,7 +67,7 @@ const RegistrationTable = ({
                             </TableCell>
                           <TableCell className="font-medium">{app.agencyName}</TableCell>
                           <TableCell>{app.owner.name}</TableCell>
-                          {!isPendingTable && <TableCell>{(app.rigs || []).filter(r => r.status === 'Active').length} / {(app.rigs || []).length}</TableCell>}
+                          <TableCell>{(app.rigs || []).filter(r => r.status === 'Active').length} / {(app.rigs || []).length}</TableCell>
                           <TableCell><Badge variant={app.status === 'Active' ? 'default' : 'secondary'}>{app.status}</Badge></TableCell>
                           <TableCell className="text-center">
                               <div className="flex items-center justify-center">
@@ -81,7 +78,7 @@ const RegistrationTable = ({
                   ))
               ) : (
                   <TableRow>
-                      <TableCell colSpan={isPendingTable ? 7 : 8} className="h-24 text-center">
+                      <TableCell colSpan={8} className="h-24 text-center">
                           No registrations found {searchTerm ? "matching your search" : ""}.
                       </TableCell>
                   </TableRow>
@@ -102,7 +99,6 @@ export default function AgencyRegistrationSuperAdminPage() {
   
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState('completed');
   const pageFromUrl = searchParams?.get('page');
 
   useEffect(() => {
@@ -130,16 +126,6 @@ export default function AgencyRegistrationSuperAdminPage() {
     router.push(`?${params.toString()}`, { scroll: false });
   };
   
-  const onTabChange = (value: string) => {
-    setActiveTab(value);
-  };
-  
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams?.toString());
-    params.set('page', '1');
-    router.replace(`?${params.toString()}`, { scroll: false });
-  }, [activeTab, router, searchParams]);
-
   const filteredApplications = useMemo(() => {
         if (!searchTerm) return allAgencyApplications;
 
@@ -170,22 +156,12 @@ export default function AgencyRegistrationSuperAdminPage() {
         return filteredApplications.filter((app: AgencyApplication) => app.status === 'Active');
     }, [filteredApplications]);
     
-    const pendingApplications = useMemo(() => {
-        return filteredApplications.filter((app: AgencyApplication) => app.status === 'Pending Verification');
-    }, [filteredApplications]);
-  
   const paginatedCompletedApplications = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return completedApplications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [completedApplications, currentPage]);
 
-  const paginatedPendingApplications = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return pendingApplications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [pendingApplications, currentPage]);
-
   const totalCompletedPages = Math.ceil(completedApplications.length / ITEMS_PER_PAGE);
-  const totalPendingPages = Math.ceil(pendingApplications.length / ITEMS_PER_PAGE);
 
   if (applicationsLoading || authLoading) {
     return (
@@ -212,55 +188,25 @@ export default function AgencyRegistrationSuperAdminPage() {
                 />
               </div>
           </div>
-          <Tabs defaultValue="completed" onValueChange={onTabChange} className="pt-4 border-t">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="completed">
-                    <div className="flex items-center gap-2">Registration Completed <Badge>{completedApplications.length}</Badge></div>
-                </TabsTrigger>
-                <TabsTrigger value="pending">
-                    <div className="flex items-center gap-2">Pending Applications <Badge>{pendingApplications.length}</Badge></div>
-                </TabsTrigger>
-            </TabsList>
-            <TabsContent value="completed" className="mt-4">
-                {totalCompletedPages > 1 && (
-                    <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
-                    </div>
-                )}
-                <RegistrationTable 
-                    applications={paginatedCompletedApplications}
-                    onView={handleView}
-                    searchTerm={searchTerm}
-                    currentPage={currentPage}
-                    itemsPerPage={ITEMS_PER_PAGE}
-                />
-                 {totalCompletedPages > 1 && (
-                    <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
-                    </div>
-                )}
-            </TabsContent>
-            <TabsContent value="pending" className="mt-4">
-                 {totalPendingPages > 1 && (
-                    <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={handlePageChange} />
-                    </div>
-                )}
-                <RegistrationTable 
-                    applications={paginatedPendingApplications}
-                    onView={handleView}
-                    searchTerm={searchTerm}
-                    currentPage={currentPage}
-                    itemsPerPage={ITEMS_PER_PAGE}
-                    isPendingTable={true}
-                />
-                 {totalPendingPages > 1 && (
-                    <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={handlePageChange} />
-                    </div>
-                )}
-            </TabsContent>
-          </Tabs>
+          <div className="pt-4 border-t">
+            {totalCompletedPages > 1 && (
+                <div className="flex items-center justify-center py-4">
+                    <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
+                </div>
+            )}
+            <RegistrationTable 
+                applications={paginatedCompletedApplications}
+                onView={handleView}
+                searchTerm={searchTerm}
+                currentPage={currentPage}
+                itemsPerPage={ITEMS_PER_PAGE}
+            />
+              {totalCompletedPages > 1 && (
+                <div className="flex items-center justify-center py-4">
+                    <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
+                </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
