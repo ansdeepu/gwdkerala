@@ -119,7 +119,12 @@ export default function AppNavMenu() {
         
         let isActive;
 
-        if (pathname.startsWith('/dashboard/data-entry')) {
+        if (cleanHref === '/dashboard/plan-fund-works') {
+            const itemQuery = new URLSearchParams(item.href.split('?')[1] || '');
+            const itemCode = itemQuery.get('code');
+            const currentCode = searchParams.get('code');
+            isActive = pathname === cleanHref && itemCode === currentCode;
+        } else if (pathname.startsWith('/dashboard/data-entry')) {
             const workType = searchParams.get('workType');
             const workTypeMapping: Record<string, string> = {
                 'gwInvestigation': '/dashboard/gw-investigation',
