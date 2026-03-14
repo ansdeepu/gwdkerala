@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/technical-sanction/page.tsx
 "use client";
 
@@ -114,11 +113,8 @@ export default function TechnicalSanctionPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Works Awaiting Technical Sanction</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between gap-4 pb-4">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between gap-4">
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
