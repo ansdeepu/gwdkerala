@@ -37,7 +37,10 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAgencyApplications } from '@/hooks/useAgencyApplications';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Loader2, Search, PlusCircle, Save, X, Trash2, ShieldAlert, UserPlus, FilePlus, ChevronsUpDown, RotateCcw, RefreshCw, CheckCircle, Info, Ban, FileUp, MoreVertical, ArrowLeft, Eye, FileDown, Clock } from 'lucide-react';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 
+const db = getFirestore(app);
 
 export const dynamic = 'force-dynamic';
 
@@ -683,9 +686,35 @@ export default function AgencyRegistrationPage() {
                 name: formatCase(p.name) ?? p.name,
             }))
         };
+        
+        const fileNoTrimmed = formattedData.fileNo ? formattedData.fileNo.trim().toUpperCase() : '';
+
+        // Uniqueness check
+        if (fileNoTrimmed && user?.officeLocation) {
+            const isEditing = selectedApplicationId && selectedApplicationId !== 'new';
+            const originalApp = isEditing ? allAgencyApplications.find(a => a.id === selectedApplicationId) : null;
+            const originalFileNo = originalApp?.fileNo ? originalApp.fileNo.trim().toUpperCase() : null;
+
+            if (!isEditing || (isEditing && originalFileNo !== fileNoTrimmed)) {
+                const collectionPath = `offices/${user.officeLocation.toLowerCase()}/agencyApplications`;
+                const q = query(collection(db, collectionPath), where("fileNo", "==", fileNoTrimmed));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    toast({
+                        title: "Duplicate File Number",
+                        description: `An agency with File No. "${formattedData.fileNo}" already exists.`,
+                        variant: "destructive",
+                    });
+                    setIsSubmitting(false);
+                    return;
+                }
+            }
+        }
+
 
         const finalStatus = formattedData.agencyRegistrationNo ? 'Active' : 'Pending Verification';
-        const dataForSave = processDataForSaving(formattedData);
+        const dataForSave = processDataForSaving({...formattedData, fileNo: fileNoTrimmed});
 
         if (selectedApplicationId && selectedApplicationId !== 'new') {
             const originalApp = allAgencyApplications.find(a => a.id === selectedApplicationId);
