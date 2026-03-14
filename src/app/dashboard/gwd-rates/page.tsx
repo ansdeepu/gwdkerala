@@ -401,11 +401,6 @@ export default function GwdRatesPage() {
             </TabsList>
             <TabsContent value="gwdRates" className="mt-4">
                <Card>
-                 <CardHeader>
-                    <div className="flex justify-between items-center">
-                        <CardTitle>Master Rate List</CardTitle>
-                    </div>
-                </CardHeader>
                 <CardContent className="pt-6">
                   <Accordion type="multiple" className="w-full space-y-4">
                       {gwdRateCategories.map(category => (
