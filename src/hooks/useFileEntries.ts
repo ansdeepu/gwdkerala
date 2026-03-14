@@ -1,4 +1,3 @@
-
 // src/hooks/useFileEntries.ts
 "use client";
 
@@ -142,10 +141,30 @@ export function useFileEntries() {
     const updateFileEntry = useCallback(async (fileId: string, entryData: DataEntryFormData, approveUpdateId?: string): Promise<void> => {
         if (!user || !['admin', 'engineer', 'scientist'].includes(user.role)) throw new Error("Permission denied to update file entry.");
         if (!user.officeLocation) throw new Error("User has no office location.");
-        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/fileEntries`;
         
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/fileEntries`;
         const docRef = doc(db, collectionPath, fileId);
-        const payload = { ...entryData };
+
+        const fileNoTrimmed = entryData.fileNo.trim().toUpperCase();
+
+        const originalDocSnap = await getDoc(docRef);
+        if (!originalDocSnap.exists()) {
+            throw new Error("The file you are trying to edit does not exist.");
+        }
+        const originalFileNo = originalDocSnap.data().fileNo?.trim().toUpperCase();
+
+        // Only perform the uniqueness check if the file number has actually changed
+        if (originalFileNo !== fileNoTrimmed) {
+            const q = query(collection(db, collectionPath), where("fileNo", "==", fileNoTrimmed));
+            const querySnapshot = await getDocs(q);
+
+            // It's a duplicate if we find any document that is NOT the one we're currently editing.
+            if (!querySnapshot.empty && querySnapshot.docs.some(doc => doc.id !== fileId)) {
+                throw new Error(`A file with the number "${entryData.fileNo}" already exists.`);
+            }
+        }
+        
+        const payload = { ...entryData, fileNo: fileNoTrimmed };
         if (payload.id) delete payload.id;
 
         const finalPayload = { ...payload, updatedAt: serverTimestamp() };
