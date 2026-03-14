@@ -1,3 +1,4 @@
+
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -75,6 +76,7 @@ interface FinancialSummary {
   totalPayment: number;
   applicationData: DataEntryFormData[];
   completedData: SiteDetailWithFileContext[];
+  paymentData: any[]; // To hold detailed payment records
 }
 type FinancialSummaryReport = Record<string, FinancialSummary>;
 
@@ -84,8 +86,6 @@ const TWC_DIAMETERS = ['150 mm (6”)', '200 mm (8”)'];
 
 
 const REFUNDED_STATUSES: SiteWorkStatus[] = ['To be Refunded'];
-const FINAL_WORK_STATUSES: SiteWorkStatus[] = ['Work Failed', 'Work Completed', "Bill Prepared", "Payment Completed", "Utilization Certificate Issued"];
-
 
 interface DetailDialogColumn {
   key: string;
@@ -246,6 +246,11 @@ export default function ProgressReportPage() {
     setStartDate(startOfMonth(new Date()));
     setEndDate(endOfMonth(new Date()));
   }, []);
+  
+  const calculatePaymentEntryTotalGlobal = (payment: any): number => {
+    if (!payment) return 0;
+    return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
+  };
 
   const handleGenerateReport = useCallback(() => {
     if (!startDate || !endDate) {
@@ -392,34 +397,51 @@ export default function ProgressReportPage() {
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
     const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
+        const checkDateInRange = (date: any) => {
+            const d = safeParseDate(date);
+            return d && isWithinInterval(d, { start: sDate, end: eDate });
+        };
+
         entries.forEach(entry => {
-            const firstRemittance = entry.remittanceDetails?.[0];
-            if (!firstRemittance || !firstRemittance.dateOfRemittance) return;
+            const purpose = entry.siteDetails?.[0]?.purpose || 'Others';
+            
+            const hasRemittanceInPeriod = entry.remittanceDetails?.some(rd => checkDateInRange(rd.dateOfRemittance));
 
-            const remittedDate = safeParseDate(firstRemittance.dateOfRemittance);
-            if (remittedDate && isValid(remittedDate) && isWithinInterval(remittedDate, { start: sDate, end: eDate })) {
-                const purpose = entry.siteDetails?.[0]?.purpose || 'Others';
+            if (hasRemittanceInPeriod) {
                 if (!summaryData[purpose]) {
-                    summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [] };
+                    summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                 }
-
                 summaryData[purpose].totalApplications++;
-                summaryData[purpose].totalRemittance += entry.totalRemittance || 0;
                 summaryData[purpose].applicationData.push(entry);
-
-                entry.siteDetails?.forEach(site => {
-                    const completionDate = safeParseDate(site.dateOfCompletion);
-                    if (completionDate && isValid(completionDate) && isWithinInterval(completionDate, { start: sDate, end: eDate })) {
-                        if (FINAL_WORK_STATUSES.includes(site.workStatus as any)) {
-                            summaryData[purpose].totalCompleted++;
-                            const siteWithContext = { ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! };
-                            summaryData[purpose].completedData.push(siteWithContext);
-                        }
+                entry.remittanceDetails?.forEach(rd => {
+                    if (checkDateInRange(rd.dateOfRemittance)) {
+                        summaryData[purpose].totalRemittance += (Number(rd.amountRemitted) || 0);
                     }
                 });
-
-                summaryData[purpose].totalPayment += entry.totalPaymentAllEntries || 0;
             }
+
+            entry.paymentDetails?.forEach(pd => {
+                if (checkDateInRange(pd.dateOfPayment)) {
+                    if (!summaryData[purpose]) {
+                        summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
+                    }
+                    const paymentAmount = calculatePaymentEntryTotalGlobal(pd);
+                    summaryData[purpose].totalPayment += paymentAmount;
+                    summaryData[purpose].paymentData.push({ ...pd, fileNo: entry.fileNo, applicantName: entry.applicantName, siteDetails: entry.siteDetails || [] });
+                }
+            });
+
+            entry.siteDetails?.forEach(site => {
+                const completionDate = safeParseDate(site.dateOfCompletion);
+                if (completionDate && isValid(completionDate) && isWithinInterval(completionDate, { start: sDate, end: eDate })) {
+                    if (!summaryData[purpose]) {
+                        summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
+                    }
+                    summaryData[purpose].totalCompleted++;
+                    const siteWithContext = { ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! };
+                    summaryData[purpose].completedData.push(siteWithContext);
+                }
+            });
         });
     };
     
@@ -478,16 +500,38 @@ export default function ProgressReportPage() {
   
   const handleExportExcel = async () => { /* Excel export logic here */ };
 
-  const handleCountClick = (data: Array<SiteDetailWithFileContext | DataEntryFormData | Record<string, any>>, title: string) => {
+  const handleCountClick = (data: Array<any>, title: string) => {
     if (!data || data.length === 0) return;
     setDetailDialogTitle(title);
 
     let columns: DetailDialogColumn[];
     let dialogData: Array<Record<string, any>>;
 
-    const isFileLevelData = 'siteDetails' in data[0];
+    const isPaymentData = data[0] && 'paymentAccount' in data[0];
+    const isFileLevelData = data[0] && 'siteDetails' in data[0];
 
-    if (isFileLevelData) {
+    if (isPaymentData) {
+        columns = [
+            { key: 'slNo', label: 'Sl. No.' },
+            { key: 'fileNo', label: 'File No.' },
+            { key: 'applicantName', label: 'Applicant' },
+            { key: 'siteNames', label: 'Site Name(s)' },
+            { key: 'purposes', label: 'Purpose(s)' },
+            { key: 'workStatuses', label: 'Work Status(es)' },
+            { key: 'dateOfPayment', label: 'Payment Date' },
+            { key: 'totalPaymentPerEntry', label: 'Amount (₹)', isNumeric: true },
+        ];
+        dialogData = data.map((payment, index) => ({
+            slNo: index + 1,
+            fileNo: payment.fileNo,
+            applicantName: payment.applicantName,
+            siteNames: (payment.siteDetails || []).map((s: any) => s.nameOfSite).join(', ') || 'N/A',
+            purposes: (payment.siteDetails || []).map((s: any) => s.purpose).join(', ') || 'N/A',
+            workStatuses: (payment.siteDetails || []).map((s: any) => s.workStatus).join(', ') || 'N/A',
+            dateOfPayment: payment.dateOfPayment ? format(new Date(payment.dateOfPayment), 'dd/MM/yyyy') : 'N/A',
+            totalPaymentPerEntry: (Number(payment.totalPaymentPerEntry) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        }));
+    } else if (isFileLevelData) {
         columns = [
             { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' },
             { key: 'applicantName', label: 'Applicant' }, { key: 'siteName', label: 'Site Name' },
@@ -526,9 +570,12 @@ export default function ProgressReportPage() {
       if (type === 'applications' || type === 'remittance') {
           aggregatedData = allData.flatMap(d => d.applicationData);
           title = `All Remitted Applications (${category})`;
-      } else if (type === 'completed' || type === 'payment') {
+      } else if (type === 'completed') {
           aggregatedData = allData.flatMap(d => d.completedData);
-          title = `All Completed/Paid Works (${category})`;
+          title = `All Completed Works (${category})`;
+      } else if (type === 'payment') {
+          aggregatedData = allData.flatMap(d => d.paymentData || []);
+          title = `All Payments (${category})`;
       }
       
       if (aggregatedData.length > 0) {
@@ -537,7 +584,7 @@ export default function ProgressReportPage() {
   };
 
 
-  const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
+  const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (dataType: 'application' | 'payment', purpose: string, data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
     const categories = Object.keys(data);
     const totals = {
         totalApplications: categories.reduce((sum, key) => sum + data[key].totalApplications, 0),
@@ -553,10 +600,10 @@ export default function ProgressReportPage() {
                 {categories.map(key => (
                     <TableRow key={key}>
                         <TableCell className="font-medium">{key}</TableCell>
-                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalApplications === 0} onClick={() => onCellClick(data[key].applicationData, `${category} Applications for ${key}`)}>{data[key].totalApplications}</Button></TableCell>
-                        <TableCell className="text-right font-mono">{data[key].totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalCompleted === 0} onClick={() => onCellClick(data[key].completedData, `${category} Completed Works for ${key}`)}>{data[key].totalCompleted}</Button></TableCell>
-                        <TableCell className="text-right font-mono">{data[key].totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalApplications === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Applications for ${key}`)}>{data[key].totalApplications}</Button></TableCell>
+                        <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalRemittance === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Remittances for ${key}`)}>{data[key].totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
+                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalCompleted === 0} onClick={() => onCellClick('application', key, data[key].completedData, `${category} Completed Works for ${key}`)}>{data[key].totalCompleted}</Button></TableCell>
+                        <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalPayment === 0} onClick={() => onCellClick('payment', key, data[key].paymentData, `${category} Payments for ${key}`)}>{data[key].totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
                     </TableRow>
                 ))}
             </TableBody>
@@ -660,12 +707,12 @@ export default function ProgressReportPage() {
 
                 <Card>
                     <CardHeader><CardTitle>Financial Summary - Private Applications</CardTitle><CardDescription>A summary of financial and application counts for each purpose within the selected period.</CardDescription></CardHeader>
-                    <CardContent><FinancialSummaryTable data={reportData.privateFinancialSummaryData} onCellClick={handleCountClick} onTotalClick={(type) => handleFinancialTotalClick(type, reportData.privateFinancialSummaryData, "Private")} category="Private" /></CardContent>
+                    <CardContent><FinancialSummaryTable data={reportData.privateFinancialSummaryData} onCellClick={(dataType, purpose, data, title) => handleCountClick(data, title)} onTotalClick={(type) => handleFinancialTotalClick(type, reportData.privateFinancialSummaryData, "Private")} category="Private" /></CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader><CardTitle>Financial Summary - Government & Other Applications</CardTitle><CardDescription>A summary of financial and application counts for each purpose within the selected period.</CardDescription></CardHeader>
-                    <CardContent><FinancialSummaryTable data={reportData.governmentFinancialSummaryData} onCellClick={handleCountClick} onTotalClick={(type) => handleFinancialTotalClick(type, reportData.governmentFinancialSummaryData, "Government")} category="Government" /></CardContent>
+                    <CardContent><FinancialSummaryTable data={reportData.governmentFinancialSummaryData} onCellClick={(dataType, purpose, data, title) => handleCountClick(data, title)} onTotalClick={(type) => handleFinancialTotalClick(type, reportData.governmentFinancialSummaryData, "Government")} category="Government" /></CardContent>
                 </Card>
 
                 <Card>
