@@ -38,6 +38,7 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
     const address1 = addressLines.slice(0, 3).join('\n').toUpperCase();
     const address2 = addressLines.slice(3).join('\n').toUpperCase();
     const address3 = `Email: ${officeAddress?.email || ''}\nPhone: ${officeAddress?.phoneNo || ''}`;
+    const address4 = addressLines.slice(2).join('\n');
     const officeNameCaps = (officeAddress?.officeName || '').toUpperCase();
 
     const fieldMappings: Record<string, any> = {
