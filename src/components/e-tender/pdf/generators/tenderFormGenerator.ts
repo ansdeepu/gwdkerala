@@ -1,3 +1,4 @@
+
 // src/components/e-tender/pdf/generators/tenderFormGenerator.ts
 import { PDFDocument, PDFTextField, StandardFonts, rgb } from 'pdf-lib';
 import type { E_tender } from '@/hooks/useE_tenders';
@@ -83,20 +84,18 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
     const allFields = form.getFields();
     allFields.forEach(field => {
         const fieldName = field.getName();
-        if (fieldName in fieldMappings) {
+        if (fieldName in fieldMappings && fieldMappings[fieldName]) {
             try {
                 const textField = form.getTextField(fieldName);
                 let font = timesRomanFont;
-                if (['tender_no_form_83', 'date_form_83'].includes(fieldName)) {
+                if (['tender_no_form_83', 'date_form_83', 'address_4'].includes(fieldName)) {
                     font = timesRomanBoldFont;
                 }
                 textField.setText(String(fieldMappings[fieldName] || ''));
 
-                if (['address_1', 'address_2', 'address_3'].includes(fieldName)) {
+                if (['address_1', 'address_2'].includes(fieldName)) {
                     textField.setFontSize(12);
-                }
-                
-                if (['office_location_10', 'office_location_12'].includes(fieldName)) {
+                } else if (['address_3', 'office_location_10', 'office_location_12'].includes(fieldName)) {
                     textField.setFontSize(10);
                 }
 
