@@ -41,7 +41,8 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
     const address_1 = addressLines.slice(0, 3).join(', ').toUpperCase();
     const address_2 = addressLines.slice(3).join(', ').toUpperCase();
     const address_3 = `Email: ${targetOfficeAddress?.email || ''}, Phone: ${targetOfficeAddress?.phoneNo || ''}`;
-
+    const address_4 = addressLines.slice(2).join(', ');
+    
     const officeCode = targetOfficeAddress?.officeCode || 'GKT';
 
     const fieldMappings: Record<string, any> = {
@@ -71,10 +72,12 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
         'address_1': address_1,
         'address_2': address_2,
         'address_3': address_3,
+        'address_4': address_4,
         'office_location_9': capitalize(targetOfficeAddress?.officeLocation),
-        'office_location_10': (targetOfficeAddress?.officeName || '').toUpperCase(),
+        'office_location_10': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
         'office_location_11': capitalize(targetOfficeAddress?.officeLocation),
-        'office_location_12': (targetOfficeAddress?.officeName || '').toUpperCase(),
+        'office_location_12': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
+        'office_location_13': capitalize(targetOfficeAddress?.officeLocation),
     };
 
     const allFields = form.getFields();
