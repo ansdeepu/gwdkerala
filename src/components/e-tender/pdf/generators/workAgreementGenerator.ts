@@ -46,29 +46,34 @@ export async function generateWorkAgreement(tender: E_tender, officeAddress: Off
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
     const timesRomanBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     
-    let targetOfficeAddress = officeAddress;
+    let targetOfficeAddress: OfficeAddress | null = officeAddress;
     const tenderOfficeLocation = (tender as any).officeLocationFromPath;
 
     if (!targetOfficeAddress && tenderOfficeLocation && allOfficeAddresses) {
-        const globalOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === tenderOfficeLocation.toLowerCase()) || null;
-        const subOfficeCollectionPath = `offices/${tenderOfficeLocation.toLowerCase()}/officeAddresses`;
-        const q = query(collection(db, subOfficeCollectionPath));
-        const snapshot = await getDocs(q);
+        const globalOffice = allOfficeAddresses.find(oa => oa.officeLocation?.toLowerCase() === tenderOfficeLocation.toLowerCase()) || null;
+        
+        try {
+            const subOfficeCollectionPath = `offices/${tenderOfficeLocation.toLowerCase()}/officeAddresses`;
+            const q = query(collection(db, subOfficeCollectionPath));
+            const snapshot = await getDocs(q);
 
-        if (!snapshot.empty) {
-            const bestDocSnap = snapshot.docs.reduce((prev, curr) => 
-                Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev, 
-            snapshot.docs[0]);
-            
-            const subOfficeDocData = processFirestoreDoc<OfficeAddress>(bestDocSnap);
-            
-            targetOfficeAddress = {
-                ...subOfficeDocData,
-                officeLocation: tenderOfficeLocation,
-                officeCode: globalOffice?.officeCode || subOfficeDocData.officeCode || '',
-            };
-        } else if (globalOffice) {
-            targetOfficeAddress = { ...globalOffice, officeName: '', id: globalOffice.id };
+            if (!snapshot.empty) {
+                const bestDocSnap = snapshot.docs.reduce((prev, curr) => 
+                    Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev, 
+                snapshot.docs[0]);
+                
+                const subOfficeDocData = processFirestoreDoc<OfficeAddress>(bestDocSnap);
+                
+                targetOfficeAddress = {
+                    ...subOfficeDocData,
+                    officeLocation: tenderOfficeLocation,
+                    officeCode: globalOffice?.officeCode || subOfficeDocData.officeCode || '',
+                };
+            } else if (globalOffice) {
+                targetOfficeAddress = { ...globalOffice, officeName: '', id: globalOffice.id };
+            }
+        } catch(e) {
+            console.error("Error fetching office details for PDF:", e);
         }
     }
 

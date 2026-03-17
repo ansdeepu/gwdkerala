@@ -36,7 +36,7 @@ const processFirestoreDoc = <T,>(docSnap: any): T => {
 
 const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 
-export async function generateTenderForm(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[], allOfficeAddresses?: OfficeAddress[]): Promise<Uint8Array> {
+export async function generateTenderForm(tender: E_tender, currentOfficeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[], allOfficeAddresses?: OfficeAddress[]): Promise<Uint8Array> {
     const templatePath = '/Tender-Form.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
         if (!res.ok) throw new Error(`Template file not found: ${templatePath.split('/').pop()}`);
@@ -48,30 +48,38 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
     const timesRomanBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     const form = pdfDoc.getForm();
 
-    let targetOfficeAddress = officeAddress;
+    let targetOfficeAddress: OfficeAddress | null = null;
     const tenderOfficeLocation = (tender as any).officeLocationFromPath;
     
-    if (!targetOfficeAddress && tenderOfficeLocation && allOfficeAddresses) {
-        const globalOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === tenderOfficeLocation.toLowerCase()) || null;
-        const subOfficeCollectionPath = `offices/${tenderOfficeLocation.toLowerCase()}/officeAddresses`;
-        const q = query(collection(db, subOfficeCollectionPath));
-        const snapshot = await getDocs(q);
+    if (tenderOfficeLocation && allOfficeAddresses) {
+        const globalOffice = allOfficeAddresses.find(oa => oa.officeLocation?.toLowerCase() === tenderOfficeLocation.toLowerCase()) || null;
+        
+        try {
+            const subOfficeCollectionPath = `offices/${tenderOfficeLocation.toLowerCase()}/officeAddresses`;
+            const q = query(collection(db, subOfficeCollectionPath));
+            const snapshot = await getDocs(q);
 
-        if (!snapshot.empty) {
-            const bestDocSnap = snapshot.docs.reduce((prev, curr) => 
-                Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev, 
-            snapshot.docs[0]);
-            
-            const subOfficeDocData = processFirestoreDoc<OfficeAddress>(bestDocSnap);
-            
-            targetOfficeAddress = {
-                ...subOfficeDocData,
-                officeLocation: tenderOfficeLocation,
-                officeCode: globalOffice?.officeCode || subOfficeDocData.officeCode || '',
-            };
-        } else if (globalOffice) {
-            targetOfficeAddress = { ...globalOffice, officeName: '', id: globalOffice.id };
+            if (!snapshot.empty) {
+                const bestDocSnap = snapshot.docs.reduce((prev, curr) => 
+                    Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev, 
+                snapshot.docs[0]);
+                
+                const subOfficeDocData = processFirestoreDoc<OfficeAddress>(bestDocSnap);
+                
+                targetOfficeAddress = {
+                    ...subOfficeDocData,
+                    officeLocation: tenderOfficeLocation,
+                    officeCode: globalOffice?.officeCode || subOfficeDocData.officeCode || '',
+                };
+            } else if (globalOffice) {
+                targetOfficeAddress = { ...globalOffice, officeName: '', id: globalOffice.id };
+            }
+        } catch (e) {
+            console.error("Error fetching office details for PDF:", e);
+            targetOfficeAddress = currentOfficeAddress;
         }
+    } else {
+        targetOfficeAddress = currentOfficeAddress;
     }
     
     const isRetender = tender.retenders && tender.retenders.some(
