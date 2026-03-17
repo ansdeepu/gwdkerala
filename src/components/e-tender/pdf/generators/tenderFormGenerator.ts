@@ -72,9 +72,10 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
         'address_1': address_1,
         'address_2': address_2,
         'address_3': address_3,
-        'address_4': address_4,
+        'address_4': address_4.toUpperCase(),
         'office_location_9': capitalize(targetOfficeAddress?.officeLocation),
         'office_location_10': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
+        'office_location_11': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
         'office_location_12': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
         'office_location_13': capitalize(targetOfficeAddress?.officeLocation),
     };
@@ -95,7 +96,7 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
                     textField.setFontSize(12);
                 } else if (['address_3'].includes(fieldName)) {
                     textField.setFontSize(10);
-                } else if (['office_location_10', 'office_location_12'].includes(fieldName)) {
+                } else if (['office_location_10', 'office_location_11', 'office_location_12'].includes(fieldName)) {
                     textField.setFontSize(9);
                 }
 
