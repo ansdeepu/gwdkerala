@@ -5,8 +5,38 @@ import { formatDateSafe, formatTenderNoForFilename } from '../../utils';
 import type { StaffMember } from '@/lib/schemas';
 import { getAttachedFilesString } from './utils';
 import type { OfficeAddress } from '@/hooks/use-data-store';
+import { getFirestore, collection, query, getDocs, Timestamp } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 
-export async function generateTenderForm(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
+const db = getFirestore(app);
+
+const processFirestoreData = (data: any): any => {
+    if (data === null || data === undefined) return data;
+    if (data instanceof Timestamp) return data.toDate();
+    if (Array.isArray(data)) return data.map(processFirestoreData);
+    if (typeof data === 'object' && !(data instanceof Date)) {
+        const processed: Record<string, any> = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                processed[key] = processFirestoreData(data[key]);
+            }
+        }
+        return processed;
+    }
+    return data;
+};
+
+const processFirestoreDoc = <T,>(docSnap: any): T => {
+    const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
+    if (!data) return {} as T;
+    const processed = processFirestoreData(data);
+    const id = docSnap.id || (processed as any).id || (processed as any).uid;
+    return { ...processed, id: id, uid: id } as T;
+};
+
+const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+
+export async function generateTenderForm(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[], allOfficeAddresses?: OfficeAddress[]): Promise<Uint8Array> {
     const templatePath = '/Tender-Form.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
         if (!res.ok) throw new Error(`Template file not found: ${templatePath.split('/').pop()}`);
@@ -17,6 +47,32 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
     const timesRomanBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     const form = pdfDoc.getForm();
+
+    let targetOfficeAddress = officeAddress;
+    const tenderOfficeLocation = (tender as any).officeLocationFromPath;
+    
+    if (!targetOfficeAddress && tenderOfficeLocation && allOfficeAddresses) {
+        const globalOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === tenderOfficeLocation.toLowerCase()) || null;
+        const subOfficeCollectionPath = `offices/${tenderOfficeLocation.toLowerCase()}/officeAddresses`;
+        const q = query(collection(db, subOfficeCollectionPath));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            const bestDocSnap = snapshot.docs.reduce((prev, curr) => 
+                Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev, 
+            snapshot.docs[0]);
+            
+            const subOfficeDocData = processFirestoreDoc<OfficeAddress>(bestDocSnap);
+            
+            targetOfficeAddress = {
+                ...subOfficeDocData,
+                officeLocation: tenderOfficeLocation,
+                officeCode: globalOffice?.officeCode || subOfficeDocData.officeCode || '',
+            };
+        } else if (globalOffice) {
+            targetOfficeAddress = { ...globalOffice, officeName: '', id: globalOffice.id };
+        }
+    }
     
     const isRetender = tender.retenders && tender.retenders.some(
         r => r.lastDateOfReceipt === tender.dateTimeOfReceipt && r.dateOfOpeningTender === tender.dateTimeOfOpening
@@ -34,16 +90,18 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
     const formattedTenderNo = formatTenderNoForFilename(tender.eTenderNo);
     const fileName = `bTenderForm${formattedTenderNo}.pdf`;
     
-    const addressLines = (officeAddress?.address || '').split('\n');
-    const address_1 = addressLines.slice(0, 3).join('\n').toUpperCase();
-    const address_2 = addressLines.slice(3).join('\n').toUpperCase();
-    const address_3 = `Email: ${officeAddress?.email || ''}\nPhone: ${officeAddress?.phoneNo || ''}`;
+    const addressLines = (targetOfficeAddress?.address || '').split('\n');
+    const address_1 = addressLines.slice(0, 3).join(', ').toUpperCase();
+    const address_2 = addressLines.slice(3).join(', ').toUpperCase();
+    const address_3 = `Email: ${targetOfficeAddress?.email || ''}, Phone: ${targetOfficeAddress?.phoneNo || ''}`;
+
+    const officeCode = targetOfficeAddress?.officeCode || 'GKT';
 
     const fieldMappings: Record<string, any> = {
-        'file_no_header': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
+        'file_no_header': tender.fileNo ? `${officeCode}/${tender.fileNo}` : '',
         'e_tender_no_header': `${tender.eTenderNo || ''}${isRetender ? ' (Re-Tender)' : ''}`,
         'tender_date_header': formatDateSafe(tender.tenderDate),
-        'file_no': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
+        'file_no': `${officeCode}/${tender.fileNo || ''}`,
         'e_tender_no': tender.eTenderNo,
         'tender_no_page_2': tender.eTenderNo,
         'date_page_2': formatDateSafe(tender.tenderDate),
@@ -66,6 +124,10 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
         'address_1': address_1,
         'address_2': address_2,
         'address_3': address_3,
+        'office_location_9': capitalize(targetOfficeAddress?.officeLocation),
+        'office_location_10': (targetOfficeAddress?.officeName || '').toUpperCase(),
+        'office_location_11': capitalize(targetOfficeAddress?.officeLocation),
+        'office_location_12': (targetOfficeAddress?.officeName || '').toUpperCase(),
     };
 
     const allFields = form.getFields();

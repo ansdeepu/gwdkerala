@@ -4,6 +4,36 @@ import type { E_tender } from '@/hooks/useE_tenders';
 import { formatDateSafe, formatTenderNoForFilename } from '../../utils';
 import type { StaffMember } from '@/lib/schemas';
 import type { OfficeAddress } from '@/hooks/use-data-store';
+import { getFirestore, collection, query, getDocs, Timestamp } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
+
+const db = getFirestore(app);
+
+const processFirestoreData = (data: any): any => {
+    if (data === null || data === undefined) return data;
+    if (data instanceof Timestamp) return data.toDate();
+    if (Array.isArray(data)) return data.map(processFirestoreData);
+    if (typeof data === 'object' && !(data instanceof Date)) {
+        const processed: Record<string, any> = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                processed[key] = processFirestoreData(data[key]);
+            }
+        }
+        return processed;
+    }
+    return data;
+};
+
+const processFirestoreDoc = <T,>(docSnap: any): T => {
+    const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
+    if (!data) return {} as T;
+    const processed = processFirestoreData(data);
+    const id = docSnap.id || (processed as any).id || (processed as any).uid;
+    return { ...processed, id: id, uid: id } as T;
+};
+
+const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 
 export async function generateNIT(
     tender: E_tender, 
@@ -22,10 +52,30 @@ export async function generateNIT(
     const timesRomanBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     const form = pdfDoc.getForm();
     
-    const tenderOfficeLocation = (tender as any).officeLocationFromPath;
     let targetOfficeAddress = currentOfficeAddress;
+    const tenderOfficeLocation = (tender as any).officeLocationFromPath;
+
     if (!targetOfficeAddress && tenderOfficeLocation && allOfficeAddresses) {
-        targetOfficeAddress = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === tenderOfficeLocation.toLowerCase()) || null;
+        const globalOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === tenderOfficeLocation.toLowerCase()) || null;
+        const subOfficeCollectionPath = `offices/${tenderOfficeLocation.toLowerCase()}/officeAddresses`;
+        const q = query(collection(db, subOfficeCollectionPath));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            const bestDocSnap = snapshot.docs.reduce((prev, curr) => 
+                Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev, 
+            snapshot.docs[0]);
+            
+            const subOfficeDocData = processFirestoreDoc<OfficeAddress>(bestDocSnap);
+            
+            targetOfficeAddress = {
+                ...subOfficeDocData,
+                officeLocation: tenderOfficeLocation,
+                officeCode: globalOffice?.officeCode || subOfficeDocData.officeCode || '',
+            };
+        } else if (globalOffice) {
+            targetOfficeAddress = { ...globalOffice, officeName: '', id: globalOffice.id };
+        }
     }
 
     const isRetender = tender.retenders && tender.retenders.some(
@@ -49,7 +99,7 @@ export async function generateNIT(
     const address_2 = addressLines.slice(3).join(', ').toUpperCase();
     const address_3 = `Email: ${targetOfficeAddress?.email || ''}, Phone: ${targetOfficeAddress?.phoneNo || ''}`;
 
-    const officeLocationName = (targetOfficeAddress?.officeLocation || (tender as any).officeLocationFromPath || '').toUpperCase();
+    const officeLocationName = capitalize(targetOfficeAddress?.officeLocation || (tender as any).officeLocationFromPath);
     const officeCode = targetOfficeAddress?.officeCode || 'GKT';
 
     const fieldMappings: Record<string, any> = {

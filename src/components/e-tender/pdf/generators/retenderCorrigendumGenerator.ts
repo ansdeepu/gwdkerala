@@ -5,8 +5,37 @@ import { formatDateSafe } from '../../utils';
 import type { Corrigendum, StaffMember } from '@/lib/schemas';
 import { getAttachedFilesString } from './utils';
 import type { OfficeAddress } from '@/hooks/use-data-store';
+import { getFirestore, collection, query, getDocs, Timestamp } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
 
-export async function generateRetenderCorrigendum(tender: E_tender, corrigendum: Corrigendum, officeAddress: OfficeAddress | null): Promise<Uint8Array> {
+const db = getFirestore(app);
+
+const processFirestoreData = (data: any): any => {
+    if (data === null || data === undefined) return data;
+    if (data instanceof Timestamp) return data.toDate();
+    if (Array.isArray(data)) return data.map(processFirestoreData);
+    if (typeof data === 'object' && !(data instanceof Date)) {
+        const processed: Record<string, any> = {};
+        for (const key in data) {
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                processed[key] = processFirestoreData(data[key]);
+            }
+        }
+        return processed;
+    }
+    return data;
+};
+
+const processFirestoreDoc = <T,>(docSnap: any): T => {
+    const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
+    if (!data) return {} as T;
+    const processed = processFirestoreData(data);
+    const id = docSnap.id || (processed as any).id || (processed as any).uid;
+    return { ...processed, id: id, uid: id } as T;
+};
+
+
+export async function generateRetenderCorrigendum(tender: E_tender, corrigendum: Corrigendum, officeAddress: OfficeAddress | null, staff?: StaffMember[], allOfficeAddresses?: OfficeAddress[]): Promise<Uint8Array> {
     const templatePath = '/Corrigendum-Retender.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
         if (!res.ok) throw new Error(`Template file not found: ${templatePath.split('/').pop()}`);
@@ -19,17 +48,43 @@ export async function generateRetenderCorrigendum(tender: E_tender, corrigendum:
     const form = pdfDoc.getForm();
     const page = pdfDoc.getPages()[0];
     const { width, height } = page.getSize();
+    
+    let targetOfficeAddress = officeAddress;
+    const tenderOfficeLocation = (tender as any).officeLocationFromPath;
+
+    if (!targetOfficeAddress && tenderOfficeLocation && allOfficeAddresses) {
+        const globalOffice = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === tenderOfficeLocation.toLowerCase()) || null;
+        const subOfficeCollectionPath = `offices/${tenderOfficeLocation.toLowerCase()}/officeAddresses`;
+        const q = query(collection(db, subOfficeCollectionPath));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            const bestDocSnap = snapshot.docs.reduce((prev, curr) => 
+                Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev, 
+            snapshot.docs[0]);
+            
+            const subOfficeDocData = processFirestoreDoc<OfficeAddress>(bestDocSnap);
+            
+            targetOfficeAddress = {
+                ...subOfficeDocData,
+                officeLocation: tenderOfficeLocation,
+                officeCode: globalOffice?.officeCode || subOfficeDocData.officeCode || '',
+            };
+        } else if (globalOffice) {
+            targetOfficeAddress = { ...globalOffice, officeName: '', id: globalOffice.id };
+        }
+    }
 
     const lastDate = formatDateSafe(tender.dateTimeOfReceipt, true, true, false);
     const reasonText = corrigendum.reason || `no bids were received`;
 
     const fullParagraph = `     The time period for submitting e-tenders expired on ${lastDate}, and ${reasonText}. Hence, it has been decided to retender the above work.`;
 
-    const addressLines = (officeAddress?.address || '').split('\n');
-    const address4 = addressLines.slice(2).join('\n');
+    const addressLines = (targetOfficeAddress?.address || '').split('\n');
+    const place_4 = addressLines.slice(2).join(', ').toUpperCase();
 
     const fieldMappings: Record<string, any> = {
-        'file_no_header': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
+        'file_no_header': `${targetOfficeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
         'e_tender_no_header': tender.eTenderNo,
         'tender_date_header': `Dated ${formatDateSafe(tender.tenderDate)}`,
         'name_of_work': tender.nameOfWork,
@@ -38,8 +93,8 @@ export async function generateRetenderCorrigendum(tender: E_tender, corrigendum:
         'new_opening_date': formatDateSafe(corrigendum.dateOfOpeningTender, true, false, true),
         'date': formatDateSafe(corrigendum.corrigendumDate),
         'date_2': formatDateSafe(corrigendum.corrigendumDate),
-        'office_location_6': (officeAddress?.officeName || '').toUpperCase(),
-        'place_4': address4,
+        'office_location_6': (targetOfficeAddress?.officeName || '').toUpperCase(),
+        'place_4': place_4,
     };
     
     const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'name_of_work'];
