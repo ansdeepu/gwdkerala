@@ -30,9 +30,7 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
     const address_2 = addressLines.slice(3).join(', ').toUpperCase();
     const address_3 = `Email: ${officeAddress?.email || ''}, Phone: ${officeAddress?.phoneNo || ''}`;
 
-    const officeLocationName = officeAddress?.officeLocation
-      ? officeAddress.officeLocation.charAt(0).toUpperCase() + officeAddress.officeLocation.slice(1).toLowerCase()
-      : '';
+    const officeLocationName = (officeAddress?.officeLocation || '').toUpperCase();
 
     const fieldMappings: Record<string, any> = {
         'file_no_header': tender.fileNo ? `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}` : '',
