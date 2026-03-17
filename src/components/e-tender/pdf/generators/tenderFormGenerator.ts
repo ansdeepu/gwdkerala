@@ -41,7 +41,7 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
     const address_1 = addressLines.slice(0, 3).join(', ').toUpperCase();
     const address_2 = addressLines.slice(3).join(', ').toUpperCase();
     const address_3 = `Email: ${targetOfficeAddress?.email || ''}, Phone: ${targetOfficeAddress?.phoneNo || ''}`;
-    const address_4 = addressLines.slice(2).join(', ');
+    const address_4 = addressLines.slice(2).join(', ').toUpperCase();
     
     const officeCode = targetOfficeAddress?.officeCode || 'GKT';
 
@@ -94,6 +94,10 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
 
                 if (['address_1', 'address_2', 'address_3'].includes(fieldName)) {
                     textField.setFontSize(12);
+                }
+                
+                if (['office_location_10', 'office_location_12'].includes(fieldName)) {
+                    textField.setFontSize(10);
                 }
 
                 textField.updateAppearances(font);
