@@ -5,7 +5,12 @@ import { formatDateSafe, formatTenderNoForFilename } from '../../utils';
 import type { StaffMember } from '@/lib/schemas';
 import type { OfficeAddress } from '@/hooks/use-data-store';
 
-export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
+export async function generateNIT(
+    tender: E_tender, 
+    currentOfficeAddress: OfficeAddress | null, 
+    allStaffMembers?: StaffMember[], 
+    allOfficeAddresses?: OfficeAddress[]
+): Promise<Uint8Array> {
     const templatePath = '/NIT.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
         if (!res.ok) throw new Error(`Template file not found: ${templatePath.split('/').pop()}`);
@@ -17,6 +22,12 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
     const timesRomanBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     const form = pdfDoc.getForm();
     
+    const tenderOfficeLocation = (tender as any).officeLocationFromPath;
+    let targetOfficeAddress = currentOfficeAddress;
+    if (!targetOfficeAddress && tenderOfficeLocation && allOfficeAddresses) {
+        targetOfficeAddress = allOfficeAddresses.find(oa => oa.officeLocation.toLowerCase() === tenderOfficeLocation.toLowerCase()) || null;
+    }
+
     const isRetender = tender.retenders && tender.retenders.some(
         r => r.lastDateOfReceipt === tender.dateTimeOfReceipt && r.dateOfOpeningTender === tender.dateTimeOfOpening
     );
@@ -25,15 +36,24 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
     const gst = tenderFormFeeValue * 0.18;
     const displayTenderFormFee = tender.tenderFormFee ? `Rs. ${tenderFormFeeValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} & Rs. ${gst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (GST 18%)` : 'N/A';
     
-    const addressLines = (officeAddress?.address || '').split('\n');
+    const formatCurrency = (amount: number | undefined | null) => {
+        if (amount === undefined || amount === null) return '';
+        return `Rs. ${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    const formattedTenderNo = formatTenderNoForFilename(tender.eTenderNo);
+    const fileName = `aNIT${formattedTenderNo}.pdf`;
+    
+    const addressLines = (targetOfficeAddress?.address || '').split('\n');
     const address_1 = addressLines.slice(0, 3).join(', ').toUpperCase();
     const address_2 = addressLines.slice(3).join(', ').toUpperCase();
-    const address_3 = `Email: ${officeAddress?.email || ''}, Phone: ${officeAddress?.phoneNo || ''}`;
+    const address_3 = `Email: ${targetOfficeAddress?.email || ''}, Phone: ${targetOfficeAddress?.phoneNo || ''}`;
 
-    const officeLocationName = (officeAddress?.officeLocation || (tender as any).officeLocationFromPath || '').toUpperCase();
+    const officeLocationName = (targetOfficeAddress?.officeLocation || (tender as any).officeLocationFromPath || '').toUpperCase();
+    const officeCode = targetOfficeAddress?.officeCode || 'GKT';
 
     const fieldMappings: Record<string, any> = {
-        'file_no_header': tender.fileNo ? `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}` : '',
+        'file_no_header': tender.fileNo ? `${officeCode}/${tender.fileNo}` : '',
         'e_tender_no_header': `${tender.eTenderNo || ''}${isRetender ? ' (Re-Tender)' : ''}`,
         'tender_date_header': formatDateSafe(tender.tenderDate),
         'name_of_work': tender.nameOfWork,
@@ -55,9 +75,9 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
     const hasRelatedFiles = tender.fileNo2 || tender.fileNo3 || tender.fileNo4;
     if (hasRelatedFiles) {
         fieldMappings['header_1'] = "Related File Numbers:";
-        if (tender.fileNo2) fieldMappings['file_no_2'] = `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo2}`;
-        if (tender.fileNo3) fieldMappings['file_no_3'] = `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo3}`;
-        if (tender.fileNo4) fieldMappings['file_no_4'] = `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo4}`;
+        if (tender.fileNo2) fieldMappings['file_no_2'] = `${officeCode}/${tender.fileNo2}`;
+        if (tender.fileNo3) fieldMappings['file_no_3'] = `${officeCode}/${tender.fileNo3}`;
+        if (tender.fileNo4) fieldMappings['file_no_4'] = `${officeCode}/${tender.fileNo4}`;
     }
 
 
