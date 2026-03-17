@@ -66,6 +66,8 @@ export async function generateFinancialSummary(tender: E_tender, officeAddress: 
         'fin_result': finResultText,
         'fin_committee': committeeMembersText,
         'fin_date': formatDateSafe(tender.dateOfTechnicalAndFinancialBidOpening),
+        'office_location_7': (officeAddress?.officeName || '').toUpperCase(),
+        'place_5': officeAddress?.officeLocation ? officeAddress.officeLocation.charAt(0).toUpperCase() + officeAddress.officeLocation.slice(1).toLowerCase() : '',
     };
 
     const allFields = form.getFields();

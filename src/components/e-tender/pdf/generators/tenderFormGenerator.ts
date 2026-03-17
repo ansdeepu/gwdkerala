@@ -33,6 +33,12 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
 
     const formattedTenderNo = formatTenderNoForFilename(tender.eTenderNo);
     const fileName = `bTenderForm${formattedTenderNo}.pdf`;
+    
+    const addressLines = (officeAddress?.address || '').split('\n');
+    const address1 = addressLines.slice(0, 3).join('\n').toUpperCase();
+    const address2 = addressLines.slice(3).join('\n').toUpperCase();
+    const address3 = `Email: ${officeAddress?.email || ''}\nPhone: ${officeAddress?.phoneNo || ''}`;
+    const officeNameCaps = (officeAddress?.officeName || '').toUpperCase();
 
     const fieldMappings: Record<string, any> = {
         'file_no_header': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
@@ -58,6 +64,10 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
         'sl_no_4': '4',
         'sl_no_22': '22',
         'rs_25500': 'Rs. 25,500.00',
+        'office_location_9': address2,
+        'office_location_10': officeNameCaps,
+        'office_location_11': address3,
+        'office_location_12': address1,
     };
 
     const allFields = form.getFields();
@@ -82,5 +92,3 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
     
     return await pdfDoc.save();
 }
-
-    

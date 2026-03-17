@@ -63,6 +63,8 @@ export async function generateBidOpeningSummary(tender: E_tender, officeAddress:
         'name_of_work': tender.nameOfWork,
         'bid_date': formatDateSafe(tender.dateOfOpeningBid),
         'bid_opening': bidOpeningText,
+        'office_location_3': (officeAddress?.officeName || '').toUpperCase(),
+        'place_1': officeAddress?.officeLocation ? officeAddress.officeLocation.charAt(0).toUpperCase() + officeAddress.officeLocation.slice(1).toLowerCase() : '',
     };
 
     const allFields = form.getFields();
@@ -90,5 +92,3 @@ export async function generateBidOpeningSummary(tender: E_tender, officeAddress:
     
     return await pdfDoc.save();
 }
-
-    

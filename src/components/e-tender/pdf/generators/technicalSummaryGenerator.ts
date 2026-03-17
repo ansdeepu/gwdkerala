@@ -47,6 +47,8 @@ export async function generateTechnicalSummary(tender: E_tender, officeAddress: 
         'tech_summary': techSummaryText,
         'committee_members': committeeMembersText,
         'tech_date': formatDateSafe(tender.dateOfTechnicalAndFinancialBidOpening),
+        'office_location_8': (officeAddress?.officeName || '').toUpperCase(),
+        'place_6': officeAddress?.officeLocation ? officeAddress.officeLocation.charAt(0).toUpperCase() + officeAddress.officeLocation.slice(1).toLowerCase() : '',
     };
 
     const allFields = form.getFields();
@@ -74,5 +76,3 @@ export async function generateTechnicalSummary(tender: E_tender, officeAddress: 
     
     return await pdfDoc.save();
 }
-
-    

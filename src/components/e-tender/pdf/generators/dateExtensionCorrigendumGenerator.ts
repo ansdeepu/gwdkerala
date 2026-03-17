@@ -43,6 +43,9 @@ export async function generateDateExtensionCorrigendum(
 
     const fullParagraph = `     The time period for submitting e-tenders expired on ${lastDate}, and ${reasonText}. Consequently, the deadline for submitting e-tenders has been extended to ${newLastDate}, and the opening of the tender has been rescheduled to ${newOpeningDate}.`;
 
+    const addressLines = (officeAddress?.address || '').split('\n');
+    const address1 = addressLines.slice(0, 3).join('\n').toUpperCase();
+
     const fieldMappings: Record<string, string> = {
         file_no_header: `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ""}`,
         e_tender_no_header: tender.eTenderNo || "",
@@ -50,6 +53,8 @@ export async function generateDateExtensionCorrigendum(
         name_of_work: tender.nameOfWork || "",
         date_ext: fullParagraph, // multiline box (4096 flag)
         date: formatDateSafe(corrigendum.corrigendumDate),
+        'office_location_5': (officeAddress?.officeName || '').toUpperCase(),
+        'place_2': address1,
     };
     
     const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'name_of_work'];
@@ -76,5 +81,3 @@ export async function generateDateExtensionCorrigendum(
     
     return await pdfDoc.save();
 }
-
-    

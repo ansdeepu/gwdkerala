@@ -25,6 +25,9 @@ export async function generateRetenderCorrigendum(tender: E_tender, corrigendum:
 
     const fullParagraph = `     The time period for submitting e-tenders expired on ${lastDate}, and ${reasonText}. Hence, it has been decided to retender the above work.`;
 
+    const addressLines = (officeAddress?.address || '').split('\n');
+    const address4 = addressLines.slice(2).join('\n');
+
     const fieldMappings: Record<string, any> = {
         'file_no_header': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
         'e_tender_no_header': tender.eTenderNo,
@@ -35,6 +38,8 @@ export async function generateRetenderCorrigendum(tender: E_tender, corrigendum:
         'new_opening_date': formatDateSafe(corrigendum.dateOfOpeningTender, true, false, true),
         'date': formatDateSafe(corrigendum.corrigendumDate),
         'date_2': formatDateSafe(corrigendum.corrigendumDate),
+        'office_location_6': (officeAddress?.officeName || '').toUpperCase(),
+        'place_4': address4,
     };
     
     const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'name_of_work'];
@@ -63,5 +68,3 @@ export async function generateRetenderCorrigendum(tender: E_tender, corrigendum:
     
     return await pdfDoc.save();
 }
-
-    

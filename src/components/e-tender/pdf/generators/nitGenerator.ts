@@ -25,6 +25,9 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
     const gst = tenderFormFeeValue * 0.18;
     const displayTenderFormFee = tender.tenderFormFee ? `Rs. ${tenderFormFeeValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} & Rs. ${gst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (GST 18%)` : 'N/A';
     
+    const addressLines = (officeAddress?.address || '').split('\n');
+    const address1 = addressLines.slice(0, 3).join('\n').toUpperCase();
+
     const fieldMappings: Record<string, any> = {
         'file_no_header': tender.fileNo ? `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}` : '',
         'e_tender_no_header': `${tender.eTenderNo || ''}${isRetender ? ' (Re-Tender)' : ''}`,
@@ -37,6 +40,8 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
         'bid_submission_fee': displayTenderFormFee,
         'location': tender.location,
         'period_of_completion': tender.periodOfCompletion,
+        'Office_location_1': (officeAddress?.officeName || '').toUpperCase(),
+        'Office_location_2': address1,
     };
     
     // Conditionally add related file numbers
@@ -77,5 +82,3 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
     
     return await pdfDoc.save();
 }
-
-    
