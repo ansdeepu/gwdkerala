@@ -65,8 +65,8 @@ export async function generateNIT(
         'address_1': address_1,
         'address_2': address_2,
         'address_3': address_3,
-        'Office_location_1': officeLocationName,
-        'Office_location_2': officeLocationName,
+        'office_location_1': officeLocationName,
+        'office_location_2': officeLocationName,
     };
     
     const hasRelatedFiles = tender.fileNo2 || tender.fileNo3 || tender.fileNo4;
@@ -91,7 +91,7 @@ export async function generateNIT(
                 
                 textField.setText(String(fieldMappings[fieldName] || ''));
 
-                if (['address_1', 'address_2', 'address_3', 'Office_location_1', 'Office_location_2'].includes(fieldName)) {
+                if (['address_1', 'address_2', 'address_3', 'office_location_1', 'office_location_2'].includes(fieldName)) {
                     textField.setFontSize(12);
                 } else if (fieldName === 'name_of_work') {
                     textField.setFontSize(10);
