@@ -96,7 +96,7 @@ export default function WorkOrderPrintPage() {
                       <p>ടെണ്ടർ നമ്പർ : {tender.eTenderNo || '__________'}</p>
                   </div>
                   <div className="text-right">
-                      <p className="whitespace-pre-wrap">{(officeAddress?.officeNameMalayalam || '').replace('ഭൂജലവകുപ്പ്,', '').trim()}</p>
+                      <p className="whitespace-pre-wrap">{(officeAddress?.officeNameMalayalam || '').replace('ഭൂജലവകുപ്പ്', '').replace(',', '').trim()}</p>
                       <p className="whitespace-pre-wrap">{officeAddress?.addressMalayalam || ''}</p>
                       <p>ഫോൺനമ്പർ: {officeAddress?.phoneNo || ''}</p>
                       <p>ഇമെയിൽ: {officeAddress?.email || ''}</p>
