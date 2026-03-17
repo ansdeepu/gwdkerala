@@ -3,7 +3,7 @@ import { PDFDocument, PDFTextField, StandardFonts, TextAlignment, rgb } from 'pd
 import type { E_tender } from '@/hooks/useE_tenders';
 import { formatDateSafe, formatTenderNoForFilename } from '../../utils';
 import type { StaffMember } from '@/lib/schemas';
-import { getAttachedFilesString, numberToWords } from './utils';
+import { numberToWords } from './utils';
 import type { OfficeAddress } from '@/hooks/use-data-store';
 
 export async function generateTechnicalSummary(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
@@ -17,8 +17,7 @@ export async function generateTechnicalSummary(tender: E_tender, officeAddress: 
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
     const timesRomanBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     const form = pdfDoc.getForm();
-    const page = pdfDoc.getPages()[0];
-    const { width, height } = page.getSize();
+    const targetOfficeAddress = officeAddress;
     
     const acceptedBidders = (tender.bidders || []).filter(b => b.status === 'Accepted');
     const l1Bidder = acceptedBidders.length > 0 ? acceptedBidders.filter(b => typeof b.quotedAmount === 'number' && b.quotedAmount > 0).reduce((lowest, current) => (current.quotedAmount! < lowest.quotedAmount!) ? current : lowest) : null;
@@ -40,15 +39,15 @@ export async function generateTechnicalSummary(tender: E_tender, officeAddress: 
     const fileName = `bTechEvaluation${formattedTenderNo}.pdf`;
     
     const fieldMappings: Record<string, any> = {
-        'file_no_header': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
+        'file_no_header': `${targetOfficeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
         'e_tender_no_header': tender.eTenderNo,
         'tender_date_header': formatDateSafe(tender.tenderDate),
         'name_of_work': tender.nameOfWork,
         'tech_summary': techSummaryText,
         'committee_members': committeeMembersText,
         'tech_date': formatDateSafe(tender.dateOfTechnicalAndFinancialBidOpening),
-        'office_location_8': (officeAddress?.officeName || '').toUpperCase(),
-        'place_6': officeAddress?.officeLocation ? officeAddress.officeLocation.charAt(0).toUpperCase() + officeAddress.officeLocation.slice(1).toLowerCase() : '',
+        'office_location_8': (targetOfficeAddress?.officeName || '').toUpperCase(),
+        'place_6': targetOfficeAddress?.officeLocation ? targetOfficeAddress.officeLocation.charAt(0).toUpperCase() + targetOfficeAddress.officeLocation.slice(1).toLowerCase() : '',
     };
 
     const allFields = form.getFields();

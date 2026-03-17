@@ -4,41 +4,11 @@ import type { E_tender } from '@/hooks/useE_tenders';
 import { format, isValid } from 'date-fns';
 import { formatTenderNoForFilename } from '../../utils';
 import type { StaffMember } from '@/lib/schemas';
-import { numberToWords, getAttachedFilesString } from './utils';
 import type { OfficeAddress } from '@/hooks/use-data-store';
-import { getFirestore, collection, query, getDocs, Timestamp } from 'firebase/firestore';
-import { app } from '@/lib/firebase';
-
-const db = getFirestore(app);
-
-const processFirestoreData = (data: any): any => {
-    if (data === null || data === undefined) return data;
-    if (data instanceof Timestamp) return data.toDate();
-    if (Array.isArray(data)) return data.map(processFirestoreData);
-    if (typeof data === 'object' && !(data instanceof Date)) {
-        const processed: Record<string, any> = {};
-        for (const key in data) {
-            if (Object.prototype.hasOwnProperty.call(data, key)) {
-                processed[key] = processFirestoreData(data[key]);
-            }
-        }
-        return processed;
-    }
-    return data;
-};
-
-const processFirestoreDoc = <T,>(docSnap: any): T => {
-    const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap;
-    if (!data) return {} as T;
-    const processed = processFirestoreData(data);
-    const id = docSnap.id || (processed as any).id || (processed as any).uid;
-    return { ...processed, id: id, uid: id } as T;
-};
-
 
 const cm = (cmValue: number) => cmValue * 28.3465;
 
-export async function generateWorkAgreement(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[], allOfficeAddresses?: OfficeAddress[]): Promise<Uint8Array> {
+export async function generateWorkAgreement(tender: E_tender, officeAddress: OfficeAddress | null): Promise<Uint8Array> {
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage(PageSizes.A4);
     const { width, height } = page.getSize();
@@ -46,37 +16,7 @@ export async function generateWorkAgreement(tender: E_tender, officeAddress: Off
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
     const timesRomanBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     
-    let targetOfficeAddress: OfficeAddress | null = officeAddress;
-    const tenderOfficeLocation = (tender as any).officeLocationFromPath;
-
-    if (!targetOfficeAddress && tenderOfficeLocation && allOfficeAddresses) {
-        const globalOffice = allOfficeAddresses.find(oa => oa.officeLocation?.toLowerCase() === tenderOfficeLocation.toLowerCase()) || null;
-        
-        try {
-            const subOfficeCollectionPath = `offices/${tenderOfficeLocation.toLowerCase()}/officeAddresses`;
-            const q = query(collection(db, subOfficeCollectionPath));
-            const snapshot = await getDocs(q);
-
-            if (!snapshot.empty) {
-                const bestDocSnap = snapshot.docs.reduce((prev, curr) => 
-                    Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev, 
-                snapshot.docs[0]);
-                
-                const subOfficeDocData = processFirestoreDoc<OfficeAddress>(bestDocSnap);
-                
-                targetOfficeAddress = {
-                    ...subOfficeDocData,
-                    officeLocation: tenderOfficeLocation,
-                    officeCode: globalOffice?.officeCode || subOfficeDocData.officeCode || '',
-                };
-            } else if (globalOffice) {
-                targetOfficeAddress = { ...globalOffice, officeName: '', id: globalOffice.id };
-            }
-        } catch(e) {
-            console.error("Error fetching office details for PDF:", e);
-        }
-    }
-
+    const targetOfficeAddress = officeAddress;
 
     const l1Bidder = (tender.bidders || []).find(b => b.status === 'Accepted') || 
                      ((tender.bidders || []).length > 0 ? (tender.bidders || []).reduce((prev, curr) => (prev.quotedAmount ?? Infinity) < (curr.quotedAmount ?? Infinity) ? prev : curr, {} as any) : null);

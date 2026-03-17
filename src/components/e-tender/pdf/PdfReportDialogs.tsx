@@ -88,7 +88,7 @@ const ReportButton = ({
 const CorrigendumReportButton = ({ corrigendum, index }: { corrigendum: Corrigendum, index: number }) => {
     const { tender } = useTenderData();
     const [isLoading, setIsLoading] = useState(false);
-    const { officeAddress, allOfficeAddresses } = useDataStore();
+    const { officeAddress } = useDataStore();
 
     const handleGenerate = async () => {
         setIsLoading(true);
@@ -98,15 +98,15 @@ const CorrigendumReportButton = ({ corrigendum, index }: { corrigendum: Corrigen
             
             switch (corrigendum.corrigendumType) {
                 case 'Retender':
-                    pdfBytes = await generateRetenderCorrigendum(tender, corrigendum, officeAddress, undefined, allOfficeAddresses);
+                    pdfBytes = await generateRetenderCorrigendum(tender, corrigendum, officeAddress);
                     fileNamePrefix = 'RetenderCorrigendum';
                     break;
                 case 'Date Extension':
-                    pdfBytes = await generateDateExtensionCorrigendum(tender, corrigendum, officeAddress, undefined, allOfficeAddresses);
+                    pdfBytes = await generateDateExtensionCorrigendum(tender, corrigendum, officeAddress);
                     fileNamePrefix = 'DateCorrigendum';
                     break;
                 case 'Cancel':
-                    pdfBytes = await generateCancelCorrigendum(tender, corrigendum, officeAddress, undefined, allOfficeAddresses);
+                    pdfBytes = await generateCancelCorrigendum(tender, corrigendum, officeAddress);
                     fileNamePrefix = 'CancelCorrigendum';
                     break;
                 default:
@@ -141,24 +141,24 @@ const CorrigendumReportButton = ({ corrigendum, index }: { corrigendum: Corrigen
 
 export default function PdfReportDialogs() {
     const { tender } = useTenderData();
-    const { allStaffMembers, officeAddress, allOfficeAddresses } = useDataStore();
+    const { allStaffMembers, officeAddress } = useDataStore();
 
     const handleGeneratePdf = useCallback(async (
-        generator: (tender: E_tender, officeAddress: OfficeAddress | null, staff?: StaffMember[], allOfficeAddresses?: OfficeAddress[]) => Promise<Uint8Array>,
+        generator: (tender: E_tender, officeAddress: OfficeAddress | null, staff?: StaffMember[]) => Promise<Uint8Array>,
         fileName: string,
         successMessage: string,
         tenderDataOverride?: Partial<E_tender>
     ) => {
         try {
             const finalTenderData = { ...tender, ...tenderDataOverride };
-            const pdfBytes = await generator(finalTenderData, officeAddress, allStaffMembers, allOfficeAddresses);
+            const pdfBytes = await generator(finalTenderData, officeAddress, allStaffMembers);
             download(pdfBytes, fileName, 'application/pdf');
             toast({ title: "PDF Generated", description: successMessage });
         } catch (error: any) {
             console.error(`${fileName} Generation Error:`, error);
             toast({ title: "PDF Generation Failed", description: error.message, variant: 'destructive', duration: 9000 });
         }
-    }, [tender, allStaffMembers, officeAddress, allOfficeAddresses]);
+    }, [tender, allStaffMembers, officeAddress]);
     
     const handleDirectDownload = () => {
         if (!tender.detailedEstimateUrl) return;
