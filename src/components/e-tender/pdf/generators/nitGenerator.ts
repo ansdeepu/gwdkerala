@@ -30,7 +30,7 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
     const address_2 = addressLines.slice(3).join(', ').toUpperCase();
     const address_3 = `Email: ${officeAddress?.email || ''}, Phone: ${officeAddress?.phoneNo || ''}`;
 
-    const officeLocationName = (officeAddress?.officeLocation || '').toUpperCase();
+    const officeLocationName = (officeAddress?.officeLocation || (tender as any).officeLocationFromPath || '').toUpperCase();
 
     const fieldMappings: Record<string, any> = {
         'file_no_header': tender.fileNo ? `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}` : '',
@@ -52,7 +52,6 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
         'Office_location_2': officeLocationName,
     };
     
-    // Conditionally add related file numbers
     const hasRelatedFiles = tender.fileNo2 || tender.fileNo3 || tender.fileNo4;
     if (hasRelatedFiles) {
         fieldMappings['header_1'] = "Related File Numbers:";
