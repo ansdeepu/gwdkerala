@@ -53,7 +53,7 @@ export async function generateBidOpeningSummary(tender: E_tender, officeAddress:
     }
     bidOpeningText += ' The accepted bids are recommended for technical and financial evaluation.';
     
-    const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header'];
+    const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'office_location_3'];
 
     const formattedTenderNo = formatTenderNoForFilename(tender.eTenderNo);
     const fileName = `aBidOpening${formattedTenderNo}.pdf`;

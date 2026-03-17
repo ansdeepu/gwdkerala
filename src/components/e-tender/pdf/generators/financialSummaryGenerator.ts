@@ -53,7 +53,7 @@ export async function generateFinancialSummary(tender: E_tender, officeAddress: 
         return `${index + 1}. ${name}, ${staffInfo?.designation || 'N/A'}`;
     }).join('\n');
 
-    const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header'];
+    const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'office_location_7'];
     const formattedTenderNo = formatTenderNoForFilename(tender.eTenderNo);
     const fileName = `cFinEvaluation${formattedTenderNo}.pdf`;
     

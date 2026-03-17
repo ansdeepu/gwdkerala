@@ -39,7 +39,7 @@ export async function generateRetenderCorrigendum(tender: E_tender, corrigendum:
         'place_4': capitalize(targetOfficeAddress?.officeLocation),
     };
     
-    const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'name_of_work'];
+    const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'name_of_work', 'office_location_6'];
     const justifyFields = ['name_of_work', 'retender'];
 
     Object.entries(fieldMappings).forEach(([fieldName, value]) => {

@@ -53,21 +53,21 @@ export async function generateDateExtensionCorrigendum(
         'place_2': capitalize(targetOfficeAddress?.officeLocation),
     };
     
-    const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'name_of_work'];
+    const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'name_of_work', 'office_location_5'];
     const justifyFields = ['name_of_work', 'date_ext'];
 
     // Fill fields safely
     for (const [fieldName, value] of Object.entries(fieldMappings)) {
         try {
             const field = form.getTextField(fieldName);
-            const selectedFont = boldFields.includes(fieldName) ? boldFont : font;
+            const isBold = boldFields.includes(fieldName);
             
             if (justifyFields.includes(fieldName)) {
                 field.setAlignment(TextAlignment.Left); // Use Left since Justify is not supported
             }
 
             field.setText(value);
-            field.updateAppearances(selectedFont);
+            field.updateAppearances(isBold ? boldFont : font);
         } catch (err) {
             console.warn(`⚠️ Could not fill field '${fieldName}':`, err);
         }
