@@ -6,17 +6,20 @@ import { useTenderData } from '@/components/e-tender/TenderDataContext';
 import { formatDateSafe, formatTenderNoForFilename } from '@/components/e-tender/utils';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Button } from '@/components/ui/button';
+import { usePageHeader } from '@/hooks/usePageHeader';
 
 export default function SelectionNoticePrintPage() {
     const { tender } = useTenderData();
     const { officeAddress } = useDataStore();
+    const { setHeader } = usePageHeader();
 
     useEffect(() => {
         if (tender) {
             const formattedTenderNo = formatTenderNoForFilename(tender.eTenderNo);
             document.title = `dSelectionNotice${formattedTenderNo}`;
+            setHeader("Selection Notice", `Print preview for Tender No: ${tender.eTenderNo}`);
         }
-    }, [tender]);
+    }, [tender, setHeader]);
     
     const l1Bidder = useMemo(() => {
         if (!tender.bidders || tender.bidders.length === 0) return null;
@@ -132,7 +135,7 @@ export default function SelectionNoticePrintPage() {
               <div className="space-y-2 pt-2">
                   <div className="grid grid-cols-[auto,1fr] gap-x-2">
                       <span>വിഷയം:</span>
-                      <span className="text-justify">{tender.nameOfWorkMalayalam || tender.nameOfWork} - ടെണ്ടർ അംഗീകരിച്ച് സെലക്ഷൻ നോട്ടീസ് നൽകുന്നത് സംബന്ധിച്ച്.</span>
+                      <span className="text-justify">{tender.nameOfWorkMalayalam || tender.nameOfWork} - ടെണ്ടർ അംഗീകരിച്ച് സെലക്ഷൻ നോട്ടീസ് നൽകുന്നത് - സംബന്ധിച്ച്.</span>
                   </div>
                   <div className="grid grid-cols-[auto,1fr] gap-x-2">
                       <span>സൂചന:</span>
