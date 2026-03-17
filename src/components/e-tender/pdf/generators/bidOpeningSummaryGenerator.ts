@@ -29,7 +29,7 @@ export async function generateBidOpeningSummary(tender: E_tender, officeAddress:
     const numTotalBidders = allBidders.length;
     const numAccepted = acceptedBidders.length;
     const numRejected = rejectedBidders.length;
-
+    
     const numTotalBiddersInWords = numberToWords(numTotalBidders);
     const numAcceptedInWords = numberToWords(numAccepted);
     const numRejectedInWords = numberToWords(numRejected);
@@ -65,7 +65,7 @@ export async function generateBidOpeningSummary(tender: E_tender, officeAddress:
         'name_of_work': tender.nameOfWork,
         'bid_date': formatDateSafe(tender.dateOfOpeningBid),
         'bid_opening': bidOpeningText,
-        'office_location_3': (targetOfficeAddress?.officeName || '').toUpperCase(),
+        'office_location_3': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
         'place_1': capitalize(targetOfficeAddress?.officeLocation),
     };
 

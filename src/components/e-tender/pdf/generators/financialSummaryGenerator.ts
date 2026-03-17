@@ -6,6 +6,8 @@ import type { StaffMember } from '@/lib/schemas';
 import { numberToWords } from './utils';
 import type { OfficeAddress } from '@/hooks/use-data-store';
 
+const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+
 export async function generateFinancialSummary(tender: E_tender, officeAddress: OfficeAddress | null, allStaffMembers?: StaffMember[]): Promise<Uint8Array> {
     const templatePath = '/Financial-Summary.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
@@ -65,8 +67,8 @@ export async function generateFinancialSummary(tender: E_tender, officeAddress: 
         'fin_result': finResultText,
         'fin_committee': committeeMembersText,
         'fin_date': formatDateSafe(tender.dateOfTechnicalAndFinancialBidOpening),
-        'office_location_7': (targetOfficeAddress?.officeName || '').toUpperCase(),
-        'place_5': targetOfficeAddress?.officeLocation ? targetOfficeAddress.officeLocation.charAt(0).toUpperCase() + targetOfficeAddress.officeLocation.slice(1).toLowerCase() : '',
+        'office_location_7': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
+        'place_5': capitalize(targetOfficeAddress?.officeLocation),
     };
 
     const allFields = form.getFields();

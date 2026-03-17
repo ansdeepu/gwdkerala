@@ -5,6 +5,8 @@ import { formatDateSafe } from '../../utils';
 import type { Corrigendum, StaffMember } from '@/lib/schemas';
 import type { OfficeAddress } from '@/hooks/use-data-store';
 
+const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+
 export async function generateRetenderCorrigendum(tender: E_tender, corrigendum: Corrigendum, officeAddress: OfficeAddress | null): Promise<Uint8Array> {
     const templatePath = '/Corrigendum-Retender.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
@@ -23,9 +25,6 @@ export async function generateRetenderCorrigendum(tender: E_tender, corrigendum:
 
     const fullParagraph = `     The time period for submitting e-tenders expired on ${lastDate}, and ${reasonText}. Hence, it has been decided to retender the above work.`;
 
-    const addressLines = (targetOfficeAddress?.address || '').split('\n');
-    const place_4 = addressLines.slice(2).join(', ').toUpperCase();
-
     const fieldMappings: Record<string, any> = {
         'file_no_header': `${targetOfficeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
         'e_tender_no_header': tender.eTenderNo,
@@ -36,8 +35,8 @@ export async function generateRetenderCorrigendum(tender: E_tender, corrigendum:
         'new_opening_date': formatDateSafe(corrigendum.dateOfOpeningTender, true, false, true),
         'date': formatDateSafe(corrigendum.corrigendumDate),
         'date_2': formatDateSafe(corrigendum.corrigendumDate),
-        'office_location_6': (targetOfficeAddress?.officeName || '').toUpperCase(),
-        'place_4': place_4,
+        'office_location_6': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
+        'place_4': capitalize(targetOfficeAddress?.officeLocation),
     };
     
     const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'name_of_work'];

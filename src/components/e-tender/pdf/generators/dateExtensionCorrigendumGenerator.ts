@@ -5,6 +5,8 @@ import type { Corrigendum, StaffMember } from "@/lib/schemas";
 import { formatDateSafe } from "../../utils";
 import type { OfficeAddress } from "@/hooks/use-data-store";
 
+const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+
 export async function generateDateExtensionCorrigendum(
     tender: E_tender,
     corrigendum: Corrigendum,
@@ -40,9 +42,6 @@ export async function generateDateExtensionCorrigendum(
 
     const fullParagraph = `     The time period for submitting e-tenders expired on ${lastDate}, and ${reasonText}. Consequently, the deadline for submitting e-tenders has been extended to ${newLastDate}, and the opening of the tender has been rescheduled to ${newOpeningDate}.`;
 
-    const addressLines = (targetOfficeAddress?.address || '').split('\n');
-    const place_2 = addressLines.slice(2).join(', ').toUpperCase();
-
     const fieldMappings: Record<string, string> = {
         'file_no_header': `${targetOfficeAddress?.officeCode || 'GKT'}/${tender.fileNo || ""}`,
         'e_tender_no_header': tender.eTenderNo || "",
@@ -50,8 +49,8 @@ export async function generateDateExtensionCorrigendum(
         'name_of_work': tender.nameOfWork || "",
         'date_ext': fullParagraph, // multiline box (4096 flag)
         'date': formatDateSafe(corrigendum.corrigendumDate),
-        'office_location_5': (targetOfficeAddress?.officeName || '').toUpperCase(),
-        'place_2': place_2,
+        'office_location_5': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
+        'place_2': capitalize(targetOfficeAddress?.officeLocation),
     };
     
     const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'name_of_work'];

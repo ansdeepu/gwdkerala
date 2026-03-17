@@ -5,6 +5,8 @@ import { formatDateSafe } from '../../utils';
 import type { Corrigendum, StaffMember } from '@/lib/schemas';
 import type { OfficeAddress } from '@/hooks/use-data-store';
 
+const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+
 export async function generateCancelCorrigendum(tender: E_tender, corrigendum: Corrigendum, officeAddress: OfficeAddress | null): Promise<Uint8Array> {
     const templatePath = '/Corrigendum-Cancel.pdf';
     const existingPdfBytes = await fetch(templatePath).then(res => {
@@ -23,9 +25,6 @@ export async function generateCancelCorrigendum(tender: E_tender, corrigendum: C
 
     const reasonText = `     The tender invited for the above work is hereby cancelled, as ${reason}. Hence, further processing of the tender is not required. Any bids received in response to this tender shall be treated as withdrawn, and no further correspondence in this regard will be entertained. It is also noted that the tender for this work was published mistakenly, and the same stands cancelled accordingly.`;
 
-    const addressLines = (targetOfficeAddress?.address || '').split('\n');
-    const place_2 = addressLines.slice(2).join(', ').toUpperCase();
-
     const fieldMappings: Record<string, any> = {
         'file_no_header': `${targetOfficeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
         'e_tender_no_header': tender.eTenderNo,
@@ -33,8 +32,8 @@ export async function generateCancelCorrigendum(tender: E_tender, corrigendum: C
         'name_of_work': tender.nameOfWork,
         'cancel': reasonText,
         'date': formatDateSafe(corrigendum.corrigendumDate),
-        'office_location_4': (targetOfficeAddress?.officeName || '').toUpperCase(),
-        'place_2': place_2,
+        'office_location_4': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
+        'place_2': capitalize(targetOfficeAddress?.officeLocation),
     };
 
     const boldFields = ['file_no_header', 'e_tender_no_header', 'tender_date_header', 'name_of_work'];
