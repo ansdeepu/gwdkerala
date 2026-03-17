@@ -30,6 +30,10 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
     const address_2 = addressLines.slice(3).join('\n').toUpperCase();
     const address_3 = `Email: ${officeAddress?.email || ''}\nPhone: ${officeAddress?.phoneNo || ''}`;
 
+    const officeLocationName = officeAddress?.officeLocation
+      ? officeAddress.officeLocation.charAt(0).toUpperCase() + officeAddress.officeLocation.slice(1).toLowerCase()
+      : '';
+
     const fieldMappings: Record<string, any> = {
         'file_no_header': tender.fileNo ? `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}` : '',
         'e_tender_no_header': `${tender.eTenderNo || ''}${isRetender ? ' (Re-Tender)' : ''}`,
@@ -46,6 +50,8 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
         'address_1': address_1,
         'address_2': address_2,
         'address_3': address_3,
+        'Office_location_1': officeLocationName,
+        'Office_location_2': officeLocationName,
     };
     
     // Conditionally add related file numbers
@@ -71,7 +77,7 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
                 
                 textField.setText(String(fieldMappings[fieldName] || ''));
 
-                if (['address_1', 'address_2', 'address_3'].includes(fieldName)) {
+                if (['address_1', 'address_2', 'address_3', 'Office_location_1', 'Office_location_2'].includes(fieldName)) {
                     textField.setFontSize(12);
                 } else if (fieldName === 'name_of_work') {
                     textField.setFontSize(10);
