@@ -1,3 +1,4 @@
+
 // src/components/e-tender/pdf/generators/tenderFormGenerator.ts
 import { PDFDocument, PDFTextField, StandardFonts, rgb } from 'pdf-lib';
 import type { E_tender } from '@/hooks/useE_tenders';
@@ -75,7 +76,7 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
         'address_4': address_4.toUpperCase(),
         'office_location_9': capitalize(targetOfficeAddress?.officeLocation),
         'office_location_10': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
-        'office_location_11': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
+        'office_location_11': capitalize(targetOfficeAddress?.officeLocation),
         'office_location_12': (targetOfficeAddress?.officeLocation || '').toUpperCase(),
         'office_location_13': capitalize(targetOfficeAddress?.officeLocation),
     };
