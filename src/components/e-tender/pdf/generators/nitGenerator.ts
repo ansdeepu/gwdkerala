@@ -87,6 +87,7 @@ export async function generateNIT(
                 let font = timesRomanFont;
                 if(['file_no_header', 'e_tender_no_header', 'tender_date_header'].includes(fieldName)){
                     font = timesRomanBoldFont;
+                    textField.setFontSize(14);
                 }
                 
                 textField.setText(String(fieldMappings[fieldName] || ''));
