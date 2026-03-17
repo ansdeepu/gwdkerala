@@ -26,9 +26,9 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
     const displayTenderFormFee = tender.tenderFormFee ? `Rs. ${tenderFormFeeValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} & Rs. ${gst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (GST 18%)` : 'N/A';
     
     const addressLines = (officeAddress?.address || '').split('\n');
-    const address_1 = addressLines.slice(0, 3).join('\n').toUpperCase();
-    const address_2 = addressLines.slice(3).join('\n').toUpperCase();
-    const address_3 = `Email: ${officeAddress?.email || ''}\nPhone: ${officeAddress?.phoneNo || ''}`;
+    const address_1 = addressLines.slice(0, 3).join(', ').toUpperCase();
+    const address_2 = addressLines.slice(3).join(', ').toUpperCase();
+    const address_3 = `Email: ${officeAddress?.email || ''}, Phone: ${officeAddress?.phoneNo || ''}`;
 
     const officeLocationName = officeAddress?.officeLocation
       ? officeAddress.officeLocation.charAt(0).toUpperCase() + officeAddress.officeLocation.slice(1).toLowerCase()
