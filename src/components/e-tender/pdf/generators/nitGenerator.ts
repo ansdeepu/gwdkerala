@@ -26,10 +26,9 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
     const displayTenderFormFee = tender.tenderFormFee ? `Rs. ${tenderFormFeeValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} & Rs. ${gst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (GST 18%)` : 'N/A';
     
     const addressLines = (officeAddress?.address || '').split('\n');
-    const address1 = addressLines.slice(0, 3).join('\n').toUpperCase();
-    const address2 = addressLines.slice(3).join('\n').toUpperCase();
-    const address3 = `Email: ${officeAddress?.email || ''}\nPhone: ${officeAddress?.phoneNo || ''}`;
-    const address4 = addressLines.slice(2).join('\n');
+    const address_1 = addressLines.slice(0, 3).join('\n').toUpperCase();
+    const address_2 = addressLines.slice(3).join('\n').toUpperCase();
+    const address_3 = `Email: ${officeAddress?.email || ''}\nPhone: ${officeAddress?.phoneNo || ''}`;
 
     const fieldMappings: Record<string, any> = {
         'file_no_header': tender.fileNo ? `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}` : '',
@@ -42,9 +41,11 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
         'opening_date': formatDateSafe(tender.dateTimeOfOpening, true, false, true),
         'bid_submission_fee': displayTenderFormFee,
         'location': tender.location,
+        'last_date_receipt': formatDateSafe(tender.dateTimeOfReceipt, true, true, false),
         'period_of_completion': tender.periodOfCompletion,
-        'Office_location_1': (officeAddress?.officeName || '').toUpperCase(),
-        'Office_location_2': address1,
+        'address_1': address_1,
+        'address_2': address_2,
+        'address_3': address_3,
     };
     
     // Conditionally add related file numbers
@@ -70,7 +71,9 @@ export async function generateNIT(tender: E_tender, officeAddress: OfficeAddress
                 
                 textField.setText(String(fieldMappings[fieldName] || ''));
 
-                if (fieldName === 'name_of_work') {
+                if (['address_1', 'address_2', 'address_3'].includes(fieldName)) {
+                    textField.setFontSize(12);
+                } else if (fieldName === 'name_of_work') {
                     textField.setFontSize(10);
                 }
                 

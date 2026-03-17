@@ -35,11 +35,9 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
     const fileName = `bTenderForm${formattedTenderNo}.pdf`;
     
     const addressLines = (officeAddress?.address || '').split('\n');
-    const address1 = addressLines.slice(0, 3).join('\n').toUpperCase();
-    const address2 = addressLines.slice(3).join('\n').toUpperCase();
-    const address3 = `Email: ${officeAddress?.email || ''}\nPhone: ${officeAddress?.phoneNo || ''}`;
-    const address4 = addressLines.slice(2).join('\n');
-    const officeNameCaps = (officeAddress?.officeName || '').toUpperCase();
+    const address_1 = addressLines.slice(0, 3).join('\n').toUpperCase();
+    const address_2 = addressLines.slice(3).join('\n').toUpperCase();
+    const address_3 = `Email: ${officeAddress?.email || ''}\nPhone: ${officeAddress?.phoneNo || ''}`;
 
     const fieldMappings: Record<string, any> = {
         'file_no_header': `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo || ''}`,
@@ -65,10 +63,9 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
         'sl_no_4': '4',
         'sl_no_22': '22',
         'rs_25500': 'Rs. 25,500.00',
-        'office_location_9': address2,
-        'office_location_10': officeNameCaps,
-        'office_location_11': address3,
-        'office_location_12': address1,
+        'address_1': address_1,
+        'address_2': address_2,
+        'address_3': address_3,
     };
 
     const allFields = form.getFields();
@@ -82,6 +79,11 @@ export async function generateTenderForm(tender: E_tender, officeAddress: Office
                     font = timesRomanBoldFont;
                 }
                 textField.setText(String(fieldMappings[fieldName] || ''));
+
+                if (['address_1', 'address_2', 'address_3'].includes(fieldName)) {
+                    textField.setFontSize(12);
+                }
+
                 textField.updateAppearances(font);
             } catch (e) {
                 console.warn(`Could not fill field ${fieldName}:`, e);
