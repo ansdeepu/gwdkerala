@@ -8,25 +8,27 @@ import { TenderDataProvider } from "@/components/e-tender/TenderDataContext";
 import { toast } from "@/hooks/use-toast";
 
 const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
 );
 
 export default function TenderLayout({ children }: { children: ReactNode }) {
     const params = useParams();
     const id = params?.id as string;
-    const { getTender } = useE_tenders();
+    const { getTender, isLoading: isTendersLoading } = useE_tenders();
     const [tender, setTender] = useState<E_tender | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [localIsLoading, setLocalIsLoading] = useState(true);
 
     useEffect(() => {
+        if (isTendersLoading) {
+            setLocalIsLoading(true);
+            return;
+        }
+
         const loadTender = async () => {
             if (!id) {
-                setIsLoading(false);
+                setLocalIsLoading(false);
                 return;
             }
-            
-            setIsLoading(true);
-            setTender(null); // Ensure old data is cleared immediately
 
             if (id === 'new') {
                 const newTenderData: E_tender = {
@@ -53,11 +55,13 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
                     setTender(null);
                 }
             }
-             setIsLoading(false);
+             setLocalIsLoading(false);
         };
 
         loadTender();
-    }, [id, getTender, toast]);
+    }, [id, getTender, toast, isTendersLoading]);
+
+    const isLoading = isTendersLoading || localIsLoading;
 
     if (isLoading || !tender) {
         return (
