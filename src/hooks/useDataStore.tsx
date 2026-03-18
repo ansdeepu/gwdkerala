@@ -1,5 +1,5 @@
 
-// src/hooks/useDataStore.tsx
+// src/hooks/use-data-store.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
@@ -257,15 +257,36 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
   
       return () => unsubscribe();
     }, [user, selectedOffice, globalOfficeAddresses]);
+
+    // Dedicated effect for ALL users when super admin is logged in. This is NOT dependent on selectedOffice.
+    useEffect(() => {
+        if (user?.email !== SUPER_ADMIN_EMAIL) return;
+    
+        setLoadingStates(prev => ({ ...prev, users: true }));
+        const q = query(collection(db, 'users'));
+    
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const usersList = snapshot.docs.map(doc => processFirestoreDoc<UserProfile>(doc));
+            setAllUsers(usersList);
+            setLoadingStates(prev => ({ ...prev, users: false }));
+        }, (error) => {
+            console.error("Error fetching all users for super admin:", error);
+            setLoadingStates(prev => ({ ...prev, users: false }));
+        });
+    
+        return () => unsubscribe();
+    }, [user]);
     
 
     // Effect for OFFICE-SCOPED data
     useEffect(() => {
         if (!user) {
-            setAllUsers([]); setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]); 
-            setAllAgencyApplications([]); setAllE_tenders([]); setAllDepartmentVehicles([]); 
+            // Clear all data if no user
+            setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]);
+            setAllAgencyApplications([]); setAllE_tenders([]); setAllDepartmentVehicles([]);
             setAllHiredVehicles([]); setAllRigCompressors([]); setAllLsgConstituencyMaps([]);
             setAllSanctionedStrength({}); setAllBidders([]);
+            if(user?.email !== SUPER_ADMIN_EMAIL) setAllUsers([]);
             setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, sanctionedStrength: false, bidders: false }));
             return;
         }
@@ -274,7 +295,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         const officeToQuery = isSuperAdminUser ? selectedOffice : user.officeLocation;
 
         const officeScopedCollections: Record<string, { setter: React.Dispatch<React.SetStateAction<any>>, loaderKey: keyof typeof loadingStates, needsSpecialSort?: boolean }> = {
-            users: { setter: setAllUsers, loaderKey: 'users' },
             fileEntries: { setter: setAllFileEntries, loaderKey: 'files' },
             arsEntries: { setter: setAllArsEntries, loaderKey: 'ars' },
             staffMembers: { setter: setAllStaffMembers, loaderKey: 'staff', needsSpecialSort: true },
@@ -286,6 +306,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
             bidders: { setter: setAllBidders, loaderKey: 'bidders' },
         };
+        
+        // For sub-office users, also fetch their office-specific user list.
+        if (!isSuperAdminUser) {
+            officeScopedCollections.users = { setter: setAllUsers, loaderKey: 'users' };
+        }
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
@@ -313,7 +338,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 const dataRaw = snapshot.docs.map(docSnap => {
                     const processedData = processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() }) as any;
-                    
                     const path = docSnap.ref.path || '';
                     const pathSegments = (path || '').split('/');
                     if (Array.isArray(pathSegments)) {
@@ -322,12 +346,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                             processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
                         }
                     }
-
                     return processedData;
                 });
 
                 let data = dataRaw;
-
+                
                 if (collectionName === 'users') {
                     const mergedMap = new Map<string, any>();
                     dataRaw.forEach((item: any) => {
@@ -378,7 +401,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             });
         });
 
-        // Dedicated listener for sanctioned strength (Record, not Array)
+        // Dedicated listener for sanctioned strength
         let sanctionedUnsub = () => {};
         if (officeToQuery) {
             setLoadingStates(prev => ({...prev, sanctionedStrength: true}));
