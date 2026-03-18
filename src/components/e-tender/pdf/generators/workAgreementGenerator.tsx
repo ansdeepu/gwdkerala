@@ -8,6 +8,7 @@ import { numberToWords, getAttachedFilesString } from './utils';
 import type { OfficeAddress } from '@/hooks/use-data-store';
 
 const cm = (cmValue: number) => cmValue * 28.3465;
+const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 
 export async function generateWorkAgreement(tender: E_tender, officeAddress: OfficeAddress | null): Promise<Uint8Array> {
     const pdfDoc = await PDFDocument.create();
@@ -51,7 +52,7 @@ export async function generateWorkAgreement(tender: E_tender, officeAddress: Off
     const headingFontSize = 12;
     const regularFontSize = 12;
     const paragraphLineHeight = 14;
-    const officeLocation = officeAddress?.officeLocation || '';
+    const officeLocation = capitalize(officeAddress?.officeLocation);
 
     // 1. Draw the heading at exactly 17cm from the top
     let currentY = height - cm(17);
@@ -155,5 +156,3 @@ export async function generateWorkAgreement(tender: E_tender, officeAddress: Off
 
     return await pdfDoc.save();
 }
-
-    

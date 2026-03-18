@@ -52,7 +52,7 @@ export async function generateWorkAgreement(tender: E_tender, officeAddress: Off
     const headingFontSize = 12;
     const regularFontSize = 12;
     const paragraphLineHeight = 14;
-    const officeLocation = capitalize(officeAddress?.officeLocation || '');
+    const officeLocation = capitalize(officeAddress?.officeLocation);
 
     // 1. Draw the heading at exactly 17cm from the top
     let currentY = height - cm(17);
