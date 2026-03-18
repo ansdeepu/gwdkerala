@@ -265,7 +265,14 @@ export default function SettingsPage() {
 
     const handleOpenEditDialog = () => {
         if (officeAddress) {
-            setMergedOfficeDetails(officeAddress);
+            const detailsToEdit = { ...officeAddress };
+            if (!detailsToEdit.address) {
+                detailsToEdit.address = "Office of the District Officer\nGround Water Department\nDistrict Office";
+            }
+            if (!detailsToEdit.addressMalayalam) {
+                detailsToEdit.addressMalayalam = "ജില്ലാ ഓഫീസറുടെ കാര്യാലയം\nഭൂജലവകുപ്പ്\nജില്ലാ ഓഫീസ്";
+            }
+            setMergedOfficeDetails(detailsToEdit);
             setIsOfficeDialogOpen(true);
         } else {
             toast({ title: "No Office Data", description: "Office details are not available to edit.", variant: "destructive" });
@@ -285,12 +292,10 @@ export default function SettingsPage() {
             };
             
             // We use a fixed document ID "settings" in the sub-collection to ensure consistency
+            // However, keeping them for redundancy/metadata is fine as long as we merge them back correctly in use-data-store
             const docId = "settings";
             const docRef = doc(db, `offices/${officeAddress.officeLocation.toLowerCase()}/officeAddresses`, docId);
             payload.updatedAt = serverTimestamp();
-            
-            // Critical: Don't store officeLocation/Code in the sub-doc payload if they are purely global config
-            // However, keeping them for redundancy/metadata is fine as long as we merge them back correctly in use-data-store
             
             await setDoc(docRef, payload, { merge: true });
             
@@ -633,3 +638,5 @@ export default function SettingsPage() {
       </div>
     );
 }
+
+    
