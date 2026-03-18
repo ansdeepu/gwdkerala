@@ -324,11 +324,13 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                     q = query(collection(db, path));
                 }
             } else if (isSuperAdminUser && !officeToQuery) {
+                // For super admin "All Offices", only perform collectionGroup for non-user collections
                 if (collectionName === 'users') {
-                    q = query(collection(db, 'users'));
-                } else {
-                    q = query(collectionGroup(db, collectionName));
+                    // This case is handled by the dedicated useEffect for super admin users, so we can skip.
+                    setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+                    return () => {};
                 }
+                q = query(collectionGroup(db, collectionName));
             } else {
                 setter([]);
                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
@@ -351,25 +353,17 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
                 let data = dataRaw;
                 
+                // This merging logic is primarily for sub-admins fetching their isolated user list,
+                // and it acts as a safeguard against any potential (though unlikely) data duplication.
                 if (collectionName === 'users') {
-                    const mergedMap = new Map<string, any>();
+                    const uniqueUsers = new Map<string, any>();
                     dataRaw.forEach((item: any) => {
-                        // Ensure uid is standardized for the UserManagement module
                         const uid = item.uid || item.id;
-                        const existing = mergedMap.get(uid);
-                        if (!existing) {
-                            mergedMap.set(uid, { ...item, uid });
-                        } else {
-                            const merged = { ...existing };
-                            Object.entries(item).forEach(([k, v]) => {
-                                if (v !== null && v !== undefined && v !== "") {
-                                    (merged as any)[k] = v;
-                                }
-                            });
-                            mergedMap.set(uid, merged);
+                        if (!uniqueUsers.has(uid)) {
+                            uniqueUsers.set(uid, { ...item, uid });
                         }
                     });
-                    data = Array.from(mergedMap.values());
+                    data = Array.from(uniqueUsers.values());
                 }
                 
                 if (needsSpecialSort && collectionName === 'staffMembers' && designationOptions) {
