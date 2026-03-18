@@ -1,4 +1,3 @@
-
 // src/components/layout/OfficeSwitcher.tsx
 "use client";
 
@@ -6,6 +5,8 @@ import React from 'react';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Building } from 'lucide-react';
+
+const districtsOrder = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate"];
 
 export default function OfficeSwitcher() {
     const { selectedOffice, setSelectedOffice, allUsers } = useDataStore();
@@ -24,7 +25,17 @@ export default function OfficeSwitcher() {
                 value: location, // Use original casing for value
                 label: location.charAt(0).toUpperCase() + location.slice(1).toLowerCase(), // Keep display friendly
             }))
-            .sort((a, b) => a.label.localeCompare(b.label));
+            .sort((a, b) => {
+                const indexA = districtsOrder.findIndex(d => d.toLowerCase() === a.label.toLowerCase());
+                const indexB = districtsOrder.findIndex(d => d.toLowerCase() === b.label.toLowerCase());
+
+                // If one or both are not in the custom order, use localeCompare as a fallback
+                if (indexA === -1 || indexB === -1) {
+                    return a.label.localeCompare(b.label);
+                }
+
+                return indexA - indexB;
+            });
             
     }, [allUsers]);
 
@@ -37,7 +48,7 @@ export default function OfficeSwitcher() {
         <div className="flex items-center gap-2">
             <Building className="h-4 w-4 text-muted-foreground" />
             <Select value={selectedOffice || 'all'} onValueChange={handleValueChange}>
-                <SelectTrigger className="w-[200px] h-9">
+                <SelectTrigger className="w-[230px] h-9">
                     <SelectValue placeholder="Select Office" />
                 </SelectTrigger>
                 <SelectContent>
