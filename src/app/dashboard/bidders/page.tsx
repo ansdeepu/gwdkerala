@@ -40,6 +40,11 @@ export default function BiddersListPage() {
     
     const [displayedBidders, setDisplayedBidders] = useState<BidderType[]>([]);
 
+    const canManage = useMemo(() => {
+        if (!user) return false;
+        return ['superAdmin', 'admin', 'engineer'].includes(user.role);
+    }, [user]);
+
     const validBidders = useMemo(() => {
         return allBidders
             .filter(bidder => bidder && bidder.id && bidder.name)
@@ -191,7 +196,7 @@ export default function BiddersListPage() {
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     <div className="flex items-center justify-center space-x-1">
-                                                        <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => { setBidderToEdit(bidder); setIsNewBidderDialogOpen(true); }}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>{user?.role === 'editor' ? 'View / Edit' : 'View Details'}</p></TooltipContent></Tooltip>
+                                                        <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => { setBidderToEdit(bidder); setIsNewBidderDialogOpen(true); }}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>{canManage ? 'View / Edit' : 'View Details'}</p></TooltipContent></Tooltip>
                                                         <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => setBidderToReorder(bidder)}><Move className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Move Bidder</p></TooltipContent></Tooltip>
                                                         <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setBidderToDelete(bidder)}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Delete Bidder</p></TooltipContent></Tooltip>
                                                     </div>
