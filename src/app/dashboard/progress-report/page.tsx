@@ -333,9 +333,9 @@ export default function ProgressReportPage() {
         };
         
         let summaryPurposeKey: SitePurpose | null = null;
-        if (purpose && PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose)) {
+        if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
             summaryPurposeKey = 'Pumping test';
-        } else if (purpose && REPORTING_PURPOSE_ORDER.includes(purpose)) {
+        } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) {
             summaryPurposeKey = purpose;
         }
 
@@ -351,18 +351,18 @@ export default function ProgressReportPage() {
           if (bwcData[applicationType]?.[diameter]) { updateStats(bwcData[applicationType][diameter]); }
         } else if (purpose === 'TWC' && diameter && TWC_DIAMETERS.includes(diameter) && applicationType) {
           if (twcData[applicationType]?.[diameter]) { updateStats(twcData[applicationType][diameter]); }
-        } else if (INVESTIGATION_WELL_TYPE_PURPOSES.includes(purpose as SitePurpose)) {
+        } else if ((INVESTIGATION_WELL_TYPE_PURPOSES as readonly string[]).includes(purpose)) {
             const wellType = (site as any).typeOfWell;
             if (wellType && gwInvestigationData[wellType]) { 
                 const targetData = purpose === "GW Investigation" ? gwInvestigationData : vesData;
                 updateStats(targetData[wellType]);
             }
-        } else if (INVESTIGATION_APP_TYPE_PURPOSES.includes(purpose as SitePurpose)) {
+        } else if ((INVESTIGATION_APP_TYPE_PURPOSES as readonly string[]).includes(purpose)) {
             if (applicationType) {
                 const targetData = purpose === "Geological logging" ? geologicalLoggingData : geophysicalLoggingData;
                 updateStats(targetData[applicationType]);
             }
-        } else if (PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose as SitePurpose)) {
+        } else if ((PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
             if (applicationType) { updateStats(pumpingTestData[applicationType]); }
         }
     });
