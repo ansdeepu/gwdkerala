@@ -55,7 +55,7 @@ type EditUserFormData = z.infer<typeof EditUserSchema>;
 export default function OfficeManagementPage() {
   const { setHeader } = usePageHeader();
   const { user: currentUser, createOfficeAdmin, deleteUserDocument, updateUserApproval, updateUserRole, updateUserProfileByAdmin } = useAuth();
-  const { allStaffMembers, allUsers, isLoading: isDataLoading, allOfficeAddresses } = useDataStore();
+  const { allStaffMembers, allUsers, isLoading: isDataLoading, allOfficeAddresses, selectedOffice } = useDataStore();
   const { toast } = useToast();
   const [isOfficeUserDialogOpen, setIsOfficeUserDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,7 +89,11 @@ export default function OfficeManagementPage() {
 
 
   const offices = useMemo(() => {
-    const officeUsers = allUsers.filter(u => u.role !== 'superAdmin' && u.officeLocation);
+    const usersToProcess = selectedOffice
+      ? allUsers.filter(u => u.officeLocation && u.officeLocation.toLowerCase() === selectedOffice.toLowerCase())
+      : allUsers;
+
+    const officeUsers = usersToProcess.filter(u => u.role !== 'superAdmin' && u.officeLocation);
     const officeMap = new Map<string, UserProfile[]>();
     officeUsers.forEach(user => {
         if(user.officeLocation) {
@@ -113,7 +117,7 @@ export default function OfficeManagementPage() {
 
         return indexA - indexB;
     });
-  }, [allUsers]);
+  }, [allUsers, selectedOffice]);
 
   const handleCreateOfficeSetup = async (data: NewOfficeAdminFormData) => {
     setIsSubmitting(true);
