@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { generateProgressReportPdf } from '@/components/reports/pdf/progressReportPdfGenerator';
 import download from 'downloadjs';
+import { useDataStore } from '@/hooks/use-data-store';
 
 
 export const dynamic = 'force-dynamic';
@@ -214,7 +215,8 @@ const ReportCategoryTable = ({
 
 export default function ProgressReportPage() {
   const { setHeader } = usePageHeader();
-  const { reportEntries: fileEntries, isReportLoading: entriesLoading, officeAddress } = useAllFileEntriesForReports();
+  const { reportEntries: fileEntries, isReportLoading: entriesLoading } = useAllFileEntriesForReports();
+  const { officeAddress } = useDataStore();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isFiltering, setIsFiltering] = useState(false);

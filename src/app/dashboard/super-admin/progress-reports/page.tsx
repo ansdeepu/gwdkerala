@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { generateProgressReportPdf } from '@/components/reports/pdf/progressReportPdfGenerator';
 import download from 'downloadjs';
+import { useDataStore } from '@/hooks/use-data-store';
 
 
 export const dynamic = 'force-dynamic';
@@ -214,7 +215,8 @@ const ReportCategoryTable = ({
 
 export default function ProgressReportPage() {
   const { setHeader } = usePageHeader();
-  const { reportEntries: fileEntries, isReportLoading: entriesLoading, officeAddress } = useAllFileEntriesForReports();
+  const { reportEntries: fileEntries, isReportLoading: entriesLoading } = useAllFileEntriesForReports();
+  const { officeAddress } = useDataStore();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -252,7 +254,7 @@ export default function ProgressReportPage() {
   
   const calculatePaymentEntryTotalGlobal = (payment: any): number => {
     if (!payment) return 0;
-    return (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
+    return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
   };
 
   const handleGenerateReport = useCallback(() => {
