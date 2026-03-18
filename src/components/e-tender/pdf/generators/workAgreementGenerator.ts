@@ -4,9 +4,11 @@ import type { E_tender } from '@/hooks/useE_tenders';
 import { format, isValid } from 'date-fns';
 import { formatTenderNoForFilename } from '../../utils';
 import type { StaffMember } from '@/lib/schemas';
+import { numberToWords, getAttachedFilesString } from './utils';
 import type { OfficeAddress } from '@/hooks/use-data-store';
 
 const cm = (cmValue: number) => cmValue * 28.3465;
+const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 
 export async function generateWorkAgreement(tender: E_tender, officeAddress: OfficeAddress | null): Promise<Uint8Array> {
     const pdfDoc = await PDFDocument.create();
@@ -15,8 +17,6 @@ export async function generateWorkAgreement(tender: E_tender, officeAddress: Off
     
     const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
     const timesRomanBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
-    
-    const targetOfficeAddress = officeAddress;
 
     const l1Bidder = (tender.bidders || []).find(b => b.status === 'Accepted') || 
                      ((tender.bidders || []).length > 0 ? (tender.bidders || []).reduce((prev, curr) => (prev.quotedAmount ?? Infinity) < (curr.quotedAmount ?? Infinity) ? prev : curr, {} as any) : null);
@@ -52,11 +52,11 @@ export async function generateWorkAgreement(tender: E_tender, officeAddress: Off
     const headingFontSize = 12;
     const regularFontSize = 12;
     const paragraphLineHeight = 14;
-    const officeLocation = targetOfficeAddress?.officeLocation || '';
+    const officeLocation = capitalize(officeAddress?.officeLocation || '');
 
     // 1. Draw the heading at exactly 17cm from the top
     let currentY = height - cm(17);
-    const headingText = `AGREEMENT NO. ${targetOfficeAddress?.officeCode || 'GKT'}/${fileNo}/${eTenderNo} DATED ${agreementDateForHeading}`;
+    const headingText = `AGREEMENT NO. ${officeAddress?.officeCode || 'GKT'}/${fileNo}/${eTenderNo} DATED ${agreementDateForHeading}`;
     const headingTextWidth = timesRomanBoldFont.widthOfTextAtSize(headingText, headingFontSize);
     const headingX = (width - headingTextWidth) / 2; // Center alignment
     
