@@ -90,7 +90,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
                 const isInPeriod = !isDateFilterActive || (remittedDate && isValid(remittedDate) && sDate && eDate && isWithinInterval(remittedDate, { start: sDate, end: eDate }));
                 if (isInPeriod) {
                     const amount = Number(rd.amountRemitted) || 0;
-                    if (rd.remittedAccount === 'SBI' || rd.remittedAccount === 'Bank') sbiCredit += amount;
+                    if (rd.remittedAccount === 'Bank') sbiCredit += amount;
                     else if (rd.remittedAccount === 'STSB') stsbCredit += amount;
                 }
             });
@@ -99,7 +99,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
                 const isInPeriod = !isDateFilterActive || (paymentDate && isValid(paymentDate) && sDate && eDate && isWithinInterval(paymentDate, { start: sDate, end: eDate }));
                 if (isInPeriod) {
                     const currentPaymentDebitAmount = (Number(pd.contractorsPayment) || 0) + (Number(pd.gst) || 0) + (Number(pd.incomeTax) || 0) + (Number(pd.kbcwb) || 0) + (Number(pd.refundToParty) || 0);
-                    if (pd.paymentAccount === 'SBI' || pd.paymentAccount === 'Bank') sbiDebit += currentPaymentDebitAmount;
+                    if (pd.paymentAccount === 'Bank') sbiDebit += currentPaymentDebitAmount;
                     else if (pd.paymentAccount === 'STSB') stsbDebit += currentPaymentDebitAmount;
                 }
             });
@@ -215,7 +215,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
               { key: 'amount', label: 'Remitted (₹)', isNumeric: true }, { key: 'date', label: 'Remitted Date' },
             ];
             entry.remittanceDetails?.forEach(rd => {
-              if ((rd.remittedAccount === account || (account === 'Bank' && rd.remittedAccount === 'SBI')) && checkDateInRange(rd.dateOfRemittance)) {
+              if (rd.remittedAccount === account && checkDateInRange(rd.dateOfRemittance)) {
                 dataForDialog.push({
                   fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', siteNames, sitePurposes,
                   amount: Number(rd.amountRemitted || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -231,7 +231,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
               { key: 'amount', label: 'Paid (₹)', isNumeric: true }, { key: 'date', label: 'Payment Date' },
             ];
             entry.paymentDetails?.forEach(pd => {
-              if ((pd.paymentAccount === account || (account === 'Bank' && pd.paymentAccount === 'SBI')) && checkDateInRange(pd.dateOfPayment)) {
+              if (pd.paymentAccount === account && checkDateInRange(pd.dateOfPayment)) {
                 const paymentAmount = (Number(pd.contractorsPayment) || 0) + (Number(pd.gst) || 0) + (Number(pd.incomeTax) || 0) + (Number(pd.kbcwb) || 0) + (Number(pd.refundToParty) || 0);
                 if (paymentAmount > 0) {
                   dataForDialog.push({

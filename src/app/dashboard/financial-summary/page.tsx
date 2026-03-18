@@ -98,7 +98,7 @@ export default function FinancialSummaryPage() {
             const isInPeriod = !isDateFilterActive || (remittedDate && isValid(remittedDate) && isWithinInterval(remittedDate, { start: sDate!, end: eDate! }));
             if (isInPeriod) {
               const amount = Number(rd.amountRemitted) || 0;
-              if (rd.remittedAccount === 'SBI') sbiCredit += amount;
+              if (rd.remittedAccount === 'Bank') sbiCredit += amount;
               else if (rd.remittedAccount === 'STSB') stsbCredit += amount;
             }
           });
@@ -110,7 +110,7 @@ export default function FinancialSummaryPage() {
             if (isInPeriod) {
               const currentPaymentDebitAmount = (Number(pd.contractorsPayment) || 0) + (Number(pd.gst) || 0) + (Number(pd.incomeTax) || 0) + (Number(pd.kbcwb) || 0) + (Number(pd.refundToParty) || 0);
 
-              if (pd.paymentAccount === 'SBI') sbiDebit += currentPaymentDebitAmount;
+              if (pd.paymentAccount === 'Bank') sbiDebit += currentPaymentDebitAmount;
               else if (pd.paymentAccount === 'STSB') stsbDebit += currentPaymentDebitAmount;
             }
           });
@@ -236,7 +236,7 @@ export default function FinancialSummaryPage() {
                           <Table>
                             <TableHeader><TableRow><TableHead>Account</TableHead><TableHead className="text-right">Total Credit (₹)</TableHead><TableHead className="text-right">Total Debit (₹)</TableHead><TableHead className="text-right">Balance (₹)</TableHead></TableRow></TableHeader>
                             <TableBody>
-                              <TableRow><TableCell className="font-medium">SBI</TableCell><TableCell className="text-right font-mono font-bold text-green-600">{transformedFinanceMetrics.sbiCredit.toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-mono font-bold text-red-600">{transformedFinanceMetrics.sbiDebit.toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-mono font-bold">{transformedFinanceMetrics.sbiBalance.toLocaleString('en-IN')}</TableCell></TableRow>
+                              <TableRow><TableCell className="font-medium">Bank</TableCell><TableCell className="text-right font-mono font-bold text-green-600">{transformedFinanceMetrics.sbiCredit.toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-mono font-bold text-red-600">{transformedFinanceMetrics.sbiDebit.toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-mono font-bold">{transformedFinanceMetrics.sbiBalance.toLocaleString('en-IN')}</TableCell></TableRow>
                               <TableRow><TableCell className="font-medium">STSB</TableCell><TableCell className="text-right font-mono font-bold text-green-600">{transformedFinanceMetrics.stsbCredit.toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-mono font-bold text-red-600">{transformedFinanceMetrics.stsbDebit.toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-mono font-bold">{transformedFinanceMetrics.stsbBalance.toLocaleString('en-IN')}</TableCell></TableRow>
                             </TableBody>
                             <TableFooter><TableRow className="bg-muted/80"><TableCell className="font-bold">Total Balance</TableCell><TableCell colSpan={3} className="text-right font-bold text-lg text-primary">₹{(transformedFinanceMetrics.sbiBalance + transformedFinanceMetrics.stsbBalance).toLocaleString('en-IN')}</TableCell></TableRow></TableFooter>
