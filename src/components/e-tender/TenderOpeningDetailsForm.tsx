@@ -1,4 +1,3 @@
-
 // src/components/e-tender/TenderOpeningDetailsForm.tsx
 "use client";
 
@@ -11,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Save, X, Trash2 } from 'lucide-react';
-import { TenderOpeningDetailsSchema, type E_tenderFormData, type TenderOpeningDetailsFormData, type Designation } from '@/lib/schemas/eTenderSchema';
+import { TenderOpeningDetailsSchema, type E_tenderFormData, type TenderOpeningDetailsFormData } from '@/lib/schemas/eTenderSchema';
+import type { Designation } from '@/lib/schemas/DataEntrySchema';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatDateForInput } from './utils';
 import { useDataStore } from '@/hooks/use-data-store';
@@ -135,5 +135,3 @@ export default function TenderOpeningDetailsForm({ initialData, onSubmit, onCanc
         </FormProvider>
     );
 }
-
-    
