@@ -1,3 +1,4 @@
+
 // src/components/dashboard/NoticeBoard.tsx
 "use client";
 
@@ -66,9 +67,9 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
         const dobDate = dob.getDate();
         if (dobMonth === todayMonth) {
             if (dobDate === todayDate) {
-                todaysBirthdays.push({ name: staff.name, designation: staff.designation, photoUrl: staff.photoUrl });
+                todaysBirthdays.push({ name: staff.name, designation: staff.designation as Designation, photoUrl: staff.photoUrl });
             } else if (dobDate > todayDate) {
-                upcomingBirthdaysInMonth.push({ name: staff.name, designation: staff.designation, photoUrl: staff.photoUrl, dateOfBirth: dob });
+                upcomingBirthdaysInMonth.push({ name: staff.name, designation: staff.designation as Designation, photoUrl: staff.photoUrl, dateOfBirth: dob });
             }
         }
       }

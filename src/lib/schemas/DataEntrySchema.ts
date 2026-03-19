@@ -1,3 +1,4 @@
+
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -312,3 +313,62 @@ export const reportableFields = [
     { id: 'arsType', label: 'ARS Type', accessor: (e: any) => e.arsTypeOfScheme, sources: ['ars'], arsApplicable: true },
     { id: 'officeLocation', label: 'Office', accessor: (e: any) => e.officeLocationFromPath || e.officeLocation, sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], arsApplicable: true },
 ];
+
+export const staffStatusOptions = ["Active", "Transferred", "Retired", "Pending Transfer"] as const;
+export type StaffStatusType = typeof staffStatusOptions[number];
+
+const dateOrString = z.union([
+  z.date(),
+  z.string().refine(val => !val || !isNaN(Date.parse(val)), {
+    message: "Invalid date format"
+  })
+]);
+
+const BaseStaffMemberFormDataSchema = z.object({
+  photoUrl: z.string().url({ message: "Please enter a valid image URL." }).optional().or(z.literal("")),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  nameMalayalam: z.string().optional(),
+  designation: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(designationOptions).optional()),
+  designationMalayalam: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(designationMalayalamOptions).optional()),
+  pen: z.string().min(1, { message: "PEN is required." }),
+  email: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  serviceStartDate: z.string().optional(),
+  serviceEndDate: z.string().optional(),
+  phoneNo: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }).optional().or(z.literal("")),
+  roles: z.string().optional(),
+  status: z.preprocess((val) => (val === "" ? undefined : val), z.enum(staffStatusOptions).default('Active')),
+  remarks: z.string().optional().default(""),
+  officeLocation: z.string().optional(),
+  
+  // Fields for creating a user account
+  createUserAccount: z.boolean().optional().default(false),
+  password: z.string().optional(),
+});
+
+export const StaffMemberFormDataSchema = BaseStaffMemberFormDataSchema.superRefine((data, ctx) => {
+    if (data.createUserAccount) {
+      if (!data.email || !z.string().email().safeParse(data.email).success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "A valid email is required.",
+          path: ["email"],
+        });
+      }
+    }
+});
+export type StaffMemberFormData = z.infer<typeof StaffMemberFormDataSchema>;
+
+
+export const StaffMemberSchema = BaseStaffMemberFormDataSchema.extend({
+  id: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  status: z.enum(staffStatusOptions).default('Active'),
+  remarks: z.string().optional().default(""),
+  dateOfBirth: dateOrString.nullable().optional(),
+  serviceStartDate: dateOrString.nullable().optional(),
+  serviceEndDate: dateOrString.nullable().optional(),
+});
+export type StaffMember = z.infer<typeof StaffMemberSchema>;
+
