@@ -156,7 +156,7 @@ const WorkProgressCategoryView = ({
                     const purpose = site.purpose as SitePurpose;
                     byPurpose[purpose]++;
                     
-                    if(site.applicationType && PRIVATE_APPLICATION_TYPES.includes(site.applicationType)) {
+                    if(site.applicationType && (PRIVATE_APPLICATION_TYPES as readonly string[]).includes(site.applicationType as any)) {
                         byPurposePrivate[purpose]++;
                         privateData.push(site);
                     } else {
