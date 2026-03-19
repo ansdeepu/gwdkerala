@@ -19,7 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn, formatCase } from "@/lib/utils";
 import { Loader2, Save, X, ImageUp, Unplug, Expand, UserCheck, Info, CalendarIcon } from "lucide-react";
 import { StaffMemberFormDataSchema, type StaffMemberFormData, designationOptions, staffStatusOptions, type StaffStatusType, designationMalayalamOptions } from "@/lib/schemas";
-import type { StaffMember, OfficeAddress } from "@/lib/schemas";
+import type { StaffMember } from "@/lib/schemas";
+import type { OfficeAddress } from "@/hooks/use-data-store";
 import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
