@@ -1,4 +1,3 @@
-
 // src/components/investigation/InvestigationDataEntryForm.tsx
 "use client";
 
@@ -361,7 +360,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                         <Select onValueChange={(value) => handleChange('applicationType', value as ApplicationType)} value={data.applicationType || ''} disabled={!data.category || isChecking}>
                             <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
                             <SelectContent className="max-h-80">
-                                {filteredAppTypeOptions.map((o: ApplicationType) => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o.replace(/_/g, " ")}</SelectItem>)}
+                                {filteredAppTypeOptions.map((o: ApplicationType) => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o] || o.replace(/_/g, " ")}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     )}

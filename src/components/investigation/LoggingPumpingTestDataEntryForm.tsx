@@ -1,4 +1,3 @@
-
 // src/components/investigation/LoggingPumpingTestDataEntryForm.tsx
 "use client";
 
@@ -356,7 +355,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                         <Select onValueChange={(value) => handleChange('applicationType', value as ApplicationType)} value={data.applicationType || ''} disabled={!data.category || isChecking}>
                             <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
                             <SelectContent className="max-h-80">
-                                {filteredAppTypeOptions.map((o: ApplicationType) => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o.replace(/_/g, " ")}</SelectItem>)}
+                                {filteredAppTypeOptions.map((o: ApplicationType) => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o] || o.replace(/_/g, " ")}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     )}
@@ -963,6 +962,7 @@ function ReorderSitesDialog({ initialData, onConfirm, onCancel }: { initialData:
 const getStatusColorClass = (status: SiteWorkStatus | undefined): string => {
     if (!status) return 'text-muted-foreground';
     if (status === 'Work Completed') return 'text-green-600';
-    if (status === 'Under Process') return 'text-blue-600';
+    if (status === 'VES Pending') return 'text-orange-600';
+    if (status === 'Pending') return 'text-yellow-600';
     return 'text-muted-foreground';
 };
