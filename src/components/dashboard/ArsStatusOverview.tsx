@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format, startOfDay, endOfDay, isValid, isWithinInterval, parse, parseISO } from 'date-fns';
 import { useArsEntries, type ArsEntry } from '@/hooks/useArsEntries';
-import { arsWorkStatusOptions, arsTypeOfSchemeOptions } from '@/lib/schemas';
+import { arsWorkStatusOptions, arsTypeOfSchemeOptions, type ArsStatus } from '@/lib/schemas';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -91,7 +91,7 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
       });
     }
 
-    const arsStatusCounts = new Map<string, { count: number, data: ArsEntry[], expenditure: number }>();
+    const arsStatusCounts = new Map<ArsStatus, { count: number, data: ArsEntry[], expenditure: number }>();
     (arsWorkStatusOptions || []).forEach(status => arsStatusCounts.set(status, { count: 0, data: [], expenditure: 0 }));
   
     let totalExpenditure = 0;
