@@ -132,8 +132,8 @@ export type PaymentDetailFormData = z.infer<typeof PaymentDetailSchema>;
 export const siteWorkStatusOptions = ["Under Process", "Addl. AS Awaited", "To be Refunded", "Awaiting Dept. Rig", "To be Tendered", "TS Pending", "Tendered", "Selection Notice Issued", "Work Order Issued", "Work Initiated", "Work in Progress", "Work Failed", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending"] as const;
 export type SiteWorkStatus = typeof siteWorkStatusOptions[number];
 
-export const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
-export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Under Process", "Completed"] as const;
+export const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Work Completed"] as const;
+export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Under Process", "Work Completed"] as const;
 
 export const fileStatusOptions = ["File Under Process", "Rig Accessibility Inspection", "Technical Sanction", "Tender Process", "Work Initiated", "Fully Completed", "Partially Completed", "Completed Except Disputed", "Partially Completed Except Disputed", "Fully Disputed", "To be Refunded", "Bill Preparation", "Payments", "Utilization Certificate", "File Closed"] as const;
 export type FileStatus = typeof fileStatusOptions[number];
@@ -219,7 +219,7 @@ export const SiteDetailSchema = z.object({
   supervisorName: z.string().optional().nullable(),
   supervisorDesignation: z.string().optional().nullable(),
   totalExpenditure: optionalNumber(),
-  workStatus: z.string().optional(),
+  workStatus: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(siteWorkStatusOptions).optional()),
   implementationRemarks: z.string().optional().nullable().default(""),
   workRemarks: z.string().optional().nullable().default(""),
   surveyOB: z.string().optional().nullable(),
@@ -328,8 +328,8 @@ const BaseStaffMemberFormDataSchema = z.object({
   photoUrl: z.string().url({ message: "Please enter a valid image URL." }).optional().or(z.literal("")),
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   nameMalayalam: z.string().optional(),
-  designation: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(designationOptions).optional()),
-  designationMalayalam: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(designationMalayalamOptions).optional()),
+  designation: z.string().optional(),
+  designationMalayalam: z.string().optional(),
   pen: z.string().min(1, { message: "PEN is required." }),
   email: z.string().optional(),
   dateOfBirth: z.string().optional(),
@@ -372,3 +372,264 @@ export const StaffMemberSchema = BaseStaffMemberFormDataSchema.extend({
 });
 export type StaffMember = z.infer<typeof StaffMemberSchema>;
 
+
+export const gwdRateCategories = [
+    "GW Investigation",
+    "Borewell Construction 110 mm dia (4.5\")",
+    "Borewell Construction 150 mm dia (6\")",
+    "Tubewell Construction 150 mm dia (6\")",
+    "Tubewell Construction 200 mm dia (8\")",
+    "Rotary cum DTH Drilling",
+    "Filter Point Well Construction 110 mm (4.5\")",
+    "Well Developing",
+    "Logging & Pumping Test"
+] as const;
+export type GwdRateCategory = typeof gwdRateCategories[number];
+
+// GWD Rates Schemas
+export const GwdRateItemFormDataSchema = z.object({
+  itemName: z.string().min(1, 'Item name is required.'),
+  rate: z.coerce.number({ invalid_type_error: 'Rate must be a number.'}).min(0, 'Rate cannot be negative.'),
+  category: z.enum(gwdRateCategories).optional(),
+});
+export type GwdRateItemFormData = z.infer<typeof GwdRateItemFormDataSchema>;
+
+export const GwdRateItemSchema = GwdRateItemFormDataSchema.extend({
+  id: z.string(),
+  order: z.number().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  category: z.enum(gwdRateCategories).optional(),
+});
+export type GwdRateItem = z.infer<typeof GwdRateItemSchema>;
+
+export const UpdatePasswordSchema = z.object({
+  currentPassword: z.string().min(1, { message: "Current password is required." }),
+  newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
+  confirmPassword: z.string(),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: "New passwords don't match.",
+  path: ["confirmPassword"],
+});
+export type UpdatePasswordFormData = z.infer<typeof UpdatePasswordSchema>;
+
+// Agency Registration Schemas
+export const OwnerInfoSchema = z.object({
+  name: z.string().min(1, "Partner name is required."),
+  address: z.string().optional(),
+  mobile: z.string().optional(),
+  secondaryMobile: z.string().optional(),
+});
+export type OwnerInfo = z.infer<typeof OwnerInfoSchema>;
+
+const VehicleDetailsSchema = z.object({
+  type: z.string().optional(),
+  regNo: z.string().optional(),
+  chassisNo: z.string().optional(),
+  engineNo: z.string().optional(),
+}).optional();
+
+const CompressorDetailsSchema = z.object({
+  model: z.string().optional(),
+  capacity: z.string().optional(),
+}).optional();
+
+const GeneratorDetailsSchema = z.object({
+  model: z.string().optional(),
+  capacity: z.string().optional(),
+  type: z.string().optional(),
+  engineNo: z.string().optional(),
+}).optional();
+
+export const rigTypeOptions = [
+    "Hand Bore",
+    "Filter Point Rig",
+    "Calyx Rig",
+    "Rotary Rig",
+    "DTH Rig",
+    "Rotary cum DTH Rig",
+] as const;
+export type RigType = typeof rigTypeOptions[number];
+
+export const applicationFeeTypes = [
+    "Agency Registration",
+    "Rig Registration",
+] as const;
+export type ApplicationFeeType = typeof applicationFeeTypes[number];
+
+export const ApplicationFeeSchema = z.object({
+    id: z.string(),
+    applicationFeeType: z.enum(applicationFeeTypes).optional(),
+    applicationFeeAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+    applicationFeeChallanNo: z.string().optional(),
+    applicationFeePaymentDate: optionalDateSchema,
+});
+export type ApplicationFee = z.infer<typeof ApplicationFeeSchema>;
+
+export const RigRenewalSchema = z.object({
+    id: z.string(),
+    renewalDate: optionalDateSchema,
+    renewalFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number({invalid_type_error: 'Renewal fee is required.'}).optional()),
+    paymentDate: optionalDateSchema,
+    challanNo: z.string().optional(),
+    validTill: optionalDateSchema,
+});
+export type RigRenewal = z.infer<typeof RigRenewalSchema>;
+
+export const RigRegistrationSchema = z.object({
+    id: z.string(),
+    rigRegistrationNo: z.string().optional(),
+    typeOfRig: z.enum(rigTypeOptions).optional(),
+    registrationDate: optionalDateSchema,
+    registrationFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+    paymentDate: optionalDateSchema,
+    challanNo: z.string().optional(),
+    additionalRegistrationFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+    additionalPaymentDate: optionalDateSchema,
+    additionalChallanNo: z.string().optional(),
+    rigVehicle: VehicleDetailsSchema,
+    compressorVehicle: VehicleDetailsSchema,
+    supportingVehicle: VehicleDetailsSchema,
+    compressorDetails: CompressorDetailsSchema,
+    generatorDetails: GeneratorDetailsSchema,
+    status: z.enum(['Active', 'Cancelled']),
+    renewals: z.array(RigRenewalSchema).optional(),
+    history: z.array(z.string()).optional(),
+    cancellationDate: optionalDateSchema,
+    cancellationReason: z.string().optional(),
+    // Fields to control visibility of optional sections
+    showRigVehicle: z.boolean().optional(),
+    showCompressorVehicle: z.boolean().optional(),
+    showSupportingVehicle: z.boolean().optional(),
+    showCompressorDetails: z.boolean().optional(),
+    showGeneratorDetails: z.boolean().optional(),
+});
+export type RigRegistration = z.infer<typeof RigRegistrationSchema>;
+
+export const AgencyApplicationSchema = z.object({
+  id: z.string().optional(),
+  fileNo: z.string().optional(),
+  agencyName: z.string().min(1, "Agency name & address is required."),
+  owner: OwnerInfoSchema,
+  partners: z.array(OwnerInfoSchema).optional(),
+  
+  applicationFees: z.array(ApplicationFeeSchema).optional(),
+
+  // Agency Registration
+  agencyRegistrationNo: z.string().optional(),
+  agencyRegistrationDate: optionalDateSchema,
+  agencyRegistrationFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+  agencyPaymentDate: optionalDateSchema,
+  agencyChallanNo: z.string().optional(),
+  agencyAdditionalRegFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+  agencyAdditionalPaymentDate: optionalDateSchema,
+  agencyAdditionalChallanNo: z.string().optional(),
+  
+  rigs: z.array(RigRegistrationSchema),
+  status: z.enum(['Active', 'Pending Verification']),
+  history: z.array(z.string()).optional(),
+  remarks: z.string().optional(),
+  officeLocation: z.string().optional(),
+});
+export type AgencyApplication = z.infer<typeof AgencyApplicationSchema>;
+
+// Settings Schemas
+export interface LsgConstituencyMap {
+  id: string;
+  name: string; // Name of the Local Self Government
+  constituencies: string[]; // Array of associated constituencies
+}
+
+export const arsWorkStatusOptions = [
+    "Proposal Submitted",
+    "AS & TS Issued",
+    "Tendered",
+    "Selection Notice Issued",
+    "Work Order Issued",
+    "Work Initiated",
+    "Work in Progress",
+    "Work Failed",
+    "Work Completed",
+    "Bill Prepared",
+    "Payment Completed"
+] as const;
+
+// Vehicle Management Schemas
+export const rcStatusOptions = ["Active", "Cancelled", "Garaged"] as const;
+export type RCStatus = typeof rcStatusOptions[number];
+
+export const DepartmentVehicleSchema = z.object({
+    id: z.string().optional(),
+    registrationNumber: z.string().min(1, "Registration Number is required."),
+    model: z.string().optional(),
+    chassisNo: z.string().optional(),
+    typeOfVehicle: z.string().optional(),
+    vehicleClass: z.string().optional(),
+    registrationDate: optionalDateSchema,
+    rcStatus: z.enum(rcStatusOptions).optional(),
+    fuelConsumptionRate: z.string().optional(),
+    fitnessExpiry: optionalDateSchema,
+    taxExpiry: optionalDateSchema,
+    insuranceExpiry: optionalDateSchema,
+    pollutionExpiry: optionalDateSchema,
+    fuelTestExpiry: optionalDateSchema,
+    officeLocation: z.string().optional(),
+});
+export type DepartmentVehicle = z.infer<typeof DepartmentVehicleSchema>;
+
+export const HiredVehicleSchema = z.object({
+    id: z.string().optional(),
+    registrationNumber: z.string().min(1, "Registration Number is required."),
+    model: z.string().optional(),
+    ownerName: z.string().optional(),
+    ownerAddress: z.string().optional(),
+    agreementValidity: optionalDateSchema,
+    vehicleClass: z.string().optional(),
+    registrationDate: optionalDateSchema,
+    rcStatus: z.enum(rcStatusOptions).optional(),
+    hireCharges: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+    fitnessExpiry: optionalDateSchema,
+    taxExpiry: optionalDateSchema,
+    insuranceExpiry: optionalDateSchema,
+    pollutionExpiry: optionalDateSchema,
+    permitExpiry: optionalDateSchema,
+    officeLocation: z.string().optional(),
+});
+export type HiredVehicle = z.infer<typeof HiredVehicleSchema>;
+
+export const rigStatusOptions = ["Active", "Garaged"] as const;
+export type RigStatus = typeof rigStatusOptions[number];
+
+export const RigCompressorSchema = z.object({
+    id: z.string().optional(),
+    typeOfRigUnit: z.string().optional(),
+    status: z.enum(rigStatusOptions).default('Active').optional(),
+    fuelConsumption: z.string().optional(),
+    rigVehicleRegNo: z.string().optional(),
+    compressorVehicleRegNo: z.string().optional(),
+    supportingVehicleRegNo: z.string().optional(),
+    compressorDetails: z.string().optional(),
+    remarks: z.string().optional(),
+    officeLocation: z.string().optional(),
+    isExternal: z.boolean().optional().default(false),
+    externalOffice: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+    if (data.isExternal) {
+        if (!data.externalOffice) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Owning Office is required.",
+                path: ["externalOffice"],
+            });
+        }
+    } else {
+        if (!data.typeOfRigUnit || data.typeOfRigUnit.trim() === "") {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Type of Rig Unit is required.",
+                path: ["typeOfRigUnit"],
+            });
+        }
+    }
+});
+export type RigCompressor = z.infer<typeof RigCompressorSchema>;

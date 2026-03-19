@@ -28,7 +28,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const getStatusColorClass = (status: SiteWorkStatus | undefined): string => {
     if (!status) return 'text-muted-foreground';
-    if (status === 'Completed') return 'text-green-600';
+    if (status === 'Work Completed') return 'text-green-600';
     if (status === 'VES Pending') return 'text-orange-600';
     if (status === 'Pending') return 'text-yellow-600';
     return 'text-muted-foreground';
@@ -75,7 +75,7 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
         setDeleteItem(null);
     }
   };
-
+  
   const handleCopyClick = (item: DataEntryFormData) => {
     if (!canCopy) return;
     setItemToCopy(item);

@@ -30,7 +30,7 @@ const ITEMS_PER_PAGE = 50;
 
 const getStatusColorClass = (status: SiteWorkStatus | undefined): string => {
     if (!status) return 'text-muted-foreground';
-    if (status === 'Completed') return 'text-green-600';
+    if (status === 'Work Completed') return 'text-green-600';
     if (status === 'VES Pending') return 'text-orange-600';
     if (status === 'Pending') return 'text-yellow-600';
     return 'text-muted-foreground';
