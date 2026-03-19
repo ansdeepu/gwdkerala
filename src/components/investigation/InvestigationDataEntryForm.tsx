@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, Info, ImagePlus, Video, ChevronLeft, ChevronRight, Edit } from "lucide-react";
+import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, Info, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import {
     DataEntrySchema,
     type DataEntryFormData,
@@ -54,6 +54,8 @@ import {
     INVESTIGATION_PRIVATE_TYPES,
     INVESTIGATION_COMPLAINT_TYPES,
     LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
+    LOGGING_PUMPING_TEST_GOVT_TYPES,
+    LOGGING_PUMPING_TEST_PRIVATE_TYPES,
     type Bidder,
     type MediaItem,
     typeOfWellOptions,
@@ -84,6 +86,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from "@/components/ui/badge";
+import SiteDialogContent from "@/components/shared/SiteDialogContent";
 
 
 const db = getFirestore(app);
@@ -103,32 +106,6 @@ const toDateOrNull = (value: any): Date | null => {
     }
     return null;
  };
-
-const processDataForForm = (data: any): any => {
-  const transform = (obj: any): any => {
-    if (obj === null || obj === undefined) return obj;
-    if (Array.isArray(obj)) return obj.map(transform);
-    if (typeof obj === 'object') {
-      const maybeDate = toDateOrNull(obj);
-      if (maybeDate) return format(maybeDate, 'yyyy-MM-dd');
-      const newObj: { [key: string]: any } = {};
-      for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          const value = obj[key];
-          if (key.toLowerCase().includes('date')) {
-            const date = toDateOrNull(value);
-            newObj[key] = date && isValid(date) ? format(date, 'yyyy-MM-dd') : "";
-          } else {
-            newObj[key] = transform(value);
-          }
-        }
-      }
-      return newObj;
-    }
-    return obj;
-  };
-  return transform(data);
-};
 
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ id: uuidv4(), amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
 const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "GW Investigation", fileDetails: "" });
@@ -974,7 +951,6 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         if (entry.fileNo?.toLowerCase().trim() === normalizedFileNo) return;
         entry.reappropriationDetails?.forEach(reapp => {
             if (reapp.refFileNo?.toLowerCase().trim() === normalizedFileNo) {
-                // Determine source page type
                 const hasInvestigation = entry.siteDetails?.some(s => s.purpose === 'GW Investigation');
                 const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
                 let sourcePageType = "Deposit Work";
@@ -1002,7 +978,6 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const watchedReappropriationDetails = watch("reappropriationDetails");
   const watchedPaymentDetails = watch("paymentDetails");
 
-  // Combined and sorted reappropriations for display
   const sortedCombinedReappropriations = useMemo(() => {
     const manual = reappropriationFields.map((field, index) => ({
         ...field,
@@ -1179,8 +1154,7 @@ const handleDeleteItem = () => {
   const totalPaymentWatched = watch('totalPaymentAllEntries');
 
   return (
-    <FormProvider {...form}>
-      <>
+    <>
         <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
             <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. Application Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isInvestigator || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
             
@@ -1344,7 +1318,8 @@ const handleDeleteItem = () => {
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><InvestigationSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} isInvestigator={!!isInvestigator} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
-      </>
-    </FormProvider>
+    </>
   );
 }
+
+    
