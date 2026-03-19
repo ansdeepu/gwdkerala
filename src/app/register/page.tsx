@@ -1,4 +1,3 @@
-
 // src/app/register/page.tsx
 "use client";
 
@@ -39,8 +38,8 @@ export default function AdminRegisterPage() {
     );
   }
 
-  // If user is loaded but is not an admin, show access denied
-  if (user && user.role !== 'admin') {
+  // If user is loaded but is not a super admin, show access denied
+  if (user && user.role !== 'superAdmin') {
     return (
        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-secondary p-4">
         <div className="space-y-6 p-6 text-center bg-card rounded-lg shadow-lg">
@@ -55,8 +54,8 @@ export default function AdminRegisterPage() {
     );
   }
   
-  // Only render the form if the user is an admin
-  if (user && user.role === 'admin') {
+  // Only render the form if the user is a super admin
+  if (user && user.role === 'superAdmin') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-background p-4">
         <div className="flex w-full max-w-4xl flex-col items-center space-y-8 rounded-xl bg-card p-8 shadow-2xl md:flex-row md:space-y-0 md:space-x-10 md:p-12">
