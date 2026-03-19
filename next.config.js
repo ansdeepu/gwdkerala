@@ -62,5 +62,5 @@ const nextConfig = {
   },
 };
 
-// Force cache invalidation by updating this comment. V33
+// Force cache invalidation by updating this comment. V36
 module.exports = nextConfig;

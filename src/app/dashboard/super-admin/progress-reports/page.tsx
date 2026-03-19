@@ -1,3 +1,4 @@
+
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -333,9 +334,9 @@ export default function ProgressReportPage() {
         };
         
         let summaryPurposeKey: SitePurpose | null = null;
-        if (purpose && PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose)) {
+        if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
             summaryPurposeKey = 'Pumping test';
-        } else if (purpose && REPORTING_PURPOSE_ORDER.includes(purpose)) {
+        } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) {
             summaryPurposeKey = purpose;
         }
 
@@ -351,18 +352,18 @@ export default function ProgressReportPage() {
           if (bwcData[applicationType]?.[diameter]) { updateStats(bwcData[applicationType][diameter]); }
         } else if (purpose === 'TWC' && diameter && TWC_DIAMETERS.includes(diameter) && applicationType) {
           if (twcData[applicationType]?.[diameter]) { updateStats(twcData[applicationType][diameter]); }
-        } else if (INVESTIGATION_WELL_TYPE_PURPOSES.includes(purpose as SitePurpose)) {
+        } else if ((INVESTIGATION_WELL_TYPE_PURPOSES as readonly string[]).includes(purpose)) {
             const wellType = (site as any).typeOfWell;
             if (wellType && gwInvestigationData[wellType]) { 
                 const targetData = purpose === "GW Investigation" ? gwInvestigationData : vesData;
                 updateStats(targetData[wellType]);
             }
-        } else if (INVESTIGATION_APP_TYPE_PURPOSES.includes(purpose as SitePurpose)) {
+        } else if ((INVESTIGATION_APP_TYPE_PURPOSES as readonly string[]).includes(purpose)) {
             if (applicationType) {
                 const targetData = purpose === "Geological logging" ? geologicalLoggingData : geophysicalLoggingData;
                 updateStats(targetData[applicationType]);
             }
-        } else if (PUMPING_TEST_AGGREGATE_PURPOSES.includes(purpose as SitePurpose)) {
+        } else if ((PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
             if (applicationType) { updateStats(pumpingTestData[applicationType]); }
         }
     });
@@ -731,6 +732,7 @@ export default function ProgressReportPage() {
                             <TableBody>
                                 {REPORTING_PURPOSE_ORDER.map(purpose => {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
+                                if (!stats || (stats.totalApplications === 0 && stats.previousBalance === 0)) return null;
                                 return (
                                     <TableRow key={purpose}>
                                         <TableCell className="border p-2 font-medium">
@@ -791,7 +793,44 @@ export default function ProgressReportPage() {
             )}
         </div>
       </ScrollArea>
-      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}><DialogContent className="sm:max-w-4xl flex flex-col h-[90vh]"><DialogHeader className="p-6 pb-4 border-b"><DialogTitle>{detailDialogTitle}</DialogTitle><DialogDescription>Showing {detailDialogData.length} records.</DialogDescription></DialogHeader><div className="flex-1 min-h-0 px-6 py-4"><ScrollArea className="h-full pr-4 -mr-4">{detailDialogData.length > 0 ? (<Table><TableHeader className="sticky top-0 bg-background z-10"><TableRow>{detailDialogColumns.map(col => <TableHead key={col.key} className={cn(col.isNumeric && 'text-right')}>{col.label}</TableHead>)}</TableRow></TableHeader><TableBody>{detailDialogData.map((row, rowIndex) => (<TableRow key={rowIndex}>{detailDialogColumns.map(col => <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>{row[col.key]}</TableCell>)}</TableRow>))}</TableBody></Table>) : (<p className="text-center text-muted-foreground py-8">No details found for this selection.</p>)}</ScrollArea></div><DialogFooter className="p-6 pt-4 border-t"><Button variant="outline" disabled={detailDialogData.length === 0} onClick={() => {}}><FileDown className="mr-2 h-4 w-4" /> Export to Excel</Button><DialogClose asChild><Button type="button" variant="secondary">Close</Button></DialogClose></DialogFooter></DialogContent></Dialog>
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="sm:max-w-4xl flex flex-col h-[90vh]">
+          <DialogHeader className="p-6 pb-4 border-b">
+            <DialogTitle>{detailDialogTitle}</DialogTitle>
+            <DialogDescription>Showing {detailDialogData.length} records.</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 px-6 py-4">
+            <ScrollArea className="h-full pr-4 -mr-4">
+              {detailDialogData.length > 0 ? (
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      {detailDialogColumns.map(col => <TableHead key={col.key} className={cn(col.isNumeric && 'text-right')}>{col.label}</TableHead>)}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detailDialogData.map((row, rowIndex) => (
+                      <TableRow key={rowIndex}>
+                        {detailDialogColumns.map(col => <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>{(row as any)[col.key]}</TableCell>)}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">No details found for this selection.</p>
+              )}
+            </ScrollArea>
+          </div>
+          <DialogFooter className="p-6 pt-4 border-t">
+              <Button variant="outline" disabled={detailDialogData.length === 0} onClick={() => {}}>
+                  <FileDown className="mr-2 h-4 w-4" /> Export to Excel
+              </Button>
+              <DialogClose asChild>
+                  <Button type="button" variant="secondary">Close</Button>
+              </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
