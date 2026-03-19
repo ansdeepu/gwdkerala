@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,9 +22,10 @@ import {
   typeOfWellOptions,
   INVESTIGATION_WORK_STATUS_OPTIONS
 } from '@/lib/schemas';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
 import MediaManager from '@/components/shared/MediaManager';
+import { Separator } from '@/components/ui/separator';
 
 const formatDateForInput = (date: any): string => {
     if (!date) return '';
@@ -55,7 +56,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
         },
     });
 
-    const { control, setValue, trigger, watch, handleSubmit } = form;
+    const { control, handleSubmit, watch, setValue, trigger } = form;
     const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
     const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
     const watchedLsg = watch("localSelfGovt");
@@ -154,7 +155,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                 </div>
                 <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
                     <Button variant="outline" type="button" onClick={onCancel}>Cancel</Button>
-                    {!isReadOnly && <Button type="submit">Save Changes</Button>}
+                    {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save Changes</Button>}
                 </div>
             </form>
         </FormProvider>
