@@ -227,7 +227,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
     
     const filteredAppTypeOptions = useMemo(() => {
-        let options: string[] = [];
+        let options: ApplicationType[] = [];
         if (workTypeContext === 'loggingPumpingTest') {
             if (data.category === 'Govt') options = [...LOGGING_PUMPING_TEST_GOVT_TYPES];
             else if (data.category === 'Private') options = [...LOGGING_PUMPING_TEST_PRIVATE_TYPES];
@@ -362,7 +362,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                         <Select onValueChange={(value) => handleChange('applicationType', value)} value={data.applicationType || ''} disabled={!data.category || isChecking}>
                             <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
                             <SelectContent className="max-h-80">
-                                {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o.replace(/_/g, " ")}</SelectItem>)}
+                                {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o] || o.replace(/_/g, " ")}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     )}
@@ -1155,6 +1155,7 @@ const handleDeleteItem = () => {
 
   return (
     <>
+      <FormProvider {...form}>
         <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
             <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. Application Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isInvestigator || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
             
@@ -1318,8 +1319,9 @@ const handleDeleteItem = () => {
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><InvestigationSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} isInvestigator={!!isInvestigator} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
-    </>
+      </>
+    </FormProvider>
   );
 }
 
-    
+```
