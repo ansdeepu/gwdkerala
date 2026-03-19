@@ -386,7 +386,7 @@ export default function VehiclesPage() {
                             <CardContent>
                                 <DepartmentVehicleTable 
                                     data={presentDepartmentVehicles} 
-                                    onEdit={(v) => handleAddOrEdit('department', v)} 
+                                    onEdit={(v: DepartmentVehicle) => handleAddOrEdit('department', v)} 
                                     onDelete={deleteDepartmentVehicle} 
                                     canEdit={canEdit}
                                     onView={handleView}
@@ -406,7 +406,7 @@ export default function VehiclesPage() {
                             <CardContent>
                                 <HiredVehicleTable 
                                     data={presentHiredVehicles} 
-                                    onEdit={(v) => handleAddOrEdit('hired', v)} 
+                                    onEdit={(v: HiredVehicle) => handleAddOrEdit('hired', v)} 
                                     onDelete={deleteHiredVehicle}
                                     canEdit={canEdit}
                                     onView={handleView}
@@ -426,7 +426,7 @@ export default function VehiclesPage() {
                                 <CardContent>
                                     <RigCompressorTable 
                                         data={ownRigs} 
-                                        onEdit={(v) => handleAddOrEdit('rig', v)} 
+                                        onEdit={(v: RigCompressor) => handleAddOrEdit('rig', v)} 
                                         onDelete={deleteRigCompressor} 
                                         canEdit={canEdit}
                                         onView={handleView}
@@ -445,7 +445,7 @@ export default function VehiclesPage() {
                                 <CardContent>
                                     <EngagedRigTable 
                                         data={engagedRigs}
-                                        onEdit={(v) => handleAddOrEdit('rig', v)}
+                                        onEdit={(v: RigCompressor) => handleAddOrEdit('rig', v)}
                                         onDelete={deleteRigCompressor}
                                         canEdit={canEdit}
                                         onView={handleView}
@@ -462,8 +462,8 @@ export default function VehiclesPage() {
                             <CardContent>
                                 <DepartmentVehicleTable 
                                     data={historyDepartmentVehicles} 
-                                    onEdit={(v) => handleAddOrEdit('department', v)} 
-                                    onDelete={deleteDepartmentVehicle} 
+                                    onEdit={(v: DepartmentVehicle) => handleAddOrEdit('department', v)} 
+                                    onDelete={deleteDepartmentVehicle}
                                     canEdit={canEdit}
                                     onView={handleView}
                                 />
@@ -476,7 +476,7 @@ export default function VehiclesPage() {
                             <CardContent>
                                 <HiredVehicleTable 
                                     data={historyHiredVehicles} 
-                                    onEdit={(v) => handleAddOrEdit('hired', v)} 
+                                    onEdit={(v: HiredVehicle) => handleAddOrEdit('hired', v)} 
                                     onDelete={deleteHiredVehicle}
                                     canEdit={canEdit}
                                     onView={handleView}
@@ -490,7 +490,7 @@ export default function VehiclesPage() {
                             <CardContent>
                                 <RigCompressorTable 
                                     data={historyRigCompressors} 
-                                    onEdit={(v) => handleAddOrEdit('rig', v)} 
+                                    onEdit={(v: RigCompressor) => handleAddOrEdit('rig', v)} 
                                     onDelete={deleteRigCompressor} 
                                     canEdit={canEdit}
                                     onView={handleView}
