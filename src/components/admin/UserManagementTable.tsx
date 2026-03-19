@@ -113,7 +113,7 @@ export default function UserManagementTable({
 
 
   const handleApprovalChange = async (userRow: UserProfile) => {
-    const targetUid = userRow.uid || userRow.id;
+    const targetUid = userRow.uid;
     if (!targetUid) {
         toast({ title: "Error", description: "Target user ID is missing.", variant: "destructive" });
         return;
@@ -138,7 +138,7 @@ export default function UserManagementTable({
   };
 
   const handleRoleChange = async (userRow: UserProfile, newRole: UserRole) => {
-    const targetUid = userRow.uid || userRow.id;
+    const targetUid = userRow.uid;
     if (!targetUid) {
         toast({ title: "Error", description: "Target user ID is missing.", variant: "destructive" });
         return;
@@ -172,7 +172,7 @@ export default function UserManagementTable({
   };
 
   const handleDeleteUserClick = (user: UserProfile) => {
-    const targetUid = user.uid || user.id;
+    const targetUid = user.uid;
     const isEditingRestricted = currentUser?.uid === targetUid || (!isSuperAdmin && (user.role === 'admin' || user.role === 'scientist' || user.role === 'engineer'));
 
     if (isEditingRestricted) {
@@ -184,7 +184,7 @@ export default function UserManagementTable({
 
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
-    const targetUid = userToDelete.uid || userToDelete.id;
+    const targetUid = userToDelete.uid;
     if (!targetUid) return;
 
     setIsDeletingUser(true);
@@ -236,7 +236,7 @@ export default function UserManagementTable({
           </TableHeader>
           <TableBody>
             {sortedUsers.map((userRow, index) => {
-              const targetUid = userRow.uid || userRow.id;
+              const targetUid = userRow.uid;
               const isCurrentUserTheUserInRow = currentUser?.uid === targetUid;
               const isEditingRestricted = isCurrentUserTheUserInRow || (!isSuperAdmin && (userRow.role === 'admin' || userRow.role === 'scientist' || userRow.role === 'engineer'));
               
