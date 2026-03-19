@@ -9,18 +9,25 @@ import { useAllFileEntriesForReports } from '@/hooks/useAllFileEntriesForReports
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { format, startOfDay, endOfDay, isWithinInterval, isValid, parseISO, parse } from 'date-fns';
 import { cn } from "@/lib/utils";
-import type { DataEntryFormData, SitePurpose, SiteWorkStatus, ApplicationType } from '@/lib/schemas';
+import type { DataEntryFormData, SitePurpose, SiteWorkStatus, ApplicationType, SiteDetailFormData } from '@/lib/schemas';
 import { sitePurposeOptions, COLLECTOR_APPLICATION_TYPES, PLAN_FUND_APPLICATION_TYPES, PUBLIC_DEPOSIT_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES } from '@/lib/schemas';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Loader2, RefreshCw, XCircle, Landmark, TrendingUp, TrendingDown, Wallet, CalendarIcon } from 'lucide-react';
+
+interface SiteDetailWithFileContext extends SiteDetailFormData {
+  fileNo: string;
+  applicantName: string;
+  applicationType: ApplicationType;
+  fileRemittanceDate?: Date | null;
+}
 
 interface FinancialSummary {
   totalApplications: number;
   totalRemittance: number;
   totalCompleted: number;
   totalPayment: number;
-  applicationData: DataEntryFormData[]; 
+  applicationData: DataEntryFormData[];
   completedData: SiteDetailWithFileContext[];
 }
 type FinancialSummaryReport = Record<string, FinancialSummary>;
