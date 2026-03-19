@@ -1,4 +1,3 @@
-
 // src/app/dashboard/financial-summary/page.tsx
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -8,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { format, startOfDay, endOfDay, isWithinInterval, isValid, parseISO, parse } from 'date-fns';
 import { cn } from "@/lib/utils";
-import type { DataEntryFormData, SitePurpose, SiteWorkStatus, ApplicationType } from '@/lib/schemas';
+import type { DataEntryFormData, SitePurpose, SiteWorkStatus, ApplicationType, SiteDetailFormData } from '@/lib/schemas';
 import { sitePurposeOptions, PLAN_FUND_APPLICATION_TYPES, COLLECTOR_APPLICATION_TYPES, PUBLIC_DEPOSIT_APPLICATION_TYPES, PRIVATE_APPLICATION_TYPES } from '@/lib/schemas';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -29,6 +28,12 @@ const Landmark = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>
 );
 
+interface SiteDetailWithFileContext extends SiteDetailFormData {
+  fileNo: string;
+  applicantName: string;
+  applicationType: ApplicationType;
+  fileRemittanceDate?: Date | null;
+}
 
 interface FinancialSummary {
   totalApplications: number;
@@ -36,7 +41,8 @@ interface FinancialSummary {
   totalCompleted: number;
   totalPayment: number;
   applicationData: DataEntryFormData[]; 
-  completedData: DataEntryFormData[];
+  completedData: SiteDetailWithFileContext[];
+  paymentData: any[]; // To hold detailed payment records
 }
 type FinancialSummaryReport = Record<string, FinancialSummary>;
 
