@@ -27,48 +27,48 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, Info, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import {
-    DataEntrySchema,
-    type DataEntryFormData,
-    siteWorkStatusOptions,
-    sitePurposeOptions,
-    type SitePurpose,
-    siteDiameterOptions,
-    siteTypeOfRigOptions,
-    fileStatusOptions,
-    remittedAccountOptions,
-    paymentAccountOptions,
-    type RemittanceDetailFormData,
-    RemittanceDetailSchema,
-    type PaymentDetailFormData,
-    PaymentDetailSchema,
-    SiteDetailSchema,
-    type SiteDetailFormData,
-    applicationTypeOptions,
-    applicationTypeDisplayMap,
-    type ApplicationType,
-    siteConditionsOptions,
-    type UserRole,
-    type SiteWorkStatus,
-    constituencyOptions,
-    type Constituency,
-    INVESTIGATION_GOVT_TYPES,
-    INVESTIGATION_PRIVATE_TYPES,
-    INVESTIGATION_COMPLAINT_TYPES,
-    LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
-    LOGGING_PUMPING_TEST_GOVT_TYPES,
-    LOGGING_PUMPING_TEST_PRIVATE_TYPES,
-    LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS,
-    type Bidder,
-    type MediaItem,
-    typeOfWellOptions,
-    type Designation,
-    type ReappropriationDetailFormData,
-    ReappropriationDetailSchema,
-    PUBLIC_DEPOSIT_APPLICATION_TYPES,
-    PRIVATE_APPLICATION_TYPES,
-    COLLECTOR_APPLICATION_TYPES,
-    PLAN_FUND_APPLICATION_TYPES,
-    INVESTIGATION_WORK_STATUS_OPTIONS,
+  DataEntrySchema,
+  type DataEntryFormData,
+  siteWorkStatusOptions,
+  sitePurposeOptions,
+  type SitePurpose,
+  siteDiameterOptions,
+  siteTypeOfRigOptions,
+  fileStatusOptions,
+  remittedAccountOptions,
+  paymentAccountOptions,
+  type RemittanceDetailFormData,
+  RemittanceDetailSchema,
+  type PaymentDetailFormData,
+  PaymentDetailSchema,
+  SiteDetailSchema,
+  type SiteDetailFormData,
+  applicationTypeOptions,
+  applicationTypeDisplayMap,
+  type ApplicationType,
+  siteConditionsOptions,
+  type UserRole,
+  type SiteWorkStatus,
+  constituencyOptions,
+  type Constituency,
+  INVESTIGATION_GOVT_TYPES,
+  INVESTIGATION_PRIVATE_TYPES,
+  INVESTIGATION_COMPLAINT_TYPES,
+  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
+  LOGGING_PUMPING_TEST_GOVT_TYPES,
+  LOGGING_PUMPING_TEST_PRIVATE_TYPES,
+  LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS,
+  INVESTIGATION_WORK_STATUS_OPTIONS,
+  type Bidder,
+  type MediaItem,
+  typeOfWellOptions,
+  type Designation,
+  type ReappropriationDetailFormData,
+  ReappropriationDetailSchema,
+  PUBLIC_DEPOSIT_APPLICATION_TYPES,
+  PRIVATE_APPLICATION_TYPES,
+  COLLECTOR_APPLICATION_TYPES,
+  PLAN_FUND_APPLICATION_TYPES,
 } from '@/lib/schemas';
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -356,7 +356,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                     <Label>Type of Application *</Label>
                     {filteredAppTypeOptions.length === 1 ? (
                         <Input 
-                            value={applicationTypeDisplayMap[filteredAppTypeOptions[0] as ApplicationType] || filteredAppTypeOptions[0]} 
+                            value={applicationTypeDisplayMap[filteredAppTypeOptions[0]] || filteredAppTypeOptions[0]} 
                             readOnly 
                             className="bg-muted font-semibold"
                         />
@@ -364,7 +364,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                         <Select onValueChange={(value) => handleChange('applicationType', value as ApplicationType)} value={data.applicationType || ''} disabled={!data.category || isChecking}>
                             <SelectTrigger><SelectValue placeholder={!data.category ? "Select Category First" : "Select Type"} /></SelectTrigger>
                             <SelectContent className="max-h-80">
-                                {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as any] || o.replace(/_/g, " ")}</SelectItem>)}
+                                {filteredAppTypeOptions.map(o => <SelectItem key={o} value={o}>{applicationTypeDisplayMap[o as ApplicationType] || o.replace(/_/g, " ")}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     )}
@@ -924,7 +924,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const { createPendingUpdate } = usePendingUpdates();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { allFileEntries } = useDataStore();
+  const { allFileEntries, allArsEntries } = useDataStore();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
@@ -1074,7 +1074,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         };
 
         if (!user) throw new Error("Authentication error.");
-        if (isSupervisor) {
+        if (isSupervisor || isInvestigator) {
             await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
             toast({ title: "Update Submitted" });
         } else if (fileIdToEdit) {
@@ -1156,8 +1156,8 @@ const handleDeleteItem = () => {
   const totalPaymentWatched = watch('totalPaymentAllEntries');
 
   return (
-    <>
-      <FormProvider {...form}>
+    <FormProvider {...form}>
+      <React.Fragment>
         <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
             <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. Application Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isInvestigator || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
             
@@ -1302,7 +1302,7 @@ const handleDeleteItem = () => {
                 <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>
                 <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
                 <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor || isInvestigator}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor || isInvestigator} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
+                <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor || isInvestigator}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{INVESTIGATION_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor || isInvestigator} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
             <CardFooter className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}>
                     <X className="mr-2 h-4 w-4" /> Close
@@ -1318,10 +1318,12 @@ const handleDeleteItem = () => {
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={watch('category')} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><LoggingPumpingTestSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={!!isSupervisor} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><InvestigationSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={!!isSupervisor} isInvestigator={!!isInvestigator} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
-      </>
+      </React.Fragment>
     </FormProvider>
   );
 }
+
+```
