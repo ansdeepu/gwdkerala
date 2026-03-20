@@ -1,4 +1,3 @@
-
 // src/app/dashboard/settings/page.tsx
 "use client";
 
@@ -15,7 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc, where, serverTimestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
-import { useDataStore, type OfficeAddress } from '@/hooks/use-data-store';
+import { useDataStore } from '@/hooks/use-data-store';
+import type { OfficeAddress } from '@/lib/schemas';
 import { useAuth, type UserProfile } from '@/hooks/useAuth';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
@@ -638,5 +638,3 @@ export default function SettingsPage() {
       </div>
     );
 }
-
-    

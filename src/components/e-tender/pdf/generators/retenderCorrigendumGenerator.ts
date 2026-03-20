@@ -2,8 +2,7 @@
 import { PDFDocument, PDFTextField, StandardFonts, TextAlignment, rgb } from 'pdf-lib';
 import type { E_tender } from '@/hooks/useE_tenders';
 import { formatDateSafe } from '../../utils';
-import type { Corrigendum, StaffMember } from '@/lib/schemas';
-import type { OfficeAddress } from '@/hooks/use-data-store';
+import type { Corrigendum, StaffMember, OfficeAddress } from '@/lib/schemas';
 
 const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 

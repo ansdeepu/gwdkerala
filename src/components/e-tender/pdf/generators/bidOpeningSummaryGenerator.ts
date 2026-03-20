@@ -3,8 +3,7 @@ import { PDFDocument, PDFTextField, StandardFonts, TextAlignment, rgb } from 'pd
 import type { E_tender } from '@/hooks/useE_tenders';
 import { formatDateSafe, formatTenderNoForFilename } from '../../utils';
 import { numberToWords } from './utils';
-import type { StaffMember } from '@/lib/schemas';
-import type { OfficeAddress } from '@/hooks/use-data-store';
+import type { StaffMember, OfficeAddress } from '@/lib/schemas';
 
 const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 

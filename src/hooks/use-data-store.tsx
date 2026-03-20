@@ -1,4 +1,3 @@
-
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -400,7 +399,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     
 
     const isLoading = Object.values(loadingStates).some(Boolean);
-    
+
     const useAddVehicle = <T extends {}>(collectionName: string) => {
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
@@ -491,5 +490,3 @@ export function useDataStore() {
     }
     return context;
 }
-
-    

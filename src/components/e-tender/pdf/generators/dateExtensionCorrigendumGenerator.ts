@@ -1,9 +1,8 @@
 // src/components/e-tender/pdf/generators/dateExtensionCorrigendumGenerator.ts
 import { PDFDocument, StandardFonts, TextAlignment, rgb } from "pdf-lib";
 import type { E_tender } from "@/hooks/useE_tenders";
-import type { Corrigendum, StaffMember } from "@/lib/schemas";
+import type { Corrigendum, StaffMember, OfficeAddress } from "@/lib/schemas";
 import { formatDateSafe } from "../../utils";
-import type { OfficeAddress } from "@/hooks/use-data-store";
 
 const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 

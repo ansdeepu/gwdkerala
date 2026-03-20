@@ -3,9 +3,8 @@ import { PDFDocument, StandardFonts, rgb, PageSizes, TextAlignment } from 'pdf-l
 import type { E_tender } from '@/hooks/useE_tenders';
 import { format, isValid } from 'date-fns';
 import { formatTenderNoForFilename } from '../../utils';
-import type { StaffMember } from '@/lib/schemas';
+import type { StaffMember, OfficeAddress } from '@/lib/schemas';
 import { numberToWords, getAttachedFilesString } from './utils';
-import type { OfficeAddress } from '@/hooks/use-data-store';
 
 const cm = (cmValue: number) => cmValue * 28.3465;
 const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
