@@ -389,7 +389,7 @@ export function RigCompressorTable({ data, onEdit, onDelete, canEdit, onView }: 
     const handleDelete = async () => {
         if (!itemToDelete) return;
         setIsDeleting(true);
-        await onDelete(itemToDelete.id!, itemToDelete.typeOfRigUnit);
+        await onDelete(itemToDelete.id!, itemToDelete.typeOfRigUnit || 'Unnamed Unit');
         setIsDeleting(false);
         setItemToDelete(null);
     };
@@ -455,7 +455,7 @@ export function EngagedRigTable({ data, onEdit, onDelete, canEdit, onView }: Rig
     const handleDelete = async () => {
         if (!itemToDelete) return;
         setIsDeleting(true);
-        await onDelete(itemToDelete.id!, itemToDelete.typeOfRigUnit);
+        await onDelete(itemToDelete.id!, itemToDelete.typeOfRigUnit || 'Unnamed Unit');
         setIsDeleting(false);
         setItemToDelete(null);
     };
@@ -534,5 +534,3 @@ const ConfirmDeleteDialog = ({ isOpen, onOpenChange, onConfirm, itemName, isDele
         </AlertDialogContent>
     </AlertDialog>
 );
-
-    

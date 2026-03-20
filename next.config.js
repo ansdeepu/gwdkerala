@@ -15,10 +15,6 @@ const nextConfig = {
     serverComponentsExternalPackages: ['exceljs', 'pdf-lib'],
     serverMinification: true,
   },
-  allowedDevOrigins: [
-    "https://6000-firebase-gwd-kerala1-1770522254979.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev",
-    "https://6000-firebase-gwd-kerala-1772693375957.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev",
-  ],
   images: {
     remotePatterns: [
       {
