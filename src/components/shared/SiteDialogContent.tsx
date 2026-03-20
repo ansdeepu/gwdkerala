@@ -1,4 +1,3 @@
-
 // src/components/shared/SiteDialogContent.tsx
 "use client";
 
@@ -12,7 +11,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Save, X, Info, Loader2 } from "lucide-react";
-import { SiteDetailSchema, type SiteDetailFormData, siteWorkStatusOptions, sitePurposeOptions, type SitePurpose, siteDiameterOptions, siteTypeOfRigOptions, siteConditionsOptions, type Constituency, type StaffMember, type E_tender, type Bidder, designationOptions, type RigCompressor } from '@/lib/schemas';
+import {
+  SiteDetailSchema,
+  type SiteDetailFormData,
+  siteWorkStatusOptions,
+  sitePurposeOptions,
+  type SitePurpose,
+  siteDiameterOptions,
+  siteTypeOfRigOptions,
+  siteConditionsOptions,
+  type Constituency,
+  type StaffMember,
+  type Bidder,
+  designationOptions,
+  type RigCompressor
+} from '@/lib/schemas';
+import type { E_tender } from '@/hooks/useE_tenders';
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, isValid, parseISO } from "date-fns";
@@ -228,7 +242,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             <div className="flex-1 min-h-0">
                 <ScrollArea className="h-full px-6 py-4">
                     <Form {...form}>
-                        <form id="investigation-site-dialog-form" onSubmit={handleSubmit(handleDialogSubmit)} className="space-y-6">
+                        <form id="site-dialog-form" onSubmit={handleSubmit(handleDialogSubmit)} className="space-y-6">
                             <Card>
                                 <CardHeader><CardTitle className="text-lg text-primary">Main Details</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
@@ -677,7 +691,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
             </div>
             <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
                 <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
-                {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save Changes</Button>}
+                {!isReadOnly && <Button type="submit" form="site-dialog-form">Save Changes</Button>}
             </div>
         </div>
     );

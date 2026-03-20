@@ -332,7 +332,7 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
               !isDashboardPage ? "p-6 pt-4" : "p-0"
             )}>
               {!isDashboardPage && <BreadcrumbNav />}
-              {children}
+              <div id="main-content-wrapper">{children}</div>
             </main>
           </SidebarInset>
         </div>

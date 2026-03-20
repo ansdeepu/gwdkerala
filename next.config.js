@@ -1,7 +1,7 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Build attempt at timestamp 1773966900000
+  // FINAL BUILD ATTEMPT at timestamp 1773966900000
   reactStrictMode: true,
   typescript: {
     // Set to false to ignore build errors.
@@ -10,6 +10,10 @@ const nextConfig = {
   eslint: {
     // Set to false to ignore linting errors during build.
     ignoreDuringBuilds: false,
+  },
+  experimental: {
+    // This is a new property to force a config change
+    serverMinification: false,
   },
   allowedDevOrigins: [
     "https://6000-firebase-gwd-kerala1-1770522254979.cluster-sumfw3zmzzhzkx4mpvz3ogth4y.cloudworkstations.dev",
@@ -63,7 +67,7 @@ const nextConfig = {
   },
   env: {
     // This forces a cache bust on every build.
-    CACHE_BUSTER: `build-t-final-attempt-${Date.now()}`,
+    CACHE_BUSTER: `build-t-final-attempt-final-${Date.now()}`,
   },
 };
 
