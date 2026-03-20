@@ -8,7 +8,7 @@ import { app } from '@/lib/firebase';
 import { useAuth, type UserProfile } from './useAuth';
 import type { DataEntryFormData } from '@/lib/schemas/DataEntrySchema';
 import type { ArsEntry } from './useArsEntries';
-import type { StaffMember, LsgConstituencyMap, Designation, Bidder as MasterBidder, DepartmentVehicle, HiredVehicle, RigCompressor, OfficeAddress as OfficeAddressType } from '@/lib/schemas';
+import type { StaffMember, LsgConstituencyMap, Designation, Bidder as MasterBidder, DepartmentVehicle, HiredVehicle, RigCompressor, OfficeAddress } from '@/lib/schemas';
 import { designationOptions } from '@/lib/schemas';
 import type { AgencyApplication } from './useAgencyApplications';
 import { toast } from './use-toast';
@@ -64,30 +64,6 @@ export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
     additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%. This deposit is calculated as 25% of the difference between the estimate cost and the tender amount, but it will not exceed 10% of the estimate cost. This deposit will be released after satisfactory completion of the work.",
     stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,00,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
 };
-
-export interface OfficeAddress {
-  id: string;
-  officeName: string;
-  officeLocation: string;
-  officeCode: string;
-  officeNameMalayalam?: string;
-  address?: string;
-  addressMalayalam?: string;
-  phoneNo?: string;
-  email?: string;
-  districtOfficerStaffId?: string;
-  districtOfficer?: string;
-  districtOfficerPhotoUrl?: string;
-  gstNo?: string;
-  panNo?: string;
-  otherDetails?: string;
-  stsbAccountNo?: string;
-  nameOfTreasury?: string;
-  bankAccountNo?: string;
-  nameOfBank?: string;
-  bankBranch?: string;
-  bankIfsc?: string;
-}
 
 const COLLECTIONS = {
     DEPARTMENT: 'departmentVehicles',
@@ -237,7 +213,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                   return Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev;
               }, snapshot.docs[0]);
 
-              const subOfficeDoc = processFirestoreDoc<OfficeAddressType>(bestDocSnap);
+              const subOfficeDoc = processFirestoreDoc<OfficeAddress>(bestDocSnap);
               setOfficeAddress({
                   ...subOfficeDoc,
                   officeLocation: officeLocation, // Standardise case from auth/selection
@@ -286,7 +262,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setAllAgencyApplications([]); setAllE_tenders([]); setAllDepartmentVehicles([]);
             setAllHiredVehicles([]); setAllRigCompressors([]); setAllLsgConstituencyMaps([]);
             setAllSanctionedStrength({}); setAllBidders([]);
-            if(user?.email !== SUPER_ADMIN_EMAIL) setAllUsers([]);
+            setAllUsers([]);
             setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, sanctionedStrength: false, bidders: false }));
             return;
         }
