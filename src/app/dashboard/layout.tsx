@@ -2,7 +2,7 @@
 // src/app/dashboard/layout.tsx
 "use client";
 
-import React, { useEffect, useCallback, useState, useMemo } from 'react';
+import React, { useEffect, useCallback, useState, useMemo, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -331,7 +331,7 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
               "flex-1 overflow-x-hidden overflow-y-auto bg-background",
               !isDashboardPage ? "p-6 pt-4" : "p-0"
             )}>
-              {!isDashboardPage && <BreadcrumbNav />}
+              {!isDashboardPage && <Suspense fallback={null}><BreadcrumbNav /></Suspense>}
               <div id="main-content-wrapper">{children}</div>
             </main>
           </SidebarInset>
