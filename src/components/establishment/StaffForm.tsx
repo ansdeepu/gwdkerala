@@ -65,7 +65,7 @@ const toDateOrNull = (value: any): Date | null => {
         if (isValid(d)) return d;
     }
     return null;
-};
+ };
 
 const getField = (data: any, key: string): any => {
     if (!data) return undefined;
@@ -105,6 +105,12 @@ const capitalize = (s?: string) => {
     if (!s) return "";
     return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 };
+
+const districtsOrder = [
+    "Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", 
+    "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", 
+    "Wayanad", "Kannur", "Kasaragod", "Directorate"
+];
 
 export default function StaffForm({ onSubmit, initialData, isSubmitting, onCancel, isViewer = false, allOfficeAddresses, allUsers }: StaffFormProps) {
   const { user } = useAuth();
@@ -202,7 +208,10 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const watchedStatus = watch("status");
   
   const userAccountExists = useMemo(() => {
-    return allUsers.some(user => user.staffId && initialData?.id && String(user.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase());
+    if (!initialData?.id) return false;
+    return allUsers.some(user => 
+        String(user.staffId).trim().toLowerCase() === String(initialData.id).trim().toLowerCase()
+    );
   }, [initialData, allUsers]);
 
   const showUserCreation = !isViewer && !userAccountExists;
@@ -232,6 +241,21 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   }, []);
 
   const isTransferring = watchedStatus === 'Transferred' || watchedStatus === 'Pending Transfer' || user?.role === 'superAdmin';
+  
+  const sortedOfficeOptions = useMemo(() => {
+    const uniqueLocations = [...new Map(allOfficeAddresses.map(item => [item.officeLocation?.toLowerCase(), item])).values()];
+
+    return uniqueLocations.sort((a, b) => {
+        const indexA = districtsOrder.indexOf(capitalize(a.officeLocation));
+        const indexB = districtsOrder.indexOf(capitalize(b.officeLocation));
+        
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        
+        return indexA - indexB;
+    });
+  }, [allOfficeAddresses]);
+
 
   return (
     <Form {...form}>
@@ -329,7 +353,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter email address" {...field} value={field.value || ""} readOnly={isViewer} />
+                      <Input type="email" placeholder="Enter email address" {...field} value={field.value || ""} readOnly={isViewer || userAccountExists} className={cn(userAccountExists && "bg-muted/50")} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -530,9 +554,9 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                                 <Select onValueChange={field.onChange} value={field.value || ""} disabled={isViewer || isSubmitting}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="Select destination office" /></SelectTrigger></FormControl>
                                     <SelectContent className="max-h-80">
-                                        {allOfficeAddresses.map(office => (
+                                        {sortedOfficeOptions.map(office => (
                                             <SelectItem key={office.id} value={office.officeLocation}>
-                                                {office.officeName || capitalize(office.officeLocation)}
+                                                {capitalize(office.officeLocation)}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
