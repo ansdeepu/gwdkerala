@@ -130,7 +130,7 @@ function BreadcrumbNav() {
       
       let label = labelMap[segment] || segment.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       
-      // Pattern to detect if a segment is a technical ID (e.g. Firebase ID or 'new')
+      // Pattern to detect if a segment is a technical ID (e.g., Firebase ID or 'new')
       const isIdSegment = segment.length > 15 || segment === 'new' || (prevSegment && ['e-tender', 'ars', 'agency-registration'].includes(prevSegment));
 
       if (segment === 'data-entry') {
@@ -331,7 +331,7 @@ function InnerDashboardLayout({ children }: { children: React.ReactNode }) {
               "flex-1 overflow-x-hidden overflow-y-auto bg-background",
               !isDashboardPage ? "p-6 pt-4" : "p-0"
             )}>
-              {!isDashboardPage && <Suspense fallback={null}><BreadcrumbNav /></Suspense>}
+              {!isDashboardPage && <BreadcrumbNav />}
               <div id="main-content-wrapper">{children}</div>
             </main>
           </SidebarInset>
