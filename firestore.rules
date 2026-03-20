@@ -69,7 +69,7 @@ service cloud.firestore {
       allow get: if isSignedIn() && request.auth.uid == userId;
       allow list: if isSuperAdmin() || isSubOfficeAdmin() || isSupervisor() || isInvestigator();
       allow create: if isSuperAdmin() || isSubOfficeAdmin();
-      allow update: if isSuperAdmin() || (isSubOfficeAdmin() && getUserData().officeLocation.lower() == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation.lower()) || (isApproved() && request.auth.uid == userId);
+      allow update: if isSuperAdmin() || (isSubOfficeAdmin() && exists(/databases/$(database)/documents/offices/$(getUserData().officeLocation.lower())/users/$(userId))) || (isApproved() && request.auth.uid == userId);
       allow delete: if isSuperAdmin() || (isSubOfficeAdmin() && getUserData().officeLocation.lower() == get(/databases/$(database)/documents/users/$(userId)).data.officeLocation.lower());
     }
     
