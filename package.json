@@ -1,13 +1,14 @@
 {
   "name": "nextn",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "force-rebuild": "echo 'Forcing a rebuild to clear cache'"
   },
   "dependencies": {
     "@genkit-ai/firebase": "^1.26.0",
