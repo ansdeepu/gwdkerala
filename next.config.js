@@ -1,6 +1,7 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Build attempt at timestamp 1773966086106
   reactStrictMode: true,
   typescript: {
     // Set to false to ignore build errors.
@@ -62,7 +63,7 @@ const nextConfig = {
   },
   env: {
     // This forces a cache bust on every build.
-    CACHE_BUSTER: `build-${Date.now()}`,
+    CACHE_BUSTER: `build-t-final-attempt-${Date.now()}`,
   },
 };
 
