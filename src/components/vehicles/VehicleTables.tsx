@@ -18,6 +18,30 @@ import { Separator } from "../ui/separator";
 import Image from "next/image";
 import { useDataStore } from '@/hooks/use-data-store';
 
+interface DepartmentVehicleTableProps {
+    data: DepartmentVehicle[];
+    onEdit: (v: DepartmentVehicle) => void;
+    onDelete: (id: string, name: string) => Promise<void>;
+    canEdit: boolean;
+    onView: (vehicle: DepartmentVehicle | HiredVehicle | RigCompressor) => void;
+}
+
+interface HiredVehicleTableProps {
+    data: HiredVehicle[];
+    onEdit: (v: HiredVehicle) => void;
+    onDelete: (id: string, name: string) => Promise<void>;
+    canEdit: boolean;
+    onView: (vehicle: DepartmentVehicle | HiredVehicle | RigCompressor) => void;
+}
+
+interface RigCompressorTableProps {
+    data: RigCompressor[];
+    onEdit: (v: RigCompressor) => void;
+    onDelete: (id: string, name: string) => Promise<void>;
+    canEdit: boolean;
+    onView: (vehicle: DepartmentVehicle | HiredVehicle | RigCompressor) => void;
+}
+
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
   if (dateValue instanceof Date) return dateValue;
@@ -510,3 +534,5 @@ const ConfirmDeleteDialog = ({ isOpen, onOpenChange, onConfirm, itemName, isDele
         </AlertDialogContent>
     </AlertDialog>
 );
+
+    
