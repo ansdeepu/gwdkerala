@@ -8,7 +8,7 @@ import { app } from '@/lib/firebase';
 import { useAuth, type UserProfile } from './useAuth';
 import type { DataEntryFormData } from '@/lib/schemas/DataEntrySchema';
 import type { ArsEntry } from './useArsEntries';
-import type { StaffMember, LsgConstituencyMap, Designation, Bidder as MasterBidder, DepartmentVehicle, HiredVehicle, RigCompressor, OfficeAddress as OfficeAddressType } from '@/lib/schemas';
+import type { StaffMember, LsgConstituencyMap, Designation, Bidder as MasterBidder, DepartmentVehicle, HiredVehicle, RigCompressor, OfficeAddress } from '@/lib/schemas';
 import { designationOptions } from '@/lib/schemas';
 import type { AgencyApplication } from './useAgencyApplications';
 import { toast } from './use-toast';
@@ -64,30 +64,6 @@ export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
     additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%. This deposit is calculated as 25% of the difference between the estimate cost and the tender amount, but it will not exceed 10% of the estimate cost. This deposit will be released after satisfactory completion of the work.",
     stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,00,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
 };
-
-export interface OfficeAddress {
-  id: string;
-  officeName: string;
-  officeLocation: string;
-  officeCode: string;
-  officeNameMalayalam?: string;
-  address?: string;
-  addressMalayalam?: string;
-  phoneNo?: string;
-  email?: string;
-  districtOfficerStaffId?: string;
-  districtOfficer?: string;
-  districtOfficerPhotoUrl?: string;
-  gstNo?: string;
-  panNo?: string;
-  otherDetails?: string;
-  stsbAccountNo?: string;
-  nameOfTreasury?: string;
-  bankAccountNo?: string;
-  nameOfBank?: string;
-  bankBranch?: string;
-  bankIfsc?: string;
-}
 
 const COLLECTIONS = {
     DEPARTMENT: 'departmentVehicles',
@@ -237,7 +213,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                   return Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev;
               }, snapshot.docs[0]);
 
-              const subOfficeDoc = processFirestoreDoc<OfficeAddressType>(bestDocSnap);
+              const subOfficeDoc = processFirestoreDoc<OfficeAddress>(bestDocSnap);
               setOfficeAddress({
                   ...subOfficeDoc,
                   officeLocation: officeLocation, // Standardise case from auth/selection
@@ -425,122 +401,68 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
 
     const isLoading = Object.values(loadingStates).some(Boolean);
     
-    const addDepartmentVehicle = useCallback(async (data: DepartmentVehicle) => {
-        if (!user) throw new Error("User must be logged in.");
-        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-        if (!officeLoc) throw new Error("An office location must be selected.");
-        const collectionPath = `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.DEPARTMENT}`;
-        const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-        if ('id' in payload) delete (payload as any).id;
-        await addDoc(collection(db, collectionPath), payload);
-        toast({ title: 'Item Added', description: 'The new department vehicle has been saved.' });
-    }, [user, selectedOffice]);
-    
-    const updateDepartmentVehicle = useCallback(async (data: DepartmentVehicle) => {
-        if (!user) throw new Error("User must be logged in.");
-        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-        if (!officeLoc) throw new Error("User must have an office location.");
-        if (!data.id) throw new Error("Document ID is missing for update.");
-        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.DEPARTMENT}`, data.id);
-        const payload = { ...data, updatedAt: serverTimestamp() };
-        delete (payload as any).id;
-        await updateDoc(docRef, payload);
-        toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
-    }, [user, selectedOffice]);
+    const useAddVehicle = <T extends {}>(collectionName: string) => {
+      return useCallback(async (data: T) => {
+          if (!user) throw new Error("User must be logged in.");
+          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+          if (!officeLoc) throw new Error("An office location must be selected to add staff.");
+          const collectionPath = `offices/${officeLoc.toLowerCase()}/${collectionName}`;
+          const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+          if ('id' in payload) delete (payload as any).id;
+          await addDoc(collection(db, collectionPath), payload);
+          toast({ title: 'Item Added', description: 'The new item has been saved.' });
+      }, [user, selectedOffice]);
+    };
+  
+    const useUpdateVehicle = <T extends { id?: string }>(collectionName: string) => {
+      return useCallback(async (data: T) => {
+          if (!user) throw new Error("User must be logged in.");
+          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+          if (!officeLoc) throw new Error("User must have an office location.");
+          if (!data.id) throw new Error("Document ID is missing for update.");
+          const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, data.id);
+          const payload = { ...data, updatedAt: serverTimestamp() };
+          if ('id' in payload) delete (payload as any).id;
+          await updateDoc(docRef, payload);
+          toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
+      }, [user, selectedOffice]);
+    };
+  
+    const useDeleteVehicle = (collectionName: string) => {
+      return useCallback(async (id: string, name: string) => {
+          if (!user) throw new Error("User must be logged in.");
+          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+          if (!officeLoc) throw new Error("User must have an office location.");
+          const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, id);
+          deleteDoc(docRef)
+              .then(() => {
+                  toast({ title: 'Item Deleted', description: `${name} has been removed.` });
+              })
+              .catch(error => {
+                  if (error.code === 'permission-denied') {
+                      errorEmitter.emit('permission-error', new FirestorePermissionError({
+                          path: docRef.path,
+                          operation: 'delete',
+                      }));
+                  } else {
+                      toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
+                  }
+              });
+      }, [user, selectedOffice]);
+    };
 
-    const deleteDepartmentVehicle = useCallback(async (id: string, name: string) => {
-        if (!user) throw new Error("User must be logged in.");
-        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-        if (!officeLoc) throw new Error("User must have an office location.");
-        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.DEPARTMENT}`, id);
-        deleteDoc(docRef)
-            .then(() => toast({ title: 'Item Deleted', description: `${name} has been removed.` }))
-            .catch(error => {
-                if (error.code === 'permission-denied') {
-                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
-                } else {
-                    toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
-                }
-            });
-    }, [user, selectedOffice]);
+    const addDepartmentVehicle = useAddVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
+    const updateDepartmentVehicle = useUpdateVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
+    const deleteDepartmentVehicle = useDeleteVehicle(COLLECTIONS.DEPARTMENT);
 
-    const addHiredVehicle = useCallback(async (data: HiredVehicle) => {
-        if (!user) throw new Error("User must be logged in.");
-        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-        if (!officeLoc) throw new Error("An office location must be selected.");
-        const collectionPath = `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.HIRED}`;
-        const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-        if ('id' in payload) delete (payload as any).id;
-        await addDoc(collection(db, collectionPath), payload);
-        toast({ title: 'Item Added', description: 'The new hired vehicle has been saved.' });
-    }, [user, selectedOffice]);
+    const addHiredVehicle = useAddVehicle<HiredVehicle>(COLLECTIONS.HIRED);
+    const updateHiredVehicle = useUpdateVehicle<HiredVehicle>(COLLECTIONS.HIRED);
+    const deleteHiredVehicle = useDeleteVehicle(COLLECTIONS.HIRED);
 
-    const updateHiredVehicle = useCallback(async (data: HiredVehicle) => {
-        if (!user) throw new Error("User must be logged in.");
-        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-        if (!officeLoc) throw new Error("User must have an office location.");
-        if (!data.id) throw new Error("Document ID is missing for update.");
-        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.HIRED}`, data.id);
-        const payload = { ...data, updatedAt: serverTimestamp() };
-        delete (payload as any).id;
-        await updateDoc(docRef, payload);
-        toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
-    }, [user, selectedOffice]);
+    const addRigCompressor = useAddVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR);
+    const updateRigCompressor = useUpdateVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR);
+    const deleteRigCompressor = useDeleteVehicle(COLLECTIONS.RIG_COMPRESSOR);
 
-    const deleteHiredVehicle = useCallback(async (id: string, name: string) => {
-        if (!user) throw new Error("User must be logged in.");
-        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-        if (!officeLoc) throw new Error("User must have an office location.");
-        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.HIRED}`, id);
-        deleteDoc(docRef)
-            .then(() => toast({ title: 'Item Deleted', description: `${name} has been removed.` }))
-            .catch(error => {
-                if (error.code === 'permission-denied') {
-                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
-                } else {
-                    toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
-                }
-            });
-    }, [user, selectedOffice]);
-
-    const addRigCompressor = useCallback(async (data: RigCompressor) => {
-        if (!user) throw new Error("User must be logged in.");
-        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-        if (!officeLoc) throw new Error("An office location must be selected.");
-        const collectionPath = `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.RIG_COMPRESSOR}`;
-        const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-        if ('id' in payload) delete (payload as any).id;
-        await addDoc(collection(db, collectionPath), payload);
-        toast({ title: 'Item Added', description: 'The new rig/compressor has been saved.' });
-    }, [user, selectedOffice]);
-
-    const updateRigCompressor = useCallback(async (data: RigCompressor) => {
-        if (!user) throw new Error("User must be logged in.");
-        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-        if (!officeLoc) throw new Error("User must have an office location.");
-        if (!data.id) throw new Error("Document ID is missing for update.");
-        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.RIG_COMPRESSOR}`, data.id);
-        const payload = { ...data, updatedAt: serverTimestamp() };
-        delete (payload as any).id;
-        await updateDoc(docRef, payload);
-        toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
-    }, [user, selectedOffice]);
-
-    const deleteRigCompressor = useCallback(async (id: string, name: string) => {
-        if (!user) throw new Error("User must be logged in.");
-        const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-        if (!officeLoc) throw new Error("User must have an office location.");
-        const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${COLLECTIONS.RIG_COMPRESSOR}`, id);
-        deleteDoc(docRef)
-            .then(() => toast({ title: 'Item Deleted', description: `${name} has been removed.` }))
-            .catch(error => {
-                if (error.code === 'permission-denied') {
-                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
-                } else {
-                    toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
-                }
-            });
-    }, [user, selectedOffice]);
 
     return (
         <DataStoreContext.Provider value={{
@@ -569,3 +491,5 @@ export function useDataStore() {
     }
     return context;
 }
+
+    

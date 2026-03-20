@@ -1,7 +1,7 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // THIS IS A FORCED REBUILD ATTEMPT: 1773972000000
+  // A NEW ATTEMPT TO FORCE REBUILD: 1773973000000
   reactStrictMode: true,
   typescript: {
     // Set to false to ignore build errors.
@@ -63,7 +63,7 @@ const nextConfig = {
   },
   env: {
     // This forces a cache bust on every build.
-    CACHE_BUSTER: `force-rebuild-v2-1773972000000`,
+    CACHE_BUSTER: `force-rebuild-v3-1773973000000`,
   },
 };
 

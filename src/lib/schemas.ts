@@ -1,3 +1,4 @@
+
 // src/lib/schemas.ts
 import { z } from 'zod';
 import { isValid } from 'date-fns';
@@ -160,6 +161,7 @@ const BaseStaffMemberFormDataSchema = z.object({
   designation: z.string().optional(),
   designationMalayalam: z.string().optional(),
   pen: z.string().min(1, { message: "PEN is required." }),
+  email: z.string().optional(),
   dateOfBirth: z.string().optional(),
   serviceStartDate: z.string().optional(),
   serviceEndDate: z.string().optional(),
@@ -171,7 +173,6 @@ const BaseStaffMemberFormDataSchema = z.object({
   
   // Fields for creating a user account
   createUserAccount: z.boolean().optional().default(false),
-  email: z.string().optional(),
   password: z.string().optional(),
 });
 
@@ -368,6 +369,30 @@ export interface LsgConstituencyMap {
   constituencies: string[]; // Array of associated constituencies
 }
 
+export interface OfficeAddress {
+  id: string;
+  officeName: string;
+  officeLocation: string;
+  officeCode: string;
+  officeNameMalayalam?: string;
+  address?: string;
+  addressMalayalam?: string;
+  phoneNo?: string;
+  email?: string;
+  districtOfficerStaffId?: string;
+  districtOfficer?: string;
+  districtOfficerPhotoUrl?: string;
+  gstNo?: string;
+  panNo?: string;
+  otherDetails?: string;
+  stsbAccountNo?: string;
+  nameOfTreasury?: string;
+  bankAccountNo?: string;
+  nameOfBank?: string;
+  bankBranch?: string;
+  bankIfsc?: string;
+}
+
 export const arsWorkStatusOptions = [
     "Proposal Submitted",
     "AS & TS Issued",
@@ -461,3 +486,5 @@ export const RigCompressorSchema = z.object({
     }
 });
 export type RigCompressor = z.infer<typeof RigCompressorSchema>;
+
+    
