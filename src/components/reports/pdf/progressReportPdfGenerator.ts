@@ -1,3 +1,4 @@
+
 // src/components/reports/pdf/progressReportPdfGenerator.ts
 import { PDFDocument, PDFFont, PageSizes, StandardFonts, rgb, cmyk } from 'pdf-lib';
 import { format } from 'date-fns';
@@ -142,6 +143,15 @@ async function drawTable(pdfDoc: PDFDocument, headers: string[], data: (string|n
     });
 }
 
+type CategoryTotals = {
+    previousBalance: number;
+    currentApplications: number;
+    toBeRefunded: number;
+    totalApplications: number;
+    completed: number;
+    balance: number;
+};
+
 // Helper to generate a category table
 async function drawCategoryTable(
     pdfDoc: PDFDocument,
@@ -151,7 +161,7 @@ async function drawCategoryTable(
     categoryLabels: Record<string, string>,
     diameter?: string
 ) {
-    const metrics: Array<{ key: keyof any; label: string }> = [
+    const metrics: Array<{ key: keyof CategoryTotals; label: string }> = [
         { key: 'previousBalance', label: 'Prev Balance' },
         { key: 'currentApplications', label: 'Current App' },
         { key: 'toBeRefunded', label: 'Refunded' },
@@ -162,7 +172,7 @@ async function drawCategoryTable(
     const headers = ['Category', ...metrics.map(m => m.label)];
 
     const tableData: (string | number)[][] = [];
-    const categoryTotals = { previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0 };
+    const categoryTotals: CategoryTotals = { previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0 };
     let hasData = false;
 
     categoryKeys.forEach(catKey => {

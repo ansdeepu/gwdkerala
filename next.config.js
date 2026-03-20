@@ -62,7 +62,7 @@ const nextConfig = {
   },
   env: {
     // This forces a cache bust on every build.
-    CACHE_BUSTER: Date.now().toString(),
+    CACHE_BUSTER: `build-${Date.now()}`,
   },
 };
 
