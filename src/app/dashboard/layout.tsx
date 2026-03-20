@@ -348,7 +348,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <PageHeaderProvider>
         <DataStoreProvider user={user}>
             <TooltipProvider>
+              <Suspense fallback={
+                  <div className="flex h-screen w-screen items-center justify-center bg-background">
+                      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                  </div>
+              }>
                 <InnerDashboardLayout>{children}</InnerDashboardLayout>
+              </Suspense>
             </TooltipProvider>
         </DataStoreProvider>
       </PageHeaderProvider>
