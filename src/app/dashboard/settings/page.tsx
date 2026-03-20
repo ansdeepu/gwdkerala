@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { getFirestore, collection, addDoc, deleteDoc, onSnapshot, query, orderBy, doc, writeBatch, updateDoc, getDocs, setDoc, where, serverTimestamp } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useDataStore } from '@/hooks/use-data-store';
-import type { OfficeAddress } from '@/lib/schemas';
+import type { OfficeAddress, LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas';
 import { useAuth, type UserProfile } from '@/hooks/useAuth';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,7 +25,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import ExcelJS from 'exceljs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { cn, formatCase } from '@/lib/utils';
-import type { LsgConstituencyMap, StaffMember, Designation } from '@/lib/schemas';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';

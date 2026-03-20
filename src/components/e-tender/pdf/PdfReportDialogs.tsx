@@ -9,7 +9,8 @@ import { useTenderData } from '../TenderDataContext';
 import download from 'downloadjs';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { useDataStore, type OfficeAddress } from '@/hooks/use-data-store';
+import { useDataStore } from '@/hooks/use-data-store';
+import type { OfficeAddress } from '@/lib/schemas';
 import {
   Tooltip,
   TooltipContent,
