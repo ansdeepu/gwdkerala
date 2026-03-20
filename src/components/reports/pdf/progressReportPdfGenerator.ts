@@ -1,8 +1,7 @@
-
 // src/components/reports/pdf/progressReportPdfGenerator.ts
 import { PDFDocument, PDFFont, PageSizes, StandardFonts, rgb, cmyk } from 'pdf-lib';
 import { format } from 'date-fns';
-import type { OfficeAddress } from '@/hooks/use-data-store';
+import type { OfficeAddress } from '@/lib/schemas';
 import { 
     REPORTING_PURPOSE_ORDER, 
     type SitePurpose, 
