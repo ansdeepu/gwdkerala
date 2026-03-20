@@ -2,15 +2,6 @@
 import { z } from 'zod';
 import { isValid } from 'date-fns';
 
-export const optionalDateSchema = z.preprocess((val) => {
-  if (val instanceof Date) return val;
-  if (typeof val === 'string' && val.trim() !== '') {
-    const d = new Date(val);
-    if (isValid(d)) return d;
-  }
-  return null;
-}, z.date().nullable().optional());
-
 export const LoginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
@@ -77,7 +68,7 @@ export * from './schemas/eTenderSchema';
 // The schemas below were originally in this file and are kept for compatibility.
 // In the future, they should be moved to their own specialized files.
 
-import { SiteDetailSchema, constituencyOptions, MediaItemSchema } from './schemas/DataEntrySchema';
+import { SiteDetailSchema, constituencyOptions, MediaItemSchema, optionalDateSchema } from './schemas/DataEntrySchema';
 import type { SiteDetailFormData } from './schemas/DataEntrySchema';
 
 export const ArsEntrySchema = z.object({

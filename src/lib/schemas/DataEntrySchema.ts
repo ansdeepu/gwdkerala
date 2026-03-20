@@ -1,4 +1,3 @@
-
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -9,6 +8,15 @@ export const optionalNumber = (errorMessage: string = "Must be a valid number.")
     if (typeof val === 'string' && isNaN(Number(val))) return undefined;
     return val;
 }, z.number({ coerce: true, invalid_type_error: errorMessage }).min(0, "Cannot be negative.").optional());
+
+export const optionalDateSchema = z.preprocess((val) => {
+  if (val instanceof Date) return val;
+  if (typeof val === 'string' && val.trim() !== '') {
+    const d = new Date(val);
+    if (isValid(d)) return d;
+  }
+  return null;
+}, z.date().nullable().optional());
 
 const nativeDateSchema = z.preprocess(
   (val) => (val === "" ? undefined : val),
