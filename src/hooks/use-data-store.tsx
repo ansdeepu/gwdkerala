@@ -261,7 +261,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             setAllAgencyApplications([]); setAllE_tenders([]); setAllDepartmentVehicles([]);
             setAllHiredVehicles([]); setAllRigCompressors([]); setAllLsgConstituencyMaps([]);
             setAllSanctionedStrength({}); setAllBidders([]);
-            if(user?.email !== SUPER_ADMIN_EMAIL) setAllUsers([]);
+            setAllUsers([]);
             setLoadingStates(prev => ({ ...prev, users: false, files: false, ars: false, staff: false, agencies: false, eTenders: false, departmentVehicles: false, hiredVehicles: false, rigCompressors: false, lsg: false, sanctionedStrength: false, bidders: false }));
             return;
         }
