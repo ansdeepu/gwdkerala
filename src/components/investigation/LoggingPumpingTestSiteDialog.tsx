@@ -1,20 +1,28 @@
 // src/components/investigation/LoggingPumpingTestSiteDialog.tsx
 "use client";
 import React, { useEffect, useMemo, useCallback } from 'react';
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Save, X } from "lucide-react";
-import { SiteDetailSchema, type SiteDetailFormData, type SitePurpose, type StaffMember, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS, LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS } from '@/lib/schemas';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { Save, X } from "lucide-react";
+import {
+  SiteDetailSchema,
+  type SiteDetailFormData,
+  type SitePurpose,
+  type StaffMember,
+  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
+  LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS
+} from '@/lib/schemas';
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { ScrollArea } from "../ui/scroll-area";
 import MediaManager from '@/components/shared/MediaManager';
-import { useFieldArray } from "react-hook-form";
+import { Separator } from '@/components/ui/separator';
 
 const formatDateForInput = (date: any): string => {
     if (!date) return '';

@@ -60,7 +60,10 @@ const nextConfig = {
       },
     ],
   },
+  env: {
+    // This forces a cache bust on every build.
+    CACHE_BUSTER: Date.now().toString(),
+  },
 };
 
-// Force cache invalidation by updating this comment. V80
 module.exports = nextConfig;
