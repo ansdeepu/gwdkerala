@@ -240,7 +240,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     return staffStatusOptions.filter(o => o !== 'Pending Transfer');
   }, []);
 
-  const isTransferring = watchedStatus === 'Transferred' || watchedStatus === 'Pending Transfer' || user?.role === 'superAdmin';
+  const isTransferring = watchedStatus === 'Transferred' || watchedStatus === 'Pending Transfer';
   
   const sortedOfficeOptions = useMemo(() => {
     const uniqueLocations = [...new Map(allOfficeAddresses.map(item => [item.officeLocation?.toLowerCase(), item])).values()];
