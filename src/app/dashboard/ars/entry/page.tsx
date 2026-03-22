@@ -1,3 +1,4 @@
+
 // src/app/dashboard/ars/entry/page.tsx
 "use client";
 
@@ -154,6 +155,13 @@ export default function ArsEntryPage() {
             setValue('constituency', constituencyOptionsForLsg[0] as Constituency);
         }
     }, [constituencyOptionsForLsg, getValues, setValue]);
+    
+    const constituencyPlaceholder = useMemo(() => {
+        if (!watchedLsg) return "Select LSG first";
+        if (constituencyOptionsForLsg.length > 1) return "Select Constituency";
+        if (constituencyOptionsForLsg.length === 0) return "No Constituencies Mapped";
+        return "Select Constituency";
+    }, [watchedLsg, constituencyOptionsForLsg]);
 
     const isConstituencyDisabled = isReadOnly || !watchedLsg || constituencyOptionsForLsg.length <= 1;
 
@@ -184,7 +192,7 @@ export default function ArsEntryPage() {
                 addStaffInfo(selectedTender.supervisor1Name);
                 addStaffInfo(selectedTender.supervisor2Name);
                 addStaffInfo(selectedTender.supervisor3Name);
-                const joinedInfo = staffIdentities.join(', ');
+                const joinedInfo = staffIdentities.join('\n');
                 setValue('supervisorName', joinedInfo);
                 setValue('supervisorUid', null);
             }
@@ -232,7 +240,7 @@ export default function ArsEntryPage() {
                         <FormField name="fileNo" control={control} render={({ field }) => ( <FormItem><FormLabel>File No *</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="nameOfSite" control={control} render={({ field }) => ( <FormItem><FormLabel>Name of Site *</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="localSelfGovt" control={control} render={({ field }) => ( <FormItem><FormLabel>Local Self Govt.</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl><SelectContent className="max-h-80">{sortedLsgMaps.map(m => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
-                        <FormField name="constituency" control={control} render={({ field }) => ( <FormItem><FormLabel>Constituency (LAC)</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isConstituencyDisabled}><FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl><SelectContent className="max-h-80">{constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
+                        <FormField name="constituency" control={control} render={({ field }) => ( <FormItem><FormLabel>Constituency (LAC)</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isConstituencyDisabled}><FormControl><SelectTrigger><SelectValue placeholder={constituencyPlaceholder}/></SelectTrigger></FormControl><SelectContent className="max-h-80">{constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
                         <FormField name="arsBlock" control={control} render={({ field }) => ( <FormItem><FormLabel>Block</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="latitude" control={control} render={({ field }) => ( <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="longitude" control={control} render={({ field }) => ( <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
@@ -253,7 +261,7 @@ export default function ArsEntryPage() {
                     <CardHeader><CardTitle>3. Financials & Implementation</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
                          <FormField name="estimateAmount" control={control} render={({ field }) => ( <FormItem><FormLabel>Estimate Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
-                         <FormField name="arsAsTsDetails" control={control} render={({ field }) => ( <FormItem><FormLabel>AS/TS Details</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
+                         <FormField name="arsAsTsDetails" control={control} render={({ field }) => ( <FormItem className="md:col-span-2"><FormLabel>AS/TS Details</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isReadOnly} className="min-h-[40px]" /></FormControl><FormMessage/></FormItem> )}/>
                          <FormField name="arsSanctionedDate" control={control} render={({ field }) => ( <FormItem><FormLabel>Sanctioned Date</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem> )}/>
                          <FormField name="tsAmount" control={control} render={({ field }) => ( <FormItem><FormLabel>TS Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                          <FormField name="arsTenderNo" control={control} render={({ field }) => ( <FormItem><FormLabel>Tender No.</FormLabel>
@@ -275,13 +283,13 @@ export default function ArsEntryPage() {
                                         </SelectContent>
                                     </Select>
                                 ) : (
-                                    <FormControl><Input {...field} value={field.value ?? ''} readOnly={isTenderSelected || isReadOnly} className={isTenderSelected ? 'bg-muted' : ''} /></FormControl>
+                                    <FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isTenderSelected || isReadOnly} className={cn("min-h-[40px]", isTenderSelected ? 'bg-muted' : '')} /></FormControl>
                                 )}
                                 <FormMessage/>
                             </FormItem>
                          )}/>
                          <FormField name="supervisorUid" control={control} render={({ field }) => ( 
-                            <FormItem>
+                            <FormItem className="md:col-span-2">
                                 <FormLabel>Supervisor</FormLabel>
                                 {isQuotation ? (
                                      <Select onValueChange={(staffId) => handleSupervisorChange(staffId)} value={field.value || ""} disabled={isReadOnly}>
@@ -289,7 +297,7 @@ export default function ArsEntryPage() {
                                         <SelectContent>{quotationSupervisorList.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.designation})</SelectItem>)}</SelectContent>
                                     </Select>
                                 ) : (
-                                    <FormControl><Input {...watch('supervisorName')} readOnly={isTenderSelected || isReadOnly} className={isTenderSelected ? 'bg-muted' : ''}/></FormControl>
+                                    <FormControl><Textarea value={watch('supervisorName') || ''} readOnly={isTenderSelected || isReadOnly} className={cn("min-h-[40px]", isTenderSelected ? 'bg-muted' : '')} /></FormControl>
                                 )}
                                 <FormMessage/>
                             </FormItem>
@@ -333,3 +341,4 @@ export default function ArsEntryPage() {
         </FormProvider>
     );
 }
+
