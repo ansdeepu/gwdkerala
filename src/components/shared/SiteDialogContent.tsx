@@ -94,6 +94,26 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     const watchedTenderNo = watch('tenderNo');
     const watchedContractorName = watch('contractorName');
     const watchedSupervisorName = watch('supervisorName');
+
+    useEffect(() => {
+        if (!watchedLsg || !allLsgConstituencyMaps) {
+            return;
+        }
+        const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
+        const constituencies = map?.constituencies || [];
+        
+        if (constituencies.length === 1) {
+            const autoValue = constituencies[0];
+            if (getValues('constituency') !== autoValue) {
+                setValue('constituency', autoValue as Constituency, { shouldDirty: true, shouldValidate: true });
+            }
+        } else {
+            const current = getValues('constituency');
+            if (current && !constituencies.includes(current)) {
+                setValue('constituency', undefined);
+            }
+        }
+    }, [watchedLsg, allLsgConstituencyMaps, setValue, getValues]);
     
     const isCompletionDateRequired = watchedWorkStatus === 'Work Completed' || watchedWorkStatus === 'Work Failed';
 
@@ -129,21 +149,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     const handleLsgChange = useCallback((lsgName: string, fieldOnChange: (v: string) => void) => {
         const normalized = lsgName === '_clear_' ? '' : lsgName;
         fieldOnChange(normalized);
-        
-        if (!normalized || !allLsgConstituencyMaps) {
-            setValue('constituency', undefined, { shouldDirty: true, shouldValidate: true });
-            return;
-        }
-
-        const map = allLsgConstituencyMaps.find(m => m.name === normalized);
-        const constituencies = map?.constituencies || [];
-        
-        setValue('constituency', undefined, { shouldDirty: true, shouldValidate: true });
-        if (constituencies.length === 1) {
-            setValue('constituency', constituencies[0] as Constituency, { shouldDirty: true, shouldValidate: true });
-        }
-        trigger('constituency');
-    }, [setValue, allLsgConstituencyMaps, trigger]);
+    }, []);
 
     const isConstituencyDisabled = useMemo(() => {
         if (isFieldReadOnly(false)) return true;
