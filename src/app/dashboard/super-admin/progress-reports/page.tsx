@@ -1,4 +1,3 @@
-
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -97,6 +96,107 @@ interface DetailDialogColumn {
   isNumeric?: boolean;
 }
 
+const ReportDetailsTable = ({
+  data,
+  categoryKeys,
+  categoryLabels,
+  onCountClick,
+  titlePrefix,
+}: {
+  data: Record<string, ProgressStats>;
+  categoryKeys: readonly string[];
+  categoryLabels: Record<string, string>;
+  onCountClick: (data: SiteDetailWithFileContext[], title: string) => void;
+  titlePrefix: string;
+}) => {
+    const metrics: Array<{ key: keyof ProgressStats; label: string }> = [
+        { key: 'previousBalance', label: 'Previous Balance' },
+        { key: 'currentApplications', label: 'Current Application' },
+        { key: 'toBeRefunded', label: 'To be Refunded' },
+        { key: 'totalApplications', label: 'Total Application' },
+        { key: 'completed', label: 'Completed' },
+        { key: 'balance', label: 'Balance' },
+    ];
+    
+    const { categoryTotals, hasData } = useMemo(() => {
+        const totals: ProgressStats = { previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], balanceData: [] };
+        let dataFound = false;
+        
+        categoryKeys.forEach(catKey => {
+            const stats = data[catKey];
+            if (stats) {
+                if (Object.values(stats).some(val => (typeof val === 'number' && val > 0) || (Array.isArray(val) && val.length > 0))) {
+                    dataFound = true;
+                }
+                metrics.forEach(metric => {
+                    const count = (stats[metric.key] as number) || 0;
+                    const dataKey = `${metric.key}Data` as keyof ProgressStats;
+                    const metricData = stats[dataKey] as SiteDetailWithFileContext[] | undefined;
+                    
+                    (totals[metric.key] as number) += count;
+                     if (Array.isArray(totals[dataKey]) && Array.isArray(metricData)) {
+                        (totals[dataKey] as any[]).push(...metricData);
+                     }
+                });
+            }
+        });
+        return { categoryTotals: totals, hasData: dataFound };
+    }, [data, categoryKeys, metrics]);
+    
+    if (!hasData) {
+        return <p className="text-center text-sm text-muted-foreground p-4">No data available for this category in the selected period.</p>;
+    }
+
+    return (
+        <div className="relative overflow-x-auto">
+            <Table className="min-w-full border-collapse">
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="border p-2 align-middle text-left min-w-[200px] font-semibold">Category</TableHead>
+                        {metrics.map(metric => (
+                            <TableHead key={metric.key} className="border p-2 text-center font-semibold min-w-[100px] whitespace-normal break-words">{metric.label}</TableHead>
+                        ))}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {categoryKeys.map(catKey => {
+                        const stats = data[catKey];
+                        if (!stats || !Object.values(stats).some(val => (typeof val === 'number' && val > 0))) return null;
+                        return (
+                            <TableRow key={catKey}>
+                                <TableCell className="border p-2 text-left font-medium">{categoryLabels[catKey] || catKey}</TableCell>
+                                {metrics.map(metric => {
+                                    const count = stats[metric.key] as number ?? 0;
+                                    const metricData = stats[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] ?? [];
+                                    return (
+                                        <TableCell key={`${catKey}-${metric.key}`} className={cn("border p-2 text-center", (metric.key === 'balance' || metric.key === 'totalApplications') && "font-bold")}>
+                                            <Button variant="link" className="p-0 h-auto font-semibold" disabled={count === 0} onClick={() => onCountClick(metricData, `${titlePrefix} - ${categoryLabels[catKey] || catKey} - ${metric.label}`)}>
+                                                {count}
+                                            </Button>
+                                        </TableCell>
+                                    )
+                                })}
+                            </TableRow>
+                        )
+                    })}
+                </TableBody>
+                <TableFooter>
+                    <TableRow className="bg-muted/50">
+                        <TableCell className="border p-2 text-left font-bold">Total</TableCell>
+                        {metrics.map(metric => (
+                            <TableCell key={`total-${metric.key}`} className={cn("border p-2 text-center font-bold")}>
+                                <Button variant="link" className="p-0 h-auto font-bold" disabled={(categoryTotals[metric.key] as number) === 0} onClick={() => onCountClick(categoryTotals[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[], `Total for ${titlePrefix} - ${metric.label}`)}>
+                                    {categoryTotals[metric.key] as number}
+                                </Button>
+                            </TableCell>
+                        ))}
+                    </TableRow>
+                </TableFooter>
+            </Table>
+        </div>
+    );
+};
+
 const ReportCategoryTable = ({
   accordionId,
   title,
@@ -105,6 +205,7 @@ const ReportCategoryTable = ({
   categoryLabels,
   onCountClick,
   diameter,
+  alwaysVisible = false,
 }: {
   accordionId: string;
   title: string;
@@ -113,105 +214,39 @@ const ReportCategoryTable = ({
   categoryLabels: Record<string, string>;
   onCountClick: (data: SiteDetailWithFileContext[], title: string) => void;
   diameter?: string; 
+  alwaysVisible?: boolean;
 }) => {
-  const metrics: Array<{ key: keyof ProgressStats; label: string }> = [
-    { key: 'previousBalance', label: 'Previous Balance' },
-    { key: 'currentApplications', label: 'Current Application' },
-    { key: 'toBeRefunded', label: 'To be Refunded' },
-    { key: 'totalApplications', label: 'Total Application' },
-    { key: 'completed', label: 'Completed' },
-    { key: 'balance', label: 'Balance' },
-  ];
-
-  const { categoryTotals, hasData } = useMemo(() => {
-    const totals: ProgressStats = { previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], balanceData: [] };
-    let dataFound = false;
-
-    categoryKeys.forEach(catKey => {
-        const statsSource = diameter ? data[catKey]?.[diameter] : data[catKey];
-        const stats = statsSource as ProgressStats | undefined;
-        if (stats) {
-            if (Object.values(stats).some(val => (typeof val === 'number' && val > 0) || (Array.isArray(val) && val.length > 0))) {
-                dataFound = true;
-            }
-            metrics.forEach(metric => {
-                const count = (stats[metric.key] as number) || 0;
-                const dataKey = `${metric.key}Data` as keyof ProgressStats;
-                const metricData = stats[dataKey] as SiteDetailWithFileContext[] | undefined;
-                
-                (totals[metric.key] as number) += count;
-                 if (Array.isArray(totals[dataKey]) && Array.isArray(metricData)) {
-                    (totals[dataKey] as any[]).push(...metricData);
-                 }
-            });
-        }
-    });
-    return { categoryTotals: totals, hasData: dataFound };
-  }, [data, categoryKeys, diameter, metrics]);
-
-  if (!hasData) return null;
-
-  return (
-    <AccordionItem value={accordionId} className="border-b-0">
-      <Card className="shadow-lg">
-        <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
-          <CardTitle>{title}</CardTitle>
-        </AccordionTrigger>
-        <AccordionContent>
-          <CardContent className="pt-6">
-            <div className="relative overflow-x-auto">
-              <Table className="min-w-full border-collapse">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="border p-2 align-middle text-left min-w-[200px] font-semibold">Category</TableHead>
-                    {metrics.map(metric => (
-                      <TableHead key={metric.key} className="border p-2 text-center font-semibold min-w-[100px] whitespace-normal break-words">{metric.label}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {categoryKeys.map(catKey => {
-                    const stats = (diameter ? data[catKey]?.[diameter] : data[catKey]) as ProgressStats | undefined;
-
-                    if (!stats || !Object.values(stats).some(val => (typeof val === 'number' && val > 0))) return null;
-                    
-                    return (
-                    <TableRow key={catKey}>
-                      <TableCell className="border p-2 text-left font-medium">{categoryLabels[catKey] || catKey}</TableCell>
-                      {metrics.map(metric => {
-                        const count = stats[metric.key] as number ?? 0;
-                        const metricData = stats[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] ?? [];
-                        return (
-                          <TableCell key={`${catKey}-${metric.key}`} className={cn("border p-2 text-center", (metric.key === 'balance' || metric.key === 'totalApplications') && "font-bold")}>
-                            <Button variant="link" className="p-0 h-auto font-semibold" disabled={count === 0} onClick={() => onCountClick(metricData, `${title} - ${categoryLabels[catKey] || catKey} - ${metric.label}`)}>
-                              {count}
-                            </Button>
-                          </TableCell>
-                        )
-                      })}
-                    </TableRow>
-                  )})}
-                </TableBody>
-                <TableFooter>
-                  <TableRow className="bg-muted/50">
-                    <TableCell className="border p-2 text-left font-bold">Total</TableCell>
-                    {metrics.map(metric => (
-                      <TableCell key={`total-${metric.key}`} className={cn("border p-2 text-center font-bold")}>
-                        <Button variant="link" className="p-0 h-auto font-bold" disabled={(categoryTotals[metric.key] as number) === 0} onClick={() => onCountClick(categoryTotals[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[], `Total for ${title} - ${metric.label}`)}>
-                          {categoryTotals[metric.key] as number}
-                        </Button>
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableFooter>
-              </Table>
-            </div>
-          </CardContent>
-        </AccordionContent>
-      </Card>
-    </AccordionItem>
-  );
-};
+    const hasData = useMemo(() => {
+        if (!data) return false;
+        return categoryKeys.some(catKey => {
+            const stats = diameter ? data[catKey]?.[diameter] : data[catKey];
+            return stats && Object.values(stats).some(val => (typeof val === 'number' && val > 0));
+        });
+    }, [data, categoryKeys, diameter]);
+  
+    if (!hasData && !alwaysVisible) return null;
+  
+    return (
+      <AccordionItem value={accordionId} className="border-b-0">
+        <Card className="shadow-lg">
+          <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
+            <CardTitle>{title}</CardTitle>
+          </AccordionTrigger>
+          <AccordionContent>
+            <CardContent className="pt-6">
+                <ReportDetailsTable
+                    data={diameter ? Object.fromEntries(Object.entries(data).map(([key, val]) => [key, val[diameter]])) : data}
+                    categoryKeys={categoryKeys}
+                    categoryLabels={categoryLabels}
+                    onCountClick={onCountClick}
+                    titlePrefix={title}
+                />
+            </CardContent>
+          </AccordionContent>
+        </Card>
+      </AccordionItem>
+    );
+  };
 
 
 export default function ProgressReportPage() {
@@ -224,25 +259,14 @@ export default function ProgressReportPage() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const { toast } = useToast();
 
-  const [reportData, setReportData] = useState<{
-    bwcData: ApplicationTypeProgress;
-    twcData: ApplicationTypeProgress;
-    progressSummaryData: OtherServiceProgress;
-    gwInvestigationData: Record<string, ProgressStats>;
-    vesData: Record<string, ProgressStats>;
-    geologicalLoggingData: ApplicationTypeProgress;
-    geophysicalLoggingData: ApplicationTypeProgress;
-    pumpingTestData: ApplicationTypeProgress;
-    privateFinancialSummaryData: FinancialSummaryReport;
-    governmentFinancialSummaryData: FinancialSummaryReport;
-    totalRevenueHeadCredit: number;
-    revenueHeadCreditData: any[];
-  } | null>(null);
+  const [reportData, setReportData] = useState<any | null>(null);
 
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [detailDialogTitle, setDetailDialogTitle] = useState("");
   const [detailDialogData, setDetailDialogData] = useState<Array<SiteDetailWithFileContext | DataEntryFormData | Record<string, any>>>([]);
   const [detailDialogColumns, setDetailDialogColumns] = useState<DetailDialogColumn[]>([]);
+  
+  const uniqueApplicationTypes = useMemo(() => [...new Set(applicationTypeOptions.filter(type => !['GW_Investigation', 'Logging_Pumping_Test'].some(prefix => type.startsWith(prefix))))], []);
 
   useEffect(() => {
     setHeader('Progress Reports', 'Generate monthly or periodic progress reports for various schemes and services.');
@@ -293,24 +317,41 @@ export default function ProgressReportPage() {
     );
 
     const initialStats = (): ProgressStats => ({ previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], balanceData: [] });
+    
+    const createNestedStructure = (outerKeys: readonly string[], innerKeys: readonly string[]): Record<string, Record<string, ProgressStats>> => {
+        const structure: Record<string, Record<string, ProgressStats>> = {};
+        outerKeys.forEach(outerKey => {
+            structure[outerKey] = {};
+            innerKeys.forEach(innerKey => {
+                structure[outerKey][innerKey] = initialStats();
+            });
+        });
+        return structure;
+    };
+    const createSingleStructure = (keys: readonly string[]): Record<string, ProgressStats> => {
+        const structure: Record<string, ProgressStats> = {};
+        keys.forEach(key => {
+            structure[key] = initialStats();
+        });
+        return structure;
+    };
 
-    // Detailed Data Structures
-    const bwcData: ApplicationTypeProgress = {};
-    const twcData: ApplicationTypeProgress = {};
-    applicationTypeOptions.forEach(appType => {
-      bwcData[appType] = {}; BWC_DIAMETERS.forEach(d => { bwcData[appType][d] = initialStats(); });
-      twcData[appType] = {}; TWC_DIAMETERS.forEach(d => { twcData[appType][d] = initialStats(); });
-    });
-    
-    const gwInvestigationData: Record<string, ProgressStats> = {}; typeOfWellOptions.forEach(w => gwInvestigationData[w] = initialStats());
-    const vesData: Record<string, ProgressStats> = {}; typeOfWellOptions.forEach(w => vesData[w] = initialStats());
-    const geologicalLoggingData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => geologicalLoggingData[a] = initialStats());
-    const geophysicalLoggingData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => geophysicalLoggingData[a] = initialStats());
-    const pumpingTestData: ApplicationTypeProgress = {}; applicationTypeOptions.forEach(a => pumpingTestData[a] = initialStats());
-    
-    // Main Summary Data Structure
     const progressSummaryData: OtherServiceProgress = {} as OtherServiceProgress;
     REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
+
+    const bwcData = createNestedStructure(uniqueApplicationTypes, BWC_DIAMETERS);
+    const twcData = createNestedStructure(uniqueApplicationTypes, TWC_DIAMETERS);
+    const gwInvestigationData = createNestedStructure(typeOfWellOptions, uniqueApplicationTypes);
+    const vesData = createSingleStructure(uniqueApplicationTypes);
+    const geologicalLoggingData = createSingleStructure(uniqueApplicationTypes);
+    const geophysicalLoggingData = createSingleStructure(uniqueApplicationTypes);
+    const pumpingTestData = createSingleStructure(uniqueApplicationTypes);
+    
+    const otherSchemesData: Record<string, Record<string, ProgressStats>> = {};
+    const otherSchemesPurposes = ["FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"];
+    otherSchemesPurposes.forEach(p => {
+        otherSchemesData[p] = createSingleStructure(uniqueApplicationTypes);
+    });
     
     includedSites.forEach(siteWithFileContext => {
         const { fileRemittanceDate, ...site } = siteWithFileContext;
@@ -334,64 +375,68 @@ export default function ProgressReportPage() {
         };
         
         let summaryPurposeKey: SitePurpose | null = null;
-        if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
-            summaryPurposeKey = 'Pumping test';
-        } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) {
-            summaryPurposeKey = purpose;
-        }
+        if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) summaryPurposeKey = 'Pumping test';
+        else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) summaryPurposeKey = purpose;
 
-        if (summaryPurposeKey) {
-            updateStats(progressSummaryData[summaryPurposeKey]);
-        }
+        if (summaryPurposeKey) updateStats(progressSummaryData[summaryPurposeKey]);
+        if (purpose === 'GW Investigation' && site.vesRequired === 'Yes' && progressSummaryData['VES']) updateStats(progressSummaryData['VES']);
         
-        if (purpose === 'GW Investigation' && site.vesRequired === 'Yes' && progressSummaryData['VES']) {
-            updateStats(progressSummaryData['VES']);
-        }
-        
-        if (purpose === 'BWC' && diameter && BWC_DIAMETERS.includes(diameter) && applicationType) {
-          if (bwcData[applicationType]?.[diameter]) { updateStats(bwcData[applicationType][diameter]); }
-        } else if (purpose === 'TWC' && diameter && TWC_DIAMETERS.includes(diameter) && applicationType) {
-          if (twcData[applicationType]?.[diameter]) { updateStats(twcData[applicationType][diameter]); }
-        } else if ((INVESTIGATION_WELL_TYPE_PURPOSES as readonly string[]).includes(purpose)) {
-            const wellType = (site as any).typeOfWell;
-            if (wellType && gwInvestigationData[wellType]) { 
-                const targetData = purpose === "GW Investigation" ? gwInvestigationData : vesData;
-                updateStats(targetData[wellType]);
+        if (applicationType) {
+            if (purpose === 'BWC' && diameter && bwcData[applicationType]?.[diameter]) updateStats(bwcData[applicationType][diameter]);
+            else if (purpose === 'TWC' && diameter && twcData[applicationType]?.[diameter]) updateStats(twcData[applicationType][diameter]);
+            else if (purpose === 'GW Investigation') {
+                const wellType = (site as any).typeOfWell as TypeOfWell;
+                if (wellType && applicationType && gwInvestigationData[wellType]?.[applicationType]) {
+                    updateStats(gwInvestigationData[wellType][applicationType]);
+                }
+            } else if (purpose === 'VES') {
+                if(applicationType && vesData[applicationType]) {
+                    updateStats(vesData[applicationType]);
+                }
+            } else if (purpose === "Geological logging") {
+                if(geologicalLoggingData[applicationType]) updateStats(geologicalLoggingData[applicationType]);
+            } else if (purpose === "Geophysical Logging") {
+                if(geophysicalLoggingData[applicationType]) updateStats(geophysicalLoggingData[applicationType]);
+            } else if ((PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose) && pumpingTestData[applicationType]) {
+                updateStats(pumpingTestData[applicationType]);
+            } else if (otherSchemesPurposes.includes(purpose) && otherSchemesData[purpose]?.[applicationType]) {
+                updateStats(otherSchemesData[purpose][applicationType]);
             }
-        } else if ((INVESTIGATION_APP_TYPE_PURPOSES as readonly string[]).includes(purpose)) {
-            if (applicationType) {
-                const targetData = purpose === "Geological logging" ? geologicalLoggingData : geophysicalLoggingData;
-                updateStats(targetData[applicationType]);
-            }
-        } else if ((PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
-            if (applicationType) { updateStats(pumpingTestData[applicationType]); }
         }
     });
 
     const calculateBalanceAndTotal = (stats: ProgressStats) => {
-        stats.totalApplications = stats.previousBalance + stats.currentApplications - stats.toBeRefunded;
-        stats.balance = stats.totalApplications - stats.completed;
+        if(!stats) return;
+        stats.totalApplications = (stats.previousBalance || 0) + (stats.currentApplications || 0) - (stats.toBeRefunded || 0);
+        stats.balance = (stats.totalApplications || 0) - (stats.completed || 0);
+        
         const totalApplicationSites = new Map<string, SiteDetailWithFileContext>();
-        [...stats.previousBalanceData, ...stats.currentApplicationsData].forEach(site => { const key = `${site.fileNo}-${site.nameOfSite}`; if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); });
-        const toBeRefundedKeys = new Set(stats.toBeRefundedData.map(site => `${site.fileNo}-${site.nameOfSite}`));
+        [...(stats.previousBalanceData || []), ...(stats.currentApplicationsData || [])].forEach(site => { 
+            const key = `${site.fileNo}-${site.nameOfSite}`; 
+            if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
+        });
+        
+        const toBeRefundedKeys = new Set((stats.toBeRefundedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
         toBeRefundedKeys.forEach(key => totalApplicationSites.delete(key));
         stats.totalApplicationsData = Array.from(totalApplicationSites.values());
-        const completedKeys = new Set(stats.completedData.map(site => `${site.fileNo}-${site.nameOfSite}`));
-        stats.balanceData = stats.totalApplicationsData.filter(site => !completedKeys.has(`${site.fileNo}-${site.nameOfSite}`));
+        
+        const completedKeys = new Set((stats.completedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
+        stats.balanceData = (stats.totalApplicationsData || []).filter(site => !completedKeys.has(`${site.fileNo}-${site.nameOfSite}`));
     };
     
     Object.values(progressSummaryData).forEach(calculateBalanceAndTotal);
+    
+    Object.values(gwInvestigationData).forEach(wellTypeData => Object.values(wellTypeData).forEach(calculateBalanceAndTotal));
+    Object.values(vesData).forEach(calculateBalanceAndTotal);
+    Object.values(geologicalLoggingData).forEach(calculateBalanceAndTotal);
+    Object.values(geophysicalLoggingData).forEach(calculateBalanceAndTotal);
+    Object.values(pumpingTestData).forEach(calculateBalanceAndTotal);
+
     applicationTypeOptions.forEach(appType => {
       BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
       TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
-      if(geologicalLoggingData[appType]) calculateBalanceAndTotal(geologicalLoggingData[appType]);
-      if(geophysicalLoggingData[appType]) calculateBalanceAndTotal(geophysicalLoggingData[appType]);
-      if(pumpingTestData[appType]) calculateBalanceAndTotal(pumpingTestData[appType]);
     });
-    typeOfWellOptions.forEach(w => {
-      if(gwInvestigationData[w]) calculateBalanceAndTotal(gwInvestigationData[w]);
-      if(vesData[w]) calculateBalanceAndTotal(vesData[w]);
-    });
+    Object.values(otherSchemesData).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal));
 
     // Financial Summary Calculation
     const privateFinancialSummaryData: FinancialSummaryReport = {};
@@ -404,47 +449,34 @@ export default function ProgressReportPage() {
     const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
-            return d && isWithinInterval(d, { start: sDate, end: eDate });
+            return d && isDateFilterActive && isWithinInterval(d, { start: sDate, end: eDate });
         };
 
         entries.forEach(entry => {
             const purpose = entry.siteDetails?.[0]?.purpose || 'Others';
-            
             const hasRemittanceInPeriod = entry.remittanceDetails?.some(rd => checkDateInRange(rd.dateOfRemittance));
 
             if (hasRemittanceInPeriod) {
-                if (!summaryData[purpose]) {
-                    summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
-                }
+                if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                 summaryData[purpose].totalApplications++;
                 summaryData[purpose].applicationData.push(entry);
-                entry.remittanceDetails?.forEach(rd => {
-                    if (checkDateInRange(rd.dateOfRemittance)) {
-                        summaryData[purpose].totalRemittance += (Number(rd.amountRemitted) || 0);
-                    }
-                });
+                entry.remittanceDetails?.forEach(rd => { if (checkDateInRange(rd.dateOfRemittance)) summaryData[purpose].totalRemittance += (Number(rd.amountRemitted) || 0) });
             }
 
             entry.paymentDetails?.forEach(pd => {
                 if (checkDateInRange(pd.dateOfPayment)) {
-                    if (!summaryData[purpose]) {
-                        summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
-                    }
-                    const paymentAmount = calculatePaymentEntryTotalGlobal(pd);
-                    summaryData[purpose].totalPayment += paymentAmount;
+                    if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
+                    summaryData[purpose].totalPayment += calculatePaymentEntryTotalGlobal(pd);
                     summaryData[purpose].paymentData.push({ ...pd, fileNo: entry.fileNo, applicantName: entry.applicantName, siteDetails: entry.siteDetails || [] });
                 }
             });
 
             entry.siteDetails?.forEach(site => {
                 const completionDate = safeParseDate(site.dateOfCompletion);
-                if (completionDate && isValid(completionDate) && isWithinInterval(completionDate, { start: sDate, end: eDate })) {
-                    if (!summaryData[purpose]) {
-                        summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
-                    }
+                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate, end: eDate })) {
+                    if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
-                    const siteWithContext = { ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! };
-                    summaryData[purpose].completedData.push(siteWithContext);
+                    summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! });
                 }
             });
         });
@@ -458,7 +490,7 @@ export default function ProgressReportPage() {
         if (!entry.id) return;
         entry.paymentDetails?.forEach(pd => {
             const paymentDate = safeParseDate(pd.dateOfPayment);
-            if (paymentDate && isValid(paymentDate) && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
+            if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
                 const amount = Number(pd.revenueHead) || 0;
                 if (amount > 0) {
                     const existing = uniqueRevenueCredits.get(entry.id!);
@@ -476,10 +508,8 @@ export default function ProgressReportPage() {
 
     setReportData({ 
         bwcData, twcData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
-        privateFinancialSummaryData, 
-        governmentFinancialSummaryData,
-        totalRevenueHeadCredit,
-        revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
+        otherSchemesData, privateFinancialSummaryData, governmentFinancialSummaryData,
+        totalRevenueHeadCredit, revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
     });
     setIsFiltering(false);
   }, [fileEntries, startDate, endDate, toast]);
@@ -594,8 +624,6 @@ export default function ProgressReportPage() {
   };
   
   const exportDialogDataToExcel = async () => { /* Export dialog data logic here */ };
-
-  const uniqueApplicationTypes = useMemo(() => [...new Set(applicationTypeOptions.filter(type => !['GW_Investigation', 'Logging_Pumping_Test'].some(prefix => type.startsWith(prefix))))], []);
 
   const handleFinancialTotalClick = (type: 'applications' | 'remittance' | 'completed' | 'payment', financialData: FinancialSummaryReport, category: string) => {
       const allData = Object.values(financialData);
@@ -732,7 +760,10 @@ export default function ProgressReportPage() {
                             <TableBody>
                                 {REPORTING_PURPOSE_ORDER.map(purpose => {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
-                                if (!stats || (stats.totalApplications === 0 && stats.previousBalance === 0)) return null;
+                                if (!stats) return null;
+                                const isVisible = (stats.totalApplications > 0 || stats.previousBalance > 0 || (["GW Investigation", "VES", "Pumping test", "Geological logging", "Geophysical Logging", "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"] as const).includes(purpose));
+                                if (!isVisible) return null;
+
                                 return (
                                     <TableRow key={purpose}>
                                         <TableCell className="border p-2 font-medium">
@@ -754,12 +785,41 @@ export default function ProgressReportPage() {
                     </CardContent>
                 </Card>
 
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                  <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation', 'ves', 'pumping-test', 'geo-logging', 'geophys-logging']}>
+                   <AccordionItem value="gw-investigation" className="border-b-0">
+                      <Card className="shadow-lg">
+                          <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
+                              <CardTitle>GW Investigation</CardTitle>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                              <CardContent className="pt-6 space-y-4">
+                                  {typeOfWellOptions.map(wellType => {
+                                      const wellTypeData = reportData.gwInvestigationData[wellType];
+                                      return (
+                                          <Card key={wellType}>
+                                              <CardHeader className="p-4">
+                                                  <CardTitle className="text-base">{wellType}</CardTitle>
+                                              </CardHeader>
+                                              <CardContent className="p-4 pt-0">
+                                                  <ReportDetailsTable
+                                                      data={wellTypeData}
+                                                      categoryKeys={uniqueApplicationTypes}
+                                                      categoryLabels={applicationTypeDisplayMap}
+                                                      onCountClick={handleCountClick}
+                                                      titlePrefix={`GW Investigation - ${wellType}`}
+                                                  />
+                                              </CardContent>
+                                          </Card>
+                                      );
+                                  })}
+                              </CardContent>
+                          </AccordionContent>
+                      </Card>
+                  </AccordionItem>
+                  <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                 </Accordion>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
