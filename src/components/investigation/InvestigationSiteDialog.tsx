@@ -160,12 +160,11 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                 </CardContent>
                             </Card>
 
-                            {watchedFeasibility === 'Yes' && (
+                            {watchedFeasibility === 'Yes' && !!watchedTypeOfWell && (
                                 <Card className="border-green-200 bg-green-50/10">
                                     <CardHeader><CardTitle className="text-lg text-primary">Recommended Measurements</CardTitle></CardHeader>
                                     <CardContent className="space-y-4">
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            {/* Logic for variation of fields based on Type of Well */}
                                             {watchedTypeOfWell === 'Open Well' && (
                                                 <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => <FormItem><FormLabel>Diameter (mm)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} placeholder="Enter diameter" /></FormControl><FormMessage /></FormItem>} />
                                             )}
