@@ -86,7 +86,19 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
         }
     }, [watchedLsg, allLsgConstituencyMaps, setValue, getValues]);
 
-    const investigatorList = useMemo(() => allStaffMembers.filter(s => s.designation === 'Investigator' || s.designation === 'Geological Assistant' || s.designation === 'Geophysical Assistant' || s.designation === 'Hydrogeologist' || s.designation === 'Geophysicist'), [allStaffMembers]);
+    const hydroInvestigatorList = useMemo(() => 
+        allStaffMembers.filter(s => 
+            s.status === 'Active' && 
+            ['Hydrogeologist', 'Junior Hydrogeologist', 'Geological Assistant'].includes(s.designation as any)
+        ).sort((a, b) => a.name.localeCompare(b.name)), 
+    [allStaffMembers]);
+
+    const geoInvestigatorList = useMemo(() => 
+        allStaffMembers.filter(s => 
+            s.status === 'Active' && 
+            ['Geophysicist', 'Junior Geophysicist', 'Geophysical Assistant'].includes(s.designation as any)
+        ).sort((a, b) => a.name.localeCompare(b.name)), 
+    [allStaffMembers]);
 
     const handleFormSubmit = (data: SiteDetailFormData) => onConfirm(data);
     
@@ -134,7 +146,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                 <CardContent className="space-y-4">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <FormField name="dateOfInvestigation" control={control} render={({ field }) => <FormItem><FormLabel>Date of Investigation</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="nameOfInvestigator" control={control} render={({ field }) => <FormItem><FormLabel>Investigator (Hydrogeological)</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select Investigator" /></SelectTrigger></FormControl><SelectContent>{investigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                        <FormField name="nameOfInvestigator" control={control} render={({ field }) => <FormItem><FormLabel>Investigator (Hydrogeological)</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select Investigator" /></SelectTrigger></FormControl><SelectContent>{hydroInvestigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                         <FormField name="typeOfWell" control={control} render={({ field }) => <FormItem><FormLabel>Type of Well <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select Well Type" /></SelectTrigger></FormControl><SelectContent>{typeOfWellOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                     </div>
                                     <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
@@ -148,7 +160,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                             <h4 className="text-sm font-bold text-blue-800">Geophysical (VES) Details</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <FormField name="vesDate" control={control} render={({ field }) => <FormItem><FormLabel>Date of VES Conducted</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                                <FormField name="vesInvestigator" control={control} render={({ field }) => <FormItem><FormLabel>Name of Investigator (Geophysical)</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select Investigator" /></SelectTrigger></FormControl><SelectContent>{investigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                                <FormField name="vesInvestigator" control={control} render={({ field }) => <FormItem><FormLabel>Name of Investigator (Geophysical)</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select Investigator" /></SelectTrigger></FormControl><SelectContent>{geoInvestigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                             </div>
                                             <FormField name="geophysicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
                                         </div>
