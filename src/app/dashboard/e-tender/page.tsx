@@ -59,16 +59,16 @@ const StatCard = ({ title, count, onClick, colorClass, icon: Icon }: { title: st
         onClick={onClick}
         disabled={count === 0}
         className={cn(
-            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex flex-col justify-between shadow-sm min-h-[5rem]",
+            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between shadow-sm",
             colorClass,
             "hover:bg-opacity-20"
         )}
     >
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
           <p className="text-xs font-semibold text-muted-foreground whitespace-normal leading-tight">{title}</p>
         </div>
-        <p className="text-3xl font-bold self-end">{count}</p>
+        <p className="text-2xl font-bold">{count}</p>
     </button>
 );
 
