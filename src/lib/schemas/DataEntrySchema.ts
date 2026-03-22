@@ -1,3 +1,4 @@
+
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -137,11 +138,11 @@ export const PaymentDetailSchema = z.object({
 });
 export type PaymentDetailFormData = z.infer<typeof PaymentDetailSchema>;
 
-export const siteWorkStatusOptions = ["Under Process", "Addl. AS Awaited", "To be Refunded", "Awaiting Dept. Rig", "To be Tendered", "TS Pending", "Tendered", "Selection Notice Issued", "Work Order Issued", "Work Initiated", "Work in Progress", "Work Failed", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending"] as const;
+export const siteWorkStatusOptions = ["Under Process", "Addl. AS Awaited", "To be Refunded", "Awaiting Dept. Rig", "To be Tendered", "TS Pending", "Tendered", "Selection Notice Issued", "Work Order Issued", "Work Initiated", "Work in Progress", "Work Failed", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "Completed", "VES Pending"] as const;
 export type SiteWorkStatus = typeof siteWorkStatusOptions[number];
 
 export const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Work Completed"] as const;
-export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Under Process", "Work Completed"] as const;
+export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
 
 export const fileStatusOptions = ["File Under Process", "Rig Accessibility Inspection", "Technical Sanction", "Tender Process", "Work Initiated", "Fully Completed", "Partially Completed", "Completed Except Disputed", "Partially Completed Except Disputed", "Fully Disputed", "To be Refunded", "Bill Preparation", "Payments", "Utilization Certificate", "File Closed"] as const;
 export type FileStatus = typeof fileStatusOptions[number];
@@ -214,6 +215,7 @@ export const SiteDetailSchema = z.object({
   drillingRemarks: z.string().optional().nullable().default(""),
   developingRemarks: z.string().optional().nullable().default(""),
   schemeRemarks: z.string().optional().nullable().default(""),
+  descriptionOfWork: z.string().optional().nullable().default(""),
   pumpDetails: z.string().optional().nullable(),
   pumpingLineLength: z.string().optional().nullable(),
   deliveryLineLength: z.string().optional().nullable(),
@@ -266,10 +268,11 @@ export const SiteDetailSchema = z.object({
   workImages: z.array(MediaItemSchema).optional().default([]),
   workVideos: z.array(MediaItemSchema).optional().default([]),
 }).superRefine((data, ctx) => {
-    if (data.workStatus === 'Work Completed' && !data.dateOfCompletion) {
+    const isCompleted = data.workStatus === 'Work Completed' || data.workStatus === 'Completed' || data.arsStatus === 'Work Completed' || data.arsStatus === 'Work Failed';
+    if (isCompleted && !data.dateOfCompletion) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Completion Date is required when status is 'Work Completed'",
+            message: "Completion Date is required for completed status.",
             path: ["dateOfCompletion"],
         });
     }

@@ -1,3 +1,4 @@
+
 // src/components/investigation/LoggingPumpingTestSiteDialog.tsx
 "use client";
 import React, { useEffect, useMemo, useCallback } from 'react';
@@ -5,7 +6,7 @@ import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,8 +17,10 @@ import {
   type SiteDetailFormData,
   type SitePurpose,
   type StaffMember,
+  type Constituency,
   LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
-  LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS
+  LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS,
+  typeOfWellOptions
 } from '@/lib/schemas';
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
@@ -47,23 +50,58 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
         defaultValues: {
             ...initialData,
             dateOfInvestigation: formatDateForInput(initialData?.dateOfInvestigation),
+            dateOfCompletion: formatDateForInput(initialData?.dateOfCompletion),
             workImages: initialData?.workImages || [],
             workVideos: initialData?.workVideos || [],
         },
     });
 
-    const { control, handleSubmit, watch } = form;
+    const { control, handleSubmit, watch, setValue, getValues } = form;
     const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
     const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
-    const watchedPurpose = watch('purpose');
+    
+    const watchedLsg = watch("localSelfGovt");
+    const watchedWorkStatus = watch('workStatus');
 
-    const investigatorList = useMemo(() => allStaffMembers.filter(s => s.designation === 'Investigator' || s.designation === 'Geological Assistant' || s.designation === 'Geophysical Assistant'), [allStaffMembers]);
+    // Auto-populate Constituency logic
+    useEffect(() => {
+        if (!watchedLsg || !allLsgConstituencyMaps) return;
+        const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
+        const constituencies = map?.constituencies || [];
+        
+        if (constituencies.length === 1) {
+            const autoValue = constituencies[0];
+            if (getValues('constituency') !== autoValue) {
+                setValue('constituency', autoValue as Constituency, { shouldDirty: true, shouldValidate: true });
+            }
+        }
+    }, [watchedLsg, allLsgConstituencyMaps, setValue, getValues]);
+
+    const investigatorList = useMemo(() => 
+        allStaffMembers.filter(s => s.status === 'Active' && (s.designation === 'Investigator' || s.designation === 'Geological Assistant' || s.designation === 'Geophysical Assistant'))
+        .sort((a, b) => a.name.localeCompare(b.name)), 
+    [allStaffMembers]);
+
+    const sortedLsgMaps = useMemo(() => [...(allLsgConstituencyMaps || [])].sort((a, b) => a.name.localeCompare(b.name)), [allLsgConstituencyMaps]);
+    const constituencyOptionsForLsg = useMemo(() => {
+        if (!watchedLsg || !allLsgConstituencyMaps) return [];
+        const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
+        return map?.constituencies?.sort((a: string, b: string) => a.localeCompare(b)) || [];
+    }, [watchedLsg, allLsgConstituencyMaps]);
+
+    const isCompletionDateRequired = watchedWorkStatus === 'Completed';
+
+    const handleLsgChange = useCallback((lsgName: string, fieldOnChange: (v: string) => void) => {
+        const normalized = lsgName === '_clear_' ? '' : lsgName;
+        fieldOnChange(normalized);
+    }, []);
 
     return (
         <FormProvider {...form}>
             <form id="logging-pumping-site-dialog-form" onSubmit={handleSubmit(onConfirm)} className="flex flex-col h-full overflow-hidden">
                 <DialogHeader className="p-6 pb-4 shrink-0 border-b">
                     <DialogTitle>{initialData?.nameOfSite ? `Edit Site: ${initialData.nameOfSite}` : 'Add New Site'}</DialogTitle>
+                    <DialogDescription>Enter site specific details for the Logging & Pumping Test work.</DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 min-h-0">
                     <ScrollArea className="h-full px-6 py-4">
@@ -77,37 +115,106 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                             <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
                                             <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
-                                                <SelectContent>{LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                                                <SelectContent className="max-h-80">
+                                                    {LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                </SelectContent>
                                             </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField name="localSelfGovt" control={control} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Local Self Govt. <span className="text-destructive">*</span></FormLabel>
+                                            <Select onValueChange={(value) => handleLsgChange(value, field.onChange)} value={field.value || ""} disabled={isReadOnly}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl>
+                                                <SelectContent className="max-h-80">
+                                                    <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                    {sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage/>
+                                        </FormItem>
+                                    )} />
+                                    <FormField name="constituency" control={control} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Constituency (LAC) <span className="text-destructive">*</span></FormLabel>
+                                            <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly || !watchedLsg}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl>
+                                                <SelectContent className="max-h-80">
+                                                    <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                    {constituencyOptionsForLsg.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage/>
+                                        </FormItem>
+                                    )} />
+                                    <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader><CardTitle className="text-lg text-primary">Work Details</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField name="typeOfWell" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Type of Well <span className="text-destructive">*</span></FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Well Type" /></SelectTrigger></FormControl>
+                                                    <SelectContent>{typeOfWellOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="nameOfInvestigator" control={control} render={({ field }) => <FormItem><FormLabel>Investigator</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select Investigator"/></SelectTrigger></FormControl><SelectContent>{investigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>} />
+                                    </div>
+                                    <FormField name="descriptionOfWork" control={control} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Description of Work <span className="text-destructive">*</span></FormLabel>
+                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} className="min-h-[80px]" placeholder="Detailed description of the logging or pumping test work..." /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <FormField name="workRemarks" control={control} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Remarks <span className="text-destructive">*</span></FormLabel>
+                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} className="min-h-[60px]" placeholder="Add any technical or site observations..." /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
                                 </CardContent>
                             </Card>
-                            <Card>
-                                <CardHeader><CardTitle className="text-lg text-primary">Investigation Details</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField name="nameOfInvestigator" control={control} render={({ field }) => <FormItem><FormLabel>Investigator</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select Investigator"/></SelectTrigger></FormControl><SelectContent>{investigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>} />
-                                        <FormField name="dateOfInvestigation" control={control} render={({ field }) => <FormItem><FormLabel>Date of Investigation</FormLabel><FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem>} />
-                                    </div>
-                                    <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Hydrogeological Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem>} />
-                                    <FormField name="geophysicalRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Geophysical Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem>} />
-                                </CardContent>
-                            </Card>
+
                              <Card>
                                 <CardHeader><CardTitle className="text-lg text-primary">Work Status</CardTitle></CardHeader>
                                 <CardContent>
-                                    <FormField name="workStatus" control={control} render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Work Status <span className="text-destructive">*</span></FormLabel>
-                                            <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
-                                                <SelectContent className="max-h-80">
-                                                    <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                    {LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField name="workStatus" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
+                                                    <SelectContent className="max-h-80">
+                                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                        {LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="dateOfCompletion" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel>
+                                                <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isReadOnly}/></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </div>
+                                    <FormField name="remarks" control={control} render={({ field }) => (
+                                        <FormItem className="mt-4">
+                                            <FormLabel>Status Remarks</FormLabel>
+                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} placeholder="Remarks regarding completion or pending status..." /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
@@ -126,7 +233,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                 </div>
                 <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
                     <Button variant="outline" type="button" onClick={onCancel}>Cancel</Button>
-                    {!isReadOnly && <Button type="submit">Save Changes</Button>}
+                    {!isReadOnly && <Button type="submit" form="logging-pumping-site-dialog-form">Save Changes</Button>}
                 </div>
             </form>
         </FormProvider>
