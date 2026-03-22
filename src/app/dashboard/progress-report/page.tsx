@@ -220,10 +220,7 @@ const ReportCategoryTable = ({
         if (!data) return false;
         return categoryKeys.some(catKey => {
             const stats = diameter ? data[catKey]?.[diameter] : data[catKey];
-            if (stats) {
-                return Object.values(stats).some(val => (typeof val === 'number' && val > 0) || (Array.isArray(val) && val.length > 0));
-            }
-            return false;
+            return stats && Object.values(stats).some(val => (typeof val === 'number' && val > 0));
         });
     }, [data, categoryKeys, diameter]);
   
@@ -350,8 +347,8 @@ export default function ProgressReportPage() {
     const geophysicalLoggingData = createSingleStructure(uniqueApplicationTypes);
     const pumpingTestData = createSingleStructure(uniqueApplicationTypes);
     
-    const otherSchemesData: Record<string, Record<string, ProgressStats>> = {};
     const otherSchemesPurposes: SitePurpose[] = ["FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"];
+    const otherSchemesData: Record<string, Record<string, ProgressStats>> = {};
     otherSchemesPurposes.forEach(p => {
         otherSchemesData[p] = createSingleStructure(uniqueApplicationTypes);
     });
@@ -392,8 +389,7 @@ export default function ProgressReportPage() {
                 if (wellType && applicationType && gwInvestigationData[wellType]?.[applicationType]) {
                     updateStats(gwInvestigationData[wellType][applicationType]);
                 }
-            } else if (purpose === 'VES') {
-                if(applicationType && vesData[applicationType]) {
+                if (site.vesRequired === 'Yes' && applicationType && vesData[applicationType]) {
                     updateStats(vesData[applicationType]);
                 }
             } else if (purpose === "Geological logging") {
@@ -651,65 +647,35 @@ export default function ProgressReportPage() {
       }
   };
 
+  const {
+    gwInvestigationBalance, vesBalance, pumpingTestBalance,
+    geologicalLoggingBalance, geophysicalLoggingBalance,
+    bwc110Balance, bwc150Balance, twc150Balance, twc200Balance, fpwBalance
+  } = useMemo(() => {
+      if (!reportData) return {};
+      const calculateTotalBalance = (data: Record<string, any> = {}) => Object.values(data).reduce((acc, stats) => acc + (stats.balance || 0), 0);
+      const calculateTotalBalanceForDiameter = (data: Record<string, any> = {}, diameter: string) => Object.values(data).reduce((acc, stats) => acc + (stats[diameter]?.balance || 0), 0);
+      
+      let gwBalance = 0;
+      if (reportData.gwInvestigationData) {
+          Object.values(reportData.gwInvestigationData).forEach((wellTypeData: any) => {
+              gwBalance += calculateTotalBalance(wellTypeData);
+          });
+      }
 
-  const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (dataType: 'application' | 'payment', purpose: string, data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
-    const categories = Object.keys(data);
-    const totals = {
-        totalApplications: categories.reduce((sum, key) => sum + data[key].totalApplications, 0),
-        totalRemittance: categories.reduce((sum, key) => sum + data[key].totalRemittance, 0),
-        totalCompleted: categories.reduce((sum, key) => sum + data[key].totalCompleted, 0),
-        totalPayment: categories.reduce((sum, key) => sum + data[key].totalPayment, 0),
-    };
-    if (categories.length === 0) return <p className="text-center text-sm text-muted-foreground p-4">No data for this category in the selected period.</p>;
-    return (
-        <Table>
-            <TableHeader><TableRow><TableHead>Type of Purpose</TableHead><TableHead className="text-center">Total Application Received</TableHead><TableHead className="text-right">Total Remittance (₹)</TableHead><TableHead className="text-center">No. of Application Completed</TableHead><TableHead className="text-right">Total Payment (₹)</TableHead></TableRow></TableHeader>
-            <TableBody>
-                {categories.map(key => (
-                    <TableRow key={key}>
-                        <TableCell className="font-medium">{key}</TableCell>
-                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalApplications === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Applications for ${key}`)}>{data[key].totalApplications}</Button></TableCell>
-                        <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalRemittance === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Remittances for ${key}`)}>{data[key].totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalCompleted === 0} onClick={() => onCellClick('application', key, data[key].completedData, `${category} Completed Works for ${key}`)}>{data[key].totalCompleted}</Button></TableCell>
-                        <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalPayment === 0} onClick={() => onCellClick('payment', key, data[key].paymentData, `${category} Payments for ${key}`)}>{data[key].totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                    </TableRow>
-                ))}
-            </TableBody>
-            <TableFooter>
-                <TableRow className="font-bold bg-secondary">
-                    <TableCell>Total</TableCell>
-                    <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('applications')}>{totals.totalApplications}</Button></TableCell>
-                    <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('remittance')}>{totals.totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                    <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('completed')}>{totals.totalCompleted}</Button></TableCell>
-                    <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('payment')}>{totals.totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                </TableRow>
-            </TableFooter>
-        </Table>
-    );
-  };
-  
-   const handleGeneratePdfReport = async () => {
-    if (!reportData) {
-      toast({ title: 'No report data to generate PDF.' });
-      return;
-    }
-    setIsGeneratingPdf(true);
-    try {
-      const pdfBytes = await generateProgressReportPdf(
-        reportData,
-        officeAddress,
-        startDate,
-        endDate
-      );
-      download(pdfBytes, `Progress_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`, 'application/pdf');
-      toast({ title: "PDF Generated", description: "Progress report has been downloaded." });
-    } catch (error: any) {
-      console.error("PDF Generation Error:", error);
-      toast({ title: "PDF Generation Failed", description: error.message, variant: 'destructive' });
-    } finally {
-      setIsGeneratingPdf(false);
-    }
-  };
+      return {
+          gwInvestigationBalance: gwBalance,
+          vesBalance: calculateTotalBalance(reportData.vesData),
+          pumpingTestBalance: calculateTotalBalance(reportData.pumpingTestData),
+          geologicalLoggingBalance: calculateTotalBalance(reportData.geologicalLoggingData),
+          geophysicalLoggingBalance: calculateTotalBalance(reportData.geophysicalLoggingData),
+          bwc110Balance: calculateTotalBalanceForDiameter(reportData.bwcData, "110 mm (4.5”)"),
+          bwc150Balance: calculateTotalBalanceForDiameter(reportData.bwcData, "150 mm (6”)"),
+          twc150Balance: calculateTotalBalanceForDiameter(reportData.twcData, "150 mm (6”)"),
+          twc200Balance: calculateTotalBalanceForDiameter(reportData.twcData, "200 mm (8”)"),
+          fpwBalance: calculateTotalBalance(reportData.otherSchemesData?.['FPW']),
+      };
+  }, [reportData]);
 
 
   if (entriesLoading) {
@@ -791,10 +757,10 @@ export default function ProgressReportPage() {
                 </Card>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                  <AccordionItem value="gw-investigation" className="border-b-0">
+                   <AccordionItem value="gw-investigation" className="border-b-0">
                       <Card className="shadow-lg">
                           <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
-                              <CardTitle>GW Investigation</CardTitle>
+                              <CardTitle>GW Investigation ({gwInvestigationBalance || 0} Balance)</CardTitle>
                           </AccordionTrigger>
                           <AccordionContent>
                               <CardContent className="pt-6 space-y-4">
@@ -821,18 +787,15 @@ export default function ProgressReportPage() {
                           </AccordionContent>
                       </Card>
                   </AccordionItem>
-                  <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                  <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                  <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                  <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                </Accordion>
-
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                  <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible/>
-                  <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                   <ReportCategoryTable accordionId="fpw" title="FPW" data={reportData.otherSchemesData?.['FPW']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="ves" title={`VES (${vesBalance || 0} Balance)`} data={reportData.vesData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="pumping-test" title={`Pumping Test (${pumpingTestBalance || 0} Balance)`} data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="geo-logging" title={`Geological Logging (${geologicalLoggingBalance || 0} Balance)`} data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="geophys-logging" title={`Geophysical Logging (${geophysicalLoggingBalance || 0} Balance)`} data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="bwc-110" title={`BWC - 110 mm (4.5”) (${bwc110Balance || 0} Balance)`} diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (${bwc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible/>
+                  <ReportCategoryTable accordionId="twc-150" title={`TWC - 150 mm (6”) (${twc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="twc-200" title={`TWC - 200 mm (8”) (${twc200Balance || 0} Balance)`} diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="fpw" title={`FPW (${fpwBalance || 0} Balance)`} data={reportData.otherSchemesData?.['FPW']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                 </Accordion>
 
                 <Card>
