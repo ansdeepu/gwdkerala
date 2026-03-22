@@ -160,7 +160,7 @@ export default function ArsEntryPage() {
         if (!watchedLsg) return "Select LSG first";
         if (constituencyOptionsForLsg.length > 1) return "Select Constituency";
         if (constituencyOptionsForLsg.length === 0) return "No Constituencies Mapped";
-        return "Select Constituency";
+        return constituencyOptionsForLsg[0] || "Select Constituency";
     }, [watchedLsg, constituencyOptionsForLsg]);
 
     const isConstituencyDisabled = isReadOnly || !watchedLsg || constituencyOptionsForLsg.length <= 1;
@@ -238,7 +238,7 @@ export default function ArsEntryPage() {
                     <CardHeader><CardTitle>1. Site Identification</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <FormField name="fileNo" control={control} render={({ field }) => ( <FormItem><FormLabel>File No *</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="nameOfSite" control={control} render={({ field }) => ( <FormItem><FormLabel>Name of Site *</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
+                        <FormField name="nameOfSite" control={control} render={({ field }) => ( <FormItem className="md:col-span-2"><FormLabel>Name of Site *</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="localSelfGovt" control={control} render={({ field }) => ( <FormItem><FormLabel>Local Self Govt.</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl><SelectContent className="max-h-80">{sortedLsgMaps.map(m => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
                         <FormField name="constituency" control={control} render={({ field }) => ( <FormItem><FormLabel>Constituency (LAC)</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isConstituencyDisabled}><FormControl><SelectTrigger><SelectValue placeholder={constituencyPlaceholder}/></SelectTrigger></FormControl><SelectContent className="max-h-80">{constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
                         <FormField name="arsBlock" control={control} render={({ field }) => ( <FormItem><FormLabel>Block</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
