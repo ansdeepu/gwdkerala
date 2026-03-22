@@ -1,3 +1,4 @@
+
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -22,7 +23,6 @@ import {
   typeOfWellOptions,
   PUBLIC_DEPOSIT_APPLICATION_TYPES,
   PRIVATE_APPLICATION_TYPES,
-  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
 } from '@/lib/schemas/DataEntrySchema';
 import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
@@ -260,7 +260,6 @@ const ReportCategoryTable = ({
       </AccordionItem>
     );
   };
-
 const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (dataType: 'application' | 'payment', purpose: string, data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
   const categories = Object.keys(data);
   const totals = {
@@ -348,6 +347,7 @@ export default function ProgressReportPage() {
 
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
+    const isDateFilterActive = !!sDate && !!eDate;
 
     const safeParseDate = (dateInput: any): Date | null => {
         if (!dateInput) return null;
@@ -417,8 +417,7 @@ export default function ProgressReportPage() {
         const workStatus = site.workStatus as SiteWorkStatus | undefined;
         const completionDate = safeParseDate(site.dateOfCompletion);
         const applicationType = siteWithFileContext.applicationType || UNASSIGNED_APP_TYPE;
-        const isDateFilterActive = !!sDate && !!eDate;
-
+        
         const isCurrentApplicationInPeriod = fileRemittanceDate && isDateFilterActive && isWithinInterval(fileRemittanceDate, { start: sDate!, end: eDate! });
         const isCompletedInPeriod = completionDate && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! });
         const isToBeRefunded = workStatus && REFUNDED_STATUSES.includes(workStatus);
@@ -432,19 +431,14 @@ export default function ProgressReportPage() {
             if (isToBeRefunded && fileRemittanceDate && isDateFilterActive && isBefore(fileRemittanceDate, eDate!)) { statsObj.toBeRefunded++; statsObj.toBeRefundedData.push(siteWithFileContext); }
         };
 
-        const isInvestigation = purpose === 'GW Investigation';
-        const isVES = site.vesRequired === 'Yes';
-
-        if (isInvestigation) {
+        if (purpose === 'GW Investigation') {
             updateStats(progressSummaryData['GW Investigation']);
-        }
-        if (isVES) {
-            updateStats(progressSummaryData['VES']);
-        }
-
-        if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
+            if (site.vesRequired === 'Yes') {
+                updateStats(progressSummaryData['VES']);
+            }
+        } else if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
              updateStats(progressSummaryData['Pumping test']);
-        } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose) && !isInvestigation && !isVES) {
+        } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) {
             if (progressSummaryData[purpose]) {
                 updateStats(progressSummaryData[purpose]);
             }
@@ -525,7 +519,6 @@ export default function ProgressReportPage() {
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
     const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
-        const isDateFilterActive = !!sDate && !!eDate;
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
             return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
