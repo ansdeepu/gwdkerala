@@ -281,6 +281,30 @@ export default function ProgressReportPage() {
     if (!payment) return 0;
     return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
   };
+    
+  const handleGeneratePdfReport = async () => {
+    if (!reportData) {
+      toast({ title: 'No report data to generate PDF.' });
+      return;
+    }
+    setIsGeneratingPdf(true);
+    try {
+      const pdfBytes = await generateProgressReportPdf(
+        reportData,
+        officeAddress,
+        startDate,
+        endDate
+      );
+      download(pdfBytes, `Progress_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`, 'application/pdf');
+      toast({ title: "PDF Generated", description: "Progress report has been downloaded." });
+    } catch (error: any) {
+      console.error("PDF Generation Error:", error);
+      toast({ title: "PDF Generation Failed", description: error.message, variant: 'destructive' });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
 
   const handleGenerateReport = useCallback(() => {
     if (!startDate || !endDate) {
@@ -292,6 +316,7 @@ export default function ProgressReportPage() {
 
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
+    const isDateFilterActive = !!sDate && !!eDate;
 
     const safeParseDate = (dateInput: any): Date | null => {
         if (!dateInput) return null;
@@ -377,9 +402,9 @@ export default function ProgressReportPage() {
         let summaryPurposeKey: SitePurpose | null = null;
         if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) summaryPurposeKey = 'Pumping test';
         else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) summaryPurposeKey = purpose;
+        if(purpose === 'GW Investigation' && site.vesRequired === 'Yes' && progressSummaryData['VES']) updateStats(progressSummaryData['VES']);
 
         if (summaryPurposeKey && progressSummaryData[summaryPurposeKey]) updateStats(progressSummaryData[summaryPurposeKey]);
-        if (purpose === 'GW Investigation' && site.vesRequired === 'Yes' && progressSummaryData['VES']) updateStats(progressSummaryData['VES']);
         
         if (applicationType) {
             if (purpose === 'BWC' && diameter && bwcData[applicationType]?.[diameter]) updateStats(bwcData[applicationType][diameter]);
@@ -388,9 +413,6 @@ export default function ProgressReportPage() {
                 const wellType = (site as any).typeOfWell as TypeOfWell;
                 if (wellType && applicationType && gwInvestigationData[wellType]?.[applicationType]) {
                     updateStats(gwInvestigationData[wellType][applicationType]);
-                }
-                if (site.vesRequired === 'Yes' && applicationType && vesData[applicationType]) {
-                    updateStats(vesData[applicationType]);
                 }
             } else if (purpose === "Geological logging") {
                 if(geologicalLoggingData[applicationType]) updateStats(geologicalLoggingData[applicationType]);
@@ -446,10 +468,9 @@ export default function ProgressReportPage() {
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
     const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
-        const isDateFilterActive = !!sDate && !!eDate;
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
-            return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
+            return d && isDateFilterActive && isWithinInterval(d, { start: sDate, end: eDate });
         };
 
         entries.forEach(entry => {
@@ -473,7 +494,7 @@ export default function ProgressReportPage() {
 
             entry.siteDetails?.forEach(site => {
                 const completionDate = safeParseDate(site.dateOfCompletion);
-                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! })) {
+                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate, end: eDate })) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
                     summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! });
@@ -488,21 +509,22 @@ export default function ProgressReportPage() {
     const uniqueRevenueCredits = new Map<string, { entryId: string; amount: number }>();
     fileEntries.forEach(entry => {
         if (!entry.id) return;
-        const isDateFilterActive = !!sDate && !!eDate;
-        entry.paymentDetails?.forEach(pd => {
-            const paymentDate = safeParseDate(pd.dateOfPayment);
-            if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate!, end: eDate! }) && pd.revenueHead) {
-                const amount = Number(pd.revenueHead) || 0;
-                if (amount > 0) {
-                    const existing = uniqueRevenueCredits.get(entry.id!);
-                    if (existing) {
-                        existing.amount += amount;
-                    } else {
-                        uniqueRevenueCredits.set(entry.id!, { entryId: entry.id!, amount });
+        if (isDateFilterActive) {
+            entry.paymentDetails?.forEach(pd => {
+                const paymentDate = safeParseDate(pd.dateOfPayment);
+                if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
+                    const amount = Number(pd.revenueHead) || 0;
+                    if (amount > 0) {
+                        const existing = uniqueRevenueCredits.get(entry.id!);
+                        if (existing) {
+                            existing.amount += amount;
+                        } else {
+                            uniqueRevenueCredits.set(entry.id!, { entryId: entry.id!, amount });
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     });
 
     const totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, item) => sum + item.amount, 0);
@@ -513,7 +535,7 @@ export default function ProgressReportPage() {
         totalRevenueHeadCredit, revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
     });
     setIsFiltering(false);
-  }, [fileEntries, startDate, endDate, toast, uniqueApplicationTypes]);
+  }, [fileEntries, startDate, endDate, toast]);
   
   useEffect(() => {
     if (!entriesLoading) {
@@ -756,7 +778,7 @@ export default function ProgressReportPage() {
                     </CardContent>
                 </Card>
 
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation', 'ves', 'pumping-test', 'geo-logging', 'geophys-logging']}>
                    <AccordionItem value="gw-investigation" className="border-b-0">
                       <Card className="shadow-lg">
                           <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
@@ -792,7 +814,7 @@ export default function ProgressReportPage() {
                   <ReportCategoryTable accordionId="geo-logging" title={`Geological Logging (${geologicalLoggingBalance || 0} Balance)`} data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="geophys-logging" title={`Geophysical Logging (${geophysicalLoggingBalance || 0} Balance)`} data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="bwc-110" title={`BWC - 110 mm (4.5”) (${bwc110Balance || 0} Balance)`} diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (${bwc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible/>
+                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible/>
                   <ReportCategoryTable accordionId="twc-150" title={`TWC - 150 mm (6”) (${twc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="twc-200" title={`TWC - 200 mm (8”) (${twc200Balance || 0} Balance)`} diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="fpw" title={`FPW (${fpwBalance || 0} Balance)`} data={reportData.otherSchemesData?.['FPW']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
