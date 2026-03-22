@@ -1255,10 +1255,7 @@ export default function AgencyRegistrationPage() {
   // FORM VIEW
   if (selectedApplicationId) {
       const hasCancelledRigs = cancelledRigs.length > 0;
-      let remarksSectionNumber = 4;
-      if (hasAnyBasicDetails) remarksSectionNumber++;
-      if (feeFields.length > 0) remarksSectionNumber++;
-      if (hasCancelledRigs) remarksSectionNumber++;
+      const remarksSectionNumber = hasCancelledRigs ? 6 : 5;
 
       return (
         <div className="space-y-6">
