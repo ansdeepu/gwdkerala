@@ -1,3 +1,4 @@
+
 // src/components/shared/SiteDialogContent.tsx
 "use client";
 
@@ -125,20 +126,21 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         return [...map.constituencies].sort((a, b) => a.localeCompare(b));
     }, [watchedLsg, allLsgConstituencyMaps]);
     
-    const handleLsgChange = useCallback((lsgName: string) => {
+    const handleLsgChange = useCallback((lsgName: string, fieldOnChange: (v: string) => void) => {
         const normalized = lsgName === '_clear_' ? '' : lsgName;
-        setValue('localSelfGovt', normalized);
+        fieldOnChange(normalized);
         
         if (!normalized || !allLsgConstituencyMaps) {
-            setValue('constituency', undefined);
+            setValue('constituency', undefined, { shouldDirty: true, shouldValidate: true });
             return;
         }
 
         const map = allLsgConstituencyMaps.find(m => m.name === normalized);
         const constituencies = map?.constituencies || [];
-        setValue('constituency', undefined);
+        
+        setValue('constituency', undefined, { shouldDirty: true, shouldValidate: true });
         if (constituencies.length === 1) {
-            setValue('constituency', constituencies[0] as Constituency);
+            setValue('constituency', constituencies[0] as Constituency, { shouldDirty: true, shouldValidate: true });
         }
         trigger('constituency');
     }, [setValue, allLsgConstituencyMaps, trigger]);
@@ -236,7 +238,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
 
     return (
         <div className="flex flex-col h-full overflow-hidden">
-            <DialogHeader className="p-6 pb-4 shrink-0">
+            <DialogHeader className="p-6 pb-4 shrink-0 border-b">
                 <DialogTitle>{initialData?.nameOfSite ? `Edit Site Details: ${initialData.nameOfSite}` : 'Add New Site'}</DialogTitle>
             </DialogHeader>
             <div className="flex-1 min-h-0">
@@ -264,7 +266,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                         <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Local Self Govt.</FormLabel>
-                                                <Select onValueChange={(value) => handleLsgChange(value)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
+                                                <Select onValueChange={(value) => handleLsgChange(value, field.onChange)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(undefined); }}>-- Clear Selection --</SelectItem>

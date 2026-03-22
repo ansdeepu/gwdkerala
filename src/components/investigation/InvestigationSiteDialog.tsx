@@ -1,3 +1,4 @@
+
 // src/components/investigation/InvestigationSiteDialog.tsx
 "use client";
 
@@ -73,16 +74,20 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
         return map?.constituencies?.sort((a: string, b: string) => a.localeCompare(b)) || [];
     }, [watchedLsg, allLsgConstituencyMaps]);
 
-    const handleLsgChange = useCallback((lsgName: string) => {
+    const handleLsgChange = useCallback((lsgName: string, fieldOnChange: (v: string) => void) => {
         const normalized = lsgName === '_clear_' ? '' : lsgName;
-        setValue('localSelfGovt', normalized);
+        fieldOnChange(normalized);
         if (!normalized || !allLsgConstituencyMaps) {
-            setValue('constituency', undefined);
+            setValue('constituency', undefined, { shouldDirty: true, shouldValidate: true });
             return;
         }
         const map = allLsgConstituencyMaps.find(m => m.name === normalized);
         const constituencies = map?.constituencies || [];
-        setValue('constituency', constituencies.length === 1 ? constituencies[0] as Constituency : undefined);
+        
+        setValue('constituency', undefined, { shouldDirty: true, shouldValidate: true });
+        if (constituencies.length === 1) {
+            setValue('constituency', constituencies[0] as Constituency, { shouldDirty: true, shouldValidate: true });
+        }
         trigger('constituency');
     }, [setValue, allLsgConstituencyMaps, trigger]);
 
@@ -100,7 +105,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
                                     <FormField name="purpose" control={control} render={({ field }) => <FormItem><FormLabel>Purpose</FormLabel><FormControl><Input {...field} value="GW Investigation" readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>} />
-                                    <FormField name="localSelfGovt" control={control} render={({ field }) => <FormItem><FormLabel>Local Self Govt.</FormLabel><Select onValueChange={handleLsgChange} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG" /></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_">-- Clear Selection --</SelectItem>{sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                                    <FormField name="localSelfGovt" control={control} render={({ field }) => <FormItem><FormLabel>Local Self Govt.</FormLabel><Select onValueChange={(val) => handleLsgChange(val, field.onChange)} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG" /></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_">-- Clear Selection --</SelectItem>{sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                     <FormField name="constituency" control={control} render={({ field }) => <FormItem><FormLabel>Constituency (LAC)</FormLabel><Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly || !watchedLsg || constituencyOptionsForLsg.length <= 1}><FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"} /></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_">-- Clear Selection --</SelectItem>{constituencyOptionsForLsg.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                     <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
                                     <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />

@@ -3,40 +3,49 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useSearchParams, useRouter } from 'next/navigation';
-import { ArsEntrySchema, type ArsEntryFormData, arsStatusOptions, type Bidder, arsTypeOfSchemeOptions, type Constituency, type StaffMember } from "@/lib/schemas";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm, useWatch, FormProvider, useFormContext, useFieldArray } from "react-hook-form";
+import { type AgencyApplication, type RigRegistration as RigRegistrationType, type OwnerInfo } from "@/hooks/useAgencyApplications";
+import { useForm, useFieldArray, FormProvider, useWatch, Controller, UseFormReturn, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AgencyApplicationSchema, rigTypeOptions, RigRegistrationSchema, RigRenewalSchema, type RigRenewal as RigRenewalFormData, applicationFeeTypes, ApplicationFeeSchema, ApplicationFeeType, type ApplicationFee, OwnerInfoSchema, type RigType, ArsEntrySchema, type ArsEntryFormData, arsStatusOptions, arsTypeOfSchemeOptions } from "@/lib/schemas";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { format, isValid, parseISO, parse } from "date-fns";
-import { useAuth, type UserProfile } from "@/hooks/useAuth";
-import { useStaffMembers } from "@/hooks/useStaffMembers";
-import { usePageHeader } from "@/hooks/usePageHeader";
-import { usePendingUpdates } from "@/hooks/usePendingUpdates";
-import { useDataStore } from '@/hooks/use-data-store';
-import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
-import { app } from "@/lib/firebase";
-import { useArsEntries } from "@/hooks/useArsEntries";
-import { Loader2, Save, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { cn, formatCase } from "@/lib/utils";
+import { format, addYears, isValid, parseISO, parse } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
-import MediaManager from '@/components/shared/MediaManager';
-
-export const dynamic = 'force-dynamic';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
+import { usePageHeader } from "@/hooks/usePageHeader";
+import { usePageNavigation } from "@/hooks/usePageNavigation";
+import PaginationControls from "@/components/shared/PaginationControls";
+import ExcelJS from "exceljs";
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useAgencyApplications } from '@/hooks/useAgencyApplications';
+import { useDataStore } from '@/hooks/use-data-store';
+import { Loader2, Search, PlusCircle, Save, X, Trash2, ShieldAlert, UserPlus, FilePlus, ChevronsUpDown, RotateCcw, RefreshCw, CheckCircle, Info, Ban, FileUp, MoreVertical, ArrowLeft, Eye, FileDown, Clock } from 'lucide-react';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { app } from '@/lib/firebase';
+import { useArsEntries } from "@/hooks/useArsEntries";
+import { usePendingUpdates } from "@/hooks/usePendingUpdates";
+import MediaManager from "@/components/shared/MediaManager";
 
 const db = getFirestore(app);
 
-// Supervisor can edit: ARS Status, Completion Date, Expenditure, Beneficiaries, Remarks.
-const SUPERVISOR_EDITABLE_FIELDS: (keyof ArsEntryFormData)[] = [
-  'arsStatus', 'dateOfCompletion', 'totalExpenditure', 'noOfBeneficiary', 'workRemarks'
-];
-const SUPERVISOR_EDITABLE_STATUSES: (typeof arsStatusOptions)[number][] = ["Work Order Issued", "Work in Progress", "Work Completed", "Work Failed"];
-
+export const dynamic = 'force-dynamic';
 
 const toDateOrNull = (value: any): Date | null => {
     if (!value) return null;
@@ -89,6 +98,11 @@ const processDataForForm = (data: any): any => {
     }
     return data;
 };
+
+const SUPERVISOR_EDITABLE_FIELDS: (keyof ArsEntryFormData)[] = [
+  'arsStatus', 'dateOfCompletion', 'totalExpenditure', 'noOfBeneficiary', 'workRemarks'
+];
+const SUPERVISOR_EDITABLE_STATUSES: ArsStatus[] = ["Work Order Issued", "Work in Progress", "Work Completed", "Work Failed"];
 
 const CompletionDateField = ({ isFieldReadOnly }: { isFieldReadOnly: (fieldName: keyof ArsEntryFormData) => boolean }) => {
     const { control } = useFormContext<ArsEntryFormData>();
@@ -362,15 +376,16 @@ export default function ArsEntryPage() {
         form.setValue('supervisorName', staff?.name || null);
     };
 
-    const handleLsgChangeInternal = useCallback((lsgName: string) => {
+    const handleLsgChangeInternal = useCallback((lsgName: string, fieldOnChange: (v: string) => void) => {
         const normalized = lsgName === '_clear_' ? '' : lsgName;
-        setValue('localSelfGovt', normalized);
+        fieldOnChange(normalized);
         
         const map = allLsgConstituencyMaps.find(m => m.name === normalized);
         const constituencies = map?.constituencies || [];
-        setValue('constituency', undefined);
+        
+        setValue('constituency', undefined, { shouldDirty: true, shouldValidate: true });
         if (constituencies.length === 1) {
-            setValue('constituency', constituencies[0] as any);
+            setValue('constituency', constituencies[0] as any, { shouldDirty: true, shouldValidate: true });
         }
         trigger('constituency');
     }, [setValue, allLsgConstituencyMaps, trigger]);
@@ -468,7 +483,7 @@ export default function ArsEntryPage() {
                                 <FormLabel>Local Self Govt.</FormLabel>
                                 <Select
                                 onValueChange={(value) => {
-                                    handleLsgChangeInternal(value);
+                                    handleLsgChangeInternal(value, field.onChange);
                                 }}
                                 value={field.value ?? ""}
                                 disabled={isFieldReadOnly('localSelfGovt')}
@@ -477,7 +492,7 @@ export default function ArsEntryPage() {
                                     <SelectTrigger><SelectValue placeholder="Select Local Self Govt."/></SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(''); handleLsgChangeInternal(''); }}>
+                                    <SelectItem value="_clear_" onSelect={(e) => { e.preventDefault(); field.onChange(''); handleLsgChangeInternal('', field.onChange); }}>
                                     -- Clear Selection --
                                     </SelectItem>
                                     {sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}
@@ -494,7 +509,7 @@ export default function ArsEntryPage() {
                                   <FormLabel>Constituency (LAC)</FormLabel>
                                     <Select
                                         onValueChange={field.onChange}
-                                        value={field.value}
+                                        value={field.value || ""}
                                         disabled={isConstituencyDisabled}
                                     >
                                         <FormControl>
@@ -646,5 +661,3 @@ export default function ArsEntryPage() {
         </div>
     );
 }
-
-    
