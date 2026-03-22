@@ -22,9 +22,9 @@ import {
   typeOfWellOptions,
   PUBLIC_DEPOSIT_APPLICATION_TYPES,
   PRIVATE_APPLICATION_TYPES,
-  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
   COLLECTOR_APPLICATION_TYPES,
-  PLAN_FUND_APPLICATION_TYPES
+  PLAN_FUND_APPLICATION_TYPES,
+  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
 } from '@/lib/schemas/DataEntrySchema';
 import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
@@ -89,6 +89,7 @@ type FinancialSummaryReport = Record<string, FinancialSummary>;
 
 const BWC_DIAMETERS = ['110 mm (4.5”)', '150 mm (6”)'];
 const TWC_DIAMETERS = ['150 mm (6”)', '200 mm (8”)'];
+const FPW_DIAMETERS = ['110 mm (4.5”)'];
 
 
 const REFUNDED_STATUSES: SiteWorkStatus[] = ['To be Refunded'];
@@ -251,43 +252,6 @@ const ReportCategoryTable = ({
     );
 };
 
-const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (dataType: 'application' | 'payment', purpose: string, data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
-    const categories = Object.keys(data);
-    const totals = {
-        totalApplications: categories.reduce((sum, key) => sum + data[key].totalApplications, 0),
-        totalRemittance: categories.reduce((sum, key) => sum + data[key].totalRemittance, 0),
-        totalCompleted: categories.reduce((sum, key) => sum + data[key].totalCompleted, 0),
-        totalPayment: categories.reduce((sum, key) => sum + data[key].totalPayment, 0),
-    };
-    if (categories.length === 0) return <p className="text-center text-sm text-muted-foreground p-4">No data for this category in the selected period.</p>;
-    return (
-        <Table>
-            <TableHeader><TableRow><TableHead>Type of Purpose</TableHead><TableHead className="text-center">Total Application Received</TableHead><TableHead className="text-right">Total Remittance (₹)</TableHead><TableHead className="text-center">No. of Application Completed</TableHead><TableHead className="text-right">Total Payment (₹)</TableHead></TableRow></TableHeader>
-            <TableBody>
-                {categories.map(key => (
-                    <TableRow key={key}>
-                        <TableCell className="font-medium">{key}</TableCell>
-                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalApplications === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Applications for ${key}`)}>{data[key].totalApplications}</Button></TableCell>
-                        <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalRemittance === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Remittances for ${key}`)}>{data[key].totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalCompleted === 0} onClick={() => onCellClick('application', key, data[key].completedData, `${category} Completed Works for ${key}`)}>{data[key].totalCompleted}</Button></TableCell>
-                        <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalPayment === 0} onClick={() => onCellClick('payment', key, data[key].paymentData, `${category} Payments for ${key}`)}>{data[key].totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                    </TableRow>
-                ))}
-            </TableBody>
-            <TableFooter>
-                <TableRow className="font-bold bg-secondary">
-                    <TableCell>Total</TableCell>
-                    <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('applications')}>{totals.totalApplications}</Button></TableCell>
-                    <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('remittance')}>{totals.totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                    <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('completed')}>{totals.totalCompleted}</Button></TableCell>
-                    <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('payment')}>{totals.totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                </TableRow>
-            </TableFooter>
-        </Table>
-    );
-  };
-
-
 export default function ProgressReportPage() {
   const { setHeader } = usePageHeader();
   const { reportEntries: fileEntries, isReportLoading: entriesLoading } = useAllFileEntriesForReports();
@@ -355,7 +319,6 @@ export default function ProgressReportPage() {
 
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
-    const isDateFilterActive = !!sDate && !!eDate;
 
     const safeParseDate = (dateInput: any): Date | null => {
         if (!dateInput) return null;
@@ -405,14 +368,15 @@ export default function ProgressReportPage() {
 
     const bwcData = createNestedStructure(uniqueApplicationTypes, BWC_DIAMETERS);
     const twcData = createNestedStructure(uniqueApplicationTypes, TWC_DIAMETERS);
+    const fpwData = createNestedStructure(uniqueApplicationTypes, FPW_DIAMETERS);
     const gwInvestigationData = createNestedStructure(typeOfWellOptions, uniqueApplicationTypes);
     const vesData = createSingleStructure(uniqueApplicationTypes);
     const geologicalLoggingData = createSingleStructure(uniqueApplicationTypes);
     const geophysicalLoggingData = createSingleStructure(uniqueApplicationTypes);
     const pumpingTestData = createSingleStructure(uniqueApplicationTypes);
     
-    const otherSchemesPurposes: SitePurpose[] = ["FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"];
     const otherSchemesData: Record<string, Record<string, ProgressStats>> = {};
+    const otherSchemesPurposes: SitePurpose[] = ["BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"];
     otherSchemesPurposes.forEach(p => {
         otherSchemesData[p] = createSingleStructure(uniqueApplicationTypes);
     });
@@ -439,25 +403,31 @@ export default function ProgressReportPage() {
         };
         
         let summaryPurposeKey: SitePurpose | null = null;
-        if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) summaryPurposeKey = 'Pumping test';
-        else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) summaryPurposeKey = purpose;
-        
-        if(purpose === 'GW Investigation' && site.vesRequired === 'Yes' && progressSummaryData['VES']) updateStats(progressSummaryData['VES']);
+        if (purpose === 'GW Investigation' && site.vesRequired === 'Yes') {
+            summaryPurposeKey = 'VES';
+        } else if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
+            summaryPurposeKey = 'Pumping test';
+        } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) {
+            summaryPurposeKey = purpose;
+        }
 
-        if (summaryPurposeKey && progressSummaryData[summaryPurposeKey]) updateStats(progressSummaryData[summaryPurposeKey]);
+        if (summaryPurposeKey && progressSummaryData[summaryPurposeKey]) {
+            updateStats(progressSummaryData[summaryPurposeKey]);
+        }
         
         if (applicationType) {
             if (purpose === 'BWC' && diameter && bwcData[applicationType]?.[diameter]) updateStats(bwcData[applicationType][diameter]);
             else if (purpose === 'TWC' && diameter && twcData[applicationType]?.[diameter]) updateStats(twcData[applicationType][diameter]);
-            else if (purpose === 'GW Investigation') {
+            else if (purpose === 'FPW' && diameter && fpwData[applicationType]?.[diameter]) updateStats(fpwData[applicationType][diameter]);
+            else if (purpose === 'GW Investigation' && site.vesRequired !== 'Yes') {
                 const wellType = (site as any).typeOfWell as TypeOfWell;
                 if (wellType && applicationType && gwInvestigationData[wellType]?.[applicationType]) {
                     updateStats(gwInvestigationData[wellType][applicationType]);
                 }
-            } else if (purpose === 'VES') {
-                if(applicationType && vesData[applicationType]) {
+            } else if (purpose === 'GW Investigation' && site.vesRequired === 'Yes') {
+                 if(vesData[applicationType]) {
                     updateStats(vesData[applicationType]);
-                }
+                 }
             } else if (purpose === "Geological logging") {
                 if(geologicalLoggingData[applicationType]) updateStats(geologicalLoggingData[applicationType]);
             } else if (purpose === "Geophysical Logging") {
@@ -473,15 +443,13 @@ export default function ProgressReportPage() {
     const calculateBalanceAndTotal = (stats: ProgressStats) => {
         if(!stats) return;
         stats.totalApplications = (stats.previousBalance || 0) + (stats.currentApplications || 0) - (stats.toBeRefunded || 0);
-        stats.balance = (stats.totalApplications || 0) - (stats.completed || 0);
+        stats.balance = stats.totalApplications - (stats.completed || 0);
         
         const totalApplicationSites = new Map<string, SiteDetailWithFileContext>();
-        if(Array.isArray(stats.previousBalanceData) && Array.isArray(stats.currentApplicationsData)) {
-            [...stats.previousBalanceData, ...stats.currentApplicationsData].forEach(site => { 
-                const key = `${site.fileNo}-${site.nameOfSite}`; 
-                if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
-            });
-        }
+        [...(stats.previousBalanceData || []), ...(stats.currentApplicationsData || [])].forEach(site => { 
+            const key = `${site.fileNo}-${site.nameOfSite}`; 
+            if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
+        });
         
         const toBeRefundedKeys = new Set((stats.toBeRefundedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
         toBeRefundedKeys.forEach(key => totalApplicationSites.delete(key));
@@ -502,6 +470,7 @@ export default function ProgressReportPage() {
     applicationTypeOptions.forEach(appType => {
       BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
       TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
+      FPW_DIAMETERS.forEach(d => { if(fpwData[appType]?.[d]) calculateBalanceAndTotal(fpwData[appType][d]) });
     });
     Object.values(otherSchemesData).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal));
 
@@ -509,6 +478,7 @@ export default function ProgressReportPage() {
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
     const revenueHeadCreditData: any[] = [];
+    const isDateFilterActive = !!sDate && !!eDate;
     
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
@@ -576,7 +546,7 @@ export default function ProgressReportPage() {
     const totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, item) => sum + item.amount, 0);
 
     setReportData({ 
-        bwcData, twcData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
+        bwcData, twcData, fpwData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
         otherSchemesData, privateFinancialSummaryData, governmentFinancialSummaryData,
         totalRevenueHeadCredit, revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
     });
@@ -715,6 +685,42 @@ export default function ProgressReportPage() {
       }
   };
 
+  const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (dataType: 'application' | 'payment', purpose: string, data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
+    const categories = Object.keys(data);
+    const totals = {
+        totalApplications: categories.reduce((sum, key) => sum + data[key].totalApplications, 0),
+        totalRemittance: categories.reduce((sum, key) => sum + data[key].totalRemittance, 0),
+        totalCompleted: categories.reduce((sum, key) => sum + data[key].totalCompleted, 0),
+        totalPayment: categories.reduce((sum, key) => sum + data[key].totalPayment, 0),
+    };
+    if (categories.length === 0) return <p className="text-center text-sm text-muted-foreground p-4">No data for this category in the selected period.</p>;
+    return (
+        <Table>
+            <TableHeader><TableRow><TableHead>Type of Purpose</TableHead><TableHead className="text-center">Total Application Received</TableHead><TableHead className="text-right">Total Remittance (₹)</TableHead><TableHead className="text-center">No. of Application Completed</TableHead><TableHead className="text-right">Total Payment (₹)</TableHead></TableRow></TableHeader>
+            <TableBody>
+                {categories.map(key => (
+                    <TableRow key={key}>
+                        <TableCell className="font-medium">{key}</TableCell>
+                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalApplications === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Applications for ${key}`)}>{data[key].totalApplications}</Button></TableCell>
+                        <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalRemittance === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Remittances for ${key}`)}>{data[key].totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
+                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalCompleted === 0} onClick={() => onCellClick('application', key, data[key].completedData, `${category} Completed Works for ${key}`)}>{data[key].totalCompleted}</Button></TableCell>
+                        <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalPayment === 0} onClick={() => onCellClick('payment', key, data[key].paymentData, `${category} Payments for ${key}`)}>{data[key].totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+            <TableFooter>
+                <TableRow className="font-bold bg-secondary">
+                    <TableCell>Total</TableCell>
+                    <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('applications')}>{totals.totalApplications}</Button></TableCell>
+                    <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('remittance')}>{totals.totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
+                    <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('completed')}>{totals.totalCompleted}</Button></TableCell>
+                    <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('payment')}>{totals.totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
+                </TableRow>
+            </TableFooter>
+        </Table>
+    );
+  };
+  
   const {
     gwInvestigationBalance, vesBalance, pumpingTestBalance,
     geologicalLoggingBalance, geophysicalLoggingBalance,
@@ -824,7 +830,7 @@ export default function ProgressReportPage() {
                     </CardContent>
                 </Card>
 
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation', 'ves', 'pumping-test', 'geo-logging', 'geophys-logging']}>
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
                    <AccordionItem value="gw-investigation" className="border-b-0">
                       <Card className="shadow-lg">
                           <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
