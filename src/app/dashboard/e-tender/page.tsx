@@ -658,11 +658,6 @@ export default function ETenderListPage() {
                             </div>
                         )}
                     </div>
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-center pt-4 border-t mt-4">
-                            <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-                        </div>
-                    )}
                 </CardContent>
             </Card>
 

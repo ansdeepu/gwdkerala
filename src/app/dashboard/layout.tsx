@@ -87,6 +87,13 @@ function BreadcrumbNav() {
   const { title } = usePageHeader();
 
   const breadcrumbs = useMemo(() => {
+    if (pathname === '/dashboard/bidders') {
+        return [
+            { href: '/dashboard/e-tender', label: 'e-Tender', isLast: false },
+            { href: '/dashboard/bidders', label: 'Bidders Management', isLast: true },
+        ];
+    }
+    
     if (!pathname) return [];
 
     const labelMap: Record<string, string> = {

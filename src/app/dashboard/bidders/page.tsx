@@ -1,4 +1,3 @@
-
 // src/app/dashboard/bidders/page.tsx
 "use client";
 
@@ -57,7 +56,7 @@ export default function BiddersListPage() {
 
 
     useEffect(() => {
-        setHeader('Bidders Management', '');
+        setHeader('Bidders Management', 'Manage the master list of bidders available for e-Tenders.');
     }, [setHeader]);
 
     const handleAddOrEditBidderSubmit = async (data: NewBidderFormData) => {
