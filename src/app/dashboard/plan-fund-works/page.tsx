@@ -1,10 +1,9 @@
-
 // src/app/dashboard/plan-fund-works/page.tsx
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
 import FileDatabaseTable from "@/components/database/FileDatabaseTable";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -217,7 +216,7 @@ export default function PlanFundWorksPage() {
   };
   
   const startEntryNum = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-  const endEntryNum = Math.min(currentPage * ITEMS_PER_PAGE, filteredEntries.length);
+  const endEntryNum = Math.min(currentPage * ITEMS_PER_PAGE, paginatedEntries.length) + (currentPage - 1) * ITEMS_PER_PAGE;
 
   return (
     <div className="space-y-6">
@@ -272,26 +271,30 @@ export default function PlanFundWorksPage() {
         </CardContent>
       </Card>
       
-      <FileDatabaseTable 
-        fileEntries={paginatedEntries} 
-        isLoading={isLoading}
-        searchActive={!!searchTerm}
-        totalEntries={filteredEntries.length}
-        isReadOnly={isSuperAdmin}
-        currentPage={currentPage}
-      />
-       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4">
-           <p className="text-sm text-muted-foreground">
-            Showing <strong>{filteredEntries.length > 0 ? startEntryNum : 0}</strong>-<strong>{endEntryNum}</strong> of <strong>{filteredTotalSites}</strong> sites.
-          </p>
-          <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-          />
-        </div>
-      )}
+      <Card className="shadow-lg">
+        <CardContent className="p-0">
+            <FileDatabaseTable 
+                fileEntries={paginatedEntries} 
+                isLoading={isLoading}
+                searchActive={!!searchTerm}
+                totalEntries={filteredEntries.length}
+                isReadOnly={isSuperAdmin}
+                currentPage={currentPage}
+            />
+        </CardContent>
+         {totalPages > 1 && (
+            <CardFooter className="p-4 border-t flex flex-wrap items-center justify-between gap-4">
+                <p className="text-sm text-muted-foreground">
+                    Showing <strong>{filteredEntries.length > 0 ? startEntryNum : 0}</strong>-<strong>{endEntryNum}</strong> of <strong>{filteredTotalSites}</strong> sites.
+                </p>
+                <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                />
+            </CardFooter>
+        )}
+      </Card>
     </div>
   );
 }

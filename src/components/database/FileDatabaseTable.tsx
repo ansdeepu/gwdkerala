@@ -192,13 +192,11 @@ export default function FileDatabaseTable({
 
   if (fileEntries.length === 0) {
     return (
-      <Card className="shadow-lg">
-        <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-          <Image src="https://placehold.co/128x128/F0F2F5/3F51B5.png?text=No+Files" width={100} height={100} alt="No files" className="mb-4 opacity-70 rounded-lg" />
+      <div className="flex flex-col items-center justify-center py-10 text-center">
+          <Image src="https://placehold.co/128x128/F0F2F5/3F51B5.png?text=No+Files" width={100} height={100} alt="No files" className="mb-4 opacity-70 rounded-lg" data-ai-hint="empty box document"/>
           <h3 className="text-xl font-semibold">No Files Found</h3>
           <p className="text-muted-foreground">{searchActive ? "No files match your search." : "There are no file entries recorded yet."}</p>
-        </CardContent>
-      </Card>
+      </div>
     );
   }
 
@@ -207,83 +205,78 @@ export default function FileDatabaseTable({
 
   return (
     <>
-      <Card className="shadow-lg">
-        <CardContent className="p-0">
-          <div className="max-h-[70vh] overflow-auto">
-            <Table>
-              <TableHeader className="sticky top-0 bg-secondary z-10">
-                <TableRow>
-                  <TableHead className="w-[5%] px-2 py-3 text-sm">Sl. No.</TableHead>
-                  <TableHead className="w-[10%] px-2 py-3 text-sm">File No.</TableHead>
-                  <TableHead className="w-[15%] px-2 py-3 text-sm">Applicant Name</TableHead>
-                  <TableHead className="w-[25%] px-2 py-3 text-sm">Site Name(s)</TableHead>
-                  <TableHead className="w-[10%] px-2 py-3 text-sm">Purpose(s)</TableHead>
-                  <TableHead className="w-[10%] px-2 py-3 text-sm">Remittance</TableHead>
-                  <TableHead className="w-[10%] px-2 py-3 text-sm">File Status</TableHead>
-                  <TableHead className="text-center w-[15%] px-2 py-3 text-sm">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-                <TableBody>
-                  {fileEntries.map((entry, index) => {
-                    let sitesToDisplay: SiteDetailFormData[] = entry.siteDetails || [];
-                    if (user?.role === 'supervisor') {
-                        sitesToDisplay = sitesToDisplay.filter(site => {
-                            const isAssigned = site.supervisorUid === user.uid;
-                            const isOngoing = site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
-                            const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
-                            return isAssigned && (isOngoing || hasPendingUpdate);
-                        });
-                    }
-                    return (
-                    <TableRow key={entry.id}>
-                      <TableCell className="w-[5%] px-2 py-2 text-sm text-center font-mono">{offset + index + 1}</TableCell>
-                      <TableCell className="font-medium w-[10%] px-2 py-2 text-sm">{entry.fileNo}</TableCell>
-                      <TableCell className="w-[15%] px-2 py-2 text-sm">{entry.applicantName}</TableCell>
-                      <TableCell className="w-[25%] px-2 py-2 text-sm">
-                        {sitesToDisplay.length > 0 ? sitesToDisplay.map((site, idx) => (
-                          <span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>
-                            {site.nameOfSite}{idx < sitesToDisplay.length - 1 ? ', ' : ''}
-                          </span>
-                        )) : <span className="text-muted-foreground italic">No active sites</span>}
-                      </TableCell>
-                      <TableCell className="w-[10%] px-2 py-2 text-sm">
-                        {sitesToDisplay.map((site, idx) => (
-                          <span key={idx} className={cn(getStatusColorClass(site.workStatus as SiteWorkStatus))}>
-                              {site.purpose || 'N/A'}{idx < sitesToDisplay.length - 1 ? ', ' : ''}
-                          </span>
-                        ))}
-                      </TableCell>
-                      <TableCell className="w-[10%] px-2 py-2 text-sm">
-                        {entry.remittanceDetails?.[0]?.dateOfRemittance ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), "dd/MM/yyyy") : "N/A"}
-                      </TableCell>
-                      <TableCell className="font-semibold w-[10%] px-2 py-2 text-sm">{entry.fileStatus}</TableCell>
-                      <TableCell className="text-right w-[15%] px-2 py-2">
-                          <div className="flex items-center justify-end space-x-1">
+      <div className="max-h-[70vh] overflow-auto">
+        <Table>
+          <TableHeader className="sticky top-0 bg-secondary z-10">
+            <TableRow>
+              <TableHead className="w-[5%] px-2 py-3 text-sm">Sl. No.</TableHead>
+              <TableHead className="w-[10%] px-2 py-3 text-sm">File No.</TableHead>
+              <TableHead className="w-[15%] px-2 py-3 text-sm">Applicant Name</TableHead>
+              <TableHead className="w-[25%] px-2 py-3 text-sm">Site Name(s)</TableHead>
+              <TableHead className="w-[10%] px-2 py-3 text-sm">Purpose(s)</TableHead>
+              <TableHead className="w-[10%] px-2 py-3 text-sm">Remittance</TableHead>
+              <TableHead className="w-[10%] px-2 py-3 text-sm">File Status</TableHead>
+              <TableHead className="text-center w-[15%] px-2 py-3 text-sm">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+            <TableBody>
+              {fileEntries.map((entry, index) => {
+                let sitesToDisplay: SiteDetailFormData[] = entry.siteDetails || [];
+                if (user?.role === 'supervisor') {
+                    sitesToDisplay = sitesToDisplay.filter(site => {
+                        const isAssigned = site.supervisorUid === user.uid;
+                        const isOngoing = site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
+                        const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
+                        return isAssigned && (isOngoing || hasPendingUpdate);
+                    });
+                }
+                return (
+                <TableRow key={entry.id}>
+                  <TableCell className="w-[5%] px-2 py-2 text-sm text-center font-mono">{offset + index + 1}</TableCell>
+                  <TableCell className="font-medium w-[10%] px-2 py-2 text-sm">{entry.fileNo}</TableCell>
+                  <TableCell className="w-[15%] px-2 py-2 text-sm">{entry.applicantName}</TableCell>
+                  <TableCell className="w-[25%] px-2 py-2 text-sm">
+                    {sitesToDisplay.length > 0 ? sitesToDisplay.map((site, idx) => (
+                      <span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>
+                        {site.nameOfSite}{idx < sitesToDisplay.length - 1 ? ', ' : ''}
+                      </span>
+                    )) : <span className="text-muted-foreground italic">No active sites</span>}
+                  </TableCell>
+                  <TableCell className="w-[10%] px-2 py-2 text-sm">
+                    {sitesToDisplay.map((site, idx) => (
+                      <span key={idx} className={cn(getStatusColorClass(site.workStatus as SiteWorkStatus))}>
+                          {site.purpose || 'N/A'}{idx < sitesToDisplay.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                  </TableCell>
+                  <TableCell className="w-[10%] px-2 py-2 text-sm">
+                    {entry.remittanceDetails?.[0]?.dateOfRemittance ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), "dd/MM/yyyy") : "N/A"}
+                  </TableCell>
+                  <TableCell className="font-semibold w-[10%] px-2 py-2 text-sm">{entry.fileStatus}</TableCell>
+                  <TableCell className="text-right w-[15%] px-2 py-2">
+                      <div className="flex items-center justify-end space-x-1">
+                        <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}><Eye className="h-4 w-4" /></Button>
+                        </TooltipTrigger><TooltipContent><p>View Full File Details</p></TooltipContent></Tooltip></TooltipProvider>
+                        {canCopy && (
                             <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}><Eye className="h-4 w-4" /></Button>
-                            </TooltipTrigger><TooltipContent><p>View Full File Details</p></TooltipContent></Tooltip></TooltipProvider>
-                            {canCopy && (
-                                <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" onClick={() => setItemToCopy(entry)} disabled={isCopying}><Copy className="h-4 w-4" /></Button>
-                                </TooltipTrigger><TooltipContent><p>Make a Copy</p></TooltipContent></Tooltip></TooltipProvider>
-                            )}
-                            {canDelete && (
-                                <TooltipProvider><Tooltip><TooltipTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => setDeleteItem(entry)} disabled={isDeleting}>
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger><TooltipContent><p>Delete File</p></TooltipContent></Tooltip></TooltipProvider>
-                            )}
-                          </div>
-                      </TableCell>
-                    </TableRow>
-                  )})}
-                </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
+                                <Button variant="ghost" size="icon" onClick={() => setItemToCopy(entry)} disabled={isCopying}><Copy className="h-4 w-4" /></Button>
+                            </TooltipTrigger><TooltipContent><p>Make a Copy</p></TooltipContent></Tooltip></TooltipProvider>
+                        )}
+                        {canDelete && (
+                            <TooltipProvider><Tooltip><TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => setDeleteItem(entry)} disabled={isDeleting}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger><TooltipContent><p>Delete File</p></TooltipContent></Tooltip></TooltipProvider>
+                        )}
+                      </div>
+                  </TableCell>
+                </TableRow>
+              )})}
+            </TableBody>
+        </Table>
+      </div>
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
           <AlertDialogContent>
           <AlertDialogHeader>
