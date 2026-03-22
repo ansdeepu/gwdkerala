@@ -292,6 +292,7 @@ export default function ProgressReportPage() {
 
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
+    const isDateFilterActive = !!sDate && !!eDate;
 
     const safeParseDate = (dateInput: any): Date | null => {
         if (!dateInput) return null;
@@ -408,13 +409,10 @@ export default function ProgressReportPage() {
     const calculateBalanceAndTotal = (stats: ProgressStats) => {
         if(!stats) return;
         stats.totalApplications = (stats.previousBalance || 0) + (stats.currentApplications || 0) - (stats.toBeRefunded || 0);
-        stats.balance = (stats.totalApplications || 0) - (stats.completed || 0);
+        stats.balance = stats.totalApplications - stats.completed;
         
         const totalApplicationSites = new Map<string, SiteDetailWithFileContext>();
-        [...(stats.previousBalanceData || []), ...(stats.currentApplicationsData || [])].forEach(site => { 
-            const key = `${site.fileNo}-${site.nameOfSite}`; 
-            if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
-        });
+        [...(stats.previousBalanceData || []), ...(stats.currentApplicationsData || [])].forEach(site => { const key = `${site.fileNo}-${site.nameOfSite}`; if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); });
         
         const toBeRefundedKeys = new Set((stats.toBeRefundedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
         toBeRefundedKeys.forEach(key => totalApplicationSites.delete(key));
@@ -449,7 +447,7 @@ export default function ProgressReportPage() {
     const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
-            return d && isDateFilterActive && isWithinInterval(d, { start: sDate, end: eDate });
+            return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
         };
 
         entries.forEach(entry => {
