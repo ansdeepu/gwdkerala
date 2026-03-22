@@ -6,7 +6,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useE_tenders, type E_tender } from '@/hooks/useE_tenders';
 import { usePageHeader } from '@/hooks/usePageHeader';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -24,7 +24,7 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/comp
 import PaginationControls from '@/components/shared/PaginationControls';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { useDataStore } from '@/hooks/use-data-store';
 import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock, FolderOpen, Bell, Hammer, FileDown } from 'lucide-react';
 import ExcelJS from 'exceljs';
@@ -487,6 +487,8 @@ export default function ETenderListPage() {
     }, [filteredTenders, currentPage]);
     
     const totalPages = Math.ceil(filteredTenders.length / ITEMS_PER_PAGE);
+    const startEntryNum = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+    const endEntryNum = Math.min(currentPage * ITEMS_PER_PAGE, filteredTenders.length);
 
 
     const handleCreateNew = () => {
@@ -736,12 +738,19 @@ export default function ETenderListPage() {
                             </Table>
                         </TooltipProvider>
                     </div>
-                    {totalPages > 1 && (
-                         <div className="flex items-center justify-center py-4 border-t">
-                           <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-                        </div>
-                    )}
                 </CardContent>
+                {totalPages > 1 && (
+                     <CardFooter className="p-4 border-t flex flex-wrap items-center justify-between gap-4">
+                        <p className="text-sm text-muted-foreground">
+                            Showing <strong>{filteredTenders.length > 0 ? startEntryNum : 0}</strong>-<strong>{endEntryNum}</strong> of <strong>{filteredTenders.length}</strong> tenders.
+                        </p>
+                        <PaginationControls
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
+                    </CardFooter>
+                )}
             </Card>
             
              <AlertDialog open={!!tenderToDelete} onOpenChange={() => setTenderToDelete(null)}>
