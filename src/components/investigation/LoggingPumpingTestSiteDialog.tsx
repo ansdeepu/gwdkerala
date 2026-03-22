@@ -63,9 +63,11 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
     const watchedLsg = watch("localSelfGovt");
     const watchedWorkStatus = watch('workStatus');
 
-    // Auto-populate Constituency logic
+    // Auto-populate Constituency logic adopted from GW Investigation page
     useEffect(() => {
-        if (!watchedLsg || !allLsgConstituencyMaps) return;
+        if (!watchedLsg || !allLsgConstituencyMaps) {
+            return;
+        }
         const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
         const constituencies = map?.constituencies || [];
         
@@ -73,6 +75,11 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
             const autoValue = constituencies[0];
             if (getValues('constituency') !== autoValue) {
                 setValue('constituency', autoValue as Constituency, { shouldDirty: true, shouldValidate: true });
+            }
+        } else {
+            const current = getValues('constituency');
+            if (current && !constituencies.includes(current)) {
+                setValue('constituency', undefined);
             }
         }
     }, [watchedLsg, allLsgConstituencyMaps, setValue, getValues]);
@@ -83,6 +90,13 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
         const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
         return map?.constituencies?.sort((a: string, b: string) => a.localeCompare(b)) || [];
     }, [watchedLsg, allLsgConstituencyMaps]);
+
+    const isConstituencyDisabled = useMemo(() => {
+        if (isReadOnly) return true;
+        if (!watchedLsg) return true;
+        if (constituencyOptionsForLsg.length <= 1) return true;
+        return false;
+    }, [isReadOnly, watchedLsg, constituencyOptionsForLsg]);
 
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
@@ -134,9 +148,10 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     <FormField name="constituency" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Constituency (LAC) <span className="text-destructive">*</span></FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value || ""} disabled={true}>
+                                            <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isConstituencyDisabled}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
+                                                    <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
                                                     {constituencyOptionsForLsg.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
