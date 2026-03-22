@@ -292,7 +292,6 @@ export default function ProgressReportPage() {
 
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
-    const isDateFilterActive = !!sDate && !!eDate;
 
     const safeParseDate = (dateInput: any): Date | null => {
         if (!dateInput) return null;
@@ -409,10 +408,13 @@ export default function ProgressReportPage() {
     const calculateBalanceAndTotal = (stats: ProgressStats) => {
         if(!stats) return;
         stats.totalApplications = (stats.previousBalance || 0) + (stats.currentApplications || 0) - (stats.toBeRefunded || 0);
-        stats.balance = stats.totalApplications - stats.completed;
+        stats.balance = (stats.totalApplications || 0) - (stats.completed || 0);
         
         const totalApplicationSites = new Map<string, SiteDetailWithFileContext>();
-        [...(stats.previousBalanceData || []), ...(stats.currentApplicationsData || [])].forEach(site => { const key = `${site.fileNo}-${site.nameOfSite}`; if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); });
+        [...(stats.previousBalanceData || []), ...(stats.currentApplicationsData || [])].forEach(site => { 
+            const key = `${site.fileNo}-${site.nameOfSite}`; 
+            if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
+        });
         
         const toBeRefundedKeys = new Set((stats.toBeRefundedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
         toBeRefundedKeys.forEach(key => totalApplicationSites.delete(key));
@@ -437,6 +439,7 @@ export default function ProgressReportPage() {
     Object.values(otherSchemesData).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal));
 
     // Financial Summary Calculation
+    const isDateFilterActive = !!sDate && !!eDate;
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
     const revenueHeadCreditData: any[] = [];
@@ -577,7 +580,7 @@ export default function ProgressReportPage() {
         columns = [
             { key: 'slNo', label: 'Sl. No.' },
             { key: 'fileNo', label: 'File No.' },
-            { key: 'applicantName', label: 'Applicant' },
+            { key: 'applicantName', label: 'Applicant Name' },
             { key: 'siteNames', label: 'Site Name(s)' },
             { key: 'purposes', label: 'Purpose(s)' },
             { key: 'workStatuses', label: 'Work Status(es)' },
@@ -597,7 +600,7 @@ export default function ProgressReportPage() {
     } else if (isFileLevelData) {
         columns = [
             { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' },
-            { key: 'applicantName', label: 'Applicant' }, { key: 'siteName', label: 'Site Name' },
+            { key: 'applicantName', label: 'Applicant Name' }, { key: 'siteName', label: 'Site Name' },
             { key: 'purpose', label: 'Purpose' }, { key: 'workStatus', label: 'Work Status' },
             { key: 'remittedAmount', label: 'Remitted (₹)', isNumeric: true }, { key: 'remittanceDate', label: 'First Remittance' }
         ];
@@ -784,47 +787,29 @@ export default function ProgressReportPage() {
                 </Card>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation', 'ves', 'pumping-test', 'geo-logging', 'geophys-logging']}>
-                   <AccordionItem value="gw-investigation" className="border-b-0">
-                      <Card className="shadow-lg">
-                          <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
-                              <CardTitle>GW Investigation</CardTitle>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                              <CardContent className="pt-6 space-y-4">
-                                  {typeOfWellOptions.map(wellType => {
-                                      const wellTypeData = reportData.gwInvestigationData[wellType];
-                                      return (
-                                          <Card key={wellType}>
-                                              <CardHeader className="p-4">
-                                                  <CardTitle className="text-base">{wellType}</CardTitle>
-                                              </CardHeader>
-                                              <CardContent className="p-4 pt-0">
-                                                  <ReportDetailsTable
-                                                      data={wellTypeData}
-                                                      categoryKeys={uniqueApplicationTypes}
-                                                      categoryLabels={applicationTypeDisplayMap}
-                                                      onCountClick={handleCountClick}
-                                                      titlePrefix={`GW Investigation - ${wellType}`}
-                                                  />
-                                              </CardContent>
-                                          </Card>
-                                      );
-                                  })}
-                              </CardContent>
-                          </AccordionContent>
-                      </Card>
-                  </AccordionItem>
+                   <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                 </Accordion>
 
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['bwc-150', 'fpw']}>
                   <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="fpw" title="FPW" data={reportData.otherSchemesData?.['FPW']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="bw-dev" title="BW Dev" data={reportData.otherSchemesData?.['BW Dev']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="tw-dev" title="TW Dev" data={reportData.otherSchemesData?.['TW Dev']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="fpw-dev" title="FPW Dev" data={reportData.otherSchemesData?.['FPW Dev']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="mwss" title="MWSS" data={reportData.otherSchemesData?.['MWSS']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="mwss-ext" title="MWSS Ext" data={reportData.otherSchemesData?.['MWSS Ext']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="pumping-scheme" title="Pumping Scheme" data={reportData.otherSchemesData?.['Pumping Scheme']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="mwss-pump-reno" title="MWSS Pump Reno" data={reportData.otherSchemesData?.['MWSS Pump Reno']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="hps" title="HPS" data={reportData.otherSchemesData?.['HPS']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="hpr" title="HPR" data={reportData.otherSchemesData?.['HPR']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="ars" title="ARS" data={reportData.otherSchemesData?.['ARS']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                 </Accordion>
 
                 <Card>
