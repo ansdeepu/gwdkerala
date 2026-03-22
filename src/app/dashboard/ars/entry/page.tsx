@@ -12,7 +12,7 @@ import { useArsEntries, type ArsEntry } from '@/hooks/useArsEntries';
 import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { useDataStore } from '@/hooks/use-data-store';
 import { 
-    ArsEntrySchema, 
+    ArsEntrySchema as ArsEntrySchemaDef, 
     type ArsEntryFormData, 
     arsTypeOfSchemeOptions, 
     arsStatusOptions, 
@@ -20,7 +20,9 @@ import {
     type Constituency,
     type StaffMember,
     type Designation,
+    type Bidder,
 } from '@/lib/schemas';
+import { z } from 'zod';
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -35,6 +37,17 @@ import MediaManager from '@/components/shared/MediaManager';
 import { useFieldArray } from 'react-hook-form';
 import { Separator } from '@/components/ui/separator';
 
+export const ArsEntrySchema = ArsEntrySchemaDef.extend({
+    estimateAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+}).superRefine((data, ctx) => {
+    if (data.arsStatus === 'Work Completed' && !data.dateOfCompletion) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Completion Date is required for 'Work Completed' status.",
+            path: ["dateOfCompletion"],
+        });
+    }
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +74,7 @@ export default function ArsEntryPage() {
     const { toast } = useToast();
     const { getArsEntryById, addArsEntry, updateArsEntry } = useArsEntries();
     const { createArsPendingUpdate } = usePendingUpdates();
-    const { allStaffMembers, allUsers, allLsgConstituencyMaps } = useDataStore();
+    const { allStaffMembers, allUsers, allLsgConstituencyMaps, allE_tenders, allBidders } = useDataStore();
     
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,6 +118,7 @@ export default function ArsEntryPage() {
     const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
     const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
     const watchedLsg = watch("localSelfGovt");
+    const watchedArsStatus = watch("arsStatus");
 
     useEffect(() => {
         const initialFormValues: Partial<ArsEntryFormData> = id === null || id === 'new' ? {} : {
@@ -115,16 +129,16 @@ export default function ArsEntryPage() {
         reset(initialFormValues);
     }, [arsEntry, id, reset]);
 
-    // Supervisor selection logic
-    const supervisorList = useMemo(() => {
-        const supervisorRoles: Designation[] = ["Assistant Engineer", "Senior Driller", "Master Driller"];
+    // Supervisor selection logic for Quotation
+    const quotationSupervisorList = useMemo(() => {
+        const targetDesignations: Designation[] = ["Master Driller", "Senior Driller", "Driller", "Driller Mechanic", "Drilling Assistant", "Tracer", "Draftsman"];
         return allStaffMembers
-            .filter(s => s.status === 'Active' && supervisorRoles.includes(s.designation as Designation))
+            .filter(s => s.status === 'Active' && s.designation && targetDesignations.includes(s.designation as any))
             .sort((a,b) => a.name.localeCompare(b.name));
     }, [allStaffMembers]);
-
+    
     const handleSupervisorChange = (staffId: string) => {
-        const staff = supervisorList.find(s => s.id === staffId);
+        const staff = quotationSupervisorList.find(s => s.id === staffId);
         if (staff) {
             const userForStaff = allUsers.find(u => u.staffId === staff.id);
             setValue('supervisorName', staff.name);
@@ -134,6 +148,10 @@ export default function ArsEntryPage() {
             setValue('supervisorUid', null);
         }
     };
+    
+    const sortedLsgMaps = useMemo(() => 
+        [...(allLsgConstituencyMaps || [])].sort((a,b) => a.name.localeCompare(b.name)), 
+    [allLsgConstituencyMaps]);
     
     // Auto-populate constituency
     const constituencyOptionsForLsg = useMemo(() => {
@@ -149,6 +167,45 @@ export default function ArsEntryPage() {
     }, [constituencyOptionsForLsg, getValues, setValue]);
 
     const isConstituencyDisabled = isReadOnly || !watchedLsg || constituencyOptionsForLsg.length <= 1;
+
+    // Contractor and Tender Logic
+    const watchedTenderNo = watch("arsTenderNo");
+    const isTenderSelected = watchedTenderNo && watchedTenderNo !== 'Quotation' && watchedTenderNo !== '_clear_';
+    const isQuotation = watchedTenderNo === 'Quotation';
+
+    useEffect(() => {
+        if (isTenderSelected) {
+            const selectedTender = (allE_tenders || []).find(t => t.eTenderNo === watchedTenderNo);
+            if (selectedTender) {
+                const validBidders = (selectedTender.bidders || []).filter((b: Bidder) => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
+                const l1Bidder = validBidders.length > 0 ? validBidders.reduce((lowest: Bidder, current: Bidder) => (lowest.quotedAmount! < current.quotedAmount!) ? lowest : current) : null;
+                setValue('arsContractorName', l1Bidder ? `${l1Bidder.name}, ${l1Bidder.address || ''}` : '');
+
+                const staffIdentities: string[] = [];
+                const addStaffInfo = (name?: string | null) => {
+                    if (!name) return;
+                    const staff = (allStaffMembers || []).find(s => s.name === name);
+                    if (staff) {
+                        staffIdentities.push(`${staff.name} (${staff.designation})`);
+                    } else {
+                        staffIdentities.push(name);
+                    }
+                };
+                addStaffInfo(selectedTender.nameOfAssistantEngineer);
+                addStaffInfo(selectedTender.supervisor1Name);
+                addStaffInfo(selectedTender.supervisor2Name);
+                addStaffInfo(selectedTender.supervisor3Name);
+                const joinedInfo = staffIdentities.join(', ');
+                setValue('supervisorName', joinedInfo);
+                setValue('supervisorUid', null);
+            }
+        } else if (watchedTenderNo === '_clear_' || !watchedTenderNo) {
+            setValue('arsContractorName', '');
+            setValue('supervisorName', '');
+            setValue('supervisorUid', undefined);
+        }
+    }, [watchedTenderNo, isTenderSelected, isQuotation, allE_tenders, allStaffMembers, setValue]);
+
 
     const onSubmit = async (data: ArsEntryFormData) => {
         setIsSubmitting(true);
@@ -185,7 +242,7 @@ export default function ArsEntryPage() {
                     <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <FormField name="fileNo" control={control} render={({ field }) => ( <FormItem><FormLabel>File No *</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="nameOfSite" control={control} render={({ field }) => ( <FormItem><FormLabel>Name of Site *</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="localSelfGovt" control={control} render={({ field }) => ( <FormItem><FormLabel>Local Self Govt.</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl><SelectContent className="max-h-80">{allLsgConstituencyMaps.map(m => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
+                        <FormField name="localSelfGovt" control={control} render={({ field }) => ( <FormItem><FormLabel>Local Self Govt.</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl><SelectContent className="max-h-80">{sortedLsgMaps.map(m => <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
                         <FormField name="constituency" control={control} render={({ field }) => ( <FormItem><FormLabel>Constituency (LAC)</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isConstituencyDisabled}><FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl><SelectContent className="max-h-80">{constituencyOptionsForLsg.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
                         <FormField name="arsBlock" control={control} render={({ field }) => ( <FormItem><FormLabel>Block</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="latitude" control={control} render={({ field }) => ( <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
@@ -195,36 +252,70 @@ export default function ArsEntryPage() {
 
                 <Card>
                     <CardHeader><CardTitle>2. Scheme Details</CardTitle></CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField name="arsTypeOfScheme" control={control} render={({ field }) => ( <FormItem><FormLabel>Type of Scheme</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select Scheme"/></SelectTrigger></FormControl><SelectContent>{arsTypeOfSchemeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
                         <FormField name="arsNumberOfStructures" control={control} render={({ field }) => ( <FormItem><FormLabel>No. of Structures</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="arsStorageCapacity" control={control} render={({ field }) => ( <FormItem><FormLabel>Storage Capacity (m³)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         <FormField name="arsNumberOfFillings" control={control} render={({ field }) => ( <FormItem><FormLabel>No. of Fillings</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
-                        <FormField name="noOfBeneficiary" control={control} render={({ field }) => ( <FormItem><FormLabel>No. of Beneficiaries</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                     </CardContent>
                 </Card>
 
                 <Card>
-                    <CardHeader><CardTitle>3. Financial & Tender Details</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>3. Financials & Implementation</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                         <FormField name="estimateAmount" control={control} render={({ field }) => ( <FormItem><FormLabel>Estimate Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                          <FormField name="arsAsTsDetails" control={control} render={({ field }) => ( <FormItem><FormLabel>AS/TS Details</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                          <FormField name="arsSanctionedDate" control={control} render={({ field }) => ( <FormItem><FormLabel>Sanctioned Date</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem> )}/>
                          <FormField name="tsAmount" control={control} render={({ field }) => ( <FormItem><FormLabel>TS Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
-                         <FormField name="arsTenderNo" control={control} render={({ field }) => ( <FormItem><FormLabel>Tender No.</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
-                         <FormField name="arsContractorName" control={control} render={({ field }) => ( <FormItem><FormLabel>Contractor</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
+                         <FormField name="arsTenderNo" control={control} render={({ field }) => ( <FormItem><FormLabel>Tender No.</FormLabel>
+                            <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select Tender or Quotation" /></SelectTrigger></FormControl>
+                                <SelectContent className="max-h-80"><SelectItem value="_clear_">-- Clear Selection --</SelectItem><SelectItem value="Quotation">Quotation</SelectItem>{(allE_tenders || []).filter(t => t.eTenderNo).map(t => <SelectItem key={t.id} value={t.eTenderNo!}>{t.eTenderNo}</SelectItem>)}</SelectContent>
+                            </Select>
+                         <FormMessage/></FormItem> )}/>
                          <FormField name="arsTenderedAmount" control={control} render={({ field }) => ( <FormItem><FormLabel>Tendered Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                          <FormField name="arsAwardedAmount" control={control} render={({ field }) => ( <FormItem><FormLabel>Awarded Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
+                         <FormField name="arsContractorName" control={control} render={({ field }) => ( 
+                            <FormItem>
+                                <FormLabel>Contractor</FormLabel>
+                                {isQuotation ? (
+                                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Contractor" /></SelectTrigger></FormControl>
+                                        <SelectContent>
+                                            {(allBidders || []).map(b => <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                ) : (
+                                    <FormControl><Input {...field} value={field.value ?? ''} readOnly={isTenderSelected || isReadOnly} className={isTenderSelected ? 'bg-muted' : ''} /></FormControl>
+                                )}
+                                <FormMessage/>
+                            </FormItem>
+                         )}/>
+                         <FormField name="supervisorUid" control={control} render={({ field }) => ( 
+                            <FormItem>
+                                <FormLabel>Supervisor</FormLabel>
+                                {isQuotation ? (
+                                     <Select onValueChange={(staffId) => handleSupervisorChange(staffId)} value={field.value || ""} disabled={isReadOnly}>
+                                        <FormControl><SelectTrigger><SelectValue placeholder="Assign a supervisor" /></SelectTrigger></FormControl>
+                                        <SelectContent>{quotationSupervisorList.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.designation})</SelectItem>)}</SelectContent>
+                                    </Select>
+                                ) : (
+                                    <FormControl><Input {...watch('supervisorName')} readOnly={isTenderSelected || isReadOnly} className={isTenderSelected ? 'bg-muted' : ''}/></FormControl>
+                                )}
+                                <FormMessage/>
+                            </FormItem>
+                         )}/>
+                         <FormField name="noOfBeneficiary" control={control} render={({ field }) => ( <FormItem><FormLabel>No. of Beneficiaries</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                     </CardContent>
                 </Card>
                 
                  <Card>
                     <CardHeader><CardTitle>4. Work Status & Completion</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <FormField name="arsStatus" control={control} render={({ field }) => ( <FormItem><FormLabel>Work Status *</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select status"/></SelectTrigger></FormControl><SelectContent>{arsStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
-                            <FormField name="dateOfCompletion" control={control} render={({ field }) => ( <FormItem><FormLabel>Date of Completion</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField name="dateOfCompletion" control={control} render={({ field }) => ( <FormItem><FormLabel>Date of Completion {watchedArsStatus === 'Work Completed' && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem> )}/>
                             <FormField name="totalExpenditure" control={control} render={({ field }) => ( <FormItem><FormLabel>Total Expenditure (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
-                            <FormField name="supervisorUid" control={control} render={({ field }) => ( <FormItem><FormLabel>Supervisor</FormLabel><Select onValueChange={(staffId) => handleSupervisorChange(staffId)} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Assign a supervisor" /></SelectTrigger></FormControl><SelectContent>{supervisorList.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.designation})</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
                         </div>
                         <FormField name="workRemarks" control={control} render={({ field }) => ( <FormItem><FormLabel>Work Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                     </CardContent>
