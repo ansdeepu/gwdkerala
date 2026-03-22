@@ -134,7 +134,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     )} />
                                     <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Local Self Govt. <span className="text-destructive">*</span></FormLabel>
+                                            <FormLabel>Local Self Govt.</FormLabel>
                                             <Select onValueChange={(value) => handleLsgChange(value, field.onChange)} value={field.value || ""} disabled={isReadOnly}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
@@ -147,7 +147,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     )} />
                                     <FormField name="constituency" control={control} render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Constituency (LAC) <span className="text-destructive">*</span></FormLabel>
+                                            <FormLabel>Constituency (LAC)</FormLabel>
                                             <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isConstituencyDisabled}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
@@ -158,8 +158,8 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                             <FormMessage/>
                                         </FormItem>
                                     )} />
-                                    <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                    <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
                                 </CardContent>
                             </Card>
 
@@ -180,14 +180,14 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     </div>
                                     <FormField name="descriptionOfWork" control={control} render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Description of Work <span className="text-destructive">*</span></FormLabel>
+                                            <FormLabel>Description of Work</FormLabel>
                                             <FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} className="min-h-[80px]" placeholder="Detailed description of the logging or pumping test work..." /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
                                     <FormField name="workRemarks" control={control} render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Remarks <span className="text-destructive">*</span></FormLabel>
+                                            <FormLabel>Remarks</FormLabel>
                                             <FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} className="min-h-[60px]" placeholder="Add any technical or site observations..." /></FormControl>
                                             <FormMessage />
                                         </FormItem>
