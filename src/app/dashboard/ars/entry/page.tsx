@@ -12,7 +12,7 @@ import { useArsEntries, type ArsEntry } from '@/hooks/useArsEntries';
 import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { useDataStore } from '@/hooks/use-data-store';
 import { 
-    ArsEntrySchema as ArsEntrySchemaDef, 
+    ArsEntrySchema,
     type ArsEntryFormData, 
     arsTypeOfSchemeOptions, 
     arsStatusOptions, 
@@ -37,17 +37,6 @@ import MediaManager from '@/components/shared/MediaManager';
 import { useFieldArray } from 'react-hook-form';
 import { Separator } from '@/components/ui/separator';
 
-export const ArsEntrySchema = ArsEntrySchemaDef.extend({
-    estimateAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-}).superRefine((data, ctx) => {
-    if (data.arsStatus === 'Work Completed' && !data.dateOfCompletion) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Completion Date is required for 'Work Completed' status.",
-            path: ["dateOfCompletion"],
-        });
-    }
-});
 
 export const dynamic = 'force-dynamic';
 
