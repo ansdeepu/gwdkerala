@@ -74,7 +74,7 @@ export default function ArsEntryPage() {
     const readOnlyParam = searchParams.get('readOnly');
     const approveUpdateId = searchParams.get('approveUpdateId');
 
-    const isReadOnly = readOnlyParam === 'true' || user?.role === 'viewer' || (user?.role === 'supervisor' && user.uid !== arsEntry?.supervisorUid);
+    const isReadOnly = readOnlyParam === 'true' || user?.role === 'viewer' || (user?.role === 'supervisor' && arsEntry && user.uid !== arsEntry.supervisorUid);
     const canEdit = user?.role === 'admin' || user?.role === 'engineer';
     
     useEffect(() => {
@@ -143,7 +143,7 @@ export default function ArsEntryPage() {
         [...(allLsgConstituencyMaps || [])].sort((a,b) => a.name.localeCompare(b.name)), 
     [allLsgConstituencyMaps]);
     
-    // Auto-populate constituency
+    // Auto-populate constituency logic
     const constituencyOptionsForLsg = useMemo(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) return [];
         const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
@@ -151,10 +151,24 @@ export default function ArsEntryPage() {
     }, [watchedLsg, allLsgConstituencyMaps]);
 
     useEffect(() => {
-        if (constituencyOptionsForLsg.length === 1 && getValues('constituency') !== constituencyOptionsForLsg[0]) {
-            setValue('constituency', constituencyOptionsForLsg[0] as Constituency);
+        if (!watchedLsg) {
+            if (getValues('constituency')) {
+                setValue('constituency', undefined);
+            }
+            return;
         }
-    }, [constituencyOptionsForLsg, getValues, setValue]);
+        const currentConstituency = getValues('constituency');
+
+        if (constituencyOptionsForLsg.length === 1) {
+            if (currentConstituency !== constituencyOptionsForLsg[0]) {
+                setValue('constituency', constituencyOptionsForLsg[0] as Constituency);
+            }
+        } else {
+            if (currentConstituency && !constituencyOptionsForLsg.includes(currentConstituency)) {
+                setValue('constituency', undefined);
+            }
+        }
+    }, [watchedLsg, constituencyOptionsForLsg, setValue, getValues]);
     
     const constituencyPlaceholder = useMemo(() => {
         if (!watchedLsg) return "Select LSG first";
