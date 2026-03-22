@@ -206,6 +206,7 @@ const ReportCategoryTable = ({
   categoryLabels,
   onCountClick,
   diameter,
+  alwaysVisible = false,
 }: {
   accordionId: string;
   title: string;
@@ -214,6 +215,7 @@ const ReportCategoryTable = ({
   categoryLabels: Record<string, string>;
   onCountClick: (data: SiteDetailWithFileContext[], title: string) => void;
   diameter?: string; 
+  alwaysVisible?: boolean;
 }) => {
     const hasData = useMemo(() => {
         if (!data) return false;
@@ -223,7 +225,7 @@ const ReportCategoryTable = ({
         });
     }, [data, categoryKeys, diameter]);
   
-    if (!hasData) return null;
+    if (!hasData && !alwaysVisible) return null;
   
     return (
       <AccordionItem value={accordionId} className="border-b-0">
@@ -289,7 +291,6 @@ export default function ProgressReportPage() {
 
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
-    const isDateFilterActive = !!sDate && !!eDate;
 
     const safeParseDate = (dateInput: any): Date | null => {
         if (!dateInput) return null;
@@ -340,8 +341,7 @@ export default function ProgressReportPage() {
     const bwcData = createNestedStructure(applicationTypeOptions, BWC_DIAMETERS);
     const twcData = createNestedStructure(applicationTypeOptions, TWC_DIAMETERS);
     const gwInvestigationData = createNestedStructure(typeOfWellOptions, applicationTypeOptions);
-    const vesData = createNestedStructure(typeOfWellOptions, applicationTypeOptions);
-    
+    const vesData = createSingleStructure(applicationTypeOptions);
     const geologicalLoggingData = createSingleStructure(applicationTypeOptions);
     const geophysicalLoggingData = createSingleStructure(applicationTypeOptions);
     const pumpingTestData = createSingleStructure(applicationTypeOptions);
@@ -385,14 +385,17 @@ export default function ProgressReportPage() {
             else if (purpose === 'TWC' && diameter && twcData[applicationType]?.[diameter]) updateStats(twcData[applicationType][diameter]);
             else if ((INVESTIGATION_WELL_TYPE_PURPOSES as readonly string[]).includes(purpose)) {
                 const wellType = (site as any).typeOfWell as TypeOfWell;
-                if (wellType) {
-                    const target = purpose === 'GW Investigation' ? gwInvestigationData : vesData;
-                    if(target[wellType]?.[applicationType]) updateStats(target[wellType][applicationType]);
+                if(purpose === 'GW Investigation') {
+                    if (wellType && gwInvestigationData[wellType]?.[applicationType]) {
+                        updateStats(gwInvestigationData[wellType][applicationType]);
+                    }
+                } else if (purpose === 'VES' && vesData[applicationType]) {
+                    updateStats(vesData[applicationType]);
                 }
             } else if ((INVESTIGATION_APP_TYPE_PURPOSES as readonly string[]).includes(purpose)) {
                 if (applicationType) {
                     const targetData = purpose === "Geological logging" ? geologicalLoggingData : geophysicalLoggingData;
-                    updateStats(targetData[applicationType]);
+                    if(targetData[applicationType]) updateStats(targetData[applicationType]);
                 }
             } else if ((PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose) && pumpingTestData[applicationType]) {
                 updateStats(pumpingTestData[applicationType]);
@@ -404,28 +407,37 @@ export default function ProgressReportPage() {
     });
 
     const calculateBalanceAndTotal = (stats: ProgressStats) => {
-        stats.totalApplications = stats.previousBalance + stats.currentApplications - stats.toBeRefunded;
-        stats.balance = stats.totalApplications - stats.completed;
+        if(!stats) return;
+        stats.totalApplications = (stats.previousBalance || 0) + (stats.currentApplications || 0) - (stats.toBeRefunded || 0);
+        stats.balance = (stats.totalApplications || 0) - (stats.completed || 0);
+        
         const totalApplicationSites = new Map<string, SiteDetailWithFileContext>();
-        [...stats.previousBalanceData, ...stats.currentApplicationsData].forEach(site => { const key = `${site.fileNo}-${site.nameOfSite}`; if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); });
-        const toBeRefundedKeys = new Set(stats.toBeRefundedData.map(site => `${site.fileNo}-${site.nameOfSite}`));
+        [...(stats.previousBalanceData || []), ...(stats.currentApplicationsData || [])].forEach(site => { 
+            const key = `${site.fileNo}-${site.nameOfSite}`; 
+            if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
+        });
+        
+        const toBeRefundedKeys = new Set((stats.toBeRefundedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
         toBeRefundedKeys.forEach(key => totalApplicationSites.delete(key));
         stats.totalApplicationsData = Array.from(totalApplicationSites.values());
-        const completedKeys = new Set(stats.completedData.map(site => `${site.fileNo}-${site.nameOfSite}`));
-        stats.balanceData = stats.totalApplicationsData.filter(site => !completedKeys.has(`${site.fileNo}-${site.nameOfSite}`));
+        
+        const completedKeys = new Set((stats.completedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
+        stats.balanceData = (stats.totalApplicationsData || []).filter(site => !completedKeys.has(`${site.fileNo}-${site.nameOfSite}`));
     };
     
     Object.values(progressSummaryData).forEach(calculateBalanceAndTotal);
+    
+    Object.values(gwInvestigationData).forEach(wellTypeData => {
+        Object.values(wellTypeData).forEach(calculateBalanceAndTotal);
+    });
+    Object.values(vesData).forEach(calculateBalanceAndTotal);
+    Object.values(geologicalLoggingData).forEach(calculateBalanceAndTotal);
+    Object.values(geophysicalLoggingData).forEach(calculateBalanceAndTotal);
+    Object.values(pumpingTestData).forEach(calculateBalanceAndTotal);
+
     applicationTypeOptions.forEach(appType => {
       BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
       TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
-      if(geologicalLoggingData[appType]) calculateBalanceAndTotal(geologicalLoggingData[appType]);
-      if(geophysicalLoggingData[appType]) calculateBalanceAndTotal(geophysicalLoggingData[appType]);
-      if(pumpingTestData[appType]) calculateBalanceAndTotal(pumpingTestData[appType]);
-    });
-    typeOfWellOptions.forEach(w => {
-      if(gwInvestigationData[w]) calculateBalanceAndTotal(gwInvestigationData[w]);
-      if(vesData[w]) calculateBalanceAndTotal(vesData[w]);
     });
     Object.values(otherSchemesData).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal));
 
@@ -440,7 +452,7 @@ export default function ProgressReportPage() {
     const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
-            return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
+            return d && isWithinInterval(d, { start: sDate, end: eDate });
         };
 
         entries.forEach(entry => {
@@ -464,7 +476,7 @@ export default function ProgressReportPage() {
 
             entry.siteDetails?.forEach(site => {
                 const completionDate = safeParseDate(site.dateOfCompletion);
-                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate, end: eDate })) {
+                if (completionDate && isValid(completionDate) && isWithinInterval(completionDate, { start: sDate, end: eDate })) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
                     summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! });
@@ -481,12 +493,15 @@ export default function ProgressReportPage() {
         if (!entry.id) return;
         entry.paymentDetails?.forEach(pd => {
             const paymentDate = safeParseDate(pd.dateOfPayment);
-            if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate!, end: eDate! }) && pd.revenueHead) {
+            if (paymentDate && isValid(paymentDate) && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
                 const amount = Number(pd.revenueHead) || 0;
                 if (amount > 0) {
                     const existing = uniqueRevenueCredits.get(entry.id!);
-                    if (existing) existing.amount += amount;
-                    else uniqueRevenueCredits.set(entry.id!, { entryId: entry.id!, amount });
+                    if (existing) {
+                        existing.amount += amount;
+                    } else {
+                        uniqueRevenueCredits.set(entry.id!, { entryId: entry.id!, amount });
+                    }
                 }
             }
         });
@@ -747,10 +762,11 @@ export default function ProgressReportPage() {
                     <CardContent>
                         <div className="relative overflow-x-auto">
                             <Table className="min-w-full border-collapse">
-                            <TableHeader><TableRow><TableHead className="border p-2 align-middle text-center font-semibold">Service Type</TableHead><TableHead className="border p-2 text-center font-semibold">Previous Balance</TableHead><TableHead className="border p-2 text-center font-semibold">Current Application</TableHead><TableHead className="border p-2 text-center font-semibold">To be refunded</TableHead><TableHead className="border p-2 text-center font-bold">Total Application</TableHead><TableHead className="border p-2 text-center font-semibold">Completed</TableHead><TableHead className="border p-2 text-center font-bold">Balance</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead className="border p-2 align-middle text-center font-semibold">Service Type</TableHead><TableHead className="border p-2 text-center font-semibold">Prev Balance</TableHead><TableHead className="border p-2 text-center font-semibold">Current Application</TableHead><TableHead className="border p-2 text-center font-semibold">To be refunded</TableHead><TableHead className="border p-2 text-center font-bold">Total Application</TableHead><TableHead className="border p-2 text-center font-semibold">Completed</TableHead><TableHead className="border p-2 text-center font-bold">Balance</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {REPORTING_PURPOSE_ORDER.map(purpose => {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
+                                if (!stats) return null;
                                 return (
                                     <TableRow key={purpose}>
                                         <TableCell className="border p-2 font-medium">
@@ -774,7 +790,7 @@ export default function ProgressReportPage() {
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation', 'ves', 'pumping-test', 'geo-logging', 'geophys-logging']}>
                     <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
-                    <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
+                    <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
@@ -850,3 +866,4 @@ export default function ProgressReportPage() {
     </div>
   );
 }
+
