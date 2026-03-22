@@ -46,7 +46,6 @@ const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.
 const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
 const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
 
-
 interface SiteDetailWithFileContext extends SiteDetailFormData {
   fileNo: string;
   applicantName: string;
@@ -86,6 +85,7 @@ type FinancialSummaryReport = Record<string, FinancialSummary>;
 
 const BWC_DIAMETERS = ['110 mm (4.5”)', '150 mm (6”)'];
 const TWC_DIAMETERS = ['150 mm (6”)', '200 mm (8”)'];
+const FPW_DIAMETERS = ['110 mm (4.5”)'];
 
 
 const REFUNDED_STATUSES: SiteWorkStatus[] = ['To be Refunded'];
@@ -220,7 +220,19 @@ const ReportCategoryTable = ({
         if (!data) return false;
         return categoryKeys.some(catKey => {
             const stats = diameter ? data[catKey]?.[diameter] : data[catKey];
-            return stats && Object.values(stats).some(val => (typeof val === 'number' && val > 0));
+            if (!stats) return false;
+            return Object.values(stats).some(val => {
+                if (typeof val === 'number' && val > 0) return true;
+                if (Array.isArray(val) && val.length > 0) return true;
+                // Deeper check for nested GW Investigation data
+                if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+                    return Object.values(val).some((nestedVal: any) => 
+                        (typeof nestedVal === 'number' && nestedVal > 0) || 
+                        (Array.isArray(nestedVal) && nestedVal.length > 0)
+                    );
+                }
+                return false;
+            });
         });
     }, [data, categoryKeys, diameter]);
   
@@ -248,6 +260,42 @@ const ReportCategoryTable = ({
     );
   };
 
+const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (dataType: 'application' | 'payment', purpose: string, data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
+  const categories = Object.keys(data);
+  const totals = {
+      totalApplications: categories.reduce((sum, key) => sum + data[key].totalApplications, 0),
+      totalRemittance: categories.reduce((sum, key) => sum + data[key].totalRemittance, 0),
+      totalCompleted: categories.reduce((sum, key) => sum + data[key].totalCompleted, 0),
+      totalPayment: categories.reduce((sum, key) => sum + data[key].totalPayment, 0),
+  };
+  if (categories.length === 0) return <p className="text-center text-sm text-muted-foreground p-4">No data for this category in the selected period.</p>;
+  return (
+      <Table>
+          <TableHeader><TableRow><TableHead>Type of Purpose</TableHead><TableHead className="text-center">Total Application Received</TableHead><TableHead className="text-right">Total Remittance (₹)</TableHead><TableHead className="text-center">No. of Application Completed</TableHead><TableHead className="text-right">Total Payment (₹)</TableHead></TableRow></TableHeader>
+          <TableBody>
+              {categories.map(key => (
+                  <TableRow key={key}>
+                      <TableCell className="font-medium">{key}</TableCell>
+                      <TableCell className="text-center"><Button variant="link" disabled={data[key].totalApplications === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Applications for ${key}`)}>{data[key].totalApplications}</Button></TableCell>
+                      <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalRemittance === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Remittances for ${key}`)}>{data[key].totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
+                      <TableCell className="text-center"><Button variant="link" disabled={data[key].totalCompleted === 0} onClick={() => onCellClick('application', key, data[key].completedData, `${category} Completed Works for ${key}`)}>{data[key].totalCompleted}</Button></TableCell>
+                      <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalPayment === 0} onClick={() => onCellClick('payment', key, data[key].paymentData, `${category} Payments for ${key}`)}>{data[key].totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
+                  </TableRow>
+              ))}
+          </TableBody>
+          <TableFooter>
+              <TableRow className="font-bold bg-secondary">
+                  <TableCell>Total</TableCell>
+                  <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('applications')}>{totals.totalApplications}</Button></TableCell>
+                  <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('remittance')}>{totals.totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
+                  <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('completed')}>{totals.totalCompleted}</Button></TableCell>
+                  <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('payment')}>{totals.totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
+              </TableRow>
+          </TableFooter>
+      </Table>
+  );
+};
+
 
 export default function ProgressReportPage() {
   const { setHeader } = usePageHeader();
@@ -267,6 +315,13 @@ export default function ProgressReportPage() {
   const [detailDialogColumns, setDetailDialogColumns] = useState<DetailDialogColumn[]>([]);
   
   const uniqueApplicationTypes = useMemo(() => [...new Set(applicationTypeOptions.filter(type => !['GW_Investigation', 'Logging_Pumping_Test'].some(prefix => type.startsWith(prefix))))], []);
+  const UNASSIGNED_APP_TYPE = 'Unassigned';
+  const uniqueApplicationTypesWithUnassigned = useMemo(() => [...uniqueApplicationTypes, UNASSIGNED_APP_TYPE], [uniqueApplicationTypes]);
+  const applicationTypeDisplayMapWithUnassigned = useMemo(() => ({
+    ...applicationTypeDisplayMap,
+    [UNASSIGNED_APP_TYPE]: 'Unassigned / Other'
+  }), []);
+
 
   useEffect(() => {
     setHeader('Progress Reports', 'Generate monthly or periodic progress reports for various schemes and services.');
@@ -339,18 +394,19 @@ export default function ProgressReportPage() {
     const progressSummaryData: OtherServiceProgress = {} as OtherServiceProgress;
     REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
 
-    const bwcData = createNestedStructure(uniqueApplicationTypes, BWC_DIAMETERS);
-    const twcData = createNestedStructure(uniqueApplicationTypes, TWC_DIAMETERS);
-    const gwInvestigationData = createNestedStructure(typeOfWellOptions, uniqueApplicationTypes);
-    const vesData = createSingleStructure(uniqueApplicationTypes);
-    const geologicalLoggingData = createSingleStructure(uniqueApplicationTypes);
-    const geophysicalLoggingData = createSingleStructure(uniqueApplicationTypes);
-    const pumpingTestData = createSingleStructure(uniqueApplicationTypes);
+    const bwcData = createNestedStructure(uniqueApplicationTypesWithUnassigned, BWC_DIAMETERS);
+    const twcData = createNestedStructure(uniqueApplicationTypesWithUnassigned, TWC_DIAMETERS);
+    const fpwData = createNestedStructure(uniqueApplicationTypesWithUnassigned, FPW_DIAMETERS);
+    const gwInvestigationData = createNestedStructure(typeOfWellOptions, uniqueApplicationTypesWithUnassigned);
+    const vesData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    const geologicalLoggingData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    const geophysicalLoggingData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    const pumpingTestData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
     
     const otherSchemesData: Record<string, Record<string, ProgressStats>> = {};
-    const otherSchemesPurposes = ["FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"];
+    const otherSchemesPurposes: SitePurpose[] = ["BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"];
     otherSchemesPurposes.forEach(p => {
-        otherSchemesData[p] = createSingleStructure(uniqueApplicationTypes);
+        otherSchemesData[p] = createSingleStructure(uniqueApplicationTypesWithUnassigned);
     });
     
     includedSites.forEach(siteWithFileContext => {
@@ -359,38 +415,45 @@ export default function ProgressReportPage() {
         const diameter = site.diameter;
         const workStatus = site.workStatus as SiteWorkStatus | undefined;
         const completionDate = safeParseDate(site.dateOfCompletion);
-        const applicationType = siteWithFileContext.applicationType;
+        const applicationType = siteWithFileContext.applicationType || UNASSIGNED_APP_TYPE;
+        const isDateFilterActive = !!sDate && !!eDate;
 
-        const isCurrentApplicationInPeriod = fileRemittanceDate && isWithinInterval(fileRemittanceDate, { start: sDate, end: eDate });
-        const isCompletedInPeriod = completionDate && isWithinInterval(completionDate, { start: sDate, end: eDate });
+        const isCurrentApplicationInPeriod = fileRemittanceDate && isDateFilterActive && isWithinInterval(fileRemittanceDate, { start: sDate!, end: eDate! });
+        const isCompletedInPeriod = completionDate && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! });
         const isToBeRefunded = workStatus && REFUNDED_STATUSES.includes(workStatus);
-        const wasActiveBeforePeriod = fileRemittanceDate && isBefore(fileRemittanceDate, sDate) && (!completionDate || !isBefore(completionDate, sDate));
+        const wasActiveBeforePeriod = fileRemittanceDate && isDateFilterActive && isBefore(fileRemittanceDate, sDate!) && (!completionDate || !isBefore(completionDate, sDate!));
 
         const updateStats = (statsObj: ProgressStats) => {
             if (!statsObj) return;
             if (isCurrentApplicationInPeriod) { statsObj.currentApplications++; statsObj.currentApplicationsData.push(siteWithFileContext); }
             if (wasActiveBeforePeriod) { statsObj.previousBalance++; statsObj.previousBalanceData.push(siteWithFileContext); }
             if (isCompletedInPeriod) { statsObj.completed++; statsObj.completedData.push(siteWithFileContext); }
-            if (isToBeRefunded && fileRemittanceDate && isBefore(fileRemittanceDate, eDate)) { statsObj.toBeRefunded++; statsObj.toBeRefundedData.push(siteWithFileContext); }
+            if (isToBeRefunded && fileRemittanceDate && isDateFilterActive && isBefore(fileRemittanceDate, eDate!)) { statsObj.toBeRefunded++; statsObj.toBeRefundedData.push(siteWithFileContext); }
         };
-        
-        let summaryPurposeKey: SitePurpose | null = null;
-        if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) summaryPurposeKey = 'Pumping test';
-        else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) summaryPurposeKey = purpose;
 
-        if (summaryPurposeKey) updateStats(progressSummaryData[summaryPurposeKey]);
-        if (purpose === 'GW Investigation' && site.vesRequired === 'Yes' && progressSummaryData['VES']) updateStats(progressSummaryData['VES']);
-        
+        if (purpose === 'GW Investigation') {
+            updateStats(progressSummaryData['GW Investigation']);
+            if (site.vesRequired === 'Yes') {
+                updateStats(progressSummaryData['VES']);
+            }
+        } else if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
+             updateStats(progressSummaryData['Pumping test']);
+        } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) {
+            if (progressSummaryData[purpose]) {
+                updateStats(progressSummaryData[purpose]);
+            }
+        }
+
         if (applicationType) {
             if (purpose === 'BWC' && diameter && bwcData[applicationType]?.[diameter]) updateStats(bwcData[applicationType][diameter]);
             else if (purpose === 'TWC' && diameter && twcData[applicationType]?.[diameter]) updateStats(twcData[applicationType][diameter]);
+            else if (purpose === 'FPW' && diameter && fpwData[applicationType]?.[diameter]) updateStats(fpwData[applicationType][diameter]);
             else if (purpose === 'GW Investigation') {
                 const wellType = (site as any).typeOfWell as TypeOfWell;
                 if (wellType && applicationType && gwInvestigationData[wellType]?.[applicationType]) {
                     updateStats(gwInvestigationData[wellType][applicationType]);
                 }
-            } else if (purpose === 'VES') {
-                if(applicationType && vesData[applicationType]) {
+                if (site.vesRequired === 'Yes' && vesData[applicationType]) {
                     updateStats(vesData[applicationType]);
                 }
             } else if (purpose === "Geological logging") {
@@ -408,13 +471,21 @@ export default function ProgressReportPage() {
     const calculateBalanceAndTotal = (stats: ProgressStats) => {
         if(!stats) return;
         stats.totalApplications = (stats.previousBalance || 0) + (stats.currentApplications || 0) - (stats.toBeRefunded || 0);
-        stats.balance = (stats.totalApplications || 0) - (stats.completed || 0);
+        stats.balance = stats.totalApplications - (stats.completed || 0);
         
         const totalApplicationSites = new Map<string, SiteDetailWithFileContext>();
-        [...(stats.previousBalanceData || []), ...(stats.currentApplicationsData || [])].forEach(site => { 
-            const key = `${site.fileNo}-${site.nameOfSite}`; 
-            if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
-        });
+        if (stats.previousBalanceData) {
+            stats.previousBalanceData.forEach(site => { 
+                const key = `${site.fileNo}-${site.nameOfSite}`; 
+                if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
+            });
+        }
+        if (stats.currentApplicationsData) {
+            stats.currentApplicationsData.forEach(site => { 
+                const key = `${site.fileNo}-${site.nameOfSite}`; 
+                if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
+            });
+        }
         
         const toBeRefundedKeys = new Set((stats.toBeRefundedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
         toBeRefundedKeys.forEach(key => totalApplicationSites.delete(key));
@@ -432,9 +503,10 @@ export default function ProgressReportPage() {
     Object.values(geophysicalLoggingData).forEach(calculateBalanceAndTotal);
     Object.values(pumpingTestData).forEach(calculateBalanceAndTotal);
 
-    applicationTypeOptions.forEach(appType => {
+    uniqueApplicationTypesWithUnassigned.forEach(appType => {
       BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
       TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
+      FPW_DIAMETERS.forEach(d => { if(fpwData[appType]?.[d]) calculateBalanceAndTotal(fpwData[appType][d]) });
     });
     Object.values(otherSchemesData).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal));
 
@@ -449,7 +521,7 @@ export default function ProgressReportPage() {
     const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
-            return d && isDateFilterActive && isWithinInterval(d, { start: sDate, end: eDate });
+            return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
         };
 
         entries.forEach(entry => {
@@ -473,7 +545,7 @@ export default function ProgressReportPage() {
 
             entry.siteDetails?.forEach(site => {
                 const completionDate = safeParseDate(site.dateOfCompletion);
-                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate, end: eDate })) {
+                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! })) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
                     summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! });
@@ -488,31 +560,33 @@ export default function ProgressReportPage() {
     const uniqueRevenueCredits = new Map<string, { entryId: string; amount: number }>();
     fileEntries.forEach(entry => {
         if (!entry.id) return;
-        entry.paymentDetails?.forEach(pd => {
-            const paymentDate = safeParseDate(pd.dateOfPayment);
-            if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
-                const amount = Number(pd.revenueHead) || 0;
-                if (amount > 0) {
-                    const existing = uniqueRevenueCredits.get(entry.id!);
-                    if (existing) {
-                        existing.amount += amount;
-                    } else {
-                        uniqueRevenueCredits.set(entry.id!, { entryId: entry.id!, amount });
+        if (isDateFilterActive) {
+            entry.paymentDetails?.forEach(pd => {
+                const paymentDate = safeParseDate(pd.dateOfPayment);
+                if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate!, end: eDate! }) && pd.revenueHead) {
+                    const amount = Number(pd.revenueHead) || 0;
+                    if (amount > 0) {
+                        const existing = uniqueRevenueCredits.get(entry.id!);
+                        if (existing) {
+                            existing.amount += amount;
+                        } else {
+                            uniqueRevenueCredits.set(entry.id!, { entryId: entry.id!, amount });
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     });
 
     const totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, item) => sum + item.amount, 0);
 
     setReportData({ 
-        bwcData, twcData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
+        bwcData, twcData, fpwData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
         otherSchemesData, privateFinancialSummaryData, governmentFinancialSummaryData,
         totalRevenueHeadCredit, revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
     });
     setIsFiltering(false);
-  }, [fileEntries, startDate, endDate, toast]);
+  }, [fileEntries, startDate, endDate, toast, uniqueApplicationTypesWithUnassigned]);
   
   useEffect(() => {
     if (!entriesLoading) {
@@ -532,6 +606,30 @@ export default function ProgressReportPage() {
   };
   
   const handleExportExcel = async () => { /* Excel export logic here */ };
+  
+    const handleGeneratePdfReport = async () => {
+    if (!reportData) {
+      toast({ title: 'No report data to generate PDF.' });
+      return;
+    }
+    setIsGeneratingPdf(true);
+    try {
+      const pdfBytes = await generateProgressReportPdf(
+        reportData,
+        officeAddress,
+        startDate,
+        endDate
+      );
+      download(pdfBytes, `Progress_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`, 'application/pdf');
+      toast({ title: "PDF Generated", description: "Progress report has been downloaded." });
+    } catch (error: any) {
+      console.error("PDF Generation Error:", error);
+      toast({ title: "PDF Generation Failed", description: error.message, variant: 'destructive' });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
 
   const handleCountClick = (data: Array<any>, title: string) => {
     if (!data || data.length === 0) return;
@@ -579,7 +677,7 @@ export default function ProgressReportPage() {
         columns = [
             { key: 'slNo', label: 'Sl. No.' },
             { key: 'fileNo', label: 'File No.' },
-            { key: 'applicantName', label: 'Applicant' },
+            { key: 'applicantName', label: 'Applicant Name' },
             { key: 'siteNames', label: 'Site Name(s)' },
             { key: 'purposes', label: 'Purpose(s)' },
             { key: 'workStatuses', label: 'Work Status(es)' },
@@ -599,7 +697,7 @@ export default function ProgressReportPage() {
     } else if (isFileLevelData) {
         columns = [
             { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' },
-            { key: 'applicantName', label: 'Applicant' }, { key: 'siteName', label: 'Site Name' },
+            { key: 'applicantName', label: 'Applicant Name' }, { key: 'siteName', label: 'Site Name' },
             { key: 'purpose', label: 'Purpose' }, { key: 'workStatus', label: 'Work Status' },
             { key: 'remittedAmount', label: 'Remitted (₹)', isNumeric: true }, { key: 'remittanceDate', label: 'First Remittance' }
         ];
@@ -623,8 +721,6 @@ export default function ProgressReportPage() {
     setIsDetailDialogOpen(true);
   };
   
-  const exportDialogDataToExcel = async () => { /* Export dialog data logic here */ };
-
   const handleFinancialTotalClick = (type: 'applications' | 'remittance' | 'completed' | 'payment', financialData: FinancialSummaryReport, category: string) => {
       const allData = Object.values(financialData);
       let aggregatedData: any[] = [];
@@ -647,65 +743,35 @@ export default function ProgressReportPage() {
   };
 
 
-  const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (dataType: 'application' | 'payment', purpose: string, data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
-    const categories = Object.keys(data);
-    const totals = {
-        totalApplications: categories.reduce((sum, key) => sum + data[key].totalApplications, 0),
-        totalRemittance: categories.reduce((sum, key) => sum + data[key].totalRemittance, 0),
-        totalCompleted: categories.reduce((sum, key) => sum + data[key].totalCompleted, 0),
-        totalPayment: categories.reduce((sum, key) => sum + data[key].totalPayment, 0),
-    };
-    if (categories.length === 0) return <p className="text-center text-sm text-muted-foreground p-4">No data for this category in the selected period.</p>;
-    return (
-        <Table>
-            <TableHeader><TableRow><TableHead>Type of Purpose</TableHead><TableHead className="text-center">Total Application Received</TableHead><TableHead className="text-right">Total Remittance (₹)</TableHead><TableHead className="text-center">No. of Application Completed</TableHead><TableHead className="text-right">Total Payment (₹)</TableHead></TableRow></TableHeader>
-            <TableBody>
-                {categories.map(key => (
-                    <TableRow key={key}>
-                        <TableCell className="font-medium">{key}</TableCell>
-                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalApplications === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Applications for ${key}`)}>{data[key].totalApplications}</Button></TableCell>
-                        <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalRemittance === 0} onClick={() => onCellClick('application', key, data[key].applicationData, `${category} Remittances for ${key}`)}>{data[key].totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                        <TableCell className="text-center"><Button variant="link" disabled={data[key].totalCompleted === 0} onClick={() => onCellClick('application', key, data[key].completedData, `${category} Completed Works for ${key}`)}>{data[key].totalCompleted}</Button></TableCell>
-                        <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-mono text-right w-full block" disabled={data[key].totalPayment === 0} onClick={() => onCellClick('payment', key, data[key].paymentData, `${category} Payments for ${key}`)}>{data[key].totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                    </TableRow>
-                ))}
-            </TableBody>
-            <TableFooter>
-                <TableRow className="font-bold bg-secondary">
-                    <TableCell>Total</TableCell>
-                    <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('applications')}>{totals.totalApplications}</Button></TableCell>
-                    <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('remittance')}>{totals.totalRemittance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                    <TableCell className="text-center"><Button variant="link" className="p-0 h-auto font-bold" onClick={() => onTotalClick('completed')}>{totals.totalCompleted}</Button></TableCell>
-                    <TableCell className="text-right font-mono"><Button variant="link" className="p-0 h-auto font-bold font-mono text-right w-full block" onClick={() => onTotalClick('payment')}>{totals.totalPayment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Button></TableCell>
-                </TableRow>
-            </TableFooter>
-        </Table>
-    );
-  };
-  
-   const handleGeneratePdfReport = async () => {
-    if (!reportData) {
-      toast({ title: 'No report data to generate PDF.' });
-      return;
-    }
-    setIsGeneratingPdf(true);
-    try {
-      const pdfBytes = await generateProgressReportPdf(
-        reportData,
-        officeAddress,
-        startDate,
-        endDate
-      );
-      download(pdfBytes, `Progress_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`, 'application/pdf');
-      toast({ title: "PDF Generated", description: "Progress report has been downloaded." });
-    } catch (error: any) {
-      console.error("PDF Generation Error:", error);
-      toast({ title: "PDF Generation Failed", description: error.message, variant: 'destructive' });
-    } finally {
-      setIsGeneratingPdf(false);
-    }
-  };
-
+    const {
+        gwInvestigationBalance, vesBalance, pumpingTestBalance,
+        geologicalLoggingBalance, geophysicalLoggingBalance,
+        bwc110Balance, bwc150Balance, twc150Balance, twc200Balance, fpwBalance
+      } = useMemo(() => {
+          if (!reportData) return {};
+          const calculateTotalBalance = (data: Record<string, any> = {}) => Object.values(data).reduce((acc, stats) => acc + (stats.balance || 0), 0);
+          const calculateTotalBalanceForDiameter = (data: Record<string, any> = {}, diameter: string) => Object.values(data).reduce((acc, stats) => acc + (stats[diameter]?.balance || 0), 0);
+          
+          let gwBalance = 0;
+          if (reportData.gwInvestigationData) {
+              Object.values(reportData.gwInvestigationData).forEach((wellTypeData: any) => {
+                  gwBalance += calculateTotalBalance(wellTypeData);
+              });
+          }
+    
+          return {
+              gwInvestigationBalance: gwBalance,
+              vesBalance: calculateTotalBalance(reportData.vesData),
+              pumpingTestBalance: calculateTotalBalance(reportData.pumpingTestData),
+              geologicalLoggingBalance: calculateTotalBalance(reportData.geologicalLoggingData),
+              geophysicalLoggingBalance: calculateTotalBalance(reportData.geophysicalLoggingData),
+              bwc110Balance: calculateTotalBalanceForDiameter(reportData.bwcData, "110 mm (4.5”)"),
+              bwc150Balance: calculateTotalBalanceForDiameter(reportData.bwcData, "150 mm (6”)"),
+              twc150Balance: calculateTotalBalanceForDiameter(reportData.twcData, "150 mm (6”)"),
+              twc200Balance: calculateTotalBalanceForDiameter(reportData.twcData, "200 mm (8”)"),
+              fpwBalance: calculateTotalBalanceForDiameter(reportData.fpwData, "110 mm (4.5”)"),
+          };
+      }, [reportData]);
 
   if (entriesLoading) {
     return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -785,16 +851,19 @@ export default function ProgressReportPage() {
                     </CardContent>
                 </Card>
 
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation', 'ves', 'pumping-test', 'geo-logging', 'geophys-logging']}>
-                   <AccordionItem value="gw-investigation" className="border-b-0">
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
+                    <AccordionItem value="gw-investigation" className="border-b-0">
                       <Card className="shadow-lg">
                           <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
-                              <CardTitle>GW Investigation</CardTitle>
+                              <CardTitle>GW Investigation ({gwInvestigationBalance || 0} Balance)</CardTitle>
                           </AccordionTrigger>
                           <AccordionContent>
                               <CardContent className="pt-6 space-y-4">
                                   {typeOfWellOptions.map(wellType => {
                                       const wellTypeData = reportData.gwInvestigationData[wellType];
+                                      const hasDataForWellType = Object.values(wellTypeData).some((stats: any) => Object.values(stats).some(val => (typeof val === 'number' && val > 0)));
+                                      if (!hasDataForWellType) return null;
+
                                       return (
                                           <Card key={wellType}>
                                               <CardHeader className="p-4">
@@ -803,8 +872,8 @@ export default function ProgressReportPage() {
                                               <CardContent className="p-4 pt-0">
                                                   <ReportDetailsTable
                                                       data={wellTypeData}
-                                                      categoryKeys={uniqueApplicationTypes}
-                                                      categoryLabels={applicationTypeDisplayMap}
+                                                      categoryKeys={uniqueApplicationTypesWithUnassigned}
+                                                      categoryLabels={applicationTypeDisplayMapWithUnassigned}
                                                       onCountClick={handleCountClick}
                                                       titlePrefix={`GW Investigation - ${wellType}`}
                                                   />
@@ -815,18 +884,19 @@ export default function ProgressReportPage() {
                               </CardContent>
                           </AccordionContent>
                       </Card>
-                  </AccordionItem>
-                  <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                  <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                  <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                  <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                    </AccordionItem>
+                    <ReportCategoryTable accordionId="ves" title={`VES (${vesBalance || 0} Balance)`} data={reportData.vesData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
+                    <ReportCategoryTable accordionId="pumping-test" title={`Pumping Test (${pumpingTestBalance || 0} Balance)`} data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
+                    <ReportCategoryTable accordionId="geo-logging" title={`Geological Logging (${geologicalLoggingBalance || 0} Balance)`} data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
+                    <ReportCategoryTable accordionId="geophys-logging" title={`Geophysical Logging (${geophysicalLoggingBalance || 0} Balance)`} data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
                 </Accordion>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                  <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="bwc-110" title={`BWC - 110 mm (4.5”) (${bwc110Balance || 0} Balance)`} diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (${bwc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} alwaysVisible />
+                  <ReportCategoryTable accordionId="twc-150" title={`TWC - 150 mm (6”) (${twc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="twc-200" title={`TWC - 200 mm (8”) (${twc200Balance || 0} Balance)`} diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="fpw" title={`FPW (${fpwBalance || 0} Balance)`} diameter="110 mm (4.5”)" data={reportData.fpwData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} alwaysVisible />
                 </Accordion>
 
                 <Card>
@@ -882,7 +952,7 @@ export default function ProgressReportPage() {
             </ScrollArea>
           </div>
           <DialogFooter className="p-6 pt-4 border-t">
-              <Button variant="outline" disabled={detailDialogData.length === 0} onClick={() => {}}>
+              <Button variant="outline" disabled={detailDialogData.length === 0} onClick={handleExportExcel}>
                   <FileDown className="mr-2 h-4 w-4" /> Export to Excel
               </Button>
               <DialogClose asChild>
