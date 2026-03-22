@@ -52,6 +52,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
             ...initialData,
             dateOfInvestigation: formatDateForInput(initialData?.dateOfInvestigation),
             vesDate: formatDateForInput(initialData?.vesDate),
+            dateOfCompletion: formatDateForInput(initialData?.dateOfCompletion),
             workImages: initialData?.workImages || [],
             workVideos: initialData?.workVideos || [],
         },
@@ -65,6 +66,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
     const watchedVesRequired = watch("vesRequired");
     const watchedTypeOfWell = watch("typeOfWell");
     const watchedFeasibility = watch("feasibility");
+    const watchedWorkStatus = watch("workStatus");
 
     useEffect(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) {
@@ -120,6 +122,8 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
         if (constituencyOptionsForLsg.length <= 1) return true;
         return false;
     }, [isReadOnly, watchedLsg, constituencyOptionsForLsg]);
+
+    const isCompletionDateRequired = watchedWorkStatus === 'Work Completed';
 
     return (
         <FormProvider {...form}>
@@ -226,17 +230,33 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
 
                             <Card>
                                 <CardHeader><CardTitle className="text-lg text-primary">Work Status</CardTitle></CardHeader>
-                                <CardContent>
-                                    <FormField name="workStatus" control={control} render={({ field }) => (
+                                <CardContent className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <FormField name="workStatus" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
+                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
+                                                    <SelectContent className="max-h-80">
+                                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                        {INVESTIGATION_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="dateOfCompletion" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel>
+                                                <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </div>
+                                    <FormField name="workRemarks" control={control} render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Work Status <span className="text-destructive">*</span></FormLabel>
-                                            <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
-                                                <SelectContent className="max-h-80">
-                                                    <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                    {INVESTIGATION_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
+                                            <FormLabel>Status Remarks</FormLabel>
+                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} placeholder="Add any remarks regarding the status..." /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />

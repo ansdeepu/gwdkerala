@@ -265,6 +265,14 @@ export const SiteDetailSchema = z.object({
   geophysicalRemarks: z.string().optional().nullable().default(""),
   workImages: z.array(MediaItemSchema).optional().default([]),
   workVideos: z.array(MediaItemSchema).optional().default([]),
+}).superRefine((data, ctx) => {
+    if (data.workStatus === 'Work Completed' && !data.dateOfCompletion) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Completion Date is required when status is 'Work Completed'",
+            path: ["dateOfCompletion"],
+        });
+    }
 });
 export type SiteDetailFormData = z.infer<typeof SiteDetailSchema>;
 
