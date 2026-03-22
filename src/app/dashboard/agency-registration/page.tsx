@@ -37,6 +37,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAgencyApplications } from '@/hooks/useAgencyApplications';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Loader2, Search, PlusCircle, Save, X, Trash2, ShieldAlert, UserPlus, FilePlus, ChevronsUpDown, RotateCcw, RefreshCw, CheckCircle, Info, Ban, FileUp, MoreVertical, ArrowLeft, Eye, FileDown, Clock } from 'lucide-react';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
 
@@ -210,9 +211,19 @@ const RegistrationTable = ({
                           <TableCell><Badge variant={app.status === 'Active' ? 'default' : 'secondary'}>{app.status}</Badge></TableCell>
                           <TableCell className="text-center">
                               <div className="flex items-center justify-center">
-                                  <Button variant="ghost" size="icon" onClick={() => onView(app.id!)}><Eye className="h-4 w-4" /></Button>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" onClick={() => onView(app.id!)}><Eye className="h-4 w-4" /></Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>View / Edit Details</p></TooltipContent>
+                                </Tooltip>
                                   {canDelete && (
-                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => onDelete(app.id!)}><Trash2 className="h-4 w-4" /></Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => onDelete(app.id!)}><Trash2 className="h-4 w-4" /></Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Delete Application</p></TooltipContent>
+                                    </Tooltip>
                                   )}
                               </div>
                           </TableCell>
@@ -322,11 +333,13 @@ const RigAccordionItem = ({
                 </div>
                  {!isReadOnly && (
                     <div className="flex items-center space-x-1 mr-2">
-                         <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('editRigDetails', { rigIndex: index }); }}><Eye className="h-4 w-4" /></Button>
-                         {field.status === 'Active' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('renew', { rigIndex: index }); }}><RefreshCw className="h-4 w-4" /></Button>}
-                         {field.status === 'Active' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('cancel', { rigIndex: index }); }}><Ban className="h-4 w-4" /></Button>}
-                         {field.status === 'Cancelled' && <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('activate', { rigIndex: index }); }}><CheckCircle className="h-4 w-4" /></Button>}
-                         <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('deleteRig', { rigIndex: index }); }}><Trash2 className="h-4 w-4" /></Button>
+                         <Tooltip><TooltipTrigger asChild>
+                             <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('editRigDetails', { rigIndex: index }); }}><Eye className="h-4 w-4" /></Button>
+                         </TooltipTrigger><TooltipContent><p>View/Edit Rig Details</p></TooltipContent></Tooltip>
+                         {field.status === 'Active' && <Tooltip><TooltipTrigger asChild><Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('renew', { rigIndex: index }); }}><RefreshCw className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Renew Rig</p></TooltipContent></Tooltip>}
+                         {field.status === 'Active' && <Tooltip><TooltipTrigger asChild><Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('cancel', { rigIndex: index }); }}><Ban className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Cancel Rig Registration</p></TooltipContent></Tooltip>}
+                         {field.status === 'Cancelled' && <Tooltip><TooltipTrigger asChild><Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('activate', { rigIndex: index }); }}><CheckCircle className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Re-activate Rig</p></TooltipContent></Tooltip>}
+                         <Tooltip><TooltipTrigger asChild><Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('deleteRig', { rigIndex: index }); }}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Remove Rig from Application</p></TooltipContent></Tooltip>
                     </div>
                 )}
             </div>
@@ -399,12 +412,22 @@ const RigAccordionItem = ({
                     <h4 className="font-semibold text-destructive">Cancellation Details</h4>
                      {!isReadOnly && (
                         <div className="flex items-center space-x-1">
-                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/20" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('cancel', { rigIndex: index }); }}>
-                                <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/20" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('activate', { rigIndex: index }); }}>
-                                <RotateCcw className="h-4 w-4" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/20" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('cancel', { rigIndex: index }); }}>
+                                        <Eye className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Edit Cancellation Details</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/20" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('activate', { rigIndex: index }); }}>
+                                        <RotateCcw className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Revert Cancellation</p></TooltipContent>
+                            </Tooltip>
                         </div>
                      )}
                 </div>
@@ -455,8 +478,18 @@ const RigAccordionItem = ({
                             {!isReadOnly && (
                                 <TableCell className="text-center">
                                     <div className="flex justify-center space-x-1">
-                                    <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditRenewal(index, renewal); }}><Eye className="h-4 w-4"/></Button>
-                                    <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeleteRenewal(index, renewal.id); }}><Trash2 className="h-4 w-4"/></Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button type="button" variant="ghost" size="icon" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEditRenewal(index, renewal); }}><Eye className="h-4 w-4"/></Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Edit Renewal</p></TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDeleteRenewal(index, renewal.id); }}><Trash2 className="h-4 w-4"/></Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Delete Renewal</p></TooltipContent>
+                                    </Tooltip>
                                     </div>
                                 </TableCell>
                             )}
@@ -1258,490 +1291,514 @@ export default function AgencyRegistrationPage() {
       const remarksSectionNumber = hasCancelledRigs ? 6 : 5;
 
       return (
-        <div className="space-y-6">
-          <FormProvider {...form}>
-            <form
-              onSubmit={form.handleSubmit(
-                onSubmit,
-                (errors) => {
-                  console.error("Form validation errors:", errors);
-                  toast({ title: "Validation Error", description: "Please check highlighted fields.", variant: "destructive" });
-                }
-              )}
-              className="space-y-6"
-            >
-              <Card>
-                  <CardHeader className="flex flex-row items-start justify-between">
-                      <div>
-                          <CardTitle>1. Application Details</CardTitle>
-                          <CardDescription>Primary agency information and owner/partner details.</CardDescription>
-                      </div>
-                      {!isReadOnly && (
-                          <Button type="button" variant="outline" size="sm" onClick={() => openDialog('addPartner', { index: 'new' })}>
-                              <UserPlus className="mr-2 h-4 w-4"/> Add Partner
-                          </Button>
-                      )}
-                  </CardHeader>
-                  <CardContent>
-                      <div className="space-y-4">
-                          <div className="grid md:grid-cols-3 gap-4">
-                              <FormField name="fileNo" render={({ field }) => <FormItem><FormLabel>File No.</FormLabel><FormControl><Input {...field} value={field.value ?? ""} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="agencyName" render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Agency Name &amp; Address</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                          </div>
-                          <Separator />
-                          <div className="space-y-2">
-                              <h4 className="font-medium">Owner Details</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-2 border rounded-md items-end">
-                                  <FormItem className="md:col-span-1">
-                                      <FormLabel>Name &amp; Address of Owner</FormLabel>
-                                      <FormControl>
-                                      <Textarea {...form.register("owner.name")} className="min-h-[40px]" readOnly={isReadOnly} />
-                                      </FormControl>
-                                      <FormMessage>{form.formState.errors.owner?.name?.message}</FormMessage>
-                                  </FormItem>
-                                  <FormField name="owner.mobile" render={({ field }) => <FormItem><FormLabel>Mobile No.</FormLabel><FormControl><Input {...field} value={field.value ?? ""} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                  <FormField name="owner.secondaryMobile" render={({ field }) => <FormItem><FormLabel>Secondary Mobile No.</FormLabel><FormControl><Input {...field} value={field.value ?? ""} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                              </div>
-                          </div>
-                          <div className="space-y-2">
-                              {partnerFields.length > 0 && <h4 className="font-medium">Partner Details</h4>}
-                              {partnerFields.length > 0 ? (
-                                  <div className="space-y-2">
-                                      {partnerFields.map((field, index) => (
-                                          <div key={field.id} className="flex items-center justify-between p-3 border rounded-lg bg-secondary/20">
-                                              <div>
-                                                  <p className="font-semibold">{field.name}</p>
-                                                  <p className="text-sm text-muted-foreground">{field.mobile}</p>
-                                              </div>
-                                              {!isReadOnly && (
-                                                  <div className="flex items-center gap-1">
-                                                      <Button type="button" variant="ghost" size="icon" onClick={() => openDialog('editPartner', { index, partner: field })}><Eye className="h-4 w-4"/></Button>
-                                                      <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setDeletingPartnerIndex(index)}><Trash2 className="h-4 w-4"/></Button>
-                                                  </div>
-                                              )}
-                                          </div>
-                                      ))}
-                                  </div>
-                              ) : <p className="text-sm text-muted-foreground text-center py-2">No partners added.</p>}
-                          </div>
-                      </div>
-                  </CardContent>
-              </Card>
-
-              <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                      <div>
-                          <CardTitle>2. Application Fees</CardTitle>
-                          <CardDescription>Details of fees paid for registration applications.</CardDescription>
-                      </div>
-                      {!isReadOnly && (
-                          <Button type="button" variant="outline" size="sm" onClick={() => openDialog('addFee', {})}>
-                              <PlusCircle className="mr-2 h-4 w-4" /> Add Fee
-                          </Button>
-                      )}
-                  </CardHeader>
-                  <CardContent>
-                      <div className="space-y-4">
-                          {feeFields.length > 0 ? feeFields.map((field, index) => (
-                              <div key={field.id} className="p-4 border rounded-lg bg-secondary/20">
-                                <div className="flex justify-between items-center mb-2">
-                                   <div className="flex items-center gap-3">
-                                      <div className="font-bold text-sm text-muted-foreground">Sl. No. {index + 1}</div>
-                                      <h4 className="font-medium text-primary">{field.applicationFeeType || 'Not Set'}</h4>
-                                   </div>
-                                  {!isReadOnly && (
-                                      <div className="flex items-center gap-1">
-                                          <Button type="button" variant="ghost" size="icon" onClick={() => openDialog('editFee', { index, fee: field })}>
-                                              <Eye className="h-4 w-4" />
-                                          </Button>
-                                          <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setDeletingFeeIndex(index)}>
-                                              <Trash2 className="h-4 w-4" />
-                                          </Button>
-                                      </div>
-                                  )}
-                                </div>
-                                <dl className="grid md:grid-cols-3 gap-4 border-t pt-2">
-                                  <DetailRow label="Type of Application" value={field.applicationFeeType} />
-                                  <DetailRow label="Fees Amount" value={field.applicationFeeAmount} />
-                                  <DetailRow label="Payment Date" value={field.applicationFeePaymentDate} />
-                                  <div className="md:col-span-3"><DetailRow label="Challan No." value={field.applicationFeeChallanNo} /></div>
-                                </dl>
-                              </div>
-                          )) : (
-                              <p className="text-sm text-muted-foreground text-center py-4">No application fees added.</p>
-                          )}
-                      </div>
-                  </CardContent>
-              </Card>
-
-              <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                      <div>
-                          <CardTitle>3. Agency Registration</CardTitle>
-                          <CardDescription>Main registration certificate details for the agency.</CardDescription>
-                      </div>
-                      {!isReadOnly && (
-                          <Button type="button" variant="outline" size="sm" onClick={() => openDialog('editAgencyReg', { regData: form.getValues() })}>
-                              <Eye className="mr-2 h-4 w-4" /> Add/Edit
-                          </Button>
-                      )}
-                  </CardHeader>
-                  <CardContent>
-                     <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-4">
-                      <DetailRow label="Agency Reg. No." value={form.watch('agencyRegistrationNo')} />
-                      <DetailRow label="Reg. Date" value={form.watch('agencyRegistrationDate')} />
-                      <DetailRow label="Reg. Fee" value={form.watch('agencyRegistrationFee')} />
-                      <DetailRow label="Payment Date" value={form.watch('agencyPaymentDate')} />
-                      <DetailRow label="Challan No." value={form.watch('agencyChallanNo')} />
-                      <div className="col-span-full border-t pt-4 mt-2"></div>
-                      <DetailRow label="Additional Reg. Fee" value={form.watch('agencyAdditionalRegFee')} />
-                      <DetailRow label="Additional Payment Date" value={form.watch('agencyAdditionalPaymentDate')} />
-                      <DetailRow label="Additional Chalan No." value={form.watch('agencyAdditionalChallanNo')} />
-                     </dl>
-                  </CardContent>
-              </Card>
-              
-              <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                      <div>
-                          <CardTitle>4. Rig Registrations ({activeRigs.length} Active)</CardTitle>
-                          <CardDescription>Manage individual rig details, renewals, and status.</CardDescription>
-                      </div>
-                      {!isReadOnly && (
-                          <Button type="button" variant="outline" size="sm" onClick={handleAddRig}>
-                              <PlusCircle className="mr-2 h-4 w-4" /> Add Rig
-                          </Button>
-                      )}
-                  </CardHeader>
-                  <CardContent>
-                      <Accordion type="multiple" className="w-full space-y-2">
-                          {activeRigs.map(({ field, originalIndex }, displayIndex) => (
-                          <RigAccordionItem
-                              key={field.id}
-                              field={field}
-                              index={originalIndex}
-                              displayIndex={displayIndex}
-                              isReadOnly={isReadOnly}
-                              onRemove={canEdit ? removeRig : undefined}
-                              openDialog={openDialog}
-                              onEditRenewal={handleEditRenewal}
-                              onDeleteRenewal={handleDeleteRenewal}
-                              form={form}
-                          />
-                          ))}
-                      </Accordion>
-                      {!isReadOnly && canEdit && activeRigCount >= 3 && <p className="text-sm text-muted-foreground mt-4 text-center">A maximum of 3 active rigs are allowed.</p>}
-                      {activeRigs.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No active rigs registered.</p>}
-                  </CardContent>
-                  
-                  {hasCancelledRigs && (
-                      <>
-                          <Separator className="my-6"/>
-                          <CardHeader className="pt-0">
-                              <CardTitle className="text-destructive">5. Cancelled Rigs ({cancelledRigs.length})</CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                              <Accordion type="multiple" className="w-full space-y-2">
-                              {cancelledRigs.map(({ field, originalIndex }, displayIndex) => (
-                                  <RigAccordionItem
-                                  key={field.id}
-                                  field={field}
-                                  index={originalIndex}
-                                  displayIndex={displayIndex}
-                                  isReadOnly={isReadOnly}
-                                  onRemove={canEdit ? removeRig : undefined}
-                                  openDialog={openDialog}
-                                  onEditRenewal={handleEditRenewal}
-                                  onDeleteRenewal={handleDeleteRenewal}
-                                  form={form}
-                                  />
-                              ))}
-                              </Accordion>
-                          </CardContent>
-                      </>
-                  )}
-              </Card>
-
-              <Card>
-                  <CardHeader>
-                      <CardTitle>{remarksSectionNumber}. Remarks</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                      <FormField
-                          name="remarks"
-                          control={form.control}
-                          render={({ field }) => (
-                              <FormItem>
-                                  <FormControl>
-                                      <Textarea
-                                          {...field}
-                                          value={field.value ?? ""}
-                                          readOnly={isReadOnly}
-                                          placeholder="Add any final remarks for this agency registration..."
-                                          rows={4}
-                                      />
-                                  </FormControl>
-                                  <FormMessage />
-                              </FormItem>
-                          )}
-                      />
-                  </CardContent>
-              </Card>
-
-                {!isReadOnly && (
-                  <div className="flex justify-end gap-2 pt-4">
-                      <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button>
-                      <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
-                        Save
-                      </Button>
-                  </div>
+        <TooltipProvider>
+            <div className="space-y-6">
+            <FormProvider {...form}>
+                <form
+                onSubmit={form.handleSubmit(
+                    onSubmit,
+                    (errors) => {
+                    console.error("Form validation errors:", errors);
+                    toast({ title: "Validation Error", description: "Please check highlighted fields.", variant: "destructive" });
+                    }
                 )}
-            </form>
-            <Dialog open={dialogState.type === 'editAgencyReg'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
-                <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl h-[90vh] flex flex-col p-0">
-                  <AgencyRegistrationDialogContent
-                      initialData={dialogState.data?.regData}
-                      onConfirm={handleConfirmAgencyReg}
-                      onCancel={closeDialog}
-                  />
-                </DialogContent>
-            </Dialog>
-             <Dialog open={dialogState.type === 'renew' || dialogState.type === 'editRenewal'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
-                <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="flex flex-col p-0">
-                  <DialogHeader className="p-6 pb-0">
-                        <DialogTitle>{dialogState.type === 'editRenewal' ? 'Edit Renewal' : 'Renew Rig Registration'}</DialogTitle>
-                        <DialogDescription>Enter renewal details for the rig.</DialogDescription>
-                    </DialogHeader>
-                  <div className="p-6">
-                    <RenewalDialogContent
-                        initialData={dialogState.data?.renewal ?? { renewalDate: format(new Date(), 'yyyy-MM-dd') }}
-                        onConfirm={handleConfirmRenewal}
-                        onCancel={closeDialog}
-                    />
-                  </div>
-                </DialogContent>
-            </Dialog>
-            <Dialog open={dialogState.type === 'editFee' || dialogState.type === 'addFee'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
-                <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-xl flex flex-col p-0">
-                    <ApplicationFeeDialogContent
-                        initialData={dialogState.type === 'editFee' ? dialogState.data?.fee : createDefaultFee()}
-                        onConfirm={handleConfirmFeeChange}
-                        onCancel={closeDialog}
-                    />
-                </DialogContent>
-            </Dialog>
-            <Dialog open={dialogState.type === 'addPartner' || dialogState.type === 'editPartner'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
-                <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-xl flex flex-col p-0">
-                    <PartnerDialogContent
-                        initialData={dialogState.type === 'editPartner' ? dialogState.data?.partner : createDefaultOwner()}
-                        onConfirm={handleConfirmPartner}
-                        onCancel={closeDialog}
-                    />
-                </DialogContent>
-            </Dialog>
-            <AlertDialog open={deletingPartnerIndex !== null} onOpenChange={() => setDeletingPartnerIndex(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>This will remove this partner from the list. This action cannot be undone.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <Button variant="outline" onClick={() => setDeletingPartnerIndex(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={confirmDeletePartner}>Delete</Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            <AlertDialog open={deletingFeeIndex !== null} onOpenChange={() => setDeletingFeeIndex(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>This will remove this application fee from the form. This action cannot be undone.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <Button variant="outline" onClick={() => setDeletingFeeIndex(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={confirmDeleteFee}>Delete</Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            <AlertDialog open={dialogState.type === 'cancel'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Cancel Rig Registration</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Provide a reason and date for cancelling this rig. This action can be reversed later.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    {dialogState.type === 'cancel' && dialogState.data && (
-                      <CancellationDialogContent
-                          initialData={rigFields[dialogState.data.rigIndex]}
-                          onConfirm={handleConfirmCancellation}
-                          onCancel={closeDialog}
-                      />
+                className="space-y-6"
+                >
+                <Card>
+                    <CardHeader className="flex flex-row items-start justify-between">
+                        <div>
+                            <CardTitle>1. Application Details</CardTitle>
+                            <CardDescription>Primary agency information and owner/partner details.</CardDescription>
+                        </div>
+                        {!isReadOnly && (
+                            <Button type="button" variant="outline" size="sm" onClick={() => openDialog('addPartner', { index: 'new' })}>
+                                <UserPlus className="mr-2 h-4 w-4"/> Add Partner
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            <div className="grid md:grid-cols-3 gap-4">
+                                <FormField name="fileNo" render={({ field }) => <FormItem><FormLabel>File No.</FormLabel><FormControl><Input {...field} value={field.value ?? ""} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="agencyName" render={({ field }) => <FormItem className="md:col-span-2"><FormLabel>Agency Name &amp; Address</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                            </div>
+                            <Separator />
+                            <div className="space-y-2">
+                                <h4 className="font-medium">Owner Details</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-2 border rounded-md items-end">
+                                    <FormItem className="md:col-span-1">
+                                        <FormLabel>Name &amp; Address of Owner</FormLabel>
+                                        <FormControl>
+                                        <Textarea {...form.register("owner.name")} className="min-h-[40px]" readOnly={isReadOnly} />
+                                        </FormControl>
+                                        <FormMessage>{form.formState.errors.owner?.name?.message}</FormMessage>
+                                    </FormItem>
+                                    <FormField name="owner.mobile" render={({ field }) => <FormItem><FormLabel>Mobile No.</FormLabel><FormControl><Input {...field} value={field.value ?? ""} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="owner.secondaryMobile" render={({ field }) => <FormItem><FormLabel>Secondary Mobile No.</FormLabel><FormControl><Input {...field} value={field.value ?? ""} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                {partnerFields.length > 0 && <h4 className="font-medium">Partner Details</h4>}
+                                {partnerFields.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {partnerFields.map((field, index) => (
+                                            <div key={field.id} className="flex items-center justify-between p-3 border rounded-lg bg-secondary/20">
+                                                <div>
+                                                    <p className="font-semibold">{field.name}</p>
+                                                    <p className="text-sm text-muted-foreground">{field.mobile}</p>
+                                                </div>
+                                                {!isReadOnly && (
+                                                    <div className="flex items-center gap-1">
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button type="button" variant="ghost" size="icon" onClick={() => openDialog('editPartner', { index, partner: field })}><Eye className="h-4 w-4"/></Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent><p>Edit Partner Details</p></TooltipContent>
+                                                        </Tooltip>
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
+                                                                <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setDeletingPartnerIndex(index)}><Trash2 className="h-4 w-4"/></Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent><p>Remove Partner</p></TooltipContent>
+                                                        </Tooltip>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : <p className="text-sm text-muted-foreground text-center py-2">No partners added.</p>}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>2. Application Fees</CardTitle>
+                            <CardDescription>Details of fees paid for registration applications.</CardDescription>
+                        </div>
+                        {!isReadOnly && (
+                            <Button type="button" variant="outline" size="sm" onClick={() => openDialog('addFee', {})}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Fee
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {feeFields.length > 0 ? feeFields.map((field, index) => (
+                                <div key={field.id} className="p-4 border rounded-lg bg-secondary/20">
+                                    <div className="flex justify-between items-center mb-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="font-bold text-sm text-muted-foreground">Sl. No. {index + 1}</div>
+                                        <h4 className="font-medium text-primary">{field.applicationFeeType || 'Not Set'}</h4>
+                                    </div>
+                                    {!isReadOnly && (
+                                        <div className="flex items-center gap-1">
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button type="button" variant="ghost" size="icon" onClick={() => openDialog('editFee', { index, fee: field })}>
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>Edit Fee Details</p></TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setDeletingFeeIndex(index)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>Remove Fee</p></TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    )}
+                                    </div>
+                                    <dl className="grid md:grid-cols-3 gap-4 border-t pt-2">
+                                    <DetailRow label="Type of Application" value={field.applicationFeeType} />
+                                    <DetailRow label="Fees Amount" value={field.applicationFeeAmount} />
+                                    <DetailRow label="Payment Date" value={field.applicationFeePaymentDate} />
+                                    <div className="md:col-span-3"><DetailRow label="Challan No." value={field.applicationFeeChallanNo} /></div>
+                                    </dl>
+                                </div>
+                            )) : (
+                                <p className="text-sm text-muted-foreground text-center py-4">No application fees added.</p>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>3. Agency Registration</CardTitle>
+                            <CardDescription>Main registration certificate details for the agency.</CardDescription>
+                        </div>
+                        {!isReadOnly && (
+                            <Button type="button" variant="outline" size="sm" onClick={() => openDialog('editAgencyReg', { regData: form.getValues() })}>
+                                <Eye className="mr-2 h-4 w-4" /> Add/Edit
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        <dl className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-4">
+                        <DetailRow label="Agency Reg. No." value={form.watch('agencyRegistrationNo')} />
+                        <DetailRow label="Reg. Date" value={form.watch('agencyRegistrationDate')} />
+                        <DetailRow label="Reg. Fee" value={form.watch('agencyRegistrationFee')} />
+                        <DetailRow label="Payment Date" value={form.watch('agencyPaymentDate')} />
+                        <DetailRow label="Challan No." value={form.watch('agencyChallanNo')} />
+                        <div className="col-span-full border-t pt-4 mt-2"></div>
+                        <DetailRow label="Additional Reg. Fee" value={form.watch('agencyAdditionalRegFee')} />
+                        <DetailRow label="Additional Payment Date" value={form.watch('agencyAdditionalPaymentDate')} />
+                        <DetailRow label="Additional Chalan No." value={form.watch('agencyAdditionalChallanNo')} />
+                        </dl>
+                    </CardContent>
+                </Card>
+                
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>4. Rig Registrations ({activeRigs.length} Active)</CardTitle>
+                            <CardDescription>Manage individual rig details, renewals, and status.</CardDescription>
+                        </div>
+                        {!isReadOnly && (
+                            <Button type="button" variant="outline" size="sm" onClick={handleAddRig}>
+                                <PlusCircle className="mr-2 h-4 w-4" /> Add Rig
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        <Accordion type="multiple" className="w-full space-y-2">
+                            {activeRigs.map(({ field, originalIndex }, displayIndex) => (
+                            <RigAccordionItem
+                                key={field.id}
+                                field={field}
+                                index={originalIndex}
+                                displayIndex={displayIndex}
+                                isReadOnly={isReadOnly}
+                                onRemove={canEdit ? removeRig : undefined}
+                                openDialog={openDialog}
+                                onEditRenewal={handleEditRenewal}
+                                onDeleteRenewal={handleDeleteRenewal}
+                                form={form}
+                            />
+                            ))}
+                        </Accordion>
+                        {!isReadOnly && canEdit && activeRigCount >= 3 && <p className="text-sm text-muted-foreground mt-4 text-center">A maximum of 3 active rigs are allowed.</p>}
+                        {activeRigs.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No active rigs registered.</p>}
+                    </CardContent>
+                    
+                    {hasCancelledRigs && (
+                        <>
+                            <Separator className="my-6"/>
+                            <CardHeader className="pt-0">
+                                <CardTitle className="text-destructive">5. Cancelled Rigs ({cancelledRigs.length})</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Accordion type="multiple" className="w-full space-y-2">
+                                {cancelledRigs.map(({ field, originalIndex }, displayIndex) => (
+                                    <RigAccordionItem
+                                    key={field.id}
+                                    field={field}
+                                    index={originalIndex}
+                                    displayIndex={displayIndex}
+                                    isReadOnly={isReadOnly}
+                                    onRemove={canEdit ? removeRig : undefined}
+                                    openDialog={openDialog}
+                                    onEditRenewal={handleEditRenewal}
+                                    onDeleteRenewal={handleDeleteRenewal}
+                                    form={form}
+                                    />
+                                ))}
+                                </Accordion>
+                            </CardContent>
+                        </>
                     )}
-                </AlertDialogContent>
-            </AlertDialog>
-             <AlertDialog open={dialogState.type === 'deleteRig'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently remove this rig from the form. This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <Button variant="outline" onClick={closeDialog}>Cancel</Button>
-                        <Button variant="destructive" onClick={confirmDeleteRig}>Delete</Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            <AlertDialog open={dialogState.type === 'activate'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Activate Rig</AlertDialogTitle>
-                        <AlertDialogDescription>Are you sure you want to reactivate this rig?</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <Button variant="outline" onClick={closeDialog}>Cancel</Button>
-                        <Button variant="default" onClick={handleActivateRig}>Activate</Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-            <AlertDialog open={!!deletingRenewal} onOpenChange={() => setDeletingRenewal(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete this renewal record. This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <Button variant="outline" onClick={() => setDeletingRenewal(null)}>Cancel</Button>
-                        <Button variant="destructive" onClick={handleConfirmDeleteRenewal}>Delete</Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-             <Dialog open={dialogState.type === 'editRigDetails' || dialogState.type === 'addRig'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
-                <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl h-[90vh] flex flex-col p-0">
-                  <RigDetailsDialog
-                      form={form}
-                      rigIndex={dialogState.data?.rigIndex}
-                      onConfirm={handleConfirmRigDetails}
-                      onCancel={closeDialog}
-                      isAdding={dialogState.type === 'addRig'}
-                  />
-                </DialogContent>
-            </Dialog>
-          </FormProvider>
-        </div>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>{remarksSectionNumber}. Remarks</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <FormField
+                            name="remarks"
+                            control={form.control}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Textarea
+                                            {...field}
+                                            value={field.value ?? ""}
+                                            readOnly={isReadOnly}
+                                            placeholder="Add any final remarks for this agency registration..."
+                                            rows={4}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
+
+                    {!isReadOnly && (
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
+                            Save
+                        </Button>
+                    </div>
+                    )}
+                </form>
+                <Dialog open={dialogState.type === 'editAgencyReg'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
+                    <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl h-[90vh] flex flex-col p-0">
+                    <AgencyRegistrationDialogContent
+                        initialData={dialogState.data?.regData}
+                        onConfirm={handleConfirmAgencyReg}
+                        onCancel={closeDialog}
+                    />
+                    </DialogContent>
+                </Dialog>
+                <Dialog open={dialogState.type === 'renew' || dialogState.type === 'editRenewal'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
+                    <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="flex flex-col p-0">
+                    <DialogHeader className="p-6 pb-0">
+                            <DialogTitle>{dialogState.type === 'editRenewal' ? 'Edit Renewal' : 'Renew Rig Registration'}</DialogTitle>
+                            <DialogDescription>Enter renewal details for the rig.</DialogDescription>
+                        </DialogHeader>
+                    <div className="p-6">
+                        <RenewalDialogContent
+                            initialData={dialogState.data?.renewal ?? { renewalDate: format(new Date(), 'yyyy-MM-dd') }}
+                            onConfirm={handleConfirmRenewal}
+                            onCancel={closeDialog}
+                        />
+                    </div>
+                    </DialogContent>
+                </Dialog>
+                <Dialog open={dialogState.type === 'editFee' || dialogState.type === 'addFee'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
+                    <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-xl flex flex-col p-0">
+                        <ApplicationFeeDialogContent
+                            initialData={dialogState.type === 'editFee' ? dialogState.data?.fee : createDefaultFee()}
+                            onConfirm={handleConfirmFeeChange}
+                            onCancel={closeDialog}
+                        />
+                    </DialogContent>
+                </Dialog>
+                <Dialog open={dialogState.type === 'addPartner' || dialogState.type === 'editPartner'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
+                    <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-xl flex flex-col p-0">
+                        <PartnerDialogContent
+                            initialData={dialogState.type === 'editPartner' ? dialogState.data?.partner : createDefaultOwner()}
+                            onConfirm={handleConfirmPartner}
+                            onCancel={closeDialog}
+                        />
+                    </DialogContent>
+                </Dialog>
+                <AlertDialog open={deletingPartnerIndex !== null} onOpenChange={() => setDeletingPartnerIndex(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>This will remove this partner from the list. This action cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <Button variant="outline" onClick={() => setDeletingPartnerIndex(null)}>Cancel</Button>
+                            <Button variant="destructive" onClick={confirmDeletePartner}>Delete</Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <AlertDialog open={deletingFeeIndex !== null} onOpenChange={() => setDeletingFeeIndex(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>This will remove this application fee from the form. This action cannot be undone.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <Button variant="outline" onClick={() => setDeletingFeeIndex(null)}>Cancel</Button>
+                            <Button variant="destructive" onClick={confirmDeleteFee}>Delete</Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <AlertDialog open={dialogState.type === 'cancel'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel Rig Registration</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Provide a reason and date for cancelling this rig. This action can be reversed later.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        {dialogState.type === 'cancel' && dialogState.data && (
+                        <CancellationDialogContent
+                            initialData={rigFields[dialogState.data.rigIndex]}
+                            onConfirm={handleConfirmCancellation}
+                            onCancel={closeDialog}
+                        />
+                        )}
+                    </AlertDialogContent>
+                </AlertDialog>
+                <AlertDialog open={dialogState.type === 'deleteRig'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently remove this rig from the form. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+                            <Button variant="destructive" onClick={confirmDeleteRig}>Delete</Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <AlertDialog open={dialogState.type === 'activate'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Activate Rig</AlertDialogTitle>
+                            <AlertDialogDescription>Are you sure you want to reactivate this rig?</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+                            <Button variant="default" onClick={handleActivateRig}>Activate</Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <AlertDialog open={!!deletingRenewal} onOpenChange={() => setDeletingRenewal(null)}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete this renewal record. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <Button variant="outline" onClick={() => setDeletingRenewal(null)}>Cancel</Button>
+                            <Button variant="destructive" onClick={handleConfirmDeleteRenewal}>Delete</Button>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <Dialog open={dialogState.type === 'editRigDetails' || dialogState.type === 'addRig'} onOpenChange={(isOpen) => !isOpen && closeDialog()}>
+                    <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl h-[90vh] flex flex-col p-0">
+                    <RigDetailsDialog
+                        form={form}
+                        rigIndex={dialogState.data?.rigIndex}
+                        onConfirm={handleConfirmRigDetails}
+                        onCancel={closeDialog}
+                        isAdding={dialogState.type === 'addRig'}
+                    />
+                    </DialogContent>
+                </Dialog>
+            </FormProvider>
+            </div>
+        </TooltipProvider>
       );
   }
 
   // LIST VIEW
   return (
-    <div className="space-y-6">
-      <Card className="shadow-lg">
-        <CardContent className="p-4 space-y-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="relative flex-grow w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input 
-                    type="search" 
-                    placeholder="Search by Agency, Owner, File No, or Rig No..." 
-                    className="w-full rounded-lg bg-background pl-10 shadow-sm" 
-                    value={searchTerm} 
-                    onChange={(e) => setSearchTerm(e.target.value)} 
-                />
-              </div>
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                 {lastCreatedDate && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                        <Clock className="h-3.5 w-3.5"/>
-                        Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                    </div>
-                )}
-                {canEdit && (
-                  <Button onClick={handleAddNew} className="shrink-0">
-                      <FilePlus className="mr-2 h-4 w-4" /> Add New Registration
-                  </Button>
-                )}
-                <Button onClick={handleExportExcel} variant="outline" className="shrink-0">
-                    <FileDown className="mr-2 h-4 w-4" /> Export Excel
+    <TooltipProvider>
+        <div className="space-y-6">
+        <Card className="shadow-lg">
+            <CardContent className="p-4 space-y-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="relative flex-grow w-full">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input 
+                        type="search" 
+                        placeholder="Search by Agency, Owner, File No, or Rig No..." 
+                        className="w-full rounded-lg bg-background pl-10 shadow-sm" 
+                        value={searchTerm} 
+                        onChange={(e) => setSearchTerm(e.target.value)} 
+                    />
+                </div>
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    {lastCreatedDate && (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                            <Clock className="h-3.5 w-3.5"/>
+                            Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                        </div>
+                    )}
+                    {canEdit && (
+                    <Button onClick={handleAddNew} className="shrink-0">
+                        <FilePlus className="mr-2 h-4 w-4" /> Add New Registration
+                    </Button>
+                    )}
+                    <Button onClick={handleExportExcel} variant="outline" className="shrink-0">
+                        <FileDown className="mr-2 h-4 w-4" /> Export Excel
+                    </Button>
+                </div>
+            </div>
+            <Tabs defaultValue="completed" onValueChange={onTabChange} className="pt-4 border-t">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="completed">
+                        <div className="flex items-center gap-2">Registration Completed <Badge>{completedApplications.length}</Badge></div>
+                    </TabsTrigger>
+                    <TabsTrigger value="pending">
+                        <div className="flex items-center gap-2">Pending Applications <Badge>{pendingApplications.length}</Badge></div>
+                    </TabsTrigger>
+                </TabsList>
+                <TabsContent value="completed" className="mt-4">
+                    {totalCompletedPages > 1 && (
+                        <div className="flex items-center justify-center py-4">
+                            <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
+                        </div>
+                    )}
+                    <RegistrationTable 
+                        applications={paginatedCompletedApplications}
+                        onView={handleView}
+                        onDelete={handleDeleteApplication}
+                        searchTerm={searchTerm}
+                        canDelete={canDelete}
+                        currentPage={currentPage}
+                        itemsPerPage={ITEMS_PER_PAGE}
+                    />
+                    {totalCompletedPages > 1 && (
+                        <div className="flex items-center justify-center py-4">
+                            <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
+                        </div>
+                    )}
+                </TabsContent>
+                <TabsContent value="pending" className="mt-4">
+                    {totalPendingPages > 1 && (
+                        <div className="flex items-center justify-center py-4">
+                            <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={handlePageChange} />
+                        </div>
+                    )}
+                    <RegistrationTable 
+                        applications={paginatedPendingApplications}
+                        onView={handleView}
+                        onDelete={handleDeleteApplication}
+                        searchTerm={searchTerm}
+                        canDelete={canDelete}
+                        currentPage={currentPage}
+                        itemsPerPage={ITEMS_PER_PAGE}
+                        isPendingTable={true}
+                    />
+                    {totalPendingPages > 1 && (
+                        <div className="flex items-center justify-center py-4">
+                            <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={handlePageChange} />
+                        </div>
+                    )}
+                </TabsContent>
+            </Tabs>
+            </CardContent>
+        </Card>
+        <AlertDialog open={!!deletingApplicationId} onOpenChange={() => setDeletingApplicationId(null)}>
+            <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                This action will permanently delete the registration for <strong>{allAgencyApplications.find((a: AgencyApplication) => a.id === deletingApplicationId)?.agencyName}</strong>. This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <Button variant="outline" onClick={() => setDeletingApplicationId(null)} disabled={isSubmitting}>Cancel</Button>
+                <Button variant="destructive" onClick={confirmDeleteApplication} disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span>Delete</span>}
                 </Button>
-              </div>
-          </div>
-          <Tabs defaultValue="completed" onValueChange={onTabChange} className="pt-4 border-t">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="completed">
-                    <div className="flex items-center gap-2">Registration Completed <Badge>{completedApplications.length}</Badge></div>
-                </TabsTrigger>
-                <TabsTrigger value="pending">
-                    <div className="flex items-center gap-2">Pending Applications <Badge>{pendingApplications.length}</Badge></div>
-                </TabsTrigger>
-            </TabsList>
-            <TabsContent value="completed" className="mt-4">
-                {totalCompletedPages > 1 && (
-                    <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
-                    </div>
-                )}
-                <RegistrationTable 
-                    applications={paginatedCompletedApplications}
-                    onView={handleView}
-                    onDelete={handleDeleteApplication}
-                    searchTerm={searchTerm}
-                    canDelete={canDelete}
-                    currentPage={currentPage}
-                    itemsPerPage={ITEMS_PER_PAGE}
-                />
-                 {totalCompletedPages > 1 && (
-                    <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalCompletedPages} onPageChange={handlePageChange} />
-                    </div>
-                )}
-            </TabsContent>
-            <TabsContent value="pending" className="mt-4">
-                 {totalPendingPages > 1 && (
-                    <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={handlePageChange} />
-                    </div>
-                )}
-                <RegistrationTable 
-                    applications={paginatedPendingApplications}
-                    onView={handleView}
-                    onDelete={handleDeleteApplication}
-                    searchTerm={searchTerm}
-                    canDelete={canDelete}
-                    currentPage={currentPage}
-                    itemsPerPage={ITEMS_PER_PAGE}
-                    isPendingTable={true}
-                />
-                 {totalPendingPages > 1 && (
-                    <div className="flex items-center justify-center py-4">
-                        <PaginationControls currentPage={currentPage} totalPages={totalPendingPages} onPageChange={handlePageChange} />
-                    </div>
-                )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-      <AlertDialog open={!!deletingApplicationId} onOpenChange={() => setDeletingApplicationId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action will permanently delete the registration for <strong>{allAgencyApplications.find((a: AgencyApplication) => a.id === deletingApplicationId)?.agencyName}</strong>. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setDeletingApplicationId(null)} disabled={isSubmitting}>Cancel</Button>
-            <Button variant="destructive" onClick={confirmDeleteApplication} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <span>Delete</span>}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+            </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </div>
+    </TooltipProvider>
   );
 }
 
