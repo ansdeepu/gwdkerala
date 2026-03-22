@@ -1,3 +1,4 @@
+
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -61,7 +62,7 @@ interface ProgressStats {
   totalApplications: number;
   completed: number;
   balance: number;
-  previousBalanceData: SiteDetailWithFile-context[];
+  previousBalanceData: SiteDetailWithFileContext[];
   currentApplicationsData: SiteDetailWithFileContext[];
   toBeRefundedData: SiteDetailWithFileContext[];
   totalApplicationsData: SiteDetailWithFileContext[];
@@ -748,20 +749,17 @@ export default function ProgressReportPage() {
                     </CardContent>
                 </Card>
 
-                <Card><CardHeader><CardTitle>GW Investigation</CardTitle></CardHeader><CardContent><Accordion type="multiple" className="w-full space-y-2">{typeOfWellOptions.map(wellType => (<AccordionItem value={`gw-${wellType}`} key={`gw-${wellType}`} className="border rounded-lg bg-background"><AccordionTrigger className="text-lg font-semibold text-primary p-4 hover:no-underline"><div className="flex items-center gap-2">{wellType}</div></AccordionTrigger><AccordionContent className="p-0"><div className="border-t p-4"><ReportDetailsTable data={reportData.gwInvestigationData[wellType]} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} titlePrefix={`GW Investigation - ${wellType}`} /></div></AccordionContent></AccordionItem>))}</Accordion></CardContent></Card>
-                <Card><CardHeader><CardTitle>VES</CardTitle></CardHeader><CardContent><ReportDetailsTable data={reportData.vesData['Bore Well']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} titlePrefix="VES - Bore Well" /></CardContent></Card>
-                
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['other-services']}>
-                    <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible={true}/>
-                    <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible={true}/>
-                    <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible={true}/>
-                    <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                    <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                    <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                    <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                    {otherServicePurposes.map(purpose => (
-                      <ReportCategoryTable key={purpose} accordionId={purpose.toLowerCase().replace(/ /g, '-')} title={purpose} data={reportData.otherSchemesData[purpose]} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                    ))}
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation', 'ves', 'pumping-test', 'geo-logging', 'geophys-logging']}>
+                    <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
+                    <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
+                    <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                    <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                    <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                    
+                    <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} diameter="110 mm (4.5”)"/>
+                    <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} diameter="150 mm (6”)"/>
+                    <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} diameter="150 mm (6”)"/>
+                    <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} diameter="200 mm (8”)"/>
                 </Accordion>
                 
                 <Card>
