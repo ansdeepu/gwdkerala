@@ -1,4 +1,3 @@
-
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -164,13 +163,6 @@ export const REPORTING_PURPOSE_ORDER = [
   "BW Dev",
   "TW Dev",
   "FPW Dev",
-  "MWSS",
-  "MWSS Ext",
-  "Pumping Scheme",
-  "MWSS Pump Reno",
-  "HPS",
-  "HPR",
-  "ARS"
 ] as const;
 
 export const PUMPING_TEST_AGGREGATE_PURPOSES = ["Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others", "Pumping Test Others"] as const;
@@ -272,7 +264,7 @@ export const SiteDetailSchema = z.object({
     if (isCompleted && !data.dateOfCompletion) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Completion Date is required for completed status.",
+            message: "Completion Date is required for this status.",
             path: ["dateOfCompletion"],
         });
     }
