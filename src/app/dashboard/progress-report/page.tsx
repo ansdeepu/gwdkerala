@@ -292,6 +292,7 @@ export default function ProgressReportPage() {
 
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
+    const isDateFilterActive = !!sDate && !!eDate;
 
     const safeParseDate = (dateInput: any): Date | null => {
         if (!dateInput) return null;
@@ -426,16 +427,22 @@ export default function ProgressReportPage() {
     
     Object.values(progressSummaryData).forEach(calculateBalanceAndTotal);
     
-    Object.values(gwInvestigationData).forEach(wellTypeData => Object.values(wellTypeData).forEach(calculateBalanceAndTotal));
-    Object.values(vesData).forEach(calculateBalanceAndTotal);
-    Object.values(geologicalLoggingData).forEach(calculateBalanceAndTotal);
-    Object.values(geophysicalLoggingData).forEach(calculateBalanceAndTotal);
-    Object.values(pumpingTestData).forEach(calculateBalanceAndTotal);
-
-    applicationTypeOptions.forEach(appType => {
-      BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
-      TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
+    [bwcData, twcData].forEach(dataCategory => {
+        Object.values(dataCategory).forEach(appTypeData => {
+            Object.values(appTypeData).forEach(calculateBalanceAndTotal);
+        });
     });
+
+    [gwInvestigationData].forEach(dataCategory => {
+        Object.values(dataCategory).forEach(wellTypeData => {
+            Object.values(wellTypeData).forEach(calculateBalanceAndTotal);
+        });
+    });
+
+    [vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData].forEach(dataCategory => {
+        Object.values(dataCategory).forEach(calculateBalanceAndTotal);
+    });
+    
     Object.values(otherSchemesData).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal));
 
     // Financial Summary Calculation
@@ -449,7 +456,7 @@ export default function ProgressReportPage() {
     const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
-            return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
+            return d && isDateFilterActive && isWithinInterval(d, { start: sDate, end: eDate });
         };
 
         entries.forEach(entry => {
@@ -512,7 +519,7 @@ export default function ProgressReportPage() {
         totalRevenueHeadCredit, revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
     });
     setIsFiltering(false);
-  }, [fileEntries, startDate, endDate, toast]);
+  }, [fileEntries, startDate, endDate, toast, uniqueApplicationTypes]);
   
   useEffect(() => {
     if (!entriesLoading) {
@@ -761,6 +768,8 @@ export default function ProgressReportPage() {
                                 {REPORTING_PURPOSE_ORDER.map(purpose => {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
                                 if (!stats) return null;
+                                const isVisible = (stats.totalApplications > 0 || stats.previousBalance > 0 || (["GW Investigation", "VES", "Pumping test", "Geological logging", "Geophysical Logging", "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"] as const).includes(purpose));
+                                if (!isVisible) return null;
 
                                 return (
                                     <TableRow key={purpose}>
@@ -784,38 +793,13 @@ export default function ProgressReportPage() {
                 </Card>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
-                   <AccordionItem value="gw-investigation" className="border-b-0">
-                      <Card className="shadow-lg">
-                          <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
-                              <CardTitle>GW Investigation</CardTitle>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                              <CardContent className="pt-6 space-y-4">
-                                  {typeOfWellOptions.map(wellType => (
-                                      <ReportCategoryTable 
-                                        key={wellType}
-                                        accordionId={`gw-investigation-${wellType}`} 
-                                        title={wellType} 
-                                        data={reportData.gwInvestigationData[wellType]} 
-                                        categoryKeys={uniqueApplicationTypes} 
-                                        categoryLabels={applicationTypeDisplayMap} 
-                                        onCountClick={handleCountClick}
-                                        alwaysVisible 
-                                    />
-                                  ))}
-                              </CardContent>
-                          </AccordionContent>
-                      </Card>
-                  </AccordionItem>
+                   <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                </Accordion>
-
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
                   <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible/>
+                  <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                   <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="fpw" title="FPW" data={reportData.otherSchemesData?.['FPW']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
