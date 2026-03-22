@@ -1,3 +1,4 @@
+
 // src/app/dashboard/plan-fund-works/page.tsx
 "use client";
 
@@ -191,6 +192,10 @@ export default function PlanFundWorksPage() {
     
     return { filteredEntries: entries, totalSites: totalSiteCount, lastCreatedDate: lastCreated };
   }, [fileEntries, user, codeFilter, searchTerm]);
+
+  const filteredTotalSites = useMemo(() => {
+    return filteredEntries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
+  }, [filteredEntries]);
   
   const handleAddNewClick = () => {
     setIsNavigating(true);
@@ -210,6 +215,9 @@ export default function PlanFundWorksPage() {
     params.set('page', String(page));
     router.push(`?${params.toString()}`, { scroll: false });
   };
+  
+  const startEntryNum = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const endEntryNum = Math.min(currentPage * ITEMS_PER_PAGE, filteredEntries.length);
 
   return (
     <div className="space-y-6">
@@ -273,7 +281,10 @@ export default function PlanFundWorksPage() {
         currentPage={currentPage}
       />
        {totalPages > 1 && (
-        <div className="flex items-center justify-center pt-4">
+        <div className="flex items-center justify-between pt-4">
+           <p className="text-sm text-muted-foreground">
+            Showing <strong>{filteredEntries.length > 0 ? startEntryNum : 0}</strong>-<strong>{endEntryNum}</strong> of <strong>{filteredTotalSites}</strong> sites.
+          </p>
           <PaginationControls
               currentPage={currentPage}
               totalPages={totalPages}
