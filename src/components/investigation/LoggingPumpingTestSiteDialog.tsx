@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useCallback } from 'react';
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -77,11 +77,6 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
         }
     }, [watchedLsg, allLsgConstituencyMaps, setValue, getValues]);
 
-    const investigatorList = useMemo(() => 
-        allStaffMembers.filter(s => s.status === 'Active' && (s.designation === 'Investigator' || s.designation === 'Geological Assistant' || s.designation === 'Geophysical Assistant'))
-        .sort((a, b) => a.name.localeCompare(b.name)), 
-    [allStaffMembers]);
-
     const sortedLsgMaps = useMemo(() => [...(allLsgConstituencyMaps || [])].sort((a, b) => a.name.localeCompare(b.name)), [allLsgConstituencyMaps]);
     const constituencyOptionsForLsg = useMemo(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) return [];
@@ -116,6 +111,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                             <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
+                                                    <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
                                                     {LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
@@ -167,7 +163,6 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
-                                        <FormField name="nameOfInvestigator" control={control} render={({ field }) => <FormItem><FormLabel>Investigator</FormLabel><Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select Investigator"/></SelectTrigger></FormControl><SelectContent>{investigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>} />
                                     </div>
                                     <FormField name="descriptionOfWork" control={control} render={({ field }) => (
                                         <FormItem>
@@ -193,10 +188,9 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                         <FormField name="workStatus" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
+                                                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
-                                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
                                                         {LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
