@@ -22,9 +22,6 @@ import {
   typeOfWellOptions,
   PUBLIC_DEPOSIT_APPLICATION_TYPES,
   PRIVATE_APPLICATION_TYPES,
-  COLLECTOR_APPLICATION_TYPES,
-  PLAN_FUND_APPLICATION_TYPES,
-  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
 } from '@/lib/schemas/DataEntrySchema';
 import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
@@ -48,7 +45,6 @@ const Loader2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://w
 const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="6 3 20 12 6 21 6 3"/></svg> );
 const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
 const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
-
 
 interface SiteDetailWithFileContext extends SiteDetailFormData {
   fileNo: string;
@@ -250,7 +246,7 @@ const ReportCategoryTable = ({
         </Card>
       </AccordionItem>
     );
-};
+  };
 
 export default function ProgressReportPage() {
   const { setHeader } = usePageHeader();
@@ -270,6 +266,13 @@ export default function ProgressReportPage() {
   const [detailDialogColumns, setDetailDialogColumns] = useState<DetailDialogColumn[]>([]);
   
   const uniqueApplicationTypes = useMemo(() => [...new Set(applicationTypeOptions.filter(type => !['GW_Investigation', 'Logging_Pumping_Test'].some(prefix => type.startsWith(prefix))))], []);
+  const UNASSIGNED_APP_TYPE = 'Unassigned';
+  const uniqueApplicationTypesWithUnassigned = useMemo(() => [...uniqueApplicationTypes, UNASSIGNED_APP_TYPE], [uniqueApplicationTypes]);
+  const applicationTypeDisplayMapWithUnassigned = useMemo(() => ({
+    ...applicationTypeDisplayMap,
+    [UNASSIGNED_APP_TYPE]: 'Unassigned / Other'
+  }), []);
+
 
   useEffect(() => {
     setHeader('Progress Reports', 'Generate monthly or periodic progress reports for various schemes and services.');
@@ -284,30 +287,6 @@ export default function ProgressReportPage() {
     if (!payment) return 0;
     return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
   };
-    
-  const handleGeneratePdfReport = async () => {
-    if (!reportData) {
-      toast({ title: 'No report data to generate PDF.' });
-      return;
-    }
-    setIsGeneratingPdf(true);
-    try {
-      const pdfBytes = await generateProgressReportPdf(
-        reportData,
-        officeAddress,
-        startDate,
-        endDate
-      );
-      download(pdfBytes, `Progress_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`, 'application/pdf');
-      toast({ title: "PDF Generated", description: "Progress report has been downloaded." });
-    } catch (error: any) {
-      console.error("PDF Generation Error:", error);
-      toast({ title: "PDF Generation Failed", description: error.message, variant: 'destructive' });
-    } finally {
-      setIsGeneratingPdf(false);
-    }
-  };
-
 
   const handleGenerateReport = useCallback(() => {
     if (!startDate || !endDate) {
@@ -366,19 +345,19 @@ export default function ProgressReportPage() {
     const progressSummaryData: OtherServiceProgress = {} as OtherServiceProgress;
     REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
 
-    const bwcData = createNestedStructure(uniqueApplicationTypes, BWC_DIAMETERS);
-    const twcData = createNestedStructure(uniqueApplicationTypes, TWC_DIAMETERS);
-    const fpwData = createNestedStructure(uniqueApplicationTypes, FPW_DIAMETERS);
-    const gwInvestigationData = createNestedStructure(typeOfWellOptions, uniqueApplicationTypes);
-    const vesData = createSingleStructure(uniqueApplicationTypes);
-    const geologicalLoggingData = createSingleStructure(uniqueApplicationTypes);
-    const geophysicalLoggingData = createSingleStructure(uniqueApplicationTypes);
-    const pumpingTestData = createSingleStructure(uniqueApplicationTypes);
+    const bwcData = createNestedStructure(uniqueApplicationTypesWithUnassigned, BWC_DIAMETERS);
+    const twcData = createNestedStructure(uniqueApplicationTypesWithUnassigned, TWC_DIAMETERS);
+    const fpwData = createNestedStructure(uniqueApplicationTypesWithUnassigned, FPW_DIAMETERS);
+    const gwInvestigationData = createNestedStructure(typeOfWellOptions, uniqueApplicationTypesWithUnassigned);
+    const vesData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    const geologicalLoggingData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    const geophysicalLoggingData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    const pumpingTestData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
     
     const otherSchemesData: Record<string, Record<string, ProgressStats>> = {};
     const otherSchemesPurposes: SitePurpose[] = ["BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"];
     otherSchemesPurposes.forEach(p => {
-        otherSchemesData[p] = createSingleStructure(uniqueApplicationTypes);
+        otherSchemesData[p] = createSingleStructure(uniqueApplicationTypesWithUnassigned);
     });
     
     includedSites.forEach(siteWithFileContext => {
@@ -387,47 +366,47 @@ export default function ProgressReportPage() {
         const diameter = site.diameter;
         const workStatus = site.workStatus as SiteWorkStatus | undefined;
         const completionDate = safeParseDate(site.dateOfCompletion);
-        const applicationType = siteWithFileContext.applicationType;
+        const applicationType = siteWithFileContext.applicationType || UNASSIGNED_APP_TYPE;
+        const isDateFilterActive = !!sDate && !!eDate;
 
-        const isCurrentApplicationInPeriod = fileRemittanceDate && isWithinInterval(fileRemittanceDate, { start: sDate, end: eDate });
-        const isCompletedInPeriod = completionDate && isWithinInterval(completionDate, { start: sDate, end: eDate });
+        const isCurrentApplicationInPeriod = fileRemittanceDate && isWithinInterval(fileRemittanceDate, { start: sDate!, end: eDate! });
+        const isCompletedInPeriod = completionDate && isWithinInterval(completionDate, { start: sDate!, end: eDate! });
         const isToBeRefunded = workStatus && REFUNDED_STATUSES.includes(workStatus);
-        const wasActiveBeforePeriod = fileRemittanceDate && isBefore(fileRemittanceDate, sDate) && (!completionDate || !isBefore(completionDate, sDate));
+        const wasActiveBeforePeriod = fileRemittanceDate && isBefore(fileRemittanceDate, sDate!) && (!completionDate || !isBefore(completionDate, sDate!));
 
         const updateStats = (statsObj: ProgressStats) => {
             if (!statsObj) return;
             if (isCurrentApplicationInPeriod) { statsObj.currentApplications++; statsObj.currentApplicationsData.push(siteWithFileContext); }
             if (wasActiveBeforePeriod) { statsObj.previousBalance++; statsObj.previousBalanceData.push(siteWithFileContext); }
             if (isCompletedInPeriod) { statsObj.completed++; statsObj.completedData.push(siteWithFileContext); }
-            if (isToBeRefunded && fileRemittanceDate && isBefore(fileRemittanceDate, eDate)) { statsObj.toBeRefunded++; statsObj.toBeRefundedData.push(siteWithFileContext); }
+            if (isToBeRefunded && fileRemittanceDate && isBefore(fileRemittanceDate, eDate!)) { statsObj.toBeRefunded++; statsObj.toBeRefundedData.push(siteWithFileContext); }
         };
-        
-        let summaryPurposeKey: SitePurpose | null = null;
-        if (purpose === 'GW Investigation' && site.vesRequired === 'Yes') {
-            summaryPurposeKey = 'VES';
+
+        if (purpose === 'GW Investigation') {
+            updateStats(progressSummaryData['GW Investigation']);
+            if (site.vesRequired === 'Yes') {
+                updateStats(progressSummaryData['VES']);
+            }
         } else if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
-            summaryPurposeKey = 'Pumping test';
+             updateStats(progressSummaryData['Pumping test']);
         } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) {
-            summaryPurposeKey = purpose;
+            if (progressSummaryData[purpose]) {
+                updateStats(progressSummaryData[purpose]);
+            }
         }
 
-        if (summaryPurposeKey && progressSummaryData[summaryPurposeKey]) {
-            updateStats(progressSummaryData[summaryPurposeKey]);
-        }
-        
         if (applicationType) {
             if (purpose === 'BWC' && diameter && bwcData[applicationType]?.[diameter]) updateStats(bwcData[applicationType][diameter]);
             else if (purpose === 'TWC' && diameter && twcData[applicationType]?.[diameter]) updateStats(twcData[applicationType][diameter]);
             else if (purpose === 'FPW' && diameter && fpwData[applicationType]?.[diameter]) updateStats(fpwData[applicationType][diameter]);
-            else if (purpose === 'GW Investigation' && site.vesRequired !== 'Yes') {
+            else if (purpose === 'GW Investigation') {
                 const wellType = (site as any).typeOfWell as TypeOfWell;
                 if (wellType && applicationType && gwInvestigationData[wellType]?.[applicationType]) {
                     updateStats(gwInvestigationData[wellType][applicationType]);
                 }
-            } else if (purpose === 'GW Investigation' && site.vesRequired === 'Yes') {
-                 if(vesData[applicationType]) {
+                if (site.vesRequired === 'Yes' && vesData[applicationType]) {
                     updateStats(vesData[applicationType]);
-                 }
+                }
             } else if (purpose === "Geological logging") {
                 if(geologicalLoggingData[applicationType]) updateStats(geologicalLoggingData[applicationType]);
             } else if (purpose === "Geophysical Logging") {
@@ -446,10 +425,18 @@ export default function ProgressReportPage() {
         stats.balance = stats.totalApplications - (stats.completed || 0);
         
         const totalApplicationSites = new Map<string, SiteDetailWithFileContext>();
-        [...(stats.previousBalanceData || []), ...(stats.currentApplicationsData || [])].forEach(site => { 
-            const key = `${site.fileNo}-${site.nameOfSite}`; 
-            if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
-        });
+        if (stats.previousBalanceData) {
+            stats.previousBalanceData.forEach(site => { 
+                const key = `${site.fileNo}-${site.nameOfSite}`; 
+                if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
+            });
+        }
+        if (stats.currentApplicationsData) {
+            stats.currentApplicationsData.forEach(site => { 
+                const key = `${site.fileNo}-${site.nameOfSite}`; 
+                if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
+            });
+        }
         
         const toBeRefundedKeys = new Set((stats.toBeRefundedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
         toBeRefundedKeys.forEach(key => totalApplicationSites.delete(key));
@@ -467,7 +454,7 @@ export default function ProgressReportPage() {
     Object.values(geophysicalLoggingData).forEach(calculateBalanceAndTotal);
     Object.values(pumpingTestData).forEach(calculateBalanceAndTotal);
 
-    applicationTypeOptions.forEach(appType => {
+    uniqueApplicationTypesWithUnassigned.forEach(appType => {
       BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
       TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
       FPW_DIAMETERS.forEach(d => { if(fpwData[appType]?.[d]) calculateBalanceAndTotal(fpwData[appType][d]) });
@@ -478,12 +465,12 @@ export default function ProgressReportPage() {
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
     const revenueHeadCreditData: any[] = [];
-    const isDateFilterActive = !!sDate && !!eDate;
     
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
     const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
+        const isDateFilterActive = !!sDate && !!eDate;
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
             return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
@@ -510,7 +497,7 @@ export default function ProgressReportPage() {
 
             entry.siteDetails?.forEach(site => {
                 const completionDate = safeParseDate(site.dateOfCompletion);
-                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate, end: eDate })) {
+                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! })) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
                     summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! });
@@ -525,22 +512,21 @@ export default function ProgressReportPage() {
     const uniqueRevenueCredits = new Map<string, { entryId: string; amount: number }>();
     fileEntries.forEach(entry => {
         if (!entry.id) return;
-        if (isDateFilterActive) {
-            entry.paymentDetails?.forEach(pd => {
-                const paymentDate = safeParseDate(pd.dateOfPayment);
-                if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate!, end: eDate! }) && pd.revenueHead) {
-                    const amount = Number(pd.revenueHead) || 0;
-                    if (amount > 0) {
-                        const existing = uniqueRevenueCredits.get(entry.id!);
-                        if (existing) {
-                            existing.amount += amount;
-                        } else {
-                            uniqueRevenueCredits.set(entry.id!, { entryId: entry.id!, amount });
-                        }
+        const isDateFilterActive = !!sDate && !!eDate;
+        entry.paymentDetails?.forEach(pd => {
+            const paymentDate = safeParseDate(pd.dateOfPayment);
+            if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate!, end: eDate! }) && pd.revenueHead) {
+                const amount = Number(pd.revenueHead) || 0;
+                if (amount > 0) {
+                    const existing = uniqueRevenueCredits.get(entry.id!);
+                    if (existing) {
+                        existing.amount += amount;
+                    } else {
+                        uniqueRevenueCredits.set(entry.id!, { entryId: entry.id!, amount });
                     }
                 }
-            });
-        }
+            }
+        });
     });
 
     const totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, item) => sum + item.amount, 0);
@@ -551,7 +537,7 @@ export default function ProgressReportPage() {
         totalRevenueHeadCredit, revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
     });
     setIsFiltering(false);
-  }, [fileEntries, startDate, endDate, toast]);
+  }, [fileEntries, startDate, endDate, toast, uniqueApplicationTypesWithUnassigned]);
   
   useEffect(() => {
     if (!entriesLoading) {
@@ -571,6 +557,30 @@ export default function ProgressReportPage() {
   };
   
   const handleExportExcel = async () => { /* Excel export logic here */ };
+  
+    const handleGeneratePdfReport = async () => {
+    if (!reportData) {
+      toast({ title: 'No report data to generate PDF.' });
+      return;
+    }
+    setIsGeneratingPdf(true);
+    try {
+      const pdfBytes = await generateProgressReportPdf(
+        reportData,
+        officeAddress,
+        startDate,
+        endDate
+      );
+      download(pdfBytes, `Progress_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`, 'application/pdf');
+      toast({ title: "PDF Generated", description: "Progress report has been downloaded." });
+    } catch (error: any) {
+      console.error("PDF Generation Error:", error);
+      toast({ title: "PDF Generation Failed", description: error.message, variant: 'destructive' });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
 
   const handleCountClick = (data: Array<any>, title: string) => {
     if (!data || data.length === 0) return;
@@ -662,8 +672,6 @@ export default function ProgressReportPage() {
     setIsDetailDialogOpen(true);
   };
   
-  const exportDialogDataToExcel = async () => { /* Export dialog data logic here */ };
-
   const handleFinancialTotalClick = (type: 'applications' | 'remittance' | 'completed' | 'payment', financialData: FinancialSummaryReport, category: string) => {
       const allData = Object.values(financialData);
       let aggregatedData: any[] = [];
@@ -684,6 +692,7 @@ export default function ProgressReportPage() {
           handleCountClick(aggregatedData, title);
       }
   };
+
 
   const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (dataType: 'application' | 'payment', purpose: string, data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
     const categories = Object.keys(data);
@@ -720,37 +729,37 @@ export default function ProgressReportPage() {
         </Table>
     );
   };
-  
-  const {
-    gwInvestigationBalance, vesBalance, pumpingTestBalance,
-    geologicalLoggingBalance, geophysicalLoggingBalance,
-    bwc110Balance, bwc150Balance, twc150Balance, twc200Balance, fpwBalance
-  } = useMemo(() => {
-      if (!reportData) return {};
-      const calculateTotalBalance = (data: Record<string, any> = {}) => Object.values(data).reduce((acc, stats) => acc + (stats.balance || 0), 0);
-      const calculateTotalBalanceForDiameter = (data: Record<string, any> = {}, diameter: string) => Object.values(data).reduce((acc, stats) => acc + (stats[diameter]?.balance || 0), 0);
-      
-      let gwBalance = 0;
-      if (reportData.gwInvestigationData) {
-          Object.values(reportData.gwInvestigationData).forEach((wellTypeData: any) => {
-              gwBalance += calculateTotalBalance(wellTypeData);
-          });
-      }
 
-      return {
-          gwInvestigationBalance: gwBalance,
-          vesBalance: calculateTotalBalance(reportData.vesData),
-          pumpingTestBalance: calculateTotalBalance(reportData.pumpingTestData),
-          geologicalLoggingBalance: calculateTotalBalance(reportData.geologicalLoggingData),
-          geophysicalLoggingBalance: calculateTotalBalance(reportData.geophysicalLoggingData),
-          bwc110Balance: calculateTotalBalanceForDiameter(reportData.bwcData, "110 mm (4.5”)"),
-          bwc150Balance: calculateTotalBalanceForDiameter(reportData.bwcData, "150 mm (6”)"),
-          twc150Balance: calculateTotalBalanceForDiameter(reportData.twcData, "150 mm (6”)"),
-          twc200Balance: calculateTotalBalanceForDiameter(reportData.twcData, "200 mm (8”)"),
-          fpwBalance: calculateTotalBalance(reportData.otherSchemesData?.['FPW']),
-      };
-  }, [reportData]);
 
+    const {
+        gwInvestigationBalance, vesBalance, pumpingTestBalance,
+        geologicalLoggingBalance, geophysicalLoggingBalance,
+        bwc110Balance, bwc150Balance, twc150Balance, twc200Balance, fpwBalance
+      } = useMemo(() => {
+          if (!reportData) return {};
+          const calculateTotalBalance = (data: Record<string, any> = {}) => Object.values(data).reduce((acc, stats) => acc + (stats.balance || 0), 0);
+          const calculateTotalBalanceForDiameter = (data: Record<string, any> = {}, diameter: string) => Object.values(data).reduce((acc, stats) => acc + (stats[diameter]?.balance || 0), 0);
+          
+          let gwBalance = 0;
+          if (reportData.gwInvestigationData) {
+              Object.values(reportData.gwInvestigationData).forEach((wellTypeData: any) => {
+                  gwBalance += calculateTotalBalance(wellTypeData);
+              });
+          }
+    
+          return {
+              gwInvestigationBalance: gwBalance,
+              vesBalance: calculateTotalBalance(reportData.vesData),
+              pumpingTestBalance: calculateTotalBalance(reportData.pumpingTestData),
+              geologicalLoggingBalance: calculateTotalBalance(reportData.geologicalLoggingData),
+              geophysicalLoggingBalance: calculateTotalBalance(reportData.geophysicalLoggingData),
+              bwc110Balance: calculateTotalBalanceForDiameter(reportData.bwcData, "110 mm (4.5”)"),
+              bwc150Balance: calculateTotalBalanceForDiameter(reportData.bwcData, "150 mm (6”)"),
+              twc150Balance: calculateTotalBalanceForDiameter(reportData.twcData, "150 mm (6”)"),
+              twc200Balance: calculateTotalBalanceForDiameter(reportData.twcData, "200 mm (8”)"),
+              fpwBalance: calculateTotalBalanceForDiameter(reportData.fpwData, "110 mm (4.5”)"),
+          };
+      }, [reportData]);
 
   if (entriesLoading) {
     return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -806,7 +815,7 @@ export default function ProgressReportPage() {
                                 {REPORTING_PURPOSE_ORDER.map(purpose => {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
                                 if (!stats) return null;
-                                const isVisible = (stats.totalApplications > 0 || stats.previousBalance > 0 || (["GW Investigation", "VES", "Pumping test", "Geological logging", "Geophysical Logging", "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"] as const).includes(purpose));
+                                const isVisible = (stats.totalApplications > 0 || stats.previousBalance > 0);
                                 if (!isVisible) return null;
 
                                 return (
@@ -830,46 +839,17 @@ export default function ProgressReportPage() {
                     </CardContent>
                 </Card>
 
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                   <AccordionItem value="gw-investigation" className="border-b-0">
-                      <Card className="shadow-lg">
-                          <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
-                              <CardTitle>GW Investigation ({gwInvestigationBalance || 0} Balance)</CardTitle>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                              <CardContent className="pt-6 space-y-4">
-                                  {typeOfWellOptions.map(wellType => {
-                                      const wellTypeData = reportData.gwInvestigationData[wellType];
-                                      return (
-                                          <Card key={wellType}>
-                                              <CardHeader className="p-4">
-                                                  <CardTitle className="text-base">{wellType}</CardTitle>
-                                              </CardHeader>
-                                              <CardContent className="p-4 pt-0">
-                                                  <ReportDetailsTable
-                                                      data={wellTypeData}
-                                                      categoryKeys={uniqueApplicationTypes}
-                                                      categoryLabels={applicationTypeDisplayMap}
-                                                      onCountClick={handleCountClick}
-                                                      titlePrefix={`GW Investigation - ${wellType}`}
-                                                  />
-                                              </CardContent>
-                                          </Card>
-                                      );
-                                  })}
-                              </CardContent>
-                          </AccordionContent>
-                      </Card>
-                  </AccordionItem>
-                  <ReportCategoryTable accordionId="ves" title={`VES (${vesBalance || 0} Balance)`} data={reportData.vesData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                  <ReportCategoryTable accordionId="pumping-test" title={`Pumping Test (${pumpingTestBalance || 0} Balance)`} data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                  <ReportCategoryTable accordionId="geo-logging" title={`Geological Logging (${geologicalLoggingBalance || 0} Balance)`} data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                  <ReportCategoryTable accordionId="geophys-logging" title={`Geophysical Logging (${geophysicalLoggingBalance || 0} Balance)`} data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
-                  <ReportCategoryTable accordionId="bwc-110" title={`BWC - 110 mm (4.5”) (${bwc110Balance || 0} Balance)`} diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (${bwc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible/>
-                  <ReportCategoryTable accordionId="twc-150" title={`TWC - 150 mm (6”) (${twc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-200" title={`TWC - 200 mm (8”) (${twc200Balance || 0} Balance)`} diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="fpw" title={`FPW (${fpwBalance || 0} Balance)`} data={reportData.otherSchemesData?.['FPW']} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
+                   <ReportCategoryTable accordionId="gw-investigation" title={`GW Investigation (${gwInvestigationBalance || 0} Balance)`} data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible/>
+                  <ReportCategoryTable accordionId="ves" title={`VES (${vesBalance || 0} Balance)`} data={reportData.vesData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="pumping-test" title={`Pumping Test (${pumpingTestBalance || 0} Balance)`} data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="geo-logging" title={`Geological Logging (${geologicalLoggingBalance || 0} Balance)`} data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="geophys-logging" title={`Geophysical Logging (${geophysicalLoggingBalance || 0} Balance)`} data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
+                  <ReportCategoryTable accordionId="bwc-110" title={`BWC - 110 mm (4.5”) (${bwc110Balance || 0} Balance)`} diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (${bwc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible/>
+                  <ReportCategoryTable accordionId="twc-150" title={`TWC - 150 mm (6”) (${twc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="twc-200" title={`TWC - 200 mm (8”) (${twc200Balance || 0} Balance)`} diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="fpw" title={`FPW (${fpwBalance || 0} Balance)`} diameter="110 mm (4.5”)" data={reportData.fpwData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
                 </Accordion>
 
                 <Card>
