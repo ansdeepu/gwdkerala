@@ -205,22 +205,25 @@ const ReportCategoryTable = ({
   categoryKeys,
   categoryLabels,
   onCountClick,
-  alwaysVisible = false,
+  diameter,
 }: {
   accordionId: string;
   title: string;
-  data: Record<string, ProgressStats>; 
+  data: Record<string, any>; 
   categoryKeys: readonly string[];
   categoryLabels: Record<string, string>;
   onCountClick: (data: SiteDetailWithFileContext[], title: string) => void;
-  alwaysVisible?: boolean;
+  diameter?: string; 
 }) => {
     const hasData = useMemo(() => {
         if (!data) return false;
-        return Object.values(data).some(stats => Object.values(stats).some(val => (typeof val === 'number' && val > 0) || (Array.isArray(val) && val.length > 0)));
-    }, [data]);
+        return categoryKeys.some(catKey => {
+            const stats = diameter ? data[catKey]?.[diameter] : data[catKey];
+            return stats && Object.values(stats).some(val => (typeof val === 'number' && val > 0));
+        });
+    }, [data, categoryKeys, diameter]);
   
-    if (!hasData && !alwaysVisible) return null;
+    if (!hasData) return null;
   
     return (
       <AccordionItem value={accordionId} className="border-b-0">
@@ -230,7 +233,13 @@ const ReportCategoryTable = ({
           </AccordionTrigger>
           <AccordionContent>
             <CardContent className="pt-6">
-               <ReportDetailsTable data={data} categoryKeys={categoryKeys} categoryLabels={categoryLabels} onCountClick={onCountClick} titlePrefix={title} />
+                <ReportDetailsTable
+                    data={diameter ? Object.fromEntries(Object.entries(data).map(([key, val]) => [key, val[diameter]])) : data}
+                    categoryKeys={categoryKeys}
+                    categoryLabels={categoryLabels}
+                    onCountClick={onCountClick}
+                    titlePrefix={title}
+                />
             </CardContent>
           </AccordionContent>
         </Card>
@@ -280,6 +289,7 @@ export default function ProgressReportPage() {
 
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
+    const isDateFilterActive = !!sDate && !!eDate;
 
     const safeParseDate = (dateInput: any): Date | null => {
         if (!dateInput) return null;
@@ -379,9 +389,14 @@ export default function ProgressReportPage() {
                     const target = purpose === 'GW Investigation' ? gwInvestigationData : vesData;
                     if(target[wellType]?.[applicationType]) updateStats(target[wellType][applicationType]);
                 }
-            } else if (purpose === 'Geological logging' && geologicalLoggingData[applicationType]) updateStats(geologicalLoggingData[applicationType]);
-            else if (purpose === 'Geophysical Logging' && geophysicalLoggingData[applicationType]) updateStats(geophysicalLoggingData[applicationType]);
-            else if ((PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose) && pumpingTestData[applicationType]) updateStats(pumpingTestData[applicationType]);
+            } else if ((INVESTIGATION_APP_TYPE_PURPOSES as readonly string[]).includes(purpose)) {
+                if (applicationType) {
+                    const targetData = purpose === "Geological logging" ? geologicalLoggingData : geophysicalLoggingData;
+                    updateStats(targetData[applicationType]);
+                }
+            } else if ((PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose) && pumpingTestData[applicationType]) {
+                updateStats(pumpingTestData[applicationType]);
+            }
             else if (otherSchemesPurposes.includes(purpose) && otherSchemesData[purpose]?.[applicationType]) {
                 updateStats(otherSchemesData[purpose][applicationType]);
             }
@@ -401,9 +416,17 @@ export default function ProgressReportPage() {
     };
     
     Object.values(progressSummaryData).forEach(calculateBalanceAndTotal);
-    [bwcData, twcData].forEach(data => Object.values(data).forEach(diameters => Object.values(diameters).forEach(calculateBalanceAndTotal)));
-    [gwInvestigationData, vesData].forEach(data => Object.values(data).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal)));
-    [geologicalLoggingData, geophysicalLoggingData, pumpingTestData].forEach(data => Object.values(data).forEach(calculateBalanceAndTotal));
+    applicationTypeOptions.forEach(appType => {
+      BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
+      TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
+      if(geologicalLoggingData[appType]) calculateBalanceAndTotal(geologicalLoggingData[appType]);
+      if(geophysicalLoggingData[appType]) calculateBalanceAndTotal(geophysicalLoggingData[appType]);
+      if(pumpingTestData[appType]) calculateBalanceAndTotal(pumpingTestData[appType]);
+    });
+    typeOfWellOptions.forEach(w => {
+      if(gwInvestigationData[w]) calculateBalanceAndTotal(gwInvestigationData[w]);
+      if(vesData[w]) calculateBalanceAndTotal(vesData[w]);
+    });
     Object.values(otherSchemesData).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal));
 
     // Financial Summary Calculation
@@ -441,7 +464,7 @@ export default function ProgressReportPage() {
 
             entry.siteDetails?.forEach(site => {
                 const completionDate = safeParseDate(site.dateOfCompletion);
-                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! })) {
+                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate, end: eDate })) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
                     summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! });
@@ -756,10 +779,10 @@ export default function ProgressReportPage() {
                     <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible />
                     
-                    <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} diameter="110 mm (4.5”)"/>
-                    <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} diameter="150 mm (6”)"/>
-                    <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} diameter="150 mm (6”)"/>
-                    <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} diameter="200 mm (8”)"/>
+                    <ReportCategoryTable accordionId="bwc-110" title="BWC - 110 mm (4.5”)" diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                    <ReportCategoryTable accordionId="bwc-150" title="BWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                    <ReportCategoryTable accordionId="twc-150" title="TWC - 150 mm (6”)" diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                    <ReportCategoryTable accordionId="twc-200" title="TWC - 200 mm (8”)" diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
                 </Accordion>
                 
                 <Card>
