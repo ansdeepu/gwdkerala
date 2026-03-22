@@ -1,3 +1,4 @@
+
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -104,6 +105,7 @@ const ReportCategoryTable = ({
   categoryLabels,
   onCountClick,
   diameter,
+  alwaysVisible = false,
 }: {
   accordionId: string;
   title: string;
@@ -111,7 +113,8 @@ const ReportCategoryTable = ({
   categoryKeys: readonly string[];
   categoryLabels: Record<string, string>;
   onCountClick: (data: SiteDetailWithFileContext[], title: string) => void;
-  diameter?: string; 
+  diameter?: string;
+  alwaysVisible?: boolean;
 }) => {
   const metrics: Array<{ key: keyof ProgressStats; label: string }> = [
     { key: 'previousBalance', label: 'Previous Balance' },
@@ -148,7 +151,7 @@ const ReportCategoryTable = ({
     return { categoryTotals: totals, hasData: dataFound };
   }, [data, categoryKeys, diameter, metrics]);
 
-  if (!hasData) return null;
+  if (!hasData && !alwaysVisible) return null;
 
   return (
     <AccordionItem value={accordionId} className="border-b-0">
@@ -172,14 +175,14 @@ const ReportCategoryTable = ({
                   {categoryKeys.map(catKey => {
                     const stats = (diameter ? data[catKey]?.[diameter] : data[catKey]) as ProgressStats | undefined;
 
-                    if (!stats || !Object.values(stats).some(val => (typeof val === 'number' && val > 0))) return null;
+                    if (!alwaysVisible && (!stats || !Object.values(stats).some(val => (typeof val === 'number' && val > 0)))) return null;
                     
                     return (
                     <TableRow key={catKey}>
                       <TableCell className="border p-2 text-left font-medium">{categoryLabels[catKey] || catKey}</TableCell>
                       {metrics.map(metric => {
-                        const count = stats[metric.key] as number ?? 0;
-                        const metricData = stats[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] ?? [];
+                        const count = stats?.[metric.key] as number ?? 0;
+                        const metricData = stats?.[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] ?? [];
                         return (
                           <TableCell key={`${catKey}-${metric.key}`} className={cn("border p-2 text-center", (metric.key === 'balance' || metric.key === 'totalApplications') && "font-bold")}>
                             <Button variant="link" className="p-0 h-auto font-semibold" disabled={count === 0} onClick={() => onCountClick(metricData, `${title} - ${categoryLabels[catKey] || catKey} - ${metric.label}`)}>
@@ -730,8 +733,9 @@ export default function ProgressReportPage() {
                             <TableHeader><TableRow><TableHead className="border p-2 align-middle text-center font-semibold">Service Type</TableHead><TableHead className="border p-2 text-center font-semibold">Previous Balance</TableHead><TableHead className="border p-2 text-center font-semibold">Current Application</TableHead><TableHead className="border p-2 text-center font-semibold">To be refunded</TableHead><TableHead className="border p-2 text-center font-bold">Total Application</TableHead><TableHead className="border p-2 text-center font-semibold">Completed</TableHead><TableHead className="border p-2 text-center font-bold">Balance</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {REPORTING_PURPOSE_ORDER.map(purpose => {
+                                const alwaysVisiblePurposes = ["GW Investigation", "VES", "Pumping test", "Geological logging", "Geophysical Logging"];
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
-                                if (!stats || (stats.totalApplications === 0 && stats.previousBalance === 0)) return null;
+                                if (!stats || ((stats.totalApplications === 0 && stats.previousBalance === 0) && !alwaysVisiblePurposes.includes(purpose))) return null;
                                 return (
                                     <TableRow key={purpose}>
                                         <TableCell className="border p-2 font-medium">
@@ -754,11 +758,11 @@ export default function ProgressReportPage() {
                 </Card>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                  <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} />
+                  <ReportCategoryTable accordionId="gw-investigation" title="GW Investigation" data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible={true} />
+                  <ReportCategoryTable accordionId="ves" title="VES" data={reportData.vesData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible={true} />
+                  <ReportCategoryTable accordionId="pumping-test" title="Pumping Test" data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible={true} />
+                  <ReportCategoryTable accordionId="geo-logging" title="Geological Logging" data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible={true} />
+                  <ReportCategoryTable accordionId="geophys-logging" title="Geophysical Logging" data={reportData.geophysicalLoggingData} categoryKeys={uniqueApplicationTypes} categoryLabels={applicationTypeDisplayMap} onCountClick={handleCountClick} alwaysVisible={true} />
                 </Accordion>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
