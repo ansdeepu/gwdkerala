@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
-    reportableFields, 
     sitePurposeOptions, 
     applicationTypeOptions, 
     applicationTypeDisplayMap, 
@@ -33,6 +32,41 @@ import { PlusCircle, FileDown } from 'lucide-react';
 
 type ReportSource = 'deposit' | 'private' | 'ars' | 'gwInvestigation' | 'loggingPumpingTest' | 'collector' | 'planFund';
 type ReportRow = Record<string, string | number | undefined | null>;
+
+const reportableFields = [
+    // File-level fields
+    { id: 'fileNo', label: 'File No', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.fileNo },
+    { id: 'applicantName', label: 'Applicant Name', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.applicantName },
+    { id: 'applicationType', label: 'Application Type', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.applicationType ? applicationTypeDisplayMap[entry.applicationType] : 'N/A' },
+    { id: 'fileStatus', label: 'File Status', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.fileStatus },
+    { id: 'totalRemittance', label: 'Total Remittance (₹)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.totalRemittance },
+    { id: 'totalPayment', label: 'Total Payment (₹)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.totalPaymentAllEntries },
+    { id: 'overallBalance', label: 'Overall Balance (₹)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.overallBalance },
+    { id: 'remittanceDate', label: 'First Remittance Date', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.remittanceDetails?.[0]?.dateOfRemittance },
+
+    // Site-level fields (common)
+    { id: 'siteName', label: 'Site Name', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.nameOfSite },
+    { id: 'localSelfGovt', label: 'Local Self Govt.', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.localSelfGovt },
+    { id: 'constituency', label: 'Constituency', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.constituency },
+    { id: 'latitude', label: 'Latitude', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.latitude },
+    { id: 'longitude', label: 'Longitude', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.longitude },
+    { id: 'purpose', label: 'Site Purpose', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.purpose },
+    { id: 'workStatus', label: 'Site Work Status', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.workStatus },
+    { id: 'dateOfCompletion', label: 'Site Completion Date', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.dateOfCompletion },
+    { id: 'totalExpenditure', label: 'Site Total Expenditure (₹)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.totalExpenditure },
+    
+    // ARS specific fields
+    { id: 'arsTypeOfScheme', label: 'ARS Scheme Type', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsTypeOfScheme },
+    { id: 'arsStatus', label: 'ARS Status', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsStatus },
+    { id: 'arsStorageCapacity', label: 'ARS Storage Capacity (m³)', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsStorageCapacity },
+
+    // Investigation specific fields
+    { id: 'typeOfWell', label: 'Type of Well', sources: ['gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.typeOfWell },
+    { id: 'feasibility', label: 'Feasibility', sources: ['gwInvestigation'], accessor: (entry: any) => entry.feasibility },
+    { id: 'vesRequired', label: 'VES Required', sources: ['gwInvestigation'], accessor: (entry: any) => entry.vesRequired },
+    { id: 'nameOfInvestigator', label: 'Investigator', sources: ['gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.nameOfInvestigator },
+];
+
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
