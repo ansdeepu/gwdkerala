@@ -432,14 +432,19 @@ export default function ProgressReportPage() {
             if (isToBeRefunded && fileRemittanceDate && isDateFilterActive && isBefore(fileRemittanceDate, eDate!)) { statsObj.toBeRefunded++; statsObj.toBeRefundedData.push(siteWithFileContext); }
         };
 
-        if (purpose === 'GW Investigation') {
+        const isInvestigation = purpose === 'GW Investigation';
+        const isVES = site.vesRequired === 'Yes';
+
+        if (isInvestigation) {
             updateStats(progressSummaryData['GW Investigation']);
-            if (site.vesRequired === 'Yes') {
-                updateStats(progressSummaryData['VES']);
-            }
-        } else if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
+        }
+        if (isVES) {
+            updateStats(progressSummaryData['VES']);
+        }
+
+        if (purpose && (PUMPING_TEST_AGGREGATE_PURPOSES as readonly string[]).includes(purpose)) {
              updateStats(progressSummaryData['Pumping test']);
-        } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) {
+        } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose) && !isInvestigation && !isVES) {
             if (progressSummaryData[purpose]) {
                 updateStats(progressSummaryData[purpose]);
             }
@@ -520,6 +525,7 @@ export default function ProgressReportPage() {
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
     const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
+        const isDateFilterActive = !!sDate && !!eDate;
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
             return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
@@ -854,37 +860,37 @@ export default function ProgressReportPage() {
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
                     <AccordionItem value="gw-investigation" className="border-b-0">
-                        <Card className="shadow-lg">
-                            <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
-                                <CardTitle>GW Investigation ({gwInvestigationBalance || 0} Balance)</CardTitle>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                                <CardContent className="pt-6 space-y-4">
-                                    {typeOfWellOptions.map(wellType => {
-                                        const wellTypeData = reportData.gwInvestigationData[wellType];
-                                        const hasDataForWellType = Object.values(wellTypeData).some((stats: any) => Object.values(stats).some(val => (typeof val === 'number' && val > 0)));
-                                        if (!hasDataForWellType) return null;
+                      <Card className="shadow-lg">
+                          <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
+                              <CardTitle>GW Investigation ({gwInvestigationBalance || 0} Balance)</CardTitle>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                              <CardContent className="pt-6 space-y-4">
+                                  {typeOfWellOptions.map(wellType => {
+                                      const wellTypeData = reportData.gwInvestigationData[wellType];
+                                      const hasDataForWellType = Object.values(wellTypeData).some((stats: any) => Object.values(stats).some(val => (typeof val === 'number' && val > 0)));
+                                      if (!hasDataForWellType) return null;
 
-                                        return (
-                                            <Card key={wellType}>
-                                                <CardHeader className="p-4">
-                                                    <CardTitle className="text-base">{wellType}</CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="p-4 pt-0">
-                                                    <ReportDetailsTable
-                                                        data={wellTypeData}
-                                                        categoryKeys={uniqueApplicationTypesWithUnassigned}
-                                                        categoryLabels={applicationTypeDisplayMapWithUnassigned}
-                                                        onCountClick={handleCountClick}
-                                                        titlePrefix={`GW Investigation - ${wellType}`}
-                                                    />
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })}
-                                </CardContent>
-                            </AccordionContent>
-                        </Card>
+                                      return (
+                                          <Card key={wellType}>
+                                              <CardHeader className="p-4">
+                                                  <CardTitle className="text-base">{wellType}</CardTitle>
+                                              </CardHeader>
+                                              <CardContent className="p-4 pt-0">
+                                                  <ReportDetailsTable
+                                                      data={wellTypeData}
+                                                      categoryKeys={uniqueApplicationTypesWithUnassigned}
+                                                      categoryLabels={applicationTypeDisplayMapWithUnassigned}
+                                                      onCountClick={handleCountClick}
+                                                      titlePrefix={`GW Investigation - ${wellType}`}
+                                                  />
+                                              </CardContent>
+                                          </Card>
+                                      );
+                                  })}
+                              </CardContent>
+                          </AccordionContent>
+                      </Card>
                     </AccordionItem>
                     <ReportCategoryTable accordionId="ves" title={`VES (${vesBalance || 0} Balance)`} data={reportData.vesData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="pumping-test" title={`Pumping Test (${pumpingTestBalance || 0} Balance)`} data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
