@@ -163,6 +163,13 @@ export const REPORTING_PURPOSE_ORDER = [
   "BW Dev",
   "TW Dev",
   "FPW Dev",
+  "MWSS",
+  "MWSS Ext",
+  "Pumping Scheme",
+  "MWSS Pump Reno",
+  "HPS",
+  "HPR",
+  "ARS",
 ] as const;
 
 export const PUMPING_TEST_AGGREGATE_PURPOSES = ["Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others", "Pumping Test Others"] as const;

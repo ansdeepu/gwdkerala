@@ -348,7 +348,7 @@ export default function ProgressReportPage() {
     const pumpingTestData = createSingleStructure(uniqueApplicationTypes);
     
     const otherSchemesData: Record<string, Record<string, ProgressStats>> = {};
-    const otherSchemesPurposes = ["FPW", "BW Dev", "TW Dev", "FPW Dev"];
+    const otherSchemesPurposes = ["FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"];
     otherSchemesPurposes.forEach(p => {
         otherSchemesData[p] = createSingleStructure(uniqueApplicationTypes);
     });
@@ -411,16 +411,16 @@ export default function ProgressReportPage() {
         stats.balance = (stats.totalApplications || 0) - (stats.completed || 0);
         
         const totalApplicationSites = new Map<string, SiteDetailWithFileContext>();
-        [...stats.previousBalanceData, ...stats.currentApplicationsData].forEach(site => { 
+        [...(stats.previousBalanceData || []), ...(stats.currentApplicationsData || [])].forEach(site => { 
             const key = `${site.fileNo}-${site.nameOfSite}`; 
             if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
         });
         
-        const toBeRefundedKeys = new Set(stats.toBeRefundedData.map(site => `${site.fileNo}-${site.nameOfSite}`));
+        const toBeRefundedKeys = new Set((stats.toBeRefundedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
         toBeRefundedKeys.forEach(key => totalApplicationSites.delete(key));
         stats.totalApplicationsData = Array.from(totalApplicationSites.values());
         
-        const completedKeys = new Set(stats.completedData.map(site => `${site.fileNo}-${site.nameOfSite}`));
+        const completedKeys = new Set((stats.completedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
         stats.balanceData = (stats.totalApplicationsData || []).filter(site => !completedKeys.has(`${site.fileNo}-${site.nameOfSite}`));
     };
     
@@ -439,7 +439,6 @@ export default function ProgressReportPage() {
     Object.values(otherSchemesData).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal));
 
     // Financial Summary Calculation
-    const isDateFilterActive = !!sDate && !!eDate;
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
     const revenueHeadCreditData: any[] = [];
@@ -762,8 +761,6 @@ export default function ProgressReportPage() {
                                 {REPORTING_PURPOSE_ORDER.map(purpose => {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
                                 if (!stats) return null;
-                                const isVisible = (stats.totalApplications > 0 || stats.previousBalance > 0 || (["GW Investigation", "VES", "Pumping test", "Geological logging", "Geophysical Logging", "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"] as const).includes(purpose));
-                                if (!isVisible) return null;
 
                                 return (
                                     <TableRow key={purpose}>
@@ -786,7 +783,7 @@ export default function ProgressReportPage() {
                     </CardContent>
                 </Card>
 
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation', 'ves', 'pumping-test', 'geo-logging', 'geophys-logging']}>
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
                    <AccordionItem value="gw-investigation" className="border-b-0">
                       <Card className="shadow-lg">
                           <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
@@ -794,25 +791,18 @@ export default function ProgressReportPage() {
                           </AccordionTrigger>
                           <AccordionContent>
                               <CardContent className="pt-6 space-y-4">
-                                  {typeOfWellOptions.map(wellType => {
-                                      const wellTypeData = reportData.gwInvestigationData[wellType];
-                                      return (
-                                          <Card key={wellType}>
-                                              <CardHeader className="p-4">
-                                                  <CardTitle className="text-base">{wellType}</CardTitle>
-                                              </CardHeader>
-                                              <CardContent className="p-4 pt-0">
-                                                  <ReportDetailsTable
-                                                      data={wellTypeData}
-                                                      categoryKeys={uniqueApplicationTypes}
-                                                      categoryLabels={applicationTypeDisplayMap}
-                                                      onCountClick={handleCountClick}
-                                                      titlePrefix={`GW Investigation - ${wellType}`}
-                                                  />
-                                              </CardContent>
-                                          </Card>
-                                      );
-                                  })}
+                                  {typeOfWellOptions.map(wellType => (
+                                      <ReportCategoryTable 
+                                        key={wellType}
+                                        accordionId={`gw-investigation-${wellType}`} 
+                                        title={wellType} 
+                                        data={reportData.gwInvestigationData[wellType]} 
+                                        categoryKeys={uniqueApplicationTypes} 
+                                        categoryLabels={applicationTypeDisplayMap} 
+                                        onCountClick={handleCountClick}
+                                        alwaysVisible 
+                                    />
+                                  ))}
                               </CardContent>
                           </AccordionContent>
                       </Card>
