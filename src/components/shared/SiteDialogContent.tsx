@@ -56,7 +56,7 @@ const formatDateForInput = (date: any): string => {
 };
 
 const SITE_DIALOG_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
-    (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending"].includes(status)
+    (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending", "Completed"].includes(status)
 );
 
 export default function SiteDialogContent({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, supervisorList, allLsgConstituencyMaps, allE_tenders, allStaffMembers, allBidders, allRigCompressors }: {
@@ -693,14 +693,14 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                     />
                                                 </CardContent>
                                             </Card>
-                                        </form>
-                                    </Form>
-                                </ScrollArea>
-                            </div>
-                            <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
-                                <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
-                                {!isReadOnly && <Button type="submit" form="site-dialog-form">Save Changes</Button>}
-                            </div>
-                        </div>
-                    );
-                }
+                        </form>
+                    </Form>
+                </ScrollArea>
+            </div>
+            <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
+                <Button variant="outline" type="button" onClick={onCancel}>Cancel</Button>
+                {!isReadOnly && <Button type="submit" form="site-dialog-form">Save Changes</Button>}
+            </div>
+        </div>
+    );
+}
