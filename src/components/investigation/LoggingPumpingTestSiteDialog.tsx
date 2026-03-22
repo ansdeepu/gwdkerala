@@ -134,10 +134,9 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     <FormField name="constituency" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Constituency (LAC) <span className="text-destructive">*</span></FormLabel>
-                                            <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly || !watchedLsg}>
+                                            <Select onValueChange={field.onChange} value={field.value || ""} disabled={true}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"}/></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
-                                                    <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
                                                     {constituencyOptionsForLsg.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
@@ -226,7 +225,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                     </ScrollArea>
                 </div>
                 <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
-                    <Button variant="outline" type="button" onClick={onCancel}>Cancel</Button>
+                    <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
                     {!isReadOnly && <Button type="submit" form="logging-pumping-site-dialog-form">Save Changes</Button>}
                 </div>
             </form>
