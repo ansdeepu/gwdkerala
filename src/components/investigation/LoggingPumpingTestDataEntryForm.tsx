@@ -70,6 +70,7 @@ import {
   PLAN_FUND_APPLICATION_TYPES,
   LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS,
   INVESTIGATION_FILE_STATUS_OPTIONS,
+  LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS,
   type StaffMember,
 } from '@/lib/schemas';
 import { useToast } from "@/hooks/use-toast";
@@ -773,7 +774,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
 
-  const onInvalid = (errors: FieldErrors<any>) => {
+  const onInvalid = (errors: FieldErrors<DataEntryFormData>) => {
     const messages = getFormattedErrorMessages(errors);
     toast({ title: "Validation Error", description: (<ul className="list-disc pl-5 mt-2 space-y-1">{messages.map((msg, i) => <li key={i} className="text-xs">{msg}</li>)}</ul>), variant: "destructive", duration: 10000 });
   };
