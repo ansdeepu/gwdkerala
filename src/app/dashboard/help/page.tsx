@@ -90,6 +90,7 @@ export default function HelpPage() {
                     <li><strong>Configure Office Details:</strong> Go to the Settings page and fill in the office address (English & Malayalam), bank account details, and the District Officer's name. This information is used for auto-generating PDF reports.</li>
                     <li><strong>Register Staff:</strong> Go to the Establishment page and add all employees. Ensure accurate designations and PEN numbers.</li>
                     <li><strong>Create User Accounts:</strong> While adding or editing a staff member, check the "Create User Account" box to provide them with dashboard access (e.g., for Supervisors or Investigators).</li>
+                    <li><strong>Log External Rigs:</strong> On the Vehicles & Rig page, use the "Add External" button to log any rigs engaged from other offices. This ensures they are available for selection in project forms.</li>
                 </ol>
             </CardContent>
         </Card>
