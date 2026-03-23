@@ -1,4 +1,3 @@
-
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -249,7 +248,7 @@ const ReportCategoryTable = ({
           <AccordionContent>
             <CardContent className="pt-6">
                 <ReportDetailsTable
-                    data={diameter ? Object.fromEntries(Object.entries(data).map(([key, val]) => [key, val[diameter]])) : data}
+                    data={diameter ? Object.fromEntries(Object.entries(data || {}).map(([key, val]) => [key, val[diameter]])) : data}
                     categoryKeys={categoryKeys}
                     categoryLabels={categoryLabels}
                     onCountClick={onCountClick}
@@ -519,7 +518,14 @@ export default function ProgressReportPage() {
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
-    const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport, checkDateInRange: (date: any) => boolean) => {
+    const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport, sDate: Date | null, eDate: Date | null, isDateFilterActive: boolean) => {
+        const checkDateInRange = (date: any): boolean => {
+            if (!isDateFilterActive) return true;
+            const d = safeParseDate(date);
+            if (!d || !isValid(d) || !sDate || !eDate) return false;
+            return isWithinInterval(d, { start: sDate, end: eDate });
+        };
+
         entries.forEach(entry => {
             const purpose = entry.siteDetails?.[0]?.purpose || 'Others';
             const hasRemittanceInPeriod = entry.remittanceDetails?.some(rd => checkDateInRange(rd.dateOfRemittance));
@@ -549,14 +555,9 @@ export default function ProgressReportPage() {
             });
         });
     };
-    
-    const checkDateInRange = (date: any) => {
-        const d = safeParseDate(date);
-        return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
-    };
 
-    processFinancialSummary(privateEntries, privateFinancialSummaryData, checkDateInRange);
-    processFinancialSummary(governmentEntries, governmentFinancialSummaryData, checkDateInRange);
+    processFinancialSummary(privateEntries, privateFinancialSummaryData, sDate, eDate, isDateFilterActive);
+    processFinancialSummary(governmentEntries, governmentFinancialSummaryData, sDate, eDate, isDateFilterActive);
 
     const uniqueRevenueCredits = new Map<string, { entryId: string; amount: number }>();
     fileEntries.forEach(entry => {
