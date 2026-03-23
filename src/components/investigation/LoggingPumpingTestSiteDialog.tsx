@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Save, X } from "lucide-react";
+import { Save, X, Info } from "lucide-react";
 import {
   SiteDetailSchema,
   type SiteDetailFormData,
@@ -219,7 +219,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                             </FormItem>
                                         )} />
                                     </div>
-                                    <FormField name="remarks" control={control} render={({ field }) => (
+                                    <FormField name="workRemarks" control={control} render={({ field }) => (
                                         <FormItem className="mt-4">
                                             <FormLabel>Status Remarks</FormLabel>
                                             <FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} placeholder="Remarks regarding completion or pending status..." /></FormControl>
