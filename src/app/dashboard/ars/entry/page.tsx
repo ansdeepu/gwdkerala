@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { useAuth, type UserProfile } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/useToast';
+import { useToast } from '@/hooks/use-toast';
 import { useArsEntries, type ArsEntry } from '@/hooks/useArsEntries';
 import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { useDataStore } from '@/hooks/use-data-store';
@@ -116,7 +116,7 @@ export default function ArsEntryPage() {
             arsSanctionedDate: formatDateForInput(arsEntry?.arsSanctionedDate),
             dateOfCompletion: formatDateForInput(arsEntry?.dateOfCompletion),
         };
-        reset(initialFormValues);
+        reset(initialFormValues as any);
     }, [arsEntry, id, reset]);
 
     // Supervisor selection logic for Quotation
