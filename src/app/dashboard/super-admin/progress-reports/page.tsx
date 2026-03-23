@@ -1,4 +1,5 @@
-// src/app/dashboard/progress-report/page.tsx
+
+// src/app/dashboard/super-admin/progress-reports/page.tsx
 "use client";
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
@@ -259,7 +260,6 @@ const ReportCategoryTable = ({
       </AccordionItem>
     );
   };
-
 const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (dataType: 'application' | 'payment', purpose: string, data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
   const categories = Object.keys(data);
   const totals = {
@@ -297,7 +297,7 @@ const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { 
 };
 
 
-export default function ProgressReportPage() {
+export default function SuperAdminProgressReportPage() {
   const { setHeader } = usePageHeader();
   const { reportEntries: fileEntries, isReportLoading: entriesLoading } = useAllFileEntriesForReports();
   const { officeAddress } = useDataStore();
@@ -826,7 +826,7 @@ export default function ProgressReportPage() {
                             <TableBody>
                                 {REPORTING_PURPOSE_ORDER.map(purpose => {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
-                                if (!stats) return null;
+                                if (!stats || (stats.totalApplications === 0 && stats.previousBalance === 0)) return null;
                                 const isVisible = (stats.totalApplications > 0 || stats.previousBalance > 0 || (["GW Investigation", "VES", "Pumping test", "Geological logging", "Geophysical Logging", "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"] as const).includes(purpose));
                                 if (!isVisible) return null;
 
