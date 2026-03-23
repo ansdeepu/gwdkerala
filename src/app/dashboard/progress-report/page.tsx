@@ -21,6 +21,7 @@ import {
   INVESTIGATION_APP_TYPE_PURPOSES,
   INVESTIGATION_WELL_TYPE_PURPOSES,
   typeOfWellOptions,
+  type TypeOfWell,
   PUBLIC_DEPOSIT_APPLICATION_TYPES,
   PRIVATE_APPLICATION_TYPES,
 } from '@/lib/schemas/DataEntrySchema';
@@ -563,7 +564,7 @@ export default function ProgressReportPage() {
         if (isDateFilterActive) {
             entry.paymentDetails?.forEach(pd => {
                 const paymentDate = safeParseDate(pd.dateOfPayment);
-                if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate!, end: eDate! }) && pd.revenueHead) {
+                if (paymentDate && isValid(paymentDate) && sDate && eDate && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
                     const amount = Number(pd.revenueHead) || 0;
                     if (amount > 0) {
                         const existing = uniqueRevenueCredits.get(entry.id!);
