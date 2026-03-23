@@ -1,3 +1,4 @@
+
 // src/app/dashboard/plan-fund-works/page.tsx
 "use client";
 
@@ -242,7 +243,7 @@ export default function PlanFundWorksPage() {
                 </div>
                 {lastCreatedDate && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                        <Clock className="h-4 w-4" />
+                        <Clock className="h-3.5 w-3.5" />
                         Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                     </div>
                 )}
