@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { useAuth, type UserProfile } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { useArsEntries, type ArsEntry } from '@/hooks/useArsEntries';
 import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { useDataStore } from '@/hooks/use-data-store';
@@ -45,7 +45,7 @@ export const dynamic = 'force-dynamic';
 const formatDateForInput = (date: any): string => {
     if (!date) return '';
     try {
-        const d = new Date(date);
+        const d = date instanceof Date ? date : new Date(date);
         if (isValid(d)) {
             return format(d, 'yyyy-MM-dd');
         }
@@ -74,7 +74,7 @@ export default function ArsEntryPage() {
     const readOnlyParam = searchParams.get('readOnly');
     const approveUpdateId = searchParams.get('approveUpdateId');
 
-    const isReadOnly = readOnlyParam === 'true' || user?.role === 'viewer' || (user?.role === 'supervisor' && arsEntry && user.uid !== arsEntry.supervisorUid);
+    const isReadOnly = readOnlyParam === 'true' || user?.role === 'viewer' || !!(user?.role === 'supervisor' && arsEntry && user.uid !== arsEntry.supervisorUid);
     const canEdit = user?.role === 'admin' || user?.role === 'engineer';
     
     useEffect(() => {
@@ -276,7 +276,7 @@ export default function ArsEntryPage() {
                     <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
                          <FormField name="estimateAmount" control={control} render={({ field }) => ( <FormItem><FormLabel>Estimate Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                          <FormField name="arsAsTsDetails" control={control} render={({ field }) => ( <FormItem className="md:col-span-2"><FormLabel>AS/TS Details</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isReadOnly} className="min-h-[40px]" /></FormControl><FormMessage/></FormItem> )}/>
-                         <FormField name="arsSanctionedDate" control={control} render={({ field }) => ( <FormItem><FormLabel>Sanctioned Date</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem> )}/>
+                         <FormField name="arsSanctionedDate" control={control} render={({ field }) => ( <FormItem><FormLabel>Sanctioned Date</FormLabel><FormControl><Input type="date" {...field} value={formatDateForInput(field.value)} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem> )}/>
                          <FormField name="tsAmount" control={control} render={({ field }) => ( <FormItem><FormLabel>TS Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                          <FormField name="arsTenderNo" control={control} render={({ field }) => ( <FormItem><FormLabel>Tender No.</FormLabel>
                             <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
@@ -325,7 +325,7 @@ export default function ArsEntryPage() {
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <FormField name="arsStatus" control={control} render={({ field }) => ( <FormItem><FormLabel>Work Status *</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select status"/></SelectTrigger></FormControl><SelectContent>{arsStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
-                            <FormField name="dateOfCompletion" control={control} render={({ field }) => ( <FormItem><FormLabel>Date of Completion {watchedArsStatus === 'Work Completed' && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem> )}/>
+                            <FormField name="dateOfCompletion" control={control} render={({ field }) => ( <FormItem><FormLabel>Date of Completion {watchedArsStatus === 'Work Completed' && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input type="date" {...field} value={formatDateForInput(field.value)} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem> )}/>
                             <FormField name="totalExpenditure" control={control} render={({ field }) => ( <FormItem><FormLabel>Total Expenditure (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         </div>
                         <FormField name="workRemarks" control={control} render={({ field }) => ( <FormItem><FormLabel>Work Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
@@ -355,4 +355,3 @@ export default function ArsEntryPage() {
         </FormProvider>
     );
 }
-
