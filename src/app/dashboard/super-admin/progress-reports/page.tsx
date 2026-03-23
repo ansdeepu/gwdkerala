@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/progress-reports/page.tsx
 "use client";
 
@@ -347,6 +346,7 @@ export default function SuperAdminProgressReportPage() {
 
     const sDate = startOfDay(startDate);
     const eDate = endOfDay(endDate);
+    const isDateFilterActive = !!sDate && !!eDate;
 
     const safeParseDate = (dateInput: any): Date | null => {
         if (!dateInput) return null;
@@ -416,10 +416,9 @@ export default function SuperAdminProgressReportPage() {
         const workStatus = site.workStatus as SiteWorkStatus | undefined;
         const completionDate = safeParseDate(site.dateOfCompletion);
         const applicationType = siteWithFileContext.applicationType || UNASSIGNED_APP_TYPE;
-        const isDateFilterActive = !!sDate && !!eDate;
-
-        const isCurrentApplicationInPeriod = fileRemittanceDate && isDateFilterActive && isWithinInterval(fileRemittanceDate, { start: sDate!, end: eDate! });
-        const isCompletedInPeriod = completionDate && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! });
+        
+        const isCurrentApplicationInPeriod = fileRemittanceDate && isDateFilterActive && isWithinInterval(fileRemittanceDate, { start: sDate, end: eDate });
+        const isCompletedInPeriod = completionDate && isDateFilterActive && isWithinInterval(completionDate, { start: sDate, end: eDate });
         const isToBeRefunded = workStatus && REFUNDED_STATUSES.includes(workStatus);
         const wasActiveBeforePeriod = fileRemittanceDate && isDateFilterActive && isBefore(fileRemittanceDate, sDate!) && (!completionDate || !isBefore(completionDate, sDate!));
 
@@ -518,10 +517,10 @@ export default function SuperAdminProgressReportPage() {
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
-    const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
+    const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport, localSDate: Date | null, localEDate: Date | null, localIsDateFilterActive: boolean) => {
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
-            return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
+            return d && localIsDateFilterActive && isWithinInterval(d, { start: localSDate!, end: localEDate! });
         };
 
         entries.forEach(entry => {
@@ -545,7 +544,7 @@ export default function SuperAdminProgressReportPage() {
 
             entry.siteDetails?.forEach(site => {
                 const completionDate = safeParseDate(site.dateOfCompletion);
-                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! })) {
+                if (completionDate && isValid(completionDate) && localIsDateFilterActive && isWithinInterval(completionDate, { start: localSDate!, end: localEDate! })) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
                     summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! });
@@ -554,8 +553,8 @@ export default function SuperAdminProgressReportPage() {
         });
     };
     
-    processFinancialSummary(privateEntries, privateFinancialSummaryData);
-    processFinancialSummary(governmentEntries, governmentFinancialSummaryData);
+    processFinancialSummary(privateEntries, privateFinancialSummaryData, sDate, eDate, isDateFilterActive);
+    processFinancialSummary(governmentEntries, governmentFinancialSummaryData, sDate, eDate, isDateFilterActive);
 
     const uniqueRevenueCredits = new Map<string, { entryId: string; amount: number }>();
     fileEntries.forEach(entry => {
@@ -563,7 +562,7 @@ export default function SuperAdminProgressReportPage() {
         if (isDateFilterActive) {
             entry.paymentDetails?.forEach(pd => {
                 const paymentDate = safeParseDate(pd.dateOfPayment);
-                if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate!, end: eDate! }) && pd.revenueHead) {
+                if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
                     const amount = Number(pd.revenueHead) || 0;
                     if (amount > 0) {
                         const existing = uniqueRevenueCredits.get(entry.id!);
@@ -826,7 +825,7 @@ export default function SuperAdminProgressReportPage() {
                             <TableBody>
                                 {REPORTING_PURPOSE_ORDER.map(purpose => {
                                 const stats = reportData.progressSummaryData[purpose as SitePurpose];
-                                if (!stats || (stats.totalApplications === 0 && stats.previousBalance === 0)) return null;
+                                if (!stats) return null;
                                 const isVisible = (stats.totalApplications > 0 || stats.previousBalance > 0 || (["GW Investigation", "VES", "Pumping test", "Geological logging", "Geophysical Logging", "BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"] as const).includes(purpose));
                                 if (!isVisible) return null;
 
