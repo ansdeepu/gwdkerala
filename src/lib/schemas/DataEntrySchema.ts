@@ -1,3 +1,4 @@
+
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -270,7 +271,7 @@ export const SiteDetailSchema = z.object({
   workImages: z.array(MediaItemSchema).optional().default([]),
   workVideos: z.array(MediaItemSchema).optional().default([]),
 }).superRefine((data, ctx) => {
-    const isCompleted = data.workStatus === 'Work Completed' || data.workStatus === 'Completed' || data.arsStatus === 'Work Completed' || data.arsStatus === 'Work Failed';
+    const isCompleted = data.workStatus === 'Work Completed' || data.workStatus === 'Completed';
     if (isCompleted && !data.dateOfCompletion) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
