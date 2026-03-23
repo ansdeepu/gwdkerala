@@ -1,4 +1,3 @@
-
 // src/app/dashboard/ars/entry/page.tsx
 "use client";
 
@@ -111,12 +110,16 @@ export default function ArsEntryPage() {
     const watchedArsStatus = watch("arsStatus");
 
     useEffect(() => {
-        const initialFormValues: Partial<ArsEntryFormData> = id === null || id === 'new' ? {} : {
-            ...arsEntry,
-            arsSanctionedDate: formatDateForInput(arsEntry?.arsSanctionedDate),
-            dateOfCompletion: formatDateForInput(arsEntry?.dateOfCompletion),
-        };
-        reset(initialFormValues as any);
+        if (id === null || id === 'new') {
+            reset({}); // Reset to empty for a new entry
+            return;
+        }
+
+        if (arsEntry) {
+            // When an existing entry is loaded, reset the form with its data.
+            // The arsEntry object already has Date objects for date fields from the data store.
+            reset(arsEntry);
+        }
     }, [arsEntry, id, reset]);
 
     // Supervisor selection logic for Quotation
