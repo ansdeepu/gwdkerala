@@ -135,7 +135,7 @@ export default function TenderDetails() {
     const { user, isLoading: isAuthLoading } = useAuth();
     const { tender, updateTender } = useTenderData();
     const { addTender, updateTender: saveTenderToDb } = useE_tenders();
-    const { allStaffMembers } = useDataStore();
+    const { allStaffMembers, officeAddress } = useDataStore();
     const [activeModal, setActiveModal] = useState<ModalType>(null);
     const [modalData, setModalData] = useState<any>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -443,10 +443,10 @@ export default function TenderDetails() {
                                                 <div className="p-4 border rounded-md bg-slate-50 grid grid-cols-1 md:grid-cols-4 gap-x-8 gap-y-4">
                                                     <DetailRow label="eTender No." value={watch('eTenderNo')} />
                                                     <DetailRow label="Tender Date" value={watch('tenderDate')} />
-                                                    <DetailRow label="File No." value={watch('fileNo') ? `GKT/${watch('fileNo')}` : null} />
-                                                    <DetailRow label="File No. 2" value={watch('fileNo2') ? `GKT/${watch('fileNo2')}` : null} />
-                                                    <DetailRow label="File No. 3" value={watch('fileNo3') ? `GKT/${watch('fileNo3')}` : null} />
-                                                    <DetailRow label="File No. 4" value={watch('fileNo4') ? `GKT/${watch('fileNo4')}` : null} />
+                                                    <DetailRow label="File No." value={watch('fileNo') ? `${officeAddress?.officeCode || 'GKT'}/${watch('fileNo')}` : null} />
+                                                    <DetailRow label="File No. 2" value={watch('fileNo2') ? `${officeAddress?.officeCode || 'GKT'}/${watch('fileNo2')}` : null} />
+                                                    <DetailRow label="File No. 3" value={watch('fileNo3') ? `${officeAddress?.officeCode || 'GKT'}/${watch('fileNo3')}` : null} />
+                                                    <DetailRow label="File No. 4" value={watch('fileNo4') ? `${officeAddress?.officeCode || 'GKT'}/${watch('fileNo4')}` : null} />
                                                 </div>
                                             </div>
                                              <div className="space-y-2">
