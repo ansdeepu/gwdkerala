@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/progress-reports/page.tsx
 "use client";
 
@@ -417,8 +418,8 @@ export default function SuperAdminProgressReportPage() {
         const completionDate = safeParseDate(site.dateOfCompletion);
         const applicationType = siteWithFileContext.applicationType || UNASSIGNED_APP_TYPE;
         
-        const isCurrentApplicationInPeriod = fileRemittanceDate && isDateFilterActive && isWithinInterval(fileRemittanceDate, { start: sDate, end: eDate });
-        const isCompletedInPeriod = completionDate && isDateFilterActive && isWithinInterval(completionDate, { start: sDate, end: eDate });
+        const isCurrentApplicationInPeriod = fileRemittanceDate && isDateFilterActive && isWithinInterval(fileRemittanceDate, { start: sDate!, end: eDate! });
+        const isCompletedInPeriod = completionDate && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! });
         const isToBeRefunded = workStatus && REFUNDED_STATUSES.includes(workStatus);
         const wasActiveBeforePeriod = fileRemittanceDate && isDateFilterActive && isBefore(fileRemittanceDate, sDate!) && (!completionDate || !isBefore(completionDate, sDate!));
 
@@ -517,10 +518,10 @@ export default function SuperAdminProgressReportPage() {
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
-    const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport, localSDate: Date | null, localEDate: Date | null, localIsDateFilterActive: boolean) => {
+    const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
         const checkDateInRange = (date: any) => {
             const d = safeParseDate(date);
-            return d && localIsDateFilterActive && isWithinInterval(d, { start: localSDate!, end: localEDate! });
+            return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
         };
 
         entries.forEach(entry => {
@@ -544,7 +545,7 @@ export default function SuperAdminProgressReportPage() {
 
             entry.siteDetails?.forEach(site => {
                 const completionDate = safeParseDate(site.dateOfCompletion);
-                if (completionDate && isValid(completionDate) && localIsDateFilterActive && isWithinInterval(completionDate, { start: localSDate!, end: localEDate! })) {
+                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! })) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
                     summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! });
@@ -553,8 +554,8 @@ export default function SuperAdminProgressReportPage() {
         });
     };
     
-    processFinancialSummary(privateEntries, privateFinancialSummaryData, sDate, eDate, isDateFilterActive);
-    processFinancialSummary(governmentEntries, governmentFinancialSummaryData, sDate, eDate, isDateFilterActive);
+    processFinancialSummary(privateEntries, privateFinancialSummaryData);
+    processFinancialSummary(governmentEntries, governmentFinancialSummaryData);
 
     const uniqueRevenueCredits = new Map<string, { entryId: string; amount: number }>();
     fileEntries.forEach(entry => {
@@ -562,7 +563,7 @@ export default function SuperAdminProgressReportPage() {
         if (isDateFilterActive) {
             entry.paymentDetails?.forEach(pd => {
                 const paymentDate = safeParseDate(pd.dateOfPayment);
-                if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
+                if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate!, end: eDate! }) && pd.revenueHead) {
                     const amount = Number(pd.revenueHead) || 0;
                     if (amount > 0) {
                         const existing = uniqueRevenueCredits.get(entry.id!);
@@ -850,7 +851,7 @@ export default function SuperAdminProgressReportPage() {
                     </CardContent>
                 </Card>
 
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
                     <AccordionItem value="gw-investigation" className="border-b-0">
                       <Card className="shadow-lg">
                           <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
