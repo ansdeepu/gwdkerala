@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +38,7 @@ const reportableFields = [
     // File-level fields
     { id: 'fileNo', label: 'File No', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.fileNo },
     { id: 'applicantName', label: 'Applicant Name', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.applicantName },
-    { id: 'applicationType', label: 'Application Type', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.applicationType ? applicationTypeDisplayMap[entry.applicationType] : 'N/A' },
+    { id: 'applicationType', label: 'Application Type', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.applicationType ? applicationTypeDisplayMap[entry.applicationType as ApplicationType] : 'N/A' },
     { id: 'fileStatus', label: 'File Status', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.fileStatus },
     { id: 'totalRemittance', label: 'Total Remittance (₹)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.totalRemittance },
     { id: 'totalPayment', label: 'Total Payment (₹)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.totalPaymentAllEntries },
@@ -108,7 +109,7 @@ export default function CustomReportBuilder() {
 
         // 2. Check purpose compatibility (only if source is not ARS)
         if (selectedPage !== 'ars' && selectedPurpose !== 'all') {
-            if (f.purpose && !f.purpose.includes(selectedPurpose as SitePurpose)) return false;
+            if ((f as any).purpose && !(f as any).purpose.includes(selectedPurpose as SitePurpose)) return false;
         }
 
         return true;
