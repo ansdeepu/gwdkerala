@@ -146,6 +146,9 @@ export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"]
 export const fileStatusOptions = ["File Under Process", "Rig Accessibility Inspection", "Technical Sanction", "Tender Process", "Work Initiated", "Fully Completed", "Partially Completed", "Completed Except Disputed", "Partially Completed Except Disputed", "Fully Disputed", "To be Refunded", "Bill Preparation", "Payments", "Utilization Certificate", "File Closed"] as const;
 export type FileStatus = typeof fileStatusOptions[number];
 
+export const INVESTIGATION_FILE_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
+export const LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS = ["Under Process", "Completed"] as const;
+
 export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = ["Geological logging", "Geophysical Logging", "Industry Pumping test", "MWSS Pumping test", "Pumping Test Others"] as const;
 
 export const sitePurposeOptions = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS", "GW Investigation", "Geological logging", "Geophysical Logging", "VES", "Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others", "Pumping Test Others"] as const;
