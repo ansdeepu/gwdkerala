@@ -514,21 +514,19 @@ export default function SuperAdminProgressReportPage() {
     // Financial Summary Calculation
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
+    const revenueHeadCreditData: any[] = [];
     
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
-    const processFinancialSummary = (
-        entries: DataEntryFormData[],
-        summaryData: FinancialSummaryReport,
-    ) => {
+    const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
         const checkDateInRange = (date: any): boolean => {
             if (!isDateFilterActive) return true;
             const d = safeParseDate(date);
             if (!d || !isValid(d) || !sDate || !eDate) return false;
             return isWithinInterval(d, { start: sDate, end: eDate });
         };
-    
+
         entries.forEach(entry => {
             const purpose = entry.siteDetails?.[0]?.purpose || 'Others';
             const hasRemittanceInPeriod = entry.remittanceDetails?.some(rd => checkDateInRange(rd.dateOfRemittance));
@@ -856,7 +854,7 @@ export default function SuperAdminProgressReportPage() {
                     </CardContent>
                 </Card>
 
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
                     <AccordionItem value="gw-investigation" className="border-b-0">
                       <Card className="shadow-lg">
                           <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
