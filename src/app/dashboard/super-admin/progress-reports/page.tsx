@@ -21,7 +21,7 @@ import {
   INVESTIGATION_APP_TYPE_PURPOSES,
   INVESTIGATION_WELL_TYPE_PURPOSES,
   typeOfWellOptions,
-  TypeOfWell,
+  type TypeOfWell,
   PUBLIC_DEPOSIT_APPLICATION_TYPES,
   PRIVATE_APPLICATION_TYPES,
 } from '@/lib/schemas/DataEntrySchema';
@@ -40,6 +40,11 @@ import { useDataStore } from '@/hooks/use-data-store';
 
 
 export const dynamic = 'force-dynamic';
+
+const calculatePaymentEntryTotalGlobal = (payment: any): number => {
+    if (!payment) return 0;
+    return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
+};
 
 const BarChart3 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> );
 const XCircle = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> );
@@ -333,11 +338,6 @@ export default function SuperAdminProgressReportPage() {
     setEndDate(endOfMonth(new Date()));
   }, []);
   
-  const calculatePaymentEntryTotalGlobal = (payment: any): number => {
-    if (!payment) return 0;
-    return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
-  };
-
   const handleGenerateReport = useCallback(() => {
     if (!startDate || !endDate) {
         toast({ title: "Date Range Required", description: "Please select both a 'From' and 'To' date to generate the report.", variant: "destructive" });
@@ -514,14 +514,13 @@ export default function SuperAdminProgressReportPage() {
     // Financial Summary Calculation
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
-    const revenueHeadCreditData: any[] = [];
     
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
     const processFinancialSummary = (
-      entries: DataEntryFormData[],
-      summaryData: FinancialSummaryReport
+        entries: DataEntryFormData[],
+        summaryData: FinancialSummaryReport,
     ) => {
         const checkDateInRange = (date: any): boolean => {
             if (!isDateFilterActive) return true;
