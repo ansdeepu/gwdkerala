@@ -21,6 +21,7 @@ import {
   INVESTIGATION_APP_TYPE_PURPOSES,
   INVESTIGATION_WELL_TYPE_PURPOSES,
   typeOfWellOptions,
+  TypeOfWell,
   PUBLIC_DEPOSIT_APPLICATION_TYPES,
   PRIVATE_APPLICATION_TYPES,
 } from '@/lib/schemas/DataEntrySchema';
@@ -248,7 +249,7 @@ const ReportCategoryTable = ({
           <AccordionContent>
             <CardContent className="pt-6">
                 <ReportDetailsTable
-                    data={diameter ? Object.fromEntries(Object.entries(data).map(([key, val]) => [key, val[diameter]])) : data}
+                    data={diameter ? Object.fromEntries(Object.entries(data || {}).map(([key, val]) => [key, val[diameter]])) : data}
                     categoryKeys={categoryKeys}
                     categoryLabels={categoryLabels}
                     onCountClick={onCountClick}
@@ -518,12 +519,17 @@ export default function SuperAdminProgressReportPage() {
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
-    const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
-        const checkDateInRange = (date: any) => {
+    const processFinancialSummary = (
+      entries: DataEntryFormData[],
+      summaryData: FinancialSummaryReport
+    ) => {
+        const checkDateInRange = (date: any): boolean => {
+            if (!isDateFilterActive) return true;
             const d = safeParseDate(date);
-            return d && isDateFilterActive && isWithinInterval(d, { start: sDate!, end: eDate! });
+            if (!d || !isValid(d) || !sDate || !eDate) return false;
+            return isWithinInterval(d, { start: sDate, end: eDate });
         };
-
+    
         entries.forEach(entry => {
             const purpose = entry.siteDetails?.[0]?.purpose || 'Others';
             const hasRemittanceInPeriod = entry.remittanceDetails?.some(rd => checkDateInRange(rd.dateOfRemittance));
@@ -545,7 +551,7 @@ export default function SuperAdminProgressReportPage() {
 
             entry.siteDetails?.forEach(site => {
                 const completionDate = safeParseDate(site.dateOfCompletion);
-                if (completionDate && isValid(completionDate) && isDateFilterActive && isWithinInterval(completionDate, { start: sDate!, end: eDate! })) {
+                if (completionDate && isValid(completionDate) && checkDateInRange(completionDate)) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
                     summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! });
@@ -553,7 +559,7 @@ export default function SuperAdminProgressReportPage() {
             });
         });
     };
-    
+
     processFinancialSummary(privateEntries, privateFinancialSummaryData);
     processFinancialSummary(governmentEntries, governmentFinancialSummaryData);
 
@@ -563,7 +569,7 @@ export default function SuperAdminProgressReportPage() {
         if (isDateFilterActive) {
             entry.paymentDetails?.forEach(pd => {
                 const paymentDate = safeParseDate(pd.dateOfPayment);
-                if (paymentDate && isValid(paymentDate) && isDateFilterActive && isWithinInterval(paymentDate, { start: sDate!, end: eDate! }) && pd.revenueHead) {
+                if (paymentDate && isValid(paymentDate) && sDate && eDate && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
                     const amount = Number(pd.revenueHead) || 0;
                     if (amount > 0) {
                         const existing = uniqueRevenueCredits.get(entry.id!);
@@ -851,7 +857,7 @@ export default function SuperAdminProgressReportPage() {
                     </CardContent>
                 </Card>
 
-                <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
+                <Accordion type="multiple" className="w-full space-y-4" defaultValue={['gw-investigation']}>
                     <AccordionItem value="gw-investigation" className="border-b-0">
                       <Card className="shadow-lg">
                           <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
@@ -893,10 +899,10 @@ export default function SuperAdminProgressReportPage() {
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
                   <ReportCategoryTable accordionId="bwc-110" title={`BWC - 110 mm (4.5”) (${bwc110Balance || 0} Balance)`} diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (${bwc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} alwaysVisible />
+                  <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (${bwc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="twc-150" title={`TWC - 150 mm (6”) (${twc150Balance || 0} Balance)`} diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
                   <ReportCategoryTable accordionId="twc-200" title={`TWC - 200 mm (8”) (${twc200Balance || 0} Balance)`} diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="fpw" title={`FPW (${fpwBalance || 0} Balance)`} diameter="110 mm (4.5”)" data={reportData.fpwData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} alwaysVisible />
+                  <ReportCategoryTable accordionId="fpw" title={`FPW (${fpwBalance || 0} Balance)`} diameter="110 mm (4.5”)" data={reportData.fpwData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
                 </Accordion>
 
                 <Card>
