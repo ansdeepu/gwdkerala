@@ -518,7 +518,7 @@ export default function ProgressReportPage() {
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     const governmentEntries = fileEntries.filter(entry => !entry.applicationType || !PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
     
-    const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport, sDate: Date | null, eDate: Date | null, isDateFilterActive: boolean) => {
+    const processFinancialSummary = (entries: DataEntryFormData[], summaryData: FinancialSummaryReport) => {
         const checkDateInRange = (date: any): boolean => {
             if (!isDateFilterActive) return true;
             const d = safeParseDate(date);
@@ -556,8 +556,8 @@ export default function ProgressReportPage() {
         });
     };
 
-    processFinancialSummary(privateEntries, privateFinancialSummaryData, sDate, eDate, isDateFilterActive);
-    processFinancialSummary(governmentEntries, governmentFinancialSummaryData, sDate, eDate, isDateFilterActive);
+    processFinancialSummary(privateEntries, privateFinancialSummaryData);
+    processFinancialSummary(governmentEntries, governmentFinancialSummaryData);
 
     const uniqueRevenueCredits = new Map<string, { entryId: string; amount: number }>();
     fileEntries.forEach(entry => {
@@ -862,11 +862,11 @@ export default function ProgressReportPage() {
                 </Accordion>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                  <ReportCategoryTable accordionId="bwc-110" title={`BWC - 110 mm (4.5”) (Balance - ${bwc110Balance || 0})`} diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (Balance - ${bwc150Balance || 0})`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-150" title={`TWC - 150 mm (6”) (Balance - ${twc150Balance || 0})`} diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-200" title={`TWC - 200 mm (8”) (Balance - ${twc200Balance || 0})`} diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="fpw" title={`FPW (Balance - ${fpwBalance || 0})`} diameter="110 mm (4.5”)" data={reportData.fpwData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
+                  {bwc110Balance && <ReportCategoryTable accordionId="bwc-110" title={`BWC - 110 mm (4.5”) (Balance - ${bwc110Balance || 0})`} diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />}
+                  {bwc150Balance && <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (Balance - ${bwc150Balance || 0})`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />}
+                  {twc150Balance && <ReportCategoryTable accordionId="twc-150" title={`TWC - 150 mm (6”) (Balance - ${twc150Balance || 0})`} diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />}
+                  {twc200Balance && <ReportCategoryTable accordionId="twc-200" title={`TWC - 200 mm (8”) (Balance - ${twc200Balance || 0})`} diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />}
+                  {fpwBalance && <ReportCategoryTable accordionId="fpw" title={`FPW (Balance - ${fpwBalance || 0})`} diameter="110 mm (4.5”)" data={reportData.fpwData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />}
                 </Accordion>
 
                 <Card>

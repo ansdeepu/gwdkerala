@@ -854,39 +854,7 @@ export default function SuperAdminProgressReportPage() {
                 </Card>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                    <AccordionItem value="gw-investigation" className="border-b-0">
-                      <Card className="shadow-lg">
-                          <AccordionTrigger className="p-6 hover:no-underline [&[data-state=open]]:border-b">
-                              <CardTitle>GW Investigation (Balance - {gwInvestigationBalance || 0})</CardTitle>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                              <CardContent className="pt-6 space-y-4">
-                                  {typeOfWellOptions.map(wellType => {
-                                      const wellTypeData = reportData.gwInvestigationData[wellType];
-                                      const hasDataForWellType = Object.values(wellTypeData).some((stats: any) => Object.values(stats).some(val => (typeof val === 'number' && val > 0)));
-                                      if (!hasDataForWellType) return null;
-
-                                      return (
-                                          <Card key={wellType}>
-                                              <CardHeader className="p-4">
-                                                  <CardTitle className="text-base">{wellType}</CardTitle>
-                                              </CardHeader>
-                                              <CardContent className="p-4 pt-0">
-                                                  <ReportDetailsTable
-                                                      data={wellTypeData}
-                                                      categoryKeys={uniqueApplicationTypesWithUnassigned}
-                                                      categoryLabels={applicationTypeDisplayMapWithUnassigned}
-                                                      onCountClick={handleCountClick}
-                                                      titlePrefix={`GW Investigation - ${wellType}`}
-                                                  />
-                                              </CardContent>
-                                          </Card>
-                                      );
-                                  })}
-                              </CardContent>
-                          </AccordionContent>
-                      </Card>
-                    </AccordionItem>
+                    <ReportCategoryTable accordionId="gw-investigation" title={`GW Investigation (Balance - ${gwInvestigationBalance || 0})`} data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="ves" title={`VES (Balance - ${vesBalance || 0})`} data={reportData.vesData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="pumping-test" title={`Pumping Test (Balance - ${pumpingTestBalance || 0})`} data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="geo-logging" title={`Geological Logging (Balance - ${geologicalLoggingBalance || 0})`} data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
@@ -894,11 +862,11 @@ export default function SuperAdminProgressReportPage() {
                 </Accordion>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                  <ReportCategoryTable accordionId="bwc-110" title={`BWC - 110 mm (4.5”) (Balance - ${bwc110Balance || 0})`} diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (Balance - ${bwc150Balance || 0})`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-150" title={`TWC - 150 mm (6”) (Balance - ${twc150Balance || 0})`} diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="twc-200" title={`TWC - 200 mm (8”) (Balance - ${twc200Balance || 0})`} diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
-                  <ReportCategoryTable accordionId="fpw" title={`FPW (Balance - ${fpwBalance || 0})`} diameter="110 mm (4.5”)" data={reportData.fpwData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />
+                  {bwc110Balance && <ReportCategoryTable accordionId="bwc-110" title={`BWC - 110 mm (4.5”) (Balance - ${bwc110Balance || 0})`} diameter="110 mm (4.5”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />}
+                  {bwc150Balance && <ReportCategoryTable accordionId="bwc-150" title={`BWC - 150 mm (6”) (Balance - ${bwc150Balance || 0})`} diameter="150 mm (6”)" data={reportData.bwcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />}
+                  {twc150Balance && <ReportCategoryTable accordionId="twc-150" title={`TWC - 150 mm (6”) (Balance - ${twc150Balance || 0})`} diameter="150 mm (6”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />}
+                  {twc200Balance && <ReportCategoryTable accordionId="twc-200" title={`TWC - 200 mm (8”) (Balance - ${twc200Balance || 0})`} diameter="200 mm (8”)" data={reportData.twcData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />}
+                  {fpwBalance && <ReportCategoryTable accordionId="fpw" title={`FPW (Balance - ${fpwBalance || 0})`} diameter="110 mm (4.5”)" data={reportData.fpwData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} />}
                 </Accordion>
 
                 <Card>
