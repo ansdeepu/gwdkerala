@@ -28,6 +28,8 @@ const FilePlus2 = (props: React.SVGProps<SVGSVGElement>) => (
 const Clock = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
+import { PlusCircle } from 'lucide-react';
+
 
 const COLLECTOR_APPLICATION_TYPES: ApplicationType[] = ["Collector_MPLAD", "Collector_MLASDF", "Collector_MLA_Asset_Development_Fund", "Collector_DRW", "Collector_SC/ST", "Collector_ARWSS", "Collector_Others"];
 const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
@@ -229,8 +231,8 @@ export default function CollectorsDepositWorksPage() {
                     </div>
                 )}
                 {canCreate && (
-                    <Button onClick={handleAddNewClick} size="sm" className="w-full sm:w-auto shrink-0">
-                        <FilePlus2 className="mr-2 h-5 w-5" /> New File
+                    <Button onClick={handleAddNewClick} className="w-full sm:w-auto shrink-0">
+                        <PlusCircle className="mr-2 h-4 w-4" /> New File
                     </Button>
                 )}
                </div>
