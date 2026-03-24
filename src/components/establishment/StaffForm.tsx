@@ -1,3 +1,4 @@
+
 // src/components/establishment/StaffForm.tsx
 "use client";
 
@@ -122,15 +123,24 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     if (user?.role === 'superAdmin') {
         return designationOptions;
     }
-    // Remove the first 6 high-level designations for non-super admins
-    return designationOptions.slice(6);
+    // For sub-office admin, show only from Executive Engineer onwards
+    const subOfficeStartIndex = designationOptions.indexOf("Executive Engineer");
+    if (subOfficeStartIndex !== -1) {
+        return designationOptions.slice(subOfficeStartIndex);
+    }
+
+    return designationOptions; // Fallback
   }, [user]);
 
   const formDesignationMalayalamOptions = useMemo(() => {
     if (user?.role === 'superAdmin') {
         return designationMalayalamOptions;
     }
-    return designationMalayalamOptions.slice(6);
+    const subOfficeStartIndex = designationMalayalamOptions.indexOf("എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ");
+     if (subOfficeStartIndex !== -1) {
+        return designationMalayalamOptions.slice(subOfficeStartIndex);
+    }
+    return designationMalayalamOptions;
   }, [user]);
 
   const defaultValues = useMemo((): StaffMemberFormData => {
