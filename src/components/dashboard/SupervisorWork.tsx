@@ -1,4 +1,3 @@
-
 // src/components/dashboard/SupervisorWork.tsx
 "use client";
 
@@ -98,8 +97,8 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
         <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" />Supervisor's Ongoing Work</CardTitle>
         <CardDescription>Select a staff member to view their assigned ongoing projects by category.</CardDescription>
       </CardHeader>
-      <CardContent className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
+      <CardContent className="flex flex-col md:flex-row gap-6">
+        <div className="w-full md:w-1/3">
           <Select onValueChange={setSelectedSupervisorId} value={selectedSupervisorId} name="supervisorFilter">
             <SelectTrigger id="supervisor-select-trigger"><SelectValue placeholder="Select a Staff Member" /></SelectTrigger>
             <SelectContent>
@@ -113,7 +112,7 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
             </SelectContent>
           </Select>
         </div>
-        <div className="md:col-span-2">
+        <div className="w-full md:w-2/3">
           {selectedSupervisorId ? (
             supervisorOngoingWorks.totalCount > 0 ? (
               <Table>
