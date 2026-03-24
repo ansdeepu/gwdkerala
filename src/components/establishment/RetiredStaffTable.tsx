@@ -140,7 +140,7 @@ export default function RetiredStaffTable({
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>{isViewer ? "View Details" : "View / Edit Profile"}</p></TooltipContent>
+                        <TooltipContent><p>View Details</p></TooltipContent>
                       </Tooltip>
 
                       {!isViewer && onSetStatus && (
@@ -158,9 +158,6 @@ export default function RetiredStaffTable({
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => onSetStatus(staff.id, "Active", staff.name)}>
                                 <UserCheck className="mr-2 h-4 w-4" /> Mark Active
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => onSetStatus(staff.id, "Transferred", staff.name)}>
-                                <ArrowRightLeft className="mr-2 h-4 w-4" /> Mark Transferred
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>

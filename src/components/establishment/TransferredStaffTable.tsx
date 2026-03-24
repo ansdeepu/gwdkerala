@@ -125,7 +125,7 @@ export default function TransferredStaffTable({
                       <AvatarFallback>{getInitials(staff.name)}</AvatarFallback>
                     </Avatar>
                     {canExpandAvatar && (
-                      <div className="absolute bottom-0 right-0 bg-black/50 p-0.5 rounded-sm">
+                      <div className="absolute bottom-0 right-0 bg-black/60 p-0.5 rounded-sm">
                         <Expand className="h-3 w-3 text-white" />
                       </div>
                     )}
@@ -152,31 +152,8 @@ export default function TransferredStaffTable({
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>{isViewer ? "View Details" : "View / Edit Profile"}</p></TooltipContent>
+                        <TooltipContent><p>View Details</p></TooltipContent>
                       </Tooltip>
-                      
-                      {!isViewer && onSetStatus && (
-                         <DropdownMenu>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <ArrowLeftRight className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                              </TooltipTrigger>
-                              <TooltipContent><p>Change Status</p></TooltipContent>
-                            </Tooltip>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => onSetStatus(staff.id, "Active", staff.name)}>
-                                <UserCheck className="mr-2 h-4 w-4" /> Mark Active
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => onSetStatus(staff.id, "Retired", staff.name)}>
-                                <FileArchive className="mr-2 h-4 w-4" /> Mark Retired
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                      )}
                     </div>
                   </TableCell>
               </TableRow>
