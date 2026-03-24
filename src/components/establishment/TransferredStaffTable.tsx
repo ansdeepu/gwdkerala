@@ -152,7 +152,7 @@ export default function TransferredStaffTable({
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>View Details</p></TooltipContent>
+                        <TooltipContent><p>{isViewer ? "View Details" : "View / Edit Profile"}</p></TooltipContent>
                       </Tooltip>
                       
                       {!isViewer && onSetStatus && (

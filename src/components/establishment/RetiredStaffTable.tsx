@@ -116,7 +116,7 @@ export default function RetiredStaffTable({
                         <AvatarFallback>{getInitials(staff.name)}</AvatarFallback>
                       </Avatar>
                        {canExpandAvatar && (
-                        <div className="absolute bottom-0 right-0 bg-black/60 p-0.5 rounded-full">
+                        <div className="absolute bottom-0 right-0 bg-black/60 p-0.5 rounded-sm">
                           <Expand className="h-3 w-3 text-white" />
                         </div>
                       )}

@@ -276,9 +276,9 @@ export default function EstablishmentPage() {
               <div className="max-h-[70vh] overflow-auto">
                 <TransferredStaffTable
                     staffData={transferredStaffList}
-                    onEdit={(s) => handleEditStaff(s, true)}
+                    onEdit={(s) => handleEditStaff(s, false)}
                     onSetStatus={canManage ? updateStaffStatus : undefined}
-                    isViewer={true}
+                    isViewer={isViewer || !canManage}
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}
                     searchActive={!!debouncedSearchTerm}
@@ -289,9 +289,9 @@ export default function EstablishmentPage() {
               <div className="max-h-[70vh] overflow-auto">
                 <RetiredStaffTable
                     staffData={retiredStaffList}
-                    onEdit={(s) => handleEditStaff(s, true)}
+                    onEdit={(s) => handleEditStaff(s, false)}
                     onSetStatus={canManage ? updateStaffStatus : undefined}
-                    isViewer={true}
+                    isViewer={isViewer || !canManage}
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}
                     searchActive={!!debouncedSearchTerm}
