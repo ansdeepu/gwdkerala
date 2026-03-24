@@ -126,7 +126,14 @@ export default function DataEntryPage() {
     
     if (approveUpdateId) {
         base = '/dashboard/pending-updates'; 
-    } else if (fileIdToEdit && pageData?.initialData) {
+    } else if (workTypeContext) { // Prioritize workTypeContext
+        if (workTypeContext === 'collector') base = '/dashboard/collectors-deposit-works';
+        else if (workTypeContext === 'planFund') base = '/dashboard/plan-fund-works';
+        else if (workTypeContext === 'private') base = '/dashboard/private-deposit-works';
+        else if (workTypeContext === 'public') base = '/dashboard/file-room';
+        else if (workTypeContext === 'gwInvestigation') base = '/dashboard/gw-investigation';
+        else if (workTypeContext === 'loggingPumpingTest') base = '/dashboard/logging-pumping-test';
+    } else if (fileIdToEdit && pageData?.initialData) { // Fallback to inferring from data
         const hasInvestigationPurpose = pageData?.initialData?.siteDetails?.some(site => site.purpose === 'GW Investigation');
         const hasLoggingPumpingPurpose = pageData?.initialData?.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
 
@@ -144,15 +151,10 @@ export default function DataEntryPage() {
                 base = '/dashboard/private-deposit-works';
             }
         }
-    } else if (workTypeContext) {
-        if (workTypeContext === 'collector') base = '/dashboard/collectors-deposit-works';
-        else if (workTypeContext === 'planFund') base = '/dashboard/plan-fund-works';
-        else if (workTypeContext === 'private') base = '/dashboard/private-deposit-works';
-        else if (workTypeContext === 'gwInvestigation') base = '/dashboard/gw-investigation';
-        else if (workTypeContext === 'loggingPumpingTest') base = '/dashboard/logging-pumping-test';
     }
+    
     return pageToReturnTo ? `${base}?page=${pageToReturnTo}` : base;
-   }, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
+}, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
 
   useEffect(() => {
     const loadAllData = async () => {
