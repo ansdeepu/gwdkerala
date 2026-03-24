@@ -370,8 +370,9 @@ export function useAuth() {
 
     const batch = writeBatch(db);
     const updates: any = { role: newRole };
-    if (staffId) updates.staffId = staffId;
-    else if (newRole === 'viewer') updates.staffId = null;
+    if (staffId) {
+        updates.staffId = staffId;
+    }
 
     batch.update(userRef, updates);
     if (officeLocation) {
