@@ -119,16 +119,8 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const formDesignationOptions = useMemo(() => {
-    if (user?.role === 'superAdmin') {
-        return designationOptions;
-    }
-    // For regular admins, filter out directorate-level roles
-    const directorateRoles = [
-        "Director", "Superintending Engineer (General)", "Superintending Engineer (NHP)",
-        "Superintending Hydrogeologist (General)", "Superintending Hydrogeologist (NHP)", "Senior Geophysicist"
-    ];
-    return designationOptions.filter(d => !directorateRoles.includes(d));
-  }, [user]);
+    return designationOptions;
+  }, []);
 
   const defaultValues = useMemo((): StaffMemberFormData => {
     const rawData = initialData || {};
