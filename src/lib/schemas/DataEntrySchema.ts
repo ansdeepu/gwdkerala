@@ -1,4 +1,3 @@
-
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -39,7 +38,8 @@ export const designationOptions = [
     "Superintending Engineer (NHP)",
     "Superintending Hydrogeologist (General)",
     "Superintending Hydrogeologist (NHP)",
-    "District Officer", "Executive Engineer", "Senior Hydrogeologist", "Senior Geophysicist", "Assistant Executive Engineer",
+    "Senior Geophysicist",
+    "District Officer", "Executive Engineer", "Senior Hydrogeologist", "Assistant Executive Engineer",
     "Hydrogeologist", "Geophysicist", "Assistant Engineer", "Junior Hydrogeologist",
     "Junior Geophysicist", "Geological Assistant", "Geophysical Assistant", "Master Driller",
     "Senior Driller", "Driller", "Driller Mechanic", "Drilling Assistant", "Compressor Driver",
@@ -312,15 +312,15 @@ export type DataEntryFormData = z.infer<typeof DataEntrySchema>;
 // The schemas below were originally in this file and are kept for compatibility.
 // In the future, they should be moved to their own specialized files.
 
-import { RigRegistrationSchema, ApplicationFeeSchema, OwnerInfoSchema } from './schemas/eTenderSchema';
-import type { RigRegistration, ApplicationFee, OwnerInfo } from './schemas/eTenderSchema';
+import { RigRegistrationSchema, ApplicationFeeSchema, OwnerInfoSchema } from './eTenderSchema';
+import type { RigRegistration, ApplicationFee, OwnerInfo } from './eTenderSchema';
 
 export const UpdatePasswordSchema = z.object({
   currentPassword: z.string().min(1, { message: "Current password is required." }),
   newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
   confirmPassword: z.string(),
 }).refine(data => data.newPassword === data.confirmPassword, {
-  message: "New passwords don't match.",
+  message: "Passwords don't match.",
   path: ["confirmPassword"],
 });
 export type UpdatePasswordFormData = z.infer<typeof UpdatePasswordSchema>;
@@ -477,5 +477,3 @@ export const RigCompressorSchema = z.object({
     }
 });
 export type RigCompressor = z.infer<typeof RigCompressorSchema>;
-
-    
