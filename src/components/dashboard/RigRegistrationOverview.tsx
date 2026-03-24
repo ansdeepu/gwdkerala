@@ -4,8 +4,8 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import type { AgencyApplication, RigType } from '@/lib/schemas';
-import { rigTypeOptions } from '@/lib/schemas';
+import type { AgencyApplication, SiteTypeOfRig as RigType } from '@/lib/schemas';
+import { siteTypeOfRigOptions as rigTypeOptions } from '@/lib/schemas';
 import { addYears, isValid, isWithinInterval, startOfMonth, endOfMonth, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -154,7 +154,7 @@ export default function RigRegistrationOverview({ agencyApplications, onOpenDial
     completedApps.forEach(app => {
         (app.rigs || []).forEach(rig => {
             const rigWithContext = { ...rig, agencyName: app.agencyName, ownerName: app.owner.name };
-            const rigType = rig.typeOfRig;
+            const rigType = rig.typeOfRig as RigType;
             if (!rigType || !rigTypeOptions.includes(rigType)) return;
 
             if (rig.status === 'Active') {
