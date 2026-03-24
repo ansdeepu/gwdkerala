@@ -108,9 +108,11 @@ const capitalize = (s?: string) => {
 };
 
 const districtsOrder = [
+    "Directorate TVM",
     "Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", 
     "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", 
-    "Wayanad", "Kannur", "Kasaragod", "Directorate"
+    "Wayanad", "Kannur", "Kasaragod", "Directorate",
+    "Lab TVM", "Lab EKM", "Lab KKD"
 ];
 
 export default function StaffForm({ onSubmit, initialData, isSubmitting, onCancel, isViewer = false, allOfficeAddresses, allUsers }: StaffFormProps) {
@@ -126,7 +128,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     // For sub-office admin, show only from Executive Engineer onwards
     const subOfficeStartIndex = designationOptions.indexOf("Executive Engineer");
     if (subOfficeStartIndex !== -1) {
-        return designationOptions.slice(subOfficeStartIndex);
+        return ["Executive Engineer", ...designationOptions.slice(subOfficeStartIndex + 1)];
     }
 
     return designationOptions; // Fallback
@@ -138,7 +140,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     }
     const subOfficeStartIndex = designationMalayalamOptions.indexOf("എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ");
      if (subOfficeStartIndex !== -1) {
-        return designationMalayalamOptions.slice(subOfficeStartIndex);
+        return ["എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", ...designationMalayalamOptions.slice(subOfficeStartIndex + 1)];
     }
     return designationMalayalamOptions;
   }, [user]);

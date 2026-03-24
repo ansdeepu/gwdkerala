@@ -1,3 +1,4 @@
+
 // src/components/layout/OfficeSwitcher.tsx
 "use client";
 
@@ -6,7 +7,7 @@ import { useDataStore } from '@/hooks/use-data-store';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Building } from 'lucide-react';
 
-const districtsOrder = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate"];
+const districtsOrder = ["Directorate TVM", "Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate", "Lab TVM", "Lab EKM", "Lab KKD"];
 
 export default function OfficeSwitcher() {
     const { selectedOffice, setSelectedOffice, allUsers } = useDataStore();

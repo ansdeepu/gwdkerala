@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/office-management/page.tsx
 "use client";
 
@@ -35,7 +36,7 @@ import UserManagementTable from '@/components/admin/UserManagementTable';
 
 const db = getFirestore(app);
 
-const districts = ["Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate"];
+const districts = ["Directorate TVM", "Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", "Idukki", "Ernakulam", "Thrissur", "Palakkad", "Malappuram", "Kozhikode", "Wayanad", "Kannur", "Kasaragod", "Directorate", "Lab TVM", "Lab EKM", "Lab KKD"];
 
 const NewOfficeAdminSchema = z.object({
   name: z.string().min(2, "Name is required."),
