@@ -58,6 +58,7 @@ export const superAdminNavItems: NavItem[] = [
     { href: '/dashboard/super-admin/technical-sanction', label: 'Technical Sanction', icon: FileText },
     { href: '/dashboard/super-admin/rig-registration', label: 'Rig Registration', icon: ClipboardList },
     { href: '/dashboard/super-admin/vehicles', label: 'Vehicle & Rig', icon: Truck },
+    { href: '/dashboard/reports', label: 'Reports', icon: FileText },
     { href: '/dashboard/super-admin/progress-reports', label: 'Progress Reports', icon: BarChart3 },
     { href: '/dashboard/super-admin/gwd-rates', label: 'GWD Rates', icon: DollarSign },
     { href: '/dashboard/super-admin/establishment', label: 'Establishment', icon: Briefcase },

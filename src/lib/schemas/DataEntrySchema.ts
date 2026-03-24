@@ -1,7 +1,7 @@
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
-import { RigRegistrationSchema, ApplicationFeeSchema, OwnerInfoSchema } from './eTenderSchema';
+import { ApplicationFeeSchema, OwnerInfoSchema } from './eTenderSchema';
 import type { RigRegistration, ApplicationFee, OwnerInfo } from './eTenderSchema';
 
 export const optionalNumber = (errorMessage: string = "Must be a valid number.") =>
@@ -309,10 +309,10 @@ export const SiteDetailSchema = z.object({
   nameOfInvestigator: z.string().optional().nullable(),
   dateOfInvestigation: nativeDateSchema,
   typeOfWell: z.enum(typeOfWellOptions).optional().nullable(),
-  vesRequired: z.enum(["Yes", "No"]).optional(),
+  vesRequired: z.preprocess((val) => val === "" ? undefined : val, z.enum(["Yes", "No"]).optional().nullable()),
   vesInvestigator: z.string().optional().nullable(),
   vesDate: nativeDateSchema,
-  feasibility: z.enum(["Yes", "No"]).optional().nullable(),
+  feasibility: z.preprocess((val) => val === "" ? undefined : val, z.enum(["Yes", "No"]).optional().nullable()),
   hydrogeologicalRemarks: z.string().optional().nullable().default(""),
   geophysicalRemarks: z.string().optional().nullable().default(""),
   workImages: z.array(MediaItemSchema).optional().default([]),
