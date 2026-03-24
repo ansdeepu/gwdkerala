@@ -1,6 +1,5 @@
 // src/lib/schemas/eTenderSchema.ts
 import { z } from 'zod';
-import type { Designation } from './DataEntrySchema';
 
 const optionalNumberSchema = z.preprocess(
     (val) => {
@@ -98,13 +97,6 @@ export const BidderSchema = NewBidderSchema.extend({
   dateSelectionNotice: z.any().optional().nullable(),
 });
 export type Bidder = z.infer<typeof BidderSchema>;
-
-export const committeeMemberDesignations: Designation[] = [
-    "Assistant Executive Engineer",
-    "Assistant Engineer",
-    "Master Driller",
-    "Senior Driller",
-];
 
 export const TenderOpeningDetailsSchema = z.object({
     dateOfOpeningBid: z.any().optional().nullable(),
