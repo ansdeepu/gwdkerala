@@ -19,12 +19,14 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import ExcelJS from 'exceljs';
 import { useToast } from '@/hooks/use-toast';
+import type { UserProfile } from '@/hooks/useAuth';
 
 interface VacancyTableProps {
     canManage: boolean;
+    user?: UserProfile | null;
 }
 
-export default function VacancyTable({ canManage }: VacancyTableProps) {
+export default function VacancyTable({ canManage, user }: VacancyTableProps) {
     const { allStaffMembers, allSanctionedStrength, updateSanctionedStrength, officeAddress } = useDataStore();
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState("");
@@ -39,8 +41,20 @@ export default function VacancyTable({ canManage }: VacancyTableProps) {
     const [detailSearch, setDetailSearch] = useState("");
 
     const filteredDesignations = useMemo(() => {
-        return (designationOptions || []).filter(d => d !== "District Officer");
-    }, []);
+        const allDesignations = (designationOptions || []).filter(d => d !== "District Officer");
+
+        if (user?.role === 'superAdmin') {
+            return allDesignations;
+        }
+
+        // For sub-office admin, show only from Executive Engineer onwards
+        const subOfficeStartIndex = allDesignations.indexOf("Executive Engineer");
+        if (subOfficeStartIndex !== -1) {
+            return allDesignations.slice(subOfficeStartIndex);
+        }
+
+        return allDesignations; // Fallback
+    }, [user]);
 
     const vacancyData = useMemo(() => {
         const activeStaff = (allStaffMembers || []).filter(s => s.status === 'Active');

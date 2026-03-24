@@ -300,7 +300,7 @@ export default function EstablishmentPage() {
             </TabsContent>
             <TabsContent value="vacancy" className="mt-4">
                 <div className="max-h-[70vh] overflow-auto">
-                    <VacancyTable canManage={isAdmin} />
+                    <VacancyTable canManage={isAdmin} user={user} />
                 </div>
             </TabsContent>
           </Tabs>
