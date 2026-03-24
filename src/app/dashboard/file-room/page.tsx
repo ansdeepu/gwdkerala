@@ -25,13 +25,13 @@ import PaginationControls from '@/components/shared/PaginationControls';
 export const dynamic = 'force-dynamic';
 
 const Search = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
 );
 const FilePlus2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><path d="M14 2v6h6"/><path d="M3 15h6"/><path d="M6 12v6"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><path d="M14 2v6h6"/><path d="M3 15h6"/><path d="M6 12v6"/></svg>
 );
 const Clock = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
 
 const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
@@ -80,11 +80,19 @@ export default function FileManagerPage() {
   const { depositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => {
         // Exclude files that definitively belong to other specialized modules based on site purpose.
+        const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes((entry as any).category);
         const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
         const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
-        if (hasInvestigationPurpose || hasLoggingPumpingPurpose) {
+        
+        // A file is an investigation file if it has the right category OR the right site purpose.
+        // And it must NOT have a logging/pumping purpose, as that belongs to another page.
+        if ((isInvestigationCategory || hasInvestigationPurpose) && !hasLoggingPumpingPurpose) {
             return false;
         }
+        if (hasLoggingPumpingPurpose && !hasInvestigationPurpose) {
+            return false;
+        }
+
 
         // Exclude files based on their specific application types for other modules.
         if (entry.applicationType) {
@@ -168,12 +176,12 @@ export default function FileManagerPage() {
     <div className="space-y-6">
        <Card>
         <CardContent className="p-4 space-y-4">
-           <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="relative flex-grow w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input type="search" placeholder="Search files..." className="w-full pl-10 shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
-               <div className="flex items-center gap-4 shrink-0 whitespace-nowrap overflow-x-auto no-scrollbar py-1">
+               <div className="flex items-center gap-4 flex-wrap justify-center sm:w-auto sm:justify-end">
                  <div className="text-sm font-medium text-muted-foreground">Files: <span className="font-bold text-primary">{filteredEntries.length}</span></div>
                  <div className="text-sm font-medium text-muted-foreground">Sites: <span className="font-bold text-primary">{totalSites}</span></div>
                 {lastCreatedDate && (
