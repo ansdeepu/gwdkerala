@@ -1,7 +1,7 @@
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
-import { ApplicationFeeSchema, OwnerInfoSchema } from './eTenderSchema';
+import { ApplicationFeeSchema, OwnerInfoSchema, RigRegistrationSchema } from './eTenderSchema';
 import type { RigRegistration, ApplicationFee, OwnerInfo } from './eTenderSchema';
 
 export const optionalNumber = (errorMessage: string = "Must be a valid number.") =>
