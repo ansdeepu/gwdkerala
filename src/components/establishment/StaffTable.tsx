@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 interface StaffTableProps {
   staffData: StaffMember[];
   onEdit?: (staff: StaffMember) => void;
-  onDelete?: (staffId: string, staffName: string) => void;
+  onDelete?: (staffId: string, staffName: string) => Promise<void>;
   onSetStatus?: (staffId: string, newStatus: StaffStatusType, staffName: string) => void;
   isViewer: boolean;
   onImageClick?: (imageUrl: string | null) => void;
@@ -177,34 +177,12 @@ export default function StaffTable({
                         {!isViewer && onDelete && !isPendingTransfer && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => handleDeleteClick(staff.id, staff.name)}>
+                              <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/90" onClick={() => handleDeleteClick(staff.id, staff.name)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent><p>Delete Staff</p></TooltipContent>
                           </Tooltip>
-                        )}
-                        {!isViewer && onSetStatus && !isPendingTransfer && (
-                           <DropdownMenu>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <UserMinus className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Change Status</p></TooltipContent>
-                              </Tooltip>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => onSetStatus(staff.id, "Transferred", staff.name)}>
-                                  <ArrowRightLeft className="mr-2 h-4 w-4" /> Initiate Transfer
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onSetStatus(staff.id, "Retired", staff.name)}>
-                                  <FileArchive className="mr-2 h-4 w-4" /> Mark Retired
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
                         )}
                       </div>
                     </TableCell>

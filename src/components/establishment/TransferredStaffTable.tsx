@@ -154,25 +154,6 @@ export default function TransferredStaffTable({
                         </TooltipTrigger>
                         <TooltipContent><p>View Details</p></TooltipContent>
                       </Tooltip>
-                      {!isViewer && onSetStatus && (
-                        <DropdownMenu>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                <FileArchive className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Change Status</p></TooltipContent>
-                        </Tooltip>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onSetStatus(staff.id, "Active", staff.name)}>
-                            <UserCheck className="mr-2 h-4 w-4" /> Mark Active
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
                     </div>
                   </TableCell>
               </TableRow>
