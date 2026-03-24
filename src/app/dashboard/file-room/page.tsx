@@ -176,16 +176,16 @@ export default function FileManagerPage() {
     <div className="space-y-6">
        <Card>
         <CardContent className="p-4 space-y-4">
-           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="relative flex-grow w-full">
+           <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="relative flex-grow w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input type="search" placeholder="Search files..." className="w-full pl-10 shadow-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
-               <div className="flex items-center gap-4 flex-wrap justify-center sm:w-auto sm:justify-end">
-                 <div className="text-sm font-medium text-muted-foreground">Files: <span className="font-bold text-primary">{filteredEntries.length}</span></div>
-                 <div className="text-sm font-medium text-muted-foreground">Sites: <span className="font-bold text-primary">{totalSites}</span></div>
+               <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-end w-full sm:w-auto">
+                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Files: <span className="font-bold text-primary">{filteredEntries.length}</span></div>
+                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Sites: <span className="font-bold text-primary">{totalSites}</span></div>
                 {lastCreatedDate && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                         <Clock className="h-3.5 w-3.5"/>
                         Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                     </div>
