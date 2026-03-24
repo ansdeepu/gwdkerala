@@ -140,7 +140,7 @@ export const RemittanceDetailSchema = z.object({
   amountRemitted: optionalNumber("Amount Remitted must be a valid number."),
   dateOfRemittance: z.string().optional(),
   remittedAccount: z.enum(remittedAccountOptions),
-  remittanceRemarks: z.string().optional(),
+  remittanceRemarks: z.string().optional().nullable(),
 }).superRefine((data, ctx) => {
     const hasAnyValue = (data.amountRemitted && data.amountRemitted > 0) || (data.remittanceRemarks && data.remittanceRemarks.trim() !== '');
     if (hasAnyValue && (!data.dateOfRemittance || !data.remittedAccount)) {
@@ -155,12 +155,12 @@ export type ReappropriationType = typeof reappropriationTypeOptions[number];
 export const ReappropriationDetailSchema = z.object({
   id: z.string().optional(),
   type: z.enum(reappropriationTypeOptions).default("Outward"),
-  pageType: z.string().optional(),
+  pageType: z.string().optional().nullable(),
   refFileNo: z.string().min(1, "Reference File No. is required."),
-  fileDetails: z.string().optional(),
+  fileDetails: z.string().optional().nullable(),
   amount: optionalNumber().refine(val => val !== undefined && val > 0, "Amount must be greater than zero."),
   date: z.string().min(1, "Date is required."),
-  remarks: z.string().optional(),
+  remarks: z.string().optional().nullable(),
 });
 export type ReappropriationDetailFormData = z.infer<typeof ReappropriationDetailSchema>;
 
@@ -179,7 +179,7 @@ export const PaymentDetailSchema = z.object({
   kbcwb: optionalNumber(),
   refundToParty: optionalNumber(),
   totalPaymentPerEntry: z.coerce.number().optional(),
-  paymentRemarks: z.string().optional(),
+  paymentRemarks: z.string().optional().nullable(),
 });
 export type PaymentDetailFormData = z.infer<typeof PaymentDetailSchema>;
 
@@ -240,17 +240,17 @@ export type TypeOfWell = typeof typeOfWellOptions[number];
 export const SiteDetailSchema = z.object({
   id: z.string().optional(),
   nameOfSite: z.string().min(1, "Name of Site is required."),
-  localSelfGovt: z.string().optional(),
+  localSelfGovt: z.string().optional().nullable(),
   constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
   latitude: optionalNumber(),
   longitude: optionalNumber(),
-  purpose: z.string().min(1).optional(),
+  purpose: z.string().min(1).optional().nullable(),
   estimateAmount: optionalNumber(),
   remittedAmount: optionalNumber(),
   siteConditions: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(siteConditionsOptions).optional()),
-  accessibleRig: z.string().optional(),
+  accessibleRig: z.string().optional().nullable(),
   tsAmount: optionalNumber(),
-  tenderNo: z.string().optional(),
+  tenderNo: z.string().optional().nullable(),
   diameter: z.string().optional().nullable(),
   pilotDrillingDepth: z.string().optional().nullable(),
   totalDepth: optionalNumber(),
@@ -272,7 +272,7 @@ export const SiteDetailSchema = z.object({
   noOfBeneficiary: z.string().optional().nullable(),
   dateOfCompletion: nativeDateSchema.optional().nullable(),
   typeOfRig: z.preprocess((val) => (val === "" || val === null || val === '_clear_' ? undefined : val), z.string().optional()),
-  contractorName: z.string().optional(),
+  contractorName: z.string().optional().nullable(),
   supervisorUid: z.string().optional().nullable(),
   supervisorName: z.string().optional().nullable(),
   supervisorDesignation: z.string().optional().nullable(),
@@ -331,14 +331,14 @@ export const DataEntrySchema = z.object({
   id: z.string().optional(),
   fileNo: z.string().min(1, "File No. is required."),
   applicantName: z.string().min(1, "Applicant is required."),
-  phoneNo: z.string().optional(),
-  secondaryMobileNo: z.string().optional(),
+  phoneNo: z.string().optional().nullable(),
+  secondaryMobileNo: z.string().optional().nullable(),
   category: z.enum(['Govt', 'Private', 'Complaints']).optional(),
   applicationType: z.enum(applicationTypeOptions).optional(),
   constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
   estimateAmount: optionalNumber(),
   assignedSupervisorUids: z.array(z.string()).optional(),
-  officeLocation: z.string().optional(),
+  officeLocation: z.string().optional().nullable(),
   remittanceDetails: z.array(RemittanceDetailSchema).min(1, "Remittance required."),
   totalRemittance: z.coerce.number().optional(),
   reappropriationDetails: z.array(ReappropriationDetailSchema).optional().default([]),
@@ -348,8 +348,8 @@ export const DataEntrySchema = z.object({
   paymentDetails: z.array(PaymentDetailSchema).optional(),
   totalPaymentAllEntries: z.coerce.number().optional(),
   overallBalance: z.coerce.number().optional(),
-  fileStatus: z.string().optional(),
-  remarks: z.string().optional(),
+  fileStatus: z.string().optional().nullable(),
+  remarks: z.string().optional().nullable(),
 });
 export type DataEntryFormData = z.infer<typeof DataEntrySchema>;
 

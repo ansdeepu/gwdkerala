@@ -71,269 +71,17 @@ export * from './schemas/eTenderSchema';
 import { SiteDetailSchema, constituencyOptions, MediaItemSchema, optionalDateSchema } from './schemas/DataEntrySchema';
 import type { SiteDetailFormData } from './schemas/DataEntrySchema';
 
-export const ArsEntrySchema = z.object({
-  fileNo: z.string().min(1, 'File No. is required.'),
-  nameOfSite: z.string().min(1, 'Name of Site is required.'),
-  localSelfGovt: z.string().optional(),
-  constituency: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(constituencyOptions).optional()),
-  arsTypeOfScheme: z.enum(arsTypeOfSchemeOptions).optional(),
-  arsBlock: z.string().optional(),
-  latitude: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-  longitude: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-  arsNumberOfStructures: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-  arsStorageCapacity: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-  arsNumberOfFillings: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-  estimateAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-  arsAsTsDetails: z.string().optional(),
-  tsAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-  arsSanctionedDate: optionalDateSchema,
-  arsTenderedAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-  arsAwardedAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-  arsTenderNo: z.string().optional(),
-  arsContractorName: z.string().optional(),
-  arsStatus: z.enum(arsStatusOptions, { required_error: "ARS status is required." }),
-  dateOfCompletion: optionalDateSchema,
-  totalExpenditure: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-  noOfBeneficiary: z.string().optional(),
-  workRemarks: z.string().optional(),
-  supervisorUid: z.string().optional().nullable(),
-  supervisorName: z.string().optional().nullable(),
-  isPending: z.boolean().optional(),
-  officeLocation: z.string().optional(),
-  workImages: z.array(MediaItemSchema).optional().default([]),
-  workVideos: z.array(MediaItemSchema).optional().default([]),
-}).superRefine((data, ctx) => {
-    if ((data.arsStatus === 'Work Completed' || data.arsStatus === 'Work Failed') && !data.dateOfCompletion) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Completion Date is required for this status.",
-            path: ["dateOfCompletion"],
-        });
-    }
-});
-export type ArsEntryFormData = z.infer<typeof ArsEntrySchema>;
-
-// This is the type that includes the ID from Firestore
-export type ArsEntry = ArsEntryFormData & { id: string };
-
-// Schema for Pending Updates
-export const PendingUpdateFormDataSchema = z.object({
-  fileNo: z.string(),
-  updatedSiteDetails: z.array(z.union([SiteDetailSchema, ArsEntrySchema])),
-  fileLevelUpdates: z.object({
-      fileStatus: z.string().optional(),
-      remarks: z.string().optional(),
-  }).optional(),
-  submittedByUid: z.string(),
-  submittedByName: z.string(),
-  submittedAt: z.any(), // serverTimestamp()
-  status: z.enum(['pending', 'approved', 'rejected', 'supervisor-unassigned']),
-  notes: z.string().optional(),
-  isArsUpdate: z.boolean().optional(),
-  arsId: z.string().optional(),
-});
-export type PendingUpdateFormData = z.infer<typeof PendingUpdateFormDataSchema>;
-
-export const PendingUpdateSchema = PendingUpdateFormDataSchema.extend({
-  id: z.string(),
-  submittedAt: z.date(),
-  reviewedByUid: z.string().optional(),
-  reviewedAt: z.date().optional(),
-});
-export type PendingUpdate = z.infer<typeof PendingUpdateSchema>;
-
-// Establishment / Staff Schemas
-export const staffStatusOptions = ["Active", "Transferred", "Retired", "Pending Transfer"] as const;
-export type StaffStatusType = typeof staffStatusOptions[number];
-
-const dateOrString = z.union([
-  z.date(),
-  z.string().refine(val => !val || !isNaN(Date.parse(val)), {
-    message: "Invalid date format"
-  })
-]);
-
-const BaseStaffMemberFormDataSchema = z.object({
-  photoUrl: z.string().url({ message: "Please enter a valid image URL." }).optional().or(z.literal("")),
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  nameMalayalam: z.string().optional(),
-  designation: z.string().optional(),
-  designationMalayalam: z.string().optional(),
-  pen: z.string().min(1, { message: "PEN is required." }),
-  email: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  serviceStartDate: z.string().optional(),
-  serviceEndDate: z.string().optional(),
-  phoneNo: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }).optional().or(z.literal("")),
-  roles: z.string().optional(),
-  status: z.preprocess((val) => (val === "" ? undefined : val), z.enum(staffStatusOptions).default('Active')),
-  remarks: z.string().optional().default(""),
-  officeLocation: z.string().optional(),
-  
-  // Fields for creating a user account
-  createUserAccount: z.boolean().optional().default(false),
-  password: z.string().optional(),
-});
-
-export const StaffMemberFormDataSchema = BaseStaffMemberFormDataSchema.superRefine((data, ctx) => {
-    if (data.createUserAccount) {
-      if (!data.email || !z.string().email().safeParse(data.email).success) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "A valid email is required.",
-          path: ["email"],
-        });
-      }
-    }
-});
-export type StaffMemberFormData = z.infer<typeof StaffMemberFormDataSchema>;
-
-
-export const StaffMemberSchema = BaseStaffMemberFormDataSchema.extend({
-  id: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  status: z.enum(staffStatusOptions).default('Active'),
-  remarks: z.string().optional().default(""),
-  dateOfBirth: dateOrString.nullable().optional(),
-  serviceStartDate: dateOrString.nullable().optional(),
-  serviceEndDate: dateOrString.nullable().optional(),
-});
-export type StaffMember = z.infer<typeof StaffMemberSchema>;
-
-export const gwdRateCategories = [
-    "GW Investigation",
-    "Borewell Construction 110 mm dia (4.5\")",
-    "Borewell Construction 150 mm dia (6\")",
-    "Tubewell Construction 150 mm dia (6\")",
-    "Tubewell Construction 200 mm dia (8\")",
-    "Rotary cum DTH Drilling",
-    "Filter Point Well Construction 110 mm (4.5\")",
-    "Well Developing",
-    "Logging & Pumping Test"
-] as const;
-export type GwdRateCategory = typeof gwdRateCategories[number];
-
-// GWD Rates Schemas
-export const GwdRateItemFormDataSchema = z.object({
-  itemName: z.string().min(1, 'Item name is required.'),
-  rate: z.coerce.number({ invalid_type_error: 'Rate must be a number.'}).min(0, 'Rate cannot be negative.'),
-  category: z.enum(gwdRateCategories).optional(),
-});
-export type GwdRateItemFormData = z.infer<typeof GwdRateItemFormDataSchema>;
-
-export const GwdRateItemSchema = GwdRateItemFormDataSchema.extend({
-  id: z.string(),
-  order: z.number().optional(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  category: z.enum(gwdRateCategories).optional(),
-});
-export type GwdRateItem = z.infer<typeof GwdRateItemSchema>;
-
 export const UpdatePasswordSchema = z.object({
   currentPassword: z.string().min(1, { message: "Current password is required." }),
   newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
   confirmPassword: z.string(),
 }).refine(data => data.newPassword === data.confirmPassword, {
-  message: "New passwords don't match.",
+  message: "Passwords don't match.",
   path: ["confirmPassword"],
 });
 export type UpdatePasswordFormData = z.infer<typeof UpdatePasswordSchema>;
 
 // Agency Registration Schemas
-export const OwnerInfoSchema = z.object({
-  name: z.string().min(1, "Partner name is required."),
-  address: z.string().optional(),
-  mobile: z.string().optional(),
-  secondaryMobile: z.string().optional(),
-});
-export type OwnerInfo = z.infer<typeof OwnerInfoSchema>;
-
-const VehicleDetailsSchema = z.object({
-  type: z.string().optional(),
-  regNo: z.string().optional(),
-  chassisNo: z.string().optional(),
-  engineNo: z.string().optional(),
-}).optional();
-
-const CompressorDetailsSchema = z.object({
-  model: z.string().optional(),
-  capacity: z.string().optional(),
-}).optional();
-
-const GeneratorDetailsSchema = z.object({
-  model: z.string().optional(),
-  capacity: z.string().optional(),
-  type: z.string().optional(),
-  engineNo: z.string().optional(),
-}).optional();
-
-export const rigTypeOptions = [
-    "Hand Bore",
-    "Filter Point Rig",
-    "Calyx Rig",
-    "Rotary Rig",
-    "DTH Rig",
-    "Rotary cum DTH Rig",
-] as const;
-export type RigType = typeof rigTypeOptions[number];
-
-export const applicationFeeTypes = [
-    "Agency Registration",
-    "Rig Registration",
-] as const;
-export type ApplicationFeeType = typeof applicationFeeTypes[number];
-
-export const ApplicationFeeSchema = z.object({
-    id: z.string(),
-    applicationFeeType: z.enum(applicationFeeTypes).optional(),
-    applicationFeeAmount: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-    applicationFeeChallanNo: z.string().optional(),
-    applicationFeePaymentDate: optionalDateSchema,
-});
-export type ApplicationFee = z.infer<typeof ApplicationFeeSchema>;
-
-export const RigRenewalSchema = z.object({
-    id: z.string(),
-    renewalDate: optionalDateSchema,
-    renewalFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number({invalid_type_error: 'Renewal fee is required.'}).optional()),
-    paymentDate: optionalDateSchema,
-    challanNo: z.string().optional(),
-    validTill: optionalDateSchema,
-});
-export type RigRenewal = z.infer<typeof RigRenewalSchema>;
-
-export const RigRegistrationSchema = z.object({
-    id: z.string(),
-    rigRegistrationNo: z.string().optional(),
-    typeOfRig: z.enum(rigTypeOptions).optional(),
-    registrationDate: optionalDateSchema,
-    registrationFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-    paymentDate: optionalDateSchema,
-    challanNo: z.string().optional(),
-    additionalRegistrationFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-    additionalPaymentDate: optionalDateSchema,
-    additionalChallanNo: z.string().optional(),
-    rigVehicle: VehicleDetailsSchema,
-    compressorVehicle: VehicleDetailsSchema,
-    supportingVehicle: VehicleDetailsSchema,
-    compressorDetails: CompressorDetailsSchema,
-    generatorDetails: GeneratorDetailsSchema,
-    status: z.enum(['Active', 'Cancelled']),
-    renewals: z.array(RigRenewalSchema).optional(),
-    history: z.array(z.string()).optional(),
-    cancellationDate: optionalDateSchema,
-    cancellationReason: z.string().optional(),
-    // Fields to control visibility of optional sections
-    showRigVehicle: z.boolean().optional(),
-    showCompressorVehicle: z.boolean().optional(),
-    showSupportingVehicle: z.boolean().optional(),
-    showCompressorDetails: z.boolean().optional(),
-    showGeneratorDetails: z.boolean().optional(),
-});
-export type RigRegistration = z.infer<typeof RigRegistrationSchema>;
-
 export const AgencyApplicationSchema = z.object({
   id: z.string().optional(),
   fileNo: z.string().optional(),
@@ -487,3 +235,94 @@ export const RigCompressorSchema = z.object({
 export type RigCompressor = z.infer<typeof RigCompressorSchema>;
 
     
+// Staff Schemas
+export const staffStatusOptions = ["Active", "Transferred", "Retired", "Pending Transfer"] as const;
+export type StaffStatusType = typeof staffStatusOptions[number];
+
+const dateOrString = z.union([
+  z.date(),
+  z.string().refine(val => !val || !isNaN(Date.parse(val)), {
+    message: "Invalid date format"
+  })
+]);
+
+const BaseStaffMemberFormDataSchema = z.object({
+  photoUrl: z.string().url({ message: "Please enter a valid image URL." }).optional().or(z.literal("")),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  nameMalayalam: z.string().optional().nullable(),
+  designation: z.string().optional().nullable(),
+  designationMalayalam: z.string().optional().nullable(),
+  pen: z.string().min(1, { message: "PEN is required." }),
+  email: z.string().email().optional().nullable(),
+  dateOfBirth: z.string().optional().nullable(),
+  serviceStartDate: z.string().optional().nullable(),
+  serviceEndDate: z.string().optional().nullable(),
+  phoneNo: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }).optional().or(z.literal("")),
+  roles: z.string().optional().nullable(),
+  status: z.preprocess((val) => (val === "" ? undefined : val), z.enum(staffStatusOptions).default('Active')),
+  remarks: z.string().optional().default(""),
+  officeLocation: z.string().optional().nullable(),
+  
+  // Fields for creating a user account
+  createUserAccount: z.boolean().optional().default(false),
+  password: z.string().optional().nullable(),
+});
+
+export const StaffMemberFormDataSchema = BaseStaffMemberFormDataSchema.superRefine((data, ctx) => {
+    if (data.createUserAccount) {
+      if (!data.email || !z.string().email().safeParse(data.email).success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "A valid email is required.",
+          path: ["email"],
+        });
+      }
+    }
+});
+export type StaffMemberFormData = z.infer<typeof StaffMemberFormDataSchema>;
+
+
+export const StaffMemberSchema = BaseStaffMemberFormDataSchema.extend({
+  id: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  status: z.enum(staffStatusOptions).default('Active'),
+  remarks: z.string().optional().default(""),
+  dateOfBirth: dateOrString.nullable().optional(),
+  serviceStartDate: dateOrString.nullable().optional(),
+  serviceEndDate: dateOrString.nullable().optional(),
+});
+export type StaffMember = z.infer<typeof StaffMemberSchema>;
+
+export const gwdRateCategories = [
+    "GW Investigation",
+    "Borewell Construction 110 mm dia (4.5\")",
+    "Borewell Construction 150 mm dia (6\")",
+    "Tubewell Construction 150 mm dia (6\")",
+    "Tubewell Construction 200 mm dia (8\")",
+    "Rotary cum DTH Drilling",
+    "Filter Point Well Construction 110 mm (4.5\")",
+    "Well Developing",
+    "Logging & Pumping Test"
+] as const;
+export type GwdRateCategory = typeof gwdRateCategories[number];
+
+// GWD Rates Schemas
+export const GwdRateItemFormDataSchema = z.object({
+  itemName: z.string().min(1, 'Item name is required.'),
+  rate: z.coerce.number({ invalid_type_error: 'Rate must be a number.'}).min(0, 'Rate cannot be negative.'),
+  category: z.enum(gwdRateCategories).optional(),
+});
+export type GwdRateItemFormData = z.infer<typeof GwdRateItemFormDataSchema>;
+
+export const GwdRateItemSchema = GwdRateItemFormDataSchema.extend({
+  id: z.string(),
+  order: z.number().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  category: z.enum(gwdRateCategories).optional(),
+});
+export type GwdRateItem = z.infer<typeof GwdRateItemSchema>;
+
+import { RigRegistrationSchema, ApplicationFeeSchema, OwnerInfoSchema } from './schemas/eTenderSchema';
+import type { RigRegistration, ApplicationFee, OwnerInfo } from './schemas/eTenderSchema';
