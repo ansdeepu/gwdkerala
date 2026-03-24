@@ -100,14 +100,14 @@ export function useFileEntries() {
             const isAssigned = entry.siteDetails?.some(site => {
                 if (isSupervisor) {
                     const isAssignedByUid = site.supervisorUid === user.uid;
-                    // Check if the user's name is included in the supervisorName string (for e-tender assignments)
                     const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
                     const isOngoing = site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
 
                     return (isAssignedByUid || isAssignedByName) && isOngoing;
                 } else { // isInvestigator
-                    // Investigator sees investigation works assigned to their Name
-                    return (site.nameOfInvestigator === user.name || site.vesInvestigator === user.name);
+                    const isAssignedToInvestigator = site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
+                    const isOngoingInvestigation = site.workStatus && (site.workStatus === 'Pending' || site.workStatus === 'VES Pending');
+                    return isAssignedToInvestigator && isOngoingInvestigation;
                 }
             });
             const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
@@ -258,7 +258,9 @@ export function useFileEntries() {
       if (user.role === 'supervisor' || user.role === 'investigator') {
           const isAssigned = entry.siteDetails?.some(site => {
               if (user.role === 'supervisor') {
-                  return site.supervisorUid === user.uid;
+                  const isAssignedByUid = site.supervisorUid === user.uid;
+                  const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
+                  return isAssignedByUid || isAssignedByName;
               } else {
                   return site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
               }
