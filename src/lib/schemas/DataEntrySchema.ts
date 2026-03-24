@@ -49,16 +49,17 @@ export const designationOptions = [
 export type Designation = typeof designationOptions[number];
 
 export const designationMalayalamOptions = [
-    "Director",
-    "Superintending Engineer (General)",
-    "Superintending Engineer (NHP)",
-    "Superintending Hydrogeologist (General)",
-    "Superintending Hydrogeologist (NHP)",
-    "ജില്ലാ ഓഫീസർ", "എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "സീനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്", "Senior Geophysicist",
+    "ഡയറക്ടർ",
+    "സൂപ്രണ്ടിങ് എഞ്ചിനീയർ (ജനറൽ)",
+    "സൂപ്രണ്ടിങ് എഞ്ചിനീയർ (NHP)",
+    "സൂപ്രണ്ടിങ് ഹൈഡ്രോജിയോളജിസ്റ്റ് (ജനറൽ)",
+    "സൂപ്രണ്ടിങ് ഹൈഡ്രോജിയോളജിസ്റ്റ് (NHP)",
+    "സീനിയർ ജിയോഫിസിസിസ്റ്റ്",
+    "ജില്ലാ ഓഫീസർ", "എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "സീനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്",
     "അസിസ്റ്റന്റ് എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "ഹൈഡ്രോജിയോളജിസ്റ്റ്", "ജിയോഫിസിസ്റ്റ്",
     "അസിസ്റ്റന്റ് എഞ്ചിനീയർ", "ജൂനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്", "ജൂനിയർ ജിയോഫിസിസ്റ്റ്",
     "ജിയോളജിക്കൽ അസിസ്റ്റന്റ്", "ജിയോഫിസിക്കൽ അസിസ്റ്റന്റ്", "മാസ്റ്റർ ഡ്രില്ലർ",
-    "സീനിയർ ഡ്രില്ലർ", "ഡ്രില്ലർ", "ഡ്രില്ലർ മെക്കാനിക്ക്", "ഡരില്ലിംഗ് അസിസ്റ്റന്റ്",
+    "സീനിയർ ഡ്രില്ലർ", "ഡ്രില്ലർ", "ഡ്രില്ലർ മെക്കാനിക്ക്", "ഡ്രില്ലിംഗ് അസിസ്റ്റന്റ്‌",
     "കംപ്രസ്സർ ഡ്രൈവർ", "പമ്പ് ഓപ്പറേറ്റർ", "ഡ്രൈവർ, എച്ച്ഡിവി", "ഡ്രൈവർ, എൽഡിവി",
     "സീനിയർ ക്ലർക്ക്", "ക്ലർക്ക്", "യു.ഡി ടൈപ്പിസ്റ്റ്", "എൽ.ഡി ടൈപ്പിസ്റ്റ്",
     "ട്രേസർ", "ഡ്രാഫ്റ്റ്‌സ്മാൻ", "ലാസ്കർ", "ഓഫീസ് അറ്റൻഡന്റ്", "വാച്ചർ", "പിടിഎസ്"
@@ -307,3 +308,174 @@ export const DataEntrySchema = z.object({
   remarks: z.string().optional(),
 });
 export type DataEntryFormData = z.infer<typeof DataEntrySchema>;
+
+// The schemas below were originally in this file and are kept for compatibility.
+// In the future, they should be moved to their own specialized files.
+
+import { RigRegistrationSchema, ApplicationFeeSchema, OwnerInfoSchema } from './schemas/eTenderSchema';
+import type { RigRegistration, ApplicationFee, OwnerInfo } from './schemas/eTenderSchema';
+
+export const UpdatePasswordSchema = z.object({
+  currentPassword: z.string().min(1, { message: "Current password is required." }),
+  newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
+  confirmPassword: z.string(),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: "New passwords don't match.",
+  path: ["confirmPassword"],
+});
+export type UpdatePasswordFormData = z.infer<typeof UpdatePasswordSchema>;
+
+// Agency Registration Schemas
+export const AgencyApplicationSchema = z.object({
+  id: z.string().optional(),
+  fileNo: z.string().optional(),
+  agencyName: z.string().min(1, "Agency name & address is required."),
+  owner: OwnerInfoSchema,
+  partners: z.array(OwnerInfoSchema).optional(),
+  
+  applicationFees: z.array(ApplicationFeeSchema).optional(),
+
+  // Agency Registration
+  agencyRegistrationNo: z.string().optional(),
+  agencyRegistrationDate: optionalDateSchema,
+  agencyRegistrationFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+  agencyPaymentDate: optionalDateSchema,
+  agencyChallanNo: z.string().optional(),
+  agencyAdditionalRegFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+  agencyAdditionalPaymentDate: optionalDateSchema,
+  agencyAdditionalChallanNo: z.string().optional(),
+  
+  rigs: z.array(RigRegistrationSchema),
+  status: z.enum(['Active', 'Pending Verification']),
+  history: z.array(z.string()).optional(),
+  remarks: z.string().optional(),
+  officeLocation: z.string().optional(),
+});
+export type AgencyApplication = z.infer<typeof AgencyApplicationSchema>;
+
+// Settings Schemas
+export interface LsgConstituencyMap {
+  id: string;
+  name: string; // Name of the Local Self Government
+  constituencies: string[]; // Array of associated constituencies
+}
+
+export interface OfficeAddress {
+  id: string;
+  officeName: string;
+  officeLocation: string;
+  officeCode: string;
+  officeNameMalayalam?: string;
+  address?: string;
+  addressMalayalam?: string;
+  phoneNo?: string;
+  email?: string;
+  districtOfficerStaffId?: string;
+  districtOfficer?: string;
+  districtOfficerPhotoUrl?: string;
+  gstNo?: string;
+  panNo?: string;
+  otherDetails?: string;
+  stsbAccountNo?: string;
+  nameOfTreasury?: string;
+  bankAccountNo?: string;
+  nameOfBank?: string;
+  bankBranch?: string;
+  bankIfsc?: string;
+}
+
+export const arsWorkStatusOptions = [
+    "Proposal Submitted",
+    "AS & TS Issued",
+    "Tendered",
+    "Selection Notice Issued",
+    "Work Order Issued",
+    "Work Initiated",
+    "Work in Progress",
+    "Work Failed",
+    "Work Completed",
+    "Bill Prepared",
+    "Payment Completed"
+] as const;
+
+// Vehicle Management Schemas
+export const rcStatusOptions = ["Active", "Cancelled", "Garaged"] as const;
+export type RCStatus = typeof rcStatusOptions[number];
+
+export const DepartmentVehicleSchema = z.object({
+    id: z.string().optional(),
+    registrationNumber: z.string().min(1, "Registration Number is required."),
+    model: z.string().optional(),
+    chassisNo: z.string().optional(),
+    typeOfVehicle: z.string().optional(),
+    vehicleClass: z.string().optional(),
+    registrationDate: optionalDateSchema,
+    rcStatus: z.enum(rcStatusOptions).optional(),
+    fuelConsumptionRate: z.string().optional(),
+    fitnessExpiry: optionalDateSchema,
+    taxExpiry: optionalDateSchema,
+    insuranceExpiry: optionalDateSchema,
+    pollutionExpiry: optionalDateSchema,
+    fuelTestExpiry: optionalDateSchema,
+    officeLocation: z.string().optional(),
+});
+export type DepartmentVehicle = z.infer<typeof DepartmentVehicleSchema>;
+
+export const HiredVehicleSchema = z.object({
+    id: z.string().optional(),
+    registrationNumber: z.string().min(1, "Registration Number is required."),
+    model: z.string().optional(),
+    ownerName: z.string().optional(),
+    ownerAddress: z.string().optional(),
+    agreementValidity: optionalDateSchema,
+    vehicleClass: z.string().optional(),
+    registrationDate: optionalDateSchema,
+    rcStatus: z.enum(rcStatusOptions).optional(),
+    hireCharges: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
+    fitnessExpiry: optionalDateSchema,
+    taxExpiry: optionalDateSchema,
+    insuranceExpiry: optionalDateSchema,
+    pollutionExpiry: optionalDateSchema,
+    permitExpiry: optionalDateSchema,
+    officeLocation: z.string().optional(),
+});
+export type HiredVehicle = z.infer<typeof HiredVehicleSchema>;
+
+export const rigStatusOptions = ["Active", "Garaged"] as const;
+export type RigStatus = typeof rigStatusOptions[number];
+
+export const RigCompressorSchema = z.object({
+    id: z.string().optional(),
+    typeOfRigUnit: z.string().optional(),
+    status: z.enum(rigStatusOptions).default('Active').optional(),
+    fuelConsumption: z.string().optional(),
+    rigVehicleRegNo: z.string().optional(),
+    compressorVehicleRegNo: z.string().optional(),
+    supportingVehicleRegNo: z.string().optional(),
+    compressorDetails: z.string().optional(),
+    remarks: z.string().optional(),
+    officeLocation: z.string().optional(),
+    isExternal: z.boolean().optional().default(false),
+    externalOffice: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+    if (data.isExternal) {
+        if (!data.externalOffice) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Owning Office is required.",
+                path: ["externalOffice"],
+            });
+        }
+    } else {
+        if (!data.typeOfRigUnit || data.typeOfRigUnit.trim() === "") {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Type of Rig Unit is required.",
+                path: ["typeOfRigUnit"],
+            });
+        }
+    }
+});
+export type RigCompressor = z.infer<typeof RigCompressorSchema>;
+
+    
