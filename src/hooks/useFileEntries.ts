@@ -1,3 +1,4 @@
+
 // src/hooks/useFileEntries.ts
 "use client";
 
@@ -98,11 +99,13 @@ export function useFileEntries() {
         const filteredEntries: DataEntryFormData[] = allFileEntries.filter(entry => {
             const isAssigned = entry.siteDetails?.some(site => {
                 if (isSupervisor) {
-                    // Supervisor sees ongoing implementation works assigned to their UID
-                    return site.supervisorUid === user.uid && 
-                           site.workStatus && 
-                           SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
-                } else {
+                    const isAssignedByUid = site.supervisorUid === user.uid;
+                    // Check if the user's name is included in the supervisorName string (for e-tender assignments)
+                    const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
+                    const isOngoing = site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
+
+                    return (isAssignedByUid || isAssignedByName) && isOngoing;
+                } else { // isInvestigator
                     // Investigator sees investigation works assigned to their Name
                     return (site.nameOfInvestigator === user.name || site.vesInvestigator === user.name);
                 }
