@@ -223,9 +223,11 @@ export default function DashboardPage() {
       totalCompletedCount
   } = useMemo(() => {
       const relevantFileEntries = (allFileEntries || []).filter(entry => {
+          const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes((entry as any).category);
           const hasGwPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
           const hasLpPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
-          if (hasGwPurpose || hasLpPurpose) return false;
+          
+          if (isInvestigationCategory || hasGwPurpose || hasLpPurpose) return false;
           if (entry.applicationType && (PRIVATE_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as any)) return false;
           return true;
       });

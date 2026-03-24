@@ -1,3 +1,4 @@
+
 // src/components/dashboard/WorkStatusByService.tsx
 "use client";
 
@@ -33,13 +34,7 @@ const depositWorkHeaderLabels: Record<string, string> = {
 
 // New filtered status options for Deposit Works tab
 const DEPOSIT_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
-    status => ![
-        "Bill Prepared", 
-        "Payment Completed", 
-        "Utilization Certificate Issued", 
-        "Pending", 
-        "VES Pending"
-    ].includes(status)
+    (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending", "Completed"].includes(status)
 );
 
 interface WorkStatusRow {
@@ -98,14 +93,15 @@ export default function WorkStatusByService({ allFileEntries, onOpenDialog, curr
         const loggingPumpingTestEntries: DataEntryFormData[] = [];
 
         for (const entry of allFileEntries) {
-            const hasGwPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
-            const hasLpPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+            const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes((entry as any).category);
+            const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
+            const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
 
-            if (hasGwPurpose && !hasLpPurpose) {
+            if ((isInvestigationCategory || hasInvestigationPurpose) && !hasLoggingPumpingPurpose) {
                 gwInvestigationEntries.push(entry);
-            } else if (hasLpPurpose && !hasGwPurpose) {
+            } else if (hasLoggingPumpingPurpose && !hasInvestigationPurpose) {
                 loggingPumpingTestEntries.push(entry);
-            } else if (!hasGwPurpose && !hasLpPurpose) {
+            } else if (!isInvestigationCategory && !hasInvestigationPurpose && !hasLoggingPumpingPurpose) {
                 depositWorkEntries.push(entry);
             }
         }
