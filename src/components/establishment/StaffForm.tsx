@@ -102,11 +102,6 @@ const getField = (data: any, key: string): any => {
     return undefined;
 };
 
-const capitalize = (s?: string) => {
-    if (!s) return "";
-    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-};
-
 const districtsOrder = [
     "Directorate TVM",
     "Thiruvananthapuram", "Kollam", "Pathanamthitta", "Alappuzha", "Kottayam", 
@@ -125,13 +120,12 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     if (user?.role === 'superAdmin') {
         return designationOptions;
     }
-    // For sub-office admin, show only from Executive Engineer onwards
     const subOfficeStartIndex = designationOptions.indexOf("Executive Engineer");
     if (subOfficeStartIndex !== -1) {
-        return ["Executive Engineer", ...designationOptions.slice(subOfficeStartIndex + 1)];
+        return ["Executive Engineer", ...designationOptions.slice(subOfficeStartIndex)];
     }
 
-    return designationOptions; // Fallback
+    return designationOptions;
   }, [user]);
 
   const formDesignationMalayalamOptions = useMemo(() => {
@@ -258,18 +252,11 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const isTransferring = watchedStatus === 'Transferred' || watchedStatus === 'Pending Transfer';
   
   const sortedOfficeOptions = useMemo(() => {
-    const uniqueLocations = [...new Map(allOfficeAddresses.map(item => [item.officeLocation?.toLowerCase(), item])).values()];
-
-    return uniqueLocations.sort((a, b) => {
-        const indexA = districtsOrder.indexOf(capitalize(a.officeLocation));
-        const indexB = districtsOrder.indexOf(capitalize(b.officeLocation));
-        
-        if (indexA === -1) return 1;
-        if (indexB === -1) return -1;
-        
-        return indexA - indexB;
-    });
-  }, [allOfficeAddresses]);
+    return districtsOrder.map(location => ({
+        id: location.toLowerCase().replace(/\s+/g, '-'),
+        officeLocation: location
+    }));
+  }, []);
 
 
   return (
@@ -571,7 +558,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                                     <SelectContent className="max-h-80">
                                         {sortedOfficeOptions.map(office => (
                                             <SelectItem key={office.id} value={office.officeLocation}>
-                                                {capitalize(office.officeLocation)}
+                                                {office.officeLocation}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
