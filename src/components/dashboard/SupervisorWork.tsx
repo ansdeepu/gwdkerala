@@ -59,7 +59,8 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
     // Process file entries
     for (const entry of allFileEntries) {
         entry.siteDetails?.forEach(site => {
-            const isAssignedSupervisor = site.supervisorUid === selectedSupervisorId;
+            const isAssignedSupervisor = site.supervisorUid === selectedSupervisorId || 
+                (selectedStaffName && site.supervisorName?.includes(selectedStaffName));
             const isAssignedInvestigator = selectedStaffName && (site.nameOfInvestigator === selectedStaffName || site.vesInvestigator === selectedStaffName);
             
             const isOngoing = site.workStatus && (ongoingWorkStatuses as any).includes(site.workStatus);
@@ -80,7 +81,7 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
     // Process ARS entries
     const arsOngoingWorkStatuses: ArsStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated"];
     for (const arsEntry of allArsEntries) {
-        const isAssigned = arsEntry.supervisorUid === selectedSupervisorId;
+        const isAssigned = arsEntry.supervisorUid === selectedSupervisorId || (selectedStaffName && arsEntry.supervisorName === selectedStaffName);
         const isOngoing = arsEntry.arsStatus && arsOngoingWorkStatuses.includes(arsEntry.arsStatus);
 
         if (isAssigned && isOngoing) {
