@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -123,7 +123,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
         return false;
     }, [isReadOnly, watchedLsg, constituencyOptionsForLsg]);
 
-    const isCompletionDateRequired = watchedWorkStatus === 'Work Completed';
+    const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
     const latLongReadOnly = isReadOnly && !isSupervisor && !isInvestigator;
 
@@ -237,10 +237,9 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                         <FormField name="workStatus" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
-                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
+                                                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
-                                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
                                                         {INVESTIGATION_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>
@@ -276,7 +275,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                     </ScrollArea>
                 </div>
                 <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
-                    <Button variant="outline" type="button" onClick={onCancel}>Cancel</Button>
+                    <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
                     {!isReadOnly && <Button type="submit" form="investigation-site-dialog-form">Save Changes</Button>}
                 </div>
             </form>
