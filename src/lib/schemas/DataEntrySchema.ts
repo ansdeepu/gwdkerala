@@ -279,7 +279,7 @@ export const SiteDetailSchema = z.object({
   supervisorName: z.string().optional().nullable(),
   supervisorDesignation: z.string().optional().nullable(),
   totalExpenditure: optionalNumber(),
-  workStatus: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(siteWorkStatusOptions, { required_error: "Work Status is required." })),
+  workStatus: z.string({ required_error: "Work Status is required." }).min(1, "Work Status is required."),
   implementationRemarks: z.string().optional().nullable().default(""),
   workRemarks: z.string().optional().nullable().default(""),
   surveyOB: z.string().optional().nullable(),
@@ -350,14 +350,13 @@ export const DataEntrySchema = z.object({
   paymentDetails: z.array(PaymentDetailSchema).optional(),
   totalPaymentAllEntries: z.coerce.number().optional(),
   overallBalance: z.coerce.number().optional(),
-  fileStatus: z.string().optional().nullable(),
+  fileStatus: z.string().min(1, "File Status is required."),
   remarks: z.string().optional().nullable(),
 });
 export type DataEntryFormData = z.infer<typeof DataEntrySchema>;
 
 // The schemas below were originally in this file and are kept for compatibility.
 // In the future, they should be moved to their own specialized files.
-
 export const UpdatePasswordSchema = z.object({
   currentPassword: z.string().min(1, { message: "Current password is required." }),
   newPassword: z.string().min(6, { message: "New password must be at least 6 characters." }),
