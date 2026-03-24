@@ -144,17 +144,17 @@ const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): stri
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const value = obj[key];
-        const newPath = parentPath ? `${parentPath}.${key}` : key;
+        const newPath = parentPath ? `\${parentPath}.${key}` : key;
         
         if (value?.message && typeof value.message === 'string') {
-          messages.add(`${formattedFieldName(key)}: ${value.message}`);
+          messages.add(`\${formattedFieldName(key)}: \${value.message}`);
         } else if (Array.isArray(value)) {
           value.forEach((item, index) => {
             if (item && typeof item === 'object') {
               for (const itemKey in item) {
                 if (item[itemKey]?.message) {
                   const pathPrefix = processPath(newPath, index);
-                  messages.add(`${pathPrefix} - ${formattedFieldName(itemKey)}: ${item[itemKey].message}`);
+                  messages.add(`\${pathPrefix} - \${formattedFieldName(itemKey)}: \${item[itemKey].message}`);
                 }
               }
             }
@@ -281,12 +281,16 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
             setIsChecking(true);
             try {
                 const fileNoTrimmed = data.fileNo.trim().toUpperCase();
-                const q = query(collection(db, `offices/${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
+                const q = query(collection(db, `offices/\${user.officeLocation.toLowerCase()}/fileEntries`), where("fileNo", "==", fileNoTrimmed));
                 const querySnapshot = await getDocs(q);
 
                 const hasDuplicate = querySnapshot.docs.some(doc => {
-                    const siteDetails = doc.data().siteDetails as SiteDetailFormData[] | undefined;
-                    return siteDetails?.some(site => site.purpose === 'GW Investigation');
+                    const docData = doc.data();
+                    const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes(docData.category);
+                    const hasInvestigationPurpose = docData.siteDetails?.some((site: any) => site.purpose === 'GW Investigation');
+                    const hasLoggingPumpingPurpose = docData.siteDetails?.some((site: any) => LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose));
+                    
+                    return (isInvestigationCategory || hasInvestigationPurpose) && !hasLoggingPumpingPurpose;
                 });
                 
                 if (hasDuplicate) {
@@ -488,9 +492,9 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
         if (foundEntry) {
             let details = '';
             if (watchedPageType === 'ARS') {
-                details = `Site: ${foundEntry.nameOfSite || 'N/A'}\nScheme: ${foundEntry.arsTypeOfScheme || 'N/A'}`;
+                details = `Site: \${foundEntry.nameOfSite || 'N/A'}\nScheme: \${foundEntry.arsTypeOfScheme || 'N/A'}`;
             } else {
-                details = (foundEntry.siteDetails || []).map((s: any) => `Site: ${s.nameOfSite || 'N/A'} (${s.purpose || 'N/A'})`).join('\n');
+                details = (foundEntry.siteDetails || []).map((s: any) => `Site: \${s.nameOfSite || 'N/A'} (\${s.purpose || 'N/A'})`).join('\n');
             }
             form.setValue('fileDetails', details || 'No site details found.');
         } else {
@@ -838,7 +842,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
                 appendPayment(paymentData);
             }
         } else if (type === 'site') {
-            if (originalData.index !== undefined) updateSite(originalData.index, data); else appendSite(data);
+            if (originalData.index !== undefined) updateSite(originalData.index, data); else appendSite({ ...createDefaultSiteDetail(), ...data });
         } else if (type === 'reorderSite') {
             const reorderedSites = data as SiteDetailFormData[];
             replaceSites(reorderedSites);
@@ -874,10 +878,10 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     };
 
     const handleCopySite = (index: number) => {
-        const siteToCopy = getValues(`siteDetails.${index}`);
+        const siteToCopy = getValues(`siteDetails.\${index}`);
         const clonedSite = { ...JSON.parse(JSON.stringify(siteToCopy)), id: uuidv4() };
         appendSite(clonedSite);
-        toast({ title: "Site Cloned", description: `Cloned Site #${index + 1}` });
+        toast({ title: "Site Cloned", description: `Cloned Site #\${index + 1}` });
     };
 
   const totalRemittanceWatched = watch('totalRemittance');
@@ -900,11 +904,11 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
               </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No remittance details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
               
               <Accordion type="single" collapsible className="w-full" value={reappAccordionValue} onValueChange={setReappAccordionValue}><AccordionItem value="reappropriation-details" className="border-b-0"><Card><AccordionTrigger className="w-full p-6 hover:no-underline [&[data-state=open]]:border-b"><div className="flex flex-1 items-center justify-between"><CardTitle className="text-xl">3. Re-appropriation Details</CardTitle>{isEditor && !isFormDisabled && (<Button type="button" variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openDialog('reappropriation', createDefaultReappropriationDetail()); }} disabled={isSupervisor || isInvestigator || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>)}</div></AccordionTrigger><AccordionContent><CardContent className="pt-6"><div className="relative max-h-[400px] overflow-auto"><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Type of Page</TableHead><TableHead>File No</TableHead><TableHead>File Details</TableHead><TableHead className="text-right">Credit</TableHead><TableHead className="text-right">Debit</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{sortedCombinedReappropriations.length > 0 ? sortedCombinedReappropriations.map((item, index) => {
-                  if (item._source === 'auto') return (<TableRow key={`credit-${index}`} className="bg-green-50/50"><TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell><TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell><TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell><TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-bold text-muted-foreground">-</TableCell><TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>{isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}</TableRow>);
+                  if (item._source === 'auto') return (<TableRow key={`credit-\${index}`} className="bg-green-50/50"><TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell><TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell><TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell><TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-bold text-muted-foreground">-</TableCell><TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>{isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}</TableRow>);
                   else return (<TableRow key={item.id}><TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell><TableCell className="font-mono text-xs">{item.refFileNo}</TableCell><TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell><TableCell className="text-right font-bold text-muted-foreground">-</TableCell><TableCell className="text-right font-bold text-red-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell><TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index: item._originalIndex, ...item })} disabled={isSupervisor || isInvestigator || isViewer}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index: item._originalIndex})} disabled={isSupervisor || isInvestigator || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>);
                   }) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow className="bg-muted/50 font-bold"><TableCell colSpan={4} className="text-right">Totals</TableCell><TableCell className="text-right text-green-600">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell><TableCell className="text-right text-red-600">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell><TableCell colSpan={isEditor && !isFormDisabled ? 2 : 1} className="text-right">Balance: <span className={cn((totalReappropriationCreditWatched - totalReappropriationWatched) >= 0 ? "text-green-600" : "text-red-600")}>₹{Math.abs(totalReappropriationCreditWatched - totalReappropriationWatched).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></TableCell></TableRow></TableFooterComponent></Table></div></CardContent></AccordionContent></Card></AccordionItem></Accordion>
   
-              <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isInvestigator || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group" disabled={isFormDisabled}><div className="flex justify-between items-center w-full"><div className={cn("text-left flex-1", getStatusColorClass(site.workStatus))}>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"} ({site.purpose || 'N/A'})</div><div className="flex items-center space-x-1 mr-2"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>View / Edit Site</p></TooltipContent></Tooltip></TooltipProvider>{!isFormDisabled && !isViewer && (<><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCopySite(index); }}><Copy className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Copy Site</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('reorderSite', getValues('siteDetails')); }}><ArrowUpDown className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Reorder Sites</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Delete Site</p></TooltipContent></Tooltip></TooltipProvider></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /><DetailRow label="Contractor" value={site.contractorName} /><DetailRow label="Supervisor" value={site.supervisorName} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
+              <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isInvestigator || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-\${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group" disabled={isFormDisabled}><div className="flex justify-between items-center w-full"><div className={cn("text-left flex-1", getStatusColorClass(site.workStatus))}>Site #\${index + 1}: {site.nameOfSite || "Unnamed Site"} ({site.purpose || 'N/A'})</div><div className="flex items-center space-x-1 mr-2"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>View / Edit Site</p></TooltipContent></Tooltip></TooltipProvider>{!isFormDisabled && !isViewer && (<><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCopySite(index); }}><Copy className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Copy Site</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('reorderSite', getValues('siteDetails')); }}><ArrowUpDown className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Reorder Sites</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Delete Site</p></TooltipContent></Tooltip></TooltipProvider></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /><DetailRow label="Contractor" value={site.contractorName} /><DetailRow label="Supervisor" value={site.supervisorName} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
               <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">5. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isInvestigator || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (
                   <TableRow key={item.id} className={item.remittanceId ? 'bg-muted/50' : ''}>
                       <TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yyyy') : 'N/A'}</TableCell>
@@ -983,7 +987,7 @@ function ReorderSitesDialog({ initialData, onConfirm, onCancel }: { initialData:
                         {sites.map((site, index) => (
                             <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-secondary/20">
                                 <div className="flex-1">
-                                    <p className="text-sm font-bold">Site #{index + 1}: {site.nameOfSite || 'Unnamed Site'}</p>
+                                    <p className="text-sm font-bold">Site #\${index + 1}: {site.nameOfSite || 'Unnamed Site'}</p>
                                     <p className="text-xs text-muted-foreground">{site.purpose}</p>
                                 </div>
                                 <div className="flex items-center gap-1">
