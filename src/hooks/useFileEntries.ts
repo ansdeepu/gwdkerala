@@ -92,30 +92,21 @@ export function useFileEntries() {
       setIsLoading(true);
 
       const isSupervisor = user.role === 'supervisor';
-      const isInvestigator = user.role === 'investigator';
 
-      if ((isSupervisor || isInvestigator) && user.uid) {
-        // For supervisors and investigators, filter to show only files that are explicitly assigned to them.
+      if (isSupervisor && user.uid) {
         const filteredEntries: DataEntryFormData[] = allFileEntries.filter(entry => {
             const isAssigned = entry.siteDetails?.some(site => {
-                if (isSupervisor) {
-                    const isAssignedByUid = site.supervisorUid === user.uid;
-                    const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
-                    const isOngoing = site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
-
-                    return (isAssignedByUid || isAssignedByName) && isOngoing;
-                } else { // isInvestigator
-                    const isAssignedToInvestigator = site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
-                    const isOngoingInvestigation = site.workStatus && (site.workStatus === 'Pending' || site.workStatus === 'VES Pending');
-                    return isAssignedToInvestigator && isOngoingInvestigation;
-                }
+                const isAssignedByUid = site.supervisorUid === user.uid;
+                const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
+                const isOngoing = site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
+                return (isAssignedByUid || isAssignedByName) && isOngoing;
             });
             const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
             return isAssigned || hasPendingUpdate;
         });
         setFileEntries(filteredEntries);
       } else {
-        // For other roles (Admin, Engineer, Scientist, Viewer), show all entries.
+        // For other roles (Admin, Engineer, Scientist, Viewer, Investigator), show all entries.
         setFileEntries(allFileEntries);
       }
 
