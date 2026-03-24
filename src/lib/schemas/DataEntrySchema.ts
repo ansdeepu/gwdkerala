@@ -39,7 +39,7 @@ export const designationOptions = [
     "Superintending Hydrogeologist (General)",
     "Superintending Hydrogeologist (NHP)",
     "Senior Geophysicist",
-    "District Officer", "Executive Engineer", "Senior Hydrogeologist", "Assistant Executive Engineer",
+    "Executive Engineer", "Senior Hydrogeologist", "Assistant Executive Engineer",
     "Hydrogeologist", "Geophysicist", "Assistant Engineer", "Junior Hydrogeologist",
     "Junior Geophysicist", "Geological Assistant", "Geophysical Assistant", "Master Driller",
     "Senior Driller", "Driller", "Driller Mechanic", "Drilling Assistant", "Compressor Driver",
@@ -55,7 +55,7 @@ export const designationMalayalamOptions = [
     "സൂപ്രണ്ടിങ് ഹൈഡ്രോജിയോളജിസ്റ്റ് (ജനറൽ)",
     "സൂപ്രണ്ടിങ് ഹൈഡ്രോജിയോളജിസ്റ്റ് (NHP)",
     "സീനിയർ ജിയോഫിസിസിസ്റ്റ്",
-    "ജില്ലാ ഓഫീസർ", "എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "സീനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്",
+    "എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "സീനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്",
     "അസിസ്റ്റന്റ് എക്സിക്യൂട്ടീവ് എഞ്ചിനീയർ", "ഹൈഡ്രോജിയോളജിസ്റ്റ്", "ജിയോഫിസിസ്റ്റ്",
     "അസിസ്റ്റന്റ് എഞ്ചിനീയർ", "ജൂനിയർ ഹൈഡ്രോജിയോളജിസ്റ്റ്", "ജൂനിയർ ജിയോഫിസിസ്റ്റ്",
     "ജിയോളജിക്കൽ അസിസ്റ്റന്റ്", "ജിയോഫിസിക്കൽ അസിസ്റ്റന്റ്", "മാസ്റ്റർ ഡ്രില്ലർ",
@@ -477,3 +477,5 @@ export const RigCompressorSchema = z.object({
     }
 });
 export type RigCompressor = z.infer<typeof RigCompressorSchema>;
+
+    
