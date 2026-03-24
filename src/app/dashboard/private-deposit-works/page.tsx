@@ -208,7 +208,7 @@ export default function PrivateDepositWorksPage() {
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="relative flex-grow w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/80" />
               <Input
                 type="search"
                 placeholder="Search all fields by File No, Applicant, Site, Purpose, Status..."
