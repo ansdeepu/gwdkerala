@@ -1,4 +1,3 @@
-
 // src/components/layout/AppSidebar.tsx
 "use client";
 
@@ -81,11 +80,7 @@ export default function AppSidebar() {
             />
           </div>
           <div className="flex flex-col items-start -space-y-1 group-data-[collapsible=icon]:hidden select-none cursor-default">
-             {user?.officeLocation ? (
-                <span className="font-bold text-lg text-sidebar-foreground">
-                  GWD {user.officeLocation.charAt(0).toUpperCase() + user.officeLocation.slice(1).toLowerCase()}
-                </span>
-              ) : (
+             {user?.role === 'superAdmin' ? (
                 <>
                   <span className="font-semibold text-sm text-sidebar-foreground">
                     Directorate
@@ -94,7 +89,11 @@ export default function AppSidebar() {
                     GWD
                   </span>
                 </>
-              )}
+              ) : user?.officeLocation ? (
+                <span className="font-bold text-lg text-sidebar-foreground">
+                  GWD {user.officeLocation.charAt(0).toUpperCase() + user.officeLocation.slice(1).toLowerCase()}
+                </span>
+              ) : null}
           </div>
         </div>
       </SidebarHeader>
