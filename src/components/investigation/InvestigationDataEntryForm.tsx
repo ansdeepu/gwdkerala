@@ -1,4 +1,3 @@
-
 // src/components/investigation/InvestigationDataEntryForm.tsx
 "use client";
 
@@ -628,7 +627,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
     );
 };
 
-export default function InvestigationDataEntryFormComponent({ fileNoToEdit, initialData, allStaffMembers, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps }: DataEntryFormProps) {
+export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit, initialData, allStaffMembers, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps }: DataEntryFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileIdToEdit = searchParams.get("id");
@@ -657,15 +656,6 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   
   const currentFileNo = watch("fileNo");
 
-  const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
-  const { fields: reappropriationFields, append: appendReappropriation, remove: removeReappropriation, update: updateReappropriation } = useFieldArray({ control, name: "reappropriationDetails" });
-  const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
-  const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment, replace: replacePayments } = useFieldArray({ control, name: "paymentDetails" });
-
-  const watchedRemittanceDetails = watch("remittanceDetails");
-  const watchedReappropriationDetails = watch("reappropriationDetails");
-  const watchedPaymentDetails = watch("paymentDetails");
-
   const autoCredits = useMemo(() => {
     if (!currentFileNo) return [];
     const normalizedFileNo = currentFileNo.toLowerCase().trim();
@@ -691,7 +681,16 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     });
     return credits;
   }, [currentFileNo, allFileEntries]);
-  
+
+  const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
+  const { fields: reappropriationFields, append: appendReappropriation, remove: removeReappropriation, update: updateReappropriation } = useFieldArray({ control, name: "reappropriationDetails" });
+  const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
+  const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment, replace: replacePayments } = useFieldArray({ control, name: "paymentDetails" });
+
+  const watchedRemittanceDetails = watch("remittanceDetails");
+  const watchedReappropriationDetails = watch("reappropriationDetails");
+  const watchedPaymentDetails = watch("paymentDetails");
+
   const sortedCombinedReappropriations = useMemo(() => {
     const manual = reappropriationFields.map((field, index) => ({
         ...field,
@@ -752,6 +751,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         }
     }, [watchedRemittanceDetails, getValues, replacePayments]);
 
+
   useEffect(() => {
     const totalRemittance = watchedRemittanceDetails?.reduce((sum, item) => {
         return sum + (Number(item.amountRemitted) || 0);
@@ -775,7 +775,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
     
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
 
-  const onInvalid = (errors: FieldErrors<any>) => {
+  const onInvalid = (errors: FieldErrors<DataEntryFormData>) => {
     const messages = getFormattedErrorMessages(errors);
     toast({ title: "Validation Error", description: (<ul className="list-disc pl-5 mt-2 space-y-1">{messages.map((msg, i) => <li key={i} className="text-xs">{msg}</li>)}</ul>), variant: "destructive", duration: 10000 });
   };
@@ -1006,7 +1006,7 @@ function ReorderSitesDialog({ initialData, onConfirm, onCancel }: { initialData:
 
 const getStatusColorClass = (status: SiteWorkStatus | undefined): string => {
     if (!status) return 'text-muted-foreground';
-    if (status === 'Work Completed') return 'text-green-600';
+    if (status === 'Completed') return 'text-green-600';
     if (status === 'VES Pending') return 'text-orange-600';
     if (status === 'Pending') return 'text-yellow-600';
     return 'text-muted-foreground';

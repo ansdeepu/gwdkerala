@@ -50,6 +50,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
         resolver: zodResolver(SiteDetailSchema),
         defaultValues: {
             ...initialData,
+            purpose: "GW Investigation",
             dateOfInvestigation: formatDateForInput(initialData?.dateOfInvestigation),
             vesDate: formatDateForInput(initialData?.vesDate),
             dateOfCompletion: formatDateForInput(initialData?.dateOfCompletion),
@@ -140,7 +141,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                 <CardHeader><CardTitle className="text-lg text-primary">Main Details</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                    <FormField name="purpose" control={control} render={({ field }) => <FormItem><FormLabel>Purpose</FormLabel><FormControl><Input {...field} value="GW Investigation" readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="purpose" control={control} render={({ field }) => <FormItem><FormLabel>Purpose</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>} />
                                     <FormField name="localSelfGovt" control={control} render={({ field }) => <FormItem><FormLabel>Local Self Govt.</FormLabel><Select onValueChange={(val) => handleLsgChange(val, field.onChange)} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG" /></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_">-- Clear Selection --</SelectItem>{sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                     <FormField name="constituency" control={control} render={({ field }) => <FormItem><FormLabel>Constituency (LAC)</FormLabel><Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isConstituencyDisabled}><FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"} /></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_">-- Clear Selection --</SelectItem>{constituencyOptionsForLsg.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                     <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={latLongReadOnly} /></FormControl><FormMessage /></FormItem>} />
@@ -223,7 +224,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                             )}
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem><FormLabel>Location of Well</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} className="min-h-[40px]" /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem><FormLabel>Well Location</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} className="min-h-[40px]" /></FormControl><FormMessage /></FormItem>} />
                                             <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} className="min-h-[40px]" /></FormControl><FormMessage /></FormItem>} />
                                         </div>
                                     </CardContent>
