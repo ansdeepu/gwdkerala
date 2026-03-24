@@ -1,3 +1,4 @@
+
 // src/components/shared/DataEntryForm.tsx
 "use client";
 
@@ -28,6 +29,11 @@ import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, In
 import {
   DataEntrySchema,
   type DataEntryFormData,
+  siteWorkStatusOptions,
+  sitePurposeOptions,
+  type SitePurpose,
+  siteDiameterOptions,
+  siteTypeOfRigOptions,
   fileStatusOptions,
   remittedAccountOptions,
   paymentAccountOptions,
@@ -39,6 +45,7 @@ import {
   type SiteDetailFormData,
   applicationTypeDisplayMap,
   type ApplicationType,
+  siteConditionsOptions,
   type UserRole,
   type SiteWorkStatus,
   constituencyOptions,
@@ -256,7 +263,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                 if (!querySnapshot.empty) {
                     toast({
                         title: "Duplicate File Number",
-                        description: `This file number is already used for another file.`,
+                        description: `A file with the number "${data.fileNo}" already exists.`,
                         variant: "destructive",
                     });
                     setIsChecking(false);
@@ -629,20 +636,22 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
   const isEditor = userRole === 'admin' || userRole === 'engineer';
   const isSupervisor = userRole === 'supervisor';
-  const isInvestigator = userRole === 'investigator';
   const isViewer = userRole === 'viewer';
   const isEditing = !!fileIdToEdit;
-
-  const isDeferredFunding = useMemo(() => {
-    return workTypeContext === 'planFund' || workTypeContext === 'collector';
-  }, [workTypeContext]);
-
-  const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction Details" : "2. Remittance Details";
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
   const { control, handleSubmit, setValue, getValues, watch } = form;
   
   const currentFileNo = watch("fileNo");
+  
+  const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
+  const { fields: reappropriationFields, append: appendReappropriation, remove: removeReappropriation, update: updateReappropriation } = useFieldArray({ control, name: "reappropriationDetails" });
+  const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
+  const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment, replace: replacePayments } = useFieldArray({ control, name: "paymentDetails" });
+
+  const watchedRemittanceDetails = watch("remittanceDetails");
+  const watchedReappropriationDetails = watch("reappropriationDetails");
+  const watchedPaymentDetails = watch("paymentDetails");
 
   const autoCredits = useMemo(() => {
     if (!currentFileNo) return [];
@@ -669,16 +678,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     });
     return credits;
   }, [currentFileNo, allFileEntries]);
-
-  const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
-  const { fields: reappropriationFields, append: appendReappropriation, remove: removeReappropriation, update: updateReappropriation } = useFieldArray({ control, name: "reappropriationDetails" });
-  const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
-  const { fields: paymentFields, append: appendPayment, remove: removePayment, update: updatePayment, replace: replacePayments } = useFieldArray({ control, name: "paymentDetails" });
-
-  const watchedRemittanceDetails = watch("remittanceDetails");
-  const watchedReappropriationDetails = watch("reappropriationDetails");
-  const watchedPaymentDetails = watch("paymentDetails");
-
+  
   const sortedCombinedReappropriations = useMemo(() => {
     const manual = reappropriationFields.map((field, index) => ({
         ...field,
@@ -937,18 +937,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                     <CardContent className="pt-6">
                       <div className="relative max-h-[400px] overflow-auto">
                         <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Type of Page</TableHead>
-                                    <TableHead>File No</TableHead>
-                                    <TableHead>File Details</TableHead>
-                                    <TableHead className="text-right">Credit</TableHead>
-                                    <TableHead className="text-right">Debit</TableHead>
-                                    <TableHead>Remarks</TableHead>
-                                    {isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}
-                                </TableRow>
-                            </TableHeader>
+                            <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Type of Page</TableHead><TableHead>File No</TableHead><TableHead>File Details</TableHead><TableHead className="text-right">Credit</TableHead><TableHead className="text-right">Debit</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader>
                             <TableBody>
                                 {sortedCombinedReappropriations.length > 0 ? sortedCombinedReappropriations.map((item, index) => {
                                     if (item._source === 'auto') {
@@ -1010,7 +999,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             <TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (
                 <TableRow key={item.id} className={item.remittanceId ? 'bg-muted/50' : ''}>
                     <TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell>
-                    <TableCell>{item.paymentAccount}</TableCell>
+                    <TableCell>{item.remittanceId ? 'Revenue Head' : item.paymentAccount}</TableCell>
                     {paymentFieldsToDisplay.map(field => (
                         <TableCell key={field.key} className="text-right">{(Number((item as any)[field.key]) || 0).toLocaleString('en-IN')}</TableCell>
                     ))}
@@ -1058,7 +1047,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={formOptions} isEditing={isEditing} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} isInvestigator={isInvestigator} supervisorList={supervisorList} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders} allStaffMembers={allStaffMembers} allBidders={allBidders} allRigCompressors={allRigCompressors} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} supervisorList={supervisorList} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders} allStaffMembers={allStaffMembers} allBidders={allBidders} allRigCompressors={allRigCompressors} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reorderSite'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl flex flex-col p-0"><ReorderSitesDialog initialData={dialogState.data || []} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
