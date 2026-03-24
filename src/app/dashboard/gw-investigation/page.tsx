@@ -64,9 +64,13 @@ export default function GWInvestigationPage() {
 
   const allInvestigationEntries = useMemo(() => {
     let entries = fileEntries.filter(entry => {
+        const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes((entry as any).category);
         const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
         const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
-        return hasInvestigationPurpose && !hasLoggingPumpingPurpose;
+        
+        // A file is an investigation file if it has the right category OR the right site purpose.
+        // And it must NOT have a logging/pumping purpose, as that belongs to another page.
+        return (isInvestigationCategory || hasInvestigationPurpose) && !hasLoggingPumpingPurpose;
     });
 
     entries.sort((a, b) => {
