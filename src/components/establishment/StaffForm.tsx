@@ -119,8 +119,19 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const formDesignationOptions = useMemo(() => {
-    return designationOptions;
-  }, []);
+    if (user?.role === 'superAdmin') {
+        return designationOptions;
+    }
+    // Remove the first 6 high-level designations for non-super admins
+    return designationOptions.slice(6);
+  }, [user]);
+
+  const formDesignationMalayalamOptions = useMemo(() => {
+    if (user?.role === 'superAdmin') {
+        return designationMalayalamOptions;
+    }
+    return designationMalayalamOptions.slice(6);
+  }, [user]);
 
   const defaultValues = useMemo((): StaffMemberFormData => {
     const rawData = initialData || {};
@@ -169,7 +180,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         name: normalize(getField(rawData, 'name')),
         nameMalayalam: normalize(getField(rawData, 'nameMalayalam')),
         designation: formDesignationOptions.find(o => o.toLowerCase().trim() === designationValue.toLowerCase()) as any,
-        designationMalayalam: designationMalayalamOptions.find(o => o.toLowerCase().trim() === designationMalayalamValue.toLowerCase()) as any,
+        designationMalayalam: formDesignationMalayalamOptions.find(o => o.toLowerCase().trim() === designationMalayalamValue.toLowerCase()) as any,
         pen: normalize(getField(rawData, 'pen')),
         email,
         dateOfBirth: dobDateStr,
@@ -183,7 +194,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         officeLocation: officeLocationValue,
         createUserAccount: false,
     };
-  }, [initialData, allUsers, formDesignationOptions]);
+  }, [initialData, allUsers, formDesignationOptions, formDesignationMalayalamOptions]);
 
   const form = useForm<StaffMemberFormData>({
     resolver: zodResolver(StaffMemberFormDataSchema),
@@ -316,7 +327,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="max-h-80">
-                        {designationMalayalamOptions.map(option => (
+                        {formDesignationMalayalamOptions.map(option => (
                           <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}
                       </SelectContent>
