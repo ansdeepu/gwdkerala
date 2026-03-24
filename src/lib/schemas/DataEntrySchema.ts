@@ -1,6 +1,8 @@
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
+import { RigRegistrationSchema, ApplicationFeeSchema, OwnerInfoSchema } from './eTenderSchema';
+import type { RigRegistration, ApplicationFee, OwnerInfo } from './eTenderSchema';
 
 export const optionalNumber = (errorMessage: string = "Must be a valid number.") =>
   z.preprocess((val) => {
@@ -186,7 +188,7 @@ export type PaymentDetailFormData = z.infer<typeof PaymentDetailSchema>;
 export const siteWorkStatusOptions = ["Under Process", "Addl. AS Awaited", "To be Refunded", "Awaiting Dept. Rig", "To be Tendered", "TS Pending", "Tendered", "Selection Notice Issued", "Work Order Issued", "Work Initiated", "Work in Progress", "Work Failed", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "Completed", "VES Pending"] as const;
 export type SiteWorkStatus = typeof siteWorkStatusOptions[number];
 
-export const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Work Completed"] as const;
+export const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
 export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
 
 export const fileStatusOptions = ["File Under Process", "Rig Accessibility Inspection", "Technical Sanction", "Tender Process", "Work Initiated", "Fully Completed", "Partially Completed", "Completed Except Disputed", "Partially Completed Except Disputed", "Fully Disputed", "To be Refunded", "Bill Preparation", "Payments", "Utilization Certificate", "File Closed"] as const;
@@ -277,7 +279,7 @@ export const SiteDetailSchema = z.object({
   supervisorName: z.string().optional().nullable(),
   supervisorDesignation: z.string().optional().nullable(),
   totalExpenditure: optionalNumber(),
-  workStatus: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(siteWorkStatusOptions).optional()),
+  workStatus: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(siteWorkStatusOptions, { required_error: "Work Status is required." })),
   implementationRemarks: z.string().optional().nullable().default(""),
   workRemarks: z.string().optional().nullable().default(""),
   surveyOB: z.string().optional().nullable(),
@@ -355,9 +357,6 @@ export type DataEntryFormData = z.infer<typeof DataEntrySchema>;
 
 // The schemas below were originally in this file and are kept for compatibility.
 // In the future, they should be moved to their own specialized files.
-
-import { RigRegistrationSchema, ApplicationFeeSchema, OwnerInfoSchema } from './eTenderSchema';
-import type { RigRegistration, ApplicationFee, OwnerInfo } from './eTenderSchema';
 
 export const UpdatePasswordSchema = z.object({
   currentPassword: z.string().min(1, { message: "Current password is required." }),
@@ -521,3 +520,93 @@ export const RigCompressorSchema = z.object({
     }
 });
 export type RigCompressor = z.infer<typeof RigCompressorSchema>;
+
+    
+// Staff Schemas
+export const staffStatusOptions = ["Active", "Transferred", "Retired", "Pending Transfer"] as const;
+export type StaffStatusType = typeof staffStatusOptions[number];
+
+const dateOrString = z.union([
+  z.date(),
+  z.string().refine(val => !val || !isNaN(Date.parse(val)), {
+    message: "Invalid date format"
+  })
+]);
+
+const BaseStaffMemberFormDataSchema = z.object({
+  photoUrl: z.string().url({ message: "Please enter a valid image URL." }).optional().or(z.literal("")),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  nameMalayalam: z.string().optional().nullable(),
+  designation: z.string().optional().nullable(),
+  designationMalayalam: z.string().optional().nullable(),
+  pen: z.string().min(1, { message: "PEN is required." }),
+  email: z.string().email().optional().nullable(),
+  dateOfBirth: z.string().optional().nullable(),
+  serviceStartDate: z.string().optional().nullable(),
+  serviceEndDate: z.string().optional().nullable(),
+  phoneNo: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }).optional().or(z.literal("")),
+  roles: z.string().optional().nullable(),
+  status: z.preprocess((val) => (val === "" ? undefined : val), z.enum(staffStatusOptions).default('Active')),
+  remarks: z.string().optional().default(""),
+  officeLocation: z.string().optional().nullable(),
+  
+  // Fields for creating a user account
+  createUserAccount: z.boolean().optional().default(false),
+  password: z.string().optional().nullable(),
+});
+
+export const StaffMemberFormDataSchema = BaseStaffMemberFormDataSchema.superRefine((data, ctx) => {
+    if (data.createUserAccount) {
+      if (!data.email || !z.string().email().safeParse(data.email).success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "A valid email is required.",
+          path: ["email"],
+        });
+      }
+    }
+});
+export type StaffMemberFormData = z.infer<typeof StaffMemberFormDataSchema>;
+
+
+export const StaffMemberSchema = BaseStaffMemberFormDataSchema.extend({
+  id: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  status: z.enum(staffStatusOptions).default('Active'),
+  remarks: z.string().optional().default(""),
+  dateOfBirth: dateOrString.nullable().optional(),
+  serviceStartDate: dateOrString.nullable().optional(),
+  serviceEndDate: dateOrString.nullable().optional(),
+});
+export type StaffMember = z.infer<typeof StaffMemberSchema>;
+
+export const gwdRateCategories = [
+    "GW Investigation",
+    "Borewell Construction 110 mm dia (4.5\")",
+    "Borewell Construction 150 mm dia (6\")",
+    "Tubewell Construction 150 mm dia (6\")",
+    "Tubewell Construction 200 mm dia (8\")",
+    "Rotary cum DTH Drilling",
+    "Filter Point Well Construction 110 mm (4.5\")",
+    "Well Developing",
+    "Logging & Pumping Test"
+] as const;
+export type GwdRateCategory = typeof gwdRateCategories[number];
+
+// GWD Rates Schemas
+export const GwdRateItemFormDataSchema = z.object({
+  itemName: z.string().min(1, 'Item name is required.'),
+  rate: z.coerce.number({ invalid_type_error: 'Rate must be a number.'}).min(0, 'Rate cannot be negative.'),
+  category: z.enum(gwdRateCategories).optional(),
+});
+export type GwdRateItemFormData = z.infer<typeof GwdRateItemFormDataSchema>;
+
+export const GwdRateItemSchema = GwdRateItemFormDataSchema.extend({
+  id: z.string(),
+  order: z.number().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  category: z.enum(gwdRateCategories).optional(),
+});
+export type GwdRateItem = z.infer<typeof GwdRateItemSchema>;
