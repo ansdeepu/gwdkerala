@@ -514,6 +514,21 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
         dateOfPayment: formatDateForInput(initialData?.dateOfPayment),
       },
     });
+
+    const { watch } = form;
+
+    const watchedValues = watch([
+        "revenueHead",
+        "contractorsPayment",
+        "gst",
+        "incomeTax",
+        "kbcwb",
+        "refundToParty"
+    ]);
+
+    const totalAmount = useMemo(() => {
+        return watchedValues.reduce((sum, value) => sum + (Number(value) || 0), 0);
+    }, [watchedValues]);
     
     const handleConfirmSubmit = (data: PaymentDetailFormData) => {
         onConfirm(data);
@@ -574,7 +589,14 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                               <FormField name="kbcwb" control={form.control} render={({ field }) => <FormItem><FormLabel>KBCWB (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
                               <FormField name="refundToParty" control={form.control} render={({ field }) => <FormItem><FormLabel>Refund to Party (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
                           </div>
-                          <Separator/>
+                          <Separator />
+                          <div className="flex justify-between items-center p-2 rounded-md bg-muted">
+                            <span className="font-semibold text-lg">Total</span>
+                            <span className="font-semibold text-lg font-mono">
+                                ₹{totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <Separator />
                           <FormField name="paymentRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this payment entry..." /></FormControl><FormMessage /></FormItem>} />
                       </div>
                   </ScrollArea>
@@ -606,7 +628,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const [dialogState, setDialogState] = useState<{ type: null | 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite'; data: any, isView?: boolean }>({ type: null, data: null, isView: false });
   const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'reappropriation' | 'payment' | 'site'; index: number } | null>(null);
 
-  const isEditor = userRole === 'admin' || userRole === 'engineer' || userRole === 'scientist';
+  const isEditor = userRole === 'admin' || userRole === 'engineer';
   const isSupervisor = userRole === 'supervisor';
   const isViewer = userRole === 'viewer';
   const isEditing = !!fileIdToEdit;
@@ -740,6 +762,24 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     setValue("overallBalance", totalRemittance + totalReappCredit - totalPayment - totalReappDebit);
     
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
+
+    const paymentFieldsToDisplay = useMemo(() => {
+        const fields: { key: keyof PaymentDetailFormData; label: string }[] = [
+          { key: 'revenueHead', label: 'Revenue Head (₹)' },
+          { key: 'contractorsPayment', label: "Contractor's (₹)" },
+          { key: 'gst', label: 'GST (₹)' },
+          { key: 'incomeTax', label: 'Income Tax (₹)' },
+          { key: 'kbcwb', label: 'KBCWB (₹)' },
+          { key: 'refundToParty', label: 'Refund to Party (₹)' }
+        ];
+        
+        return fields.filter(field => 
+            paymentFields.some(payment => {
+                const value = payment[field.key];
+                return typeof value === 'number' && value > 0;
+            })
+        );
+    }, [paymentFields]);
 
   const onInvalid = (errors: FieldErrors<DataEntryFormData>) => {
     const messages = getFormattedErrorMessages(errors);
@@ -963,11 +1003,17 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             </Accordion>
     
             <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group" disabled={isFormDisabled}><div className="flex justify-between items-center w-full"><div className={cn("text-left flex-1", getStatusColorClass(site.workStatus))}>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"} ({site.purpose || 'N/A'})</div><div className="flex items-center space-x-1 mr-2"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>View / Edit Site</p></TooltipContent></Tooltip></TooltipProvider>{!isFormDisabled && !isViewer && (<><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCopySite(index); }}><Copy className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Copy Site</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('reorderSite', getValues('siteDetails')); }}><ArrowUpDown className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Reorder Sites</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Delete Site</p></TooltipContent></Tooltip></TooltipProvider></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /><DetailRow label="Contractor" value={site.contractorName} /><DetailRow label="Supervisor" value={site.supervisorName} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
-            <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">5. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead><TableHead className="text-right">Contractor's (₹)</TableHead><TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (
+            <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">5. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead>
+                {paymentFieldsToDisplay.map(field => (
+                    <TableHead key={field.key} className="text-right">{field.label}</TableHead>
+                ))}
+            <TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (
                 <TableRow key={item.id} className={item.remittanceId ? 'bg-muted/50' : ''}>
                     <TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell>
                     <TableCell>{item.paymentAccount}</TableCell>
-                    <TableCell className="text-right">{(Number(item.contractorsPayment) || 0).toLocaleString('en-IN')}</TableCell>
+                    {paymentFieldsToDisplay.map(field => (
+                        <TableCell key={field.key} className="text-right">{(Number((item as any)[field.key]) || 0).toLocaleString('en-IN')}</TableCell>
+                    ))}
                     <TableCell className="text-right">{(Number(item.totalPaymentPerEntry) || 0).toLocaleString('en-IN')}</TableCell>
                     <TableCell>{item.paymentRemarks}</TableCell>
                     {isEditor && !isFormDisabled && (
@@ -991,7 +1037,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                             </div>
                         </TableCell>
                     )}
-                </TableRow>)) : <TableRow><TableCell colSpan={6} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 5 : 4} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
+                </TableRow>)) : <TableRow><TableCell colSpan={4 + paymentFieldsToDisplay.length + (isEditor && !isFormDisabled ? 1 : 0)} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={2 + paymentFieldsToDisplay.length} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell><TableCell colSpan={isEditor && !isFormDisabled ? 2 : 1}></TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
             <Card><CardHeader><CardTitle className="text-xl">6. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2">
                 <div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
                 <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>
