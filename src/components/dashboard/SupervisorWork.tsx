@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { DataEntryFormData, SitePurpose, StaffMember, Designation, SiteWorkStatus } from '@/lib/schemas';
+import type { DataEntryFormData, SitePurpose, StaffMember, Designation, SiteWorkStatus, ArsStatus } from '@/lib/schemas';
+import type { ArsEntry } from '@/hooks/useArsEntries';
 import { sitePurposeOptions } from '@/lib/schemas';
 import type { UserProfile } from '@/hooks/useAuth';
 import { Users } from 'lucide-react';
@@ -14,12 +15,13 @@ import { Users } from 'lucide-react';
 
 interface SupervisorWorkProps {
   allFileEntries: DataEntryFormData[];
+  allArsEntries: ArsEntry[];
   allUsers: UserProfile[];
   staffMembers: StaffMember[];
   onOpenDialog: (data: any[], title: string, columns: any[], type: 'month') => void;
 }
 
-export default function SupervisorWork({ allFileEntries, allUsers, staffMembers, onOpenDialog }: SupervisorWorkProps) {
+export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers, staffMembers, onOpenDialog }: SupervisorWorkProps) {
   const [selectedSupervisorId, setSelectedSupervisorId] = useState<string | undefined>(undefined);
 
   const supervisorList = useMemo(() => {
@@ -54,6 +56,7 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
     const ongoingWorkStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated", "Pending", "VES Pending"];
     let works: Array<{ fileNo: string; applicantName: string; siteName: string; workStatus: string; purpose?: SitePurpose; supervisorName?: string | null }> = [];
 
+    // Process file entries
     for (const entry of allFileEntries) {
         entry.siteDetails?.forEach(site => {
             const isAssignedSupervisor = site.supervisorUid === selectedSupervisorId;
@@ -73,8 +76,30 @@ export default function SupervisorWork({ allFileEntries, allUsers, staffMembers,
             }
         });
     }
+
+    // Process ARS entries
+    const arsOngoingWorkStatuses: ArsStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated"];
+    for (const arsEntry of allArsEntries) {
+        const isAssigned = arsEntry.supervisorUid === selectedSupervisorId;
+        const isOngoing = arsEntry.arsStatus && arsOngoingWorkStatuses.includes(arsEntry.arsStatus);
+
+        if (isAssigned && isOngoing) {
+            works.push({
+                fileNo: arsEntry.fileNo || 'N/A',
+                applicantName: 'ARS Scheme',
+                siteName: arsEntry.nameOfSite || 'Unnamed ARS Site',
+                workStatus: arsEntry.arsStatus!,
+                purpose: 'ARS',
+                supervisorName: arsEntry.supervisorName,
+            });
+            if(byPurpose['ARS'] !== undefined) {
+                byPurpose['ARS']++;
+            }
+        }
+    }
+    
     return { works, byPurpose, totalCount: works.length };
-  }, [selectedSupervisorId, allFileEntries, supervisorList]);
+  }, [selectedSupervisorId, allFileEntries, allArsEntries, supervisorList]);
 
   const handleSupervisorWorkClick = (purpose: string) => {
     if (!supervisorOngoingWorks || supervisorOngoingWorks.totalCount === 0) return;
