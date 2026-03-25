@@ -1,8 +1,39 @@
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
-import { ApplicationFeeSchema, OwnerInfoSchema, RigRegistrationSchema } from './eTenderSchema';
+import { ApplicationFeeSchema, OwnerInfoSchema, RigRegistrationSchema, agencyRigTypeOptions } from './eTenderSchema';
 import type { RigRegistration, ApplicationFee, OwnerInfo } from './eTenderSchema';
+
+// --- User & Auth Schemas ---
+export const LoginSchema = z.object({
+  email: z.string().email({ message: 'Invalid email address.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+});
+export type LoginFormData = z.infer<typeof LoginSchema>;
+
+export const RegisterSchema = z.object({
+  name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Invalid email address.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match.",
+  path: ['confirmPassword'],
+});
+export type RegisterFormData = z.infer<typeof RegisterSchema>;
+
+export const NewUserByAdminSchema = z.object({
+  designation: z.string().min(1, "Please select a designation."),
+  staffId: z.string({ required_error: "Please select a staff member." }).min(1, "Please select a staff member."),
+  email: z.string().email({ message: 'Invalid email address.' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters.' }),
+});
+export type NewUserByAdminFormData = z.infer<typeof NewUserByAdminSchema>;
+
+export const userRoleOptions = ['superAdmin', 'admin', 'scientist', 'engineer', 'investigator', 'supervisor', 'viewer'] as const;
+export type UserRole = typeof userRoleOptions[number];
+// --- End User & Auth Schemas ---
+
 
 export const optionalNumber = (errorMessage: string = "Must be a valid number.") =>
   z.preprocess((val) => {
@@ -111,6 +142,96 @@ export const designationMalayalamOptions = [
     "പിടിഎസ്"
 ] as const;
 export type DesignationMalayalam = typeof designationMalayalamOptions[number];
+
+export const staffStatusOptions = ["Active", "Transferred", "Retired", "Pending Transfer"] as const;
+export type StaffStatusType = typeof staffStatusOptions[number];
+
+const optionalStringSchema = z.string().optional().nullable();
+
+export const StaffMemberFormDataSchema = z.object({
+  name: z.string().min(1, "Name is required."),
+  nameMalayalam: optionalStringSchema,
+  designation: z.enum(designationOptions),
+  designationMalayalam: z.enum(designationMalayalamOptions).optional().nullable(),
+  pen: optionalStringSchema,
+  email: z.string().email().optional().or(z.literal('')),
+  dateOfBirth: optionalDateSchema,
+  serviceStartDate: optionalDateSchema,
+  serviceEndDate: optionalDateSchema,
+  phoneNo: optionalStringSchema,
+  roles: optionalStringSchema,
+  photoUrl: z.string().url().optional().or(z.literal('')),
+  status: z.enum(staffStatusOptions),
+  remarks: optionalStringSchema,
+  officeLocation: z.string().optional().nullable(),
+  createUserAccount: z.boolean().optional(),
+});
+export type StaffMemberFormData = z.infer<typeof StaffMemberFormDataSchema>;
+
+export const StaffMemberSchema = StaffMemberFormDataSchema.extend({
+  id: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  targetOffice: optionalStringSchema, // for transfers
+});
+export type StaffMember = z.infer<typeof StaffMemberSchema>;
+
+export const rcStatusOptions = ["Active", "Garaged"] as const;
+export type RCStatus = typeof rcStatusOptions[number];
+
+export const rigStatusOptions = ["Active", "Garaged"] as const;
+export type RigStatus = typeof rigStatusOptions[number];
+
+export const DepartmentVehicleSchema = z.object({
+  id: z.string().optional(),
+  registrationNumber: z.string().min(1, "Registration number is required."),
+  model: optionalStringSchema,
+  typeOfVehicle: optionalStringSchema,
+  vehicleClass: optionalStringSchema,
+  rcStatus: z.enum(rcStatusOptions).optional(),
+  fuelConsumptionRate: optionalStringSchema,
+  registrationDate: optionalDateSchema,
+  fitnessExpiry: optionalDateSchema,
+  taxExpiry: optionalDateSchema,
+  insuranceExpiry: optionalDateSchema,
+  pollutionExpiry: optionalDateSchema,
+  fuelTestExpiry: optionalDateSchema,
+});
+export type DepartmentVehicle = z.infer<typeof DepartmentVehicleSchema>;
+
+export const HiredVehicleSchema = z.object({
+  id: z.string().optional(),
+  registrationNumber: z.string().min(1, "Registration number is required."),
+  model: optionalStringSchema,
+  ownerName: optionalStringSchema,
+  ownerAddress: optionalStringSchema,
+  agreementValidity: optionalDateSchema,
+  vehicleClass: optionalStringSchema,
+  registrationDate: optionalDateSchema,
+  rcStatus: z.enum(rcStatusOptions).optional(),
+  hireCharges: optionalNumber(),
+  fitnessExpiry: optionalDateSchema,
+  taxExpiry: optionalDateSchema,
+  insuranceExpiry: optionalDateSchema,
+  pollutionExpiry: optionalDateSchema,
+  permitExpiry: optionalDateSchema,
+});
+export type HiredVehicle = z.infer<typeof HiredVehicleSchema>;
+
+export const RigCompressorSchema = z.object({
+  id: z.string().optional(),
+  typeOfRigUnit: z.string().min(1, "Type of rig unit is required."),
+  status: z.enum(rigStatusOptions).optional(),
+  fuelConsumption: optionalStringSchema,
+  rigVehicleRegNo: optionalStringSchema,
+  compressorVehicleRegNo: optionalStringSchema,
+  supportingVehicleRegNo: optionalStringSchema,
+  compressorDetails: optionalStringSchema,
+  remarks: optionalStringSchema,
+  isExternal: z.boolean().optional().default(false),
+  externalOffice: optionalStringSchema,
+});
+export type RigCompressor = z.infer<typeof RigCompressorSchema>;
 
 export const PUBLIC_DEPOSIT_APPLICATION_TYPES = ["LSGD", "Government_Institution", "Government_Water_Authority", "Government_PMKSY", "Government_Others", "Other_Schemes"] as const;
 export const PRIVATE_APPLICATION_TYPES = ["Private_Domestic", "Private_Irrigation", "Private_Institution", "Private_Industry"] as const;
@@ -238,8 +359,6 @@ export type SiteConditions = typeof siteConditionsOptions[number];
 
 export const typeOfWellOptions = ["Open Well", "Pond", "Bore Well", "Tube Well", "Filter Point Well"] as const;
 export type TypeOfWell = typeof typeOfWellOptions[number];
-
-const optionalStringSchema = z.string().optional().nullable();
 
 export const arsWorkStatusOptions = [
     "Proposal Submitted", 

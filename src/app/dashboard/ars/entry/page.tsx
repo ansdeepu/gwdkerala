@@ -15,7 +15,7 @@ import {
     ArsEntrySchema,
     type ArsEntryFormData, 
     arsTypeOfSchemeOptions, 
-    arsStatusOptions, 
+    arsWorkStatusOptions, 
     constituencyOptions,
     type Constituency,
     type StaffMember,
@@ -327,7 +327,7 @@ export default function ArsEntryPage() {
                     <CardHeader><CardTitle>4. Work Status & Completion</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <FormField name="arsStatus" control={control} render={({ field }) => ( <FormItem><FormLabel>Work Status *</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select status"/></SelectTrigger></FormControl><SelectContent>{arsStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
+                            <FormField name="arsStatus" control={control} render={({ field }) => ( <FormItem><FormLabel>Work Status *</FormLabel><Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select status"/></SelectTrigger></FormControl><SelectContent>{arsWorkStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem> )}/>
                             <FormField name="dateOfCompletion" control={control} render={({ field }) => ( <FormItem><FormLabel>Date of Completion {watchedArsStatus === 'Work Completed' && <span className="text-destructive">*</span>}</FormLabel><FormControl><Input type="date" {...field} value={formatDateForInput(field.value)} readOnly={isReadOnly}/></FormControl><FormMessage/></FormItem> )}/>
                             <FormField name="totalExpenditure" control={control} render={({ field }) => ( <FormItem><FormLabel>Total Expenditure (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isReadOnly} /></FormControl><FormMessage/></FormItem> )}/>
                         </div>

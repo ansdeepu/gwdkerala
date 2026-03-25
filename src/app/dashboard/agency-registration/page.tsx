@@ -2030,7 +2030,7 @@ function RigDetailsDialog({ form, rigIndex, onConfirm, onCancel, isAdding }: { f
                                     <FormItem><FormLabel>Rig Reg. No.</FormLabel><Input value={localRigData.rigRegistrationNo ?? ""} onChange={e => setLocalRigData(d => ({ ...d, rigRegistrationNo: e.target.value }))} /></FormItem>
                                     <FormItem>
                                         <FormLabel>Type of Rig</FormLabel>
-                                        <Select onValueChange={(value) => setLocalRigData(d => ({ ...d, typeOfRig: value as RigType }))} value={localRigData.typeOfRig}>
+                                        <Select onValueChange={(value) => setLocalRigData(d => ({ ...d, typeOfRig: value as RigType | null }))} value={localRigData.typeOfRig ?? ''}>
                                             <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                                             <SelectContent>{rigTypeOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
                                         </Select>
