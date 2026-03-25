@@ -1,3 +1,4 @@
+
 // src/hooks/useFileEntries.ts
 "use client";
 
@@ -89,22 +90,29 @@ export function useFileEntries() {
         return;
       }
       setIsLoading(true);
+      
+      const isFieldStaff = user.role === 'supervisor' || user.role === 'investigator';
 
-      const isSupervisor = user.role === 'supervisor';
-
-      if (isSupervisor && user.uid) {
+      if (isFieldStaff && user.uid) {
         const filteredEntries: DataEntryFormData[] = allFileEntries.filter(entry => {
             const isAssigned = entry.siteDetails?.some(site => {
-                const isAssignedByUid = site.supervisorUid === user.uid;
-                const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
-                return isAssignedByUid || isAssignedByName;
+                if (user.role === 'supervisor') {
+                    const isAssignedByUid = site.supervisorUid === user.uid;
+                    const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
+                    return isAssignedByUid || isAssignedByName;
+                }
+                if (user.role === 'investigator') {
+                    // Investigators are matched by name to either of the investigator fields
+                    return site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
+                }
+                return false;
             });
             const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
             return isAssigned || hasPendingUpdate;
         });
         setFileEntries(filteredEntries);
       } else {
-        // For other roles (Admin, Engineer, Scientist, Viewer, Investigator), show all entries.
+        // For other roles (Admin, Engineer, Scientist, Viewer), show all entries.
         setFileEntries(allFileEntries);
       }
 
@@ -250,7 +258,7 @@ export function useFileEntries() {
                   const isAssignedByUid = site.supervisorUid === user.uid;
                   const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
                   return isAssignedByUid || isAssignedByName;
-              } else {
+              } else { // Investigator
                   return site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
               }
           });

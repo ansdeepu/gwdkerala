@@ -80,15 +80,9 @@ export function useArsEntries() {
       // VISIBILITY LOGIC FOR FIELD STAFF
       if (user.role === "supervisor" || user.role === "investigator") {
         finalEntries = finalEntries.filter((entry) => {
-            // Both roles should only see schemes assigned to their UID
-            // (Note: Investigators typically aren't assigned to ARS, but the logic is enforced)
             const isAssigned = entry.supervisorUid === user.uid;
-    
-            // Show only files that are actionable/ongoing for them
-            const actionableStatuses: ArsStatus[] = ["Work Order Issued", "Work in Progress"];
-            const isActionable = actionableStatuses.includes(entry.arsStatus ?? "");
-    
-            return isAssigned && isActionable;
+            // Removed the isActionable filter to show all assigned works, not just ongoing.
+            return isAssigned;
         });
       }
       
