@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/page.tsx
 "use client";
 
@@ -314,6 +315,7 @@ export default function SuperAdminDashboardPage() {
         <div id="supervisor-work" className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <SupervisorWork
             allFileEntries={allFileEntries}
+            allArsEntries={allArsEntries}
             allUsers={allUsers}
             staffMembers={allStaffMembers}
             onOpenDialog={handleOpenDialog}
