@@ -180,7 +180,7 @@ export default function DataEntryPage() {
                 const pendingUpdate = await getPendingUpdateById(approveUpdateId);
                 if (pendingUpdate) {
                     let mergedData = JSON.parse(JSON.stringify(originalEntry));
-                    const updatedSitesMap = new Map(pendingUpdate.updatedSiteDetails.map(site => [site.nameOfSite, site]));
+                    const updatedSitesMap = new Map(pendingUpdate.updatedSiteDetails.map((site: any) => [site.nameOfSite, site]));
                     mergedData.siteDetails = mergedData.siteDetails?.map((originalSite: any) => updatedSitesMap.get(originalSite.nameOfSite) || originalSite) || [];
                     dataForForm = mergedData;
                 }
