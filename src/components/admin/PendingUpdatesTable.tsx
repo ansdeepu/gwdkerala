@@ -100,7 +100,7 @@ const UpdateTable = ({
                   const isUnassigned = update.status === 'supervisor-unassigned';
                   const parentFile = isArsTable ? arsEntries.find(a => a.id === update.arsId) : fileEntries.find(f => f.fileNo === update.fileNo);
                   const applicantName = update.isArsUpdate ? 'N/A' : (parentFile as DataEntryFormData)?.applicantName || 'N/A';
-                  const siteName = update.updatedSiteDetails.map(s => (s as SiteDetailFormData).nameOfSite).join(', ');
+                  const siteName = update.updatedSiteDetails.map((s: SiteDetailFormData | ArsEntryFormData) => s.nameOfSite).join(', ');
                   
                   let purpose: string;
                   if (update.isArsUpdate) {
