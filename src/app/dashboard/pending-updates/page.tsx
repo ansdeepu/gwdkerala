@@ -1,4 +1,3 @@
-
 // src/app/dashboard/pending-updates/page.tsx
 "use client";
 
@@ -107,7 +106,7 @@ const UpdateTable = ({
                   const isUnassigned = update.status === 'supervisor-unassigned';
                   const parentFile = isArsTable ? arsEntries.find(a => a.id === update.arsId) : fileEntries.find(f => f.fileNo === update.fileNo);
                   const applicantName = update.isArsUpdate ? 'N/A' : (parentFile as DataEntryFormData)?.applicantName || 'N/A';
-                  const siteNames = update.updatedSiteDetails.map(s => (s as SiteDetailFormData).nameOfSite).join(', ');
+                  const siteNames = update.updatedSiteDetails.map((s: SiteDetailFormData | ArsEntryFormData) => s.nameOfSite).join(', ');
                   
                   let purposeDisplay: string;
                   if (update.isArsUpdate) {
@@ -115,7 +114,7 @@ const UpdateTable = ({
                     purposeDisplay = arsDetail?.arsTypeOfScheme || 'N/A';
                   } else {
                     const siteDetails = update.updatedSiteDetails as SiteDetailFormData[];
-                    purposeDisplay = siteDetails.map(s => s.purpose || 'N/A').join(', ');
+                    purposeDisplay = siteDetails.map((s: SiteDetailFormData) => s.purpose || 'N/A').join(', ');
                   }
 
                   const isRejected = update.status === 'rejected';
