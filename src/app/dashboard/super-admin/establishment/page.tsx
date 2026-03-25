@@ -219,7 +219,7 @@ export default function SuperAdminEstablishmentPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Designations</SelectItem>
-                  {designationOptions.filter(d => d !== "District Officer").map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  {designationOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Button onClick={handleAddNewStaff} size="sm" className="w-full sm:w-auto">
