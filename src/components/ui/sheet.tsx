@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -11,11 +12,7 @@ const Sheet = SheetPrimitive.Root
 
 const SheetTrigger = SheetPrimitive.Trigger
 
-const SheetClose = React.forwardRef<
-  React.ElementRef<typeof SheetPrimitive.Close>,
-  React.ComponentPropsWithoutRef<typeof SheetPrimitive.Close>
->((props, ref) => <SheetPrimitive.Close ref={ref} {...props} />);
-SheetClose.displayName = SheetPrimitive.Close.displayName;
+const SheetClose = SheetPrimitive.Close
 
 
 const SheetPortal = SheetPrimitive.Portal

@@ -34,6 +34,7 @@ export type ApplicationFee = z.infer<typeof ApplicationFeeSchema>;
 
 export const agencyRigTypeOptions = ["Hand Bore", "Filter Point Rig", "Calyx Rig", "Rotary Rig", "DTH Rig", "Rotary cum DTH Rig"] as const;
 export type AgencyRigType = typeof agencyRigTypeOptions[number];
+export type RigType = AgencyRigType;
 
 export const RigRenewalSchema = z.object({
     id: z.string(),
