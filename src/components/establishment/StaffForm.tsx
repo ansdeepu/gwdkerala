@@ -177,9 +177,9 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         designationMalayalam: formDesignationMalayalamOptions.find(o => o.toLowerCase().trim() === designationMalayalamValue.toLowerCase()) as any,
         pen: normalize(getField(rawData, 'pen')),
         email,
-        dateOfBirth: dob as any,
-        serviceStartDate: serviceStartDate as any,
-        serviceEndDate: serviceEndDate as any,
+        dateOfBirth: dob,
+        serviceStartDate: serviceStartDate,
+        serviceEndDate: serviceEndDate,
         phoneNo: normalize(getField(rawData, 'phoneNo')),
         roles: normalize(getField(rawData, 'roles')),
         photoUrl: normalize(getField(rawData, 'photoUrl')),
@@ -260,7 +260,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Full Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter full name" {...field} readOnly={isViewer} />
+                      <Input placeholder="Enter full name" {...field} value={field.value ?? ''} readOnly={isViewer} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -330,7 +330,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>PEN</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter PEN" {...field} readOnly={isViewer} />
+                      <Input placeholder="Enter PEN" {...field} value={field.value ?? ''} readOnly={isViewer} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
