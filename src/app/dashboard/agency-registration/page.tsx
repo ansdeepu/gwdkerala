@@ -2094,7 +2094,7 @@ function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialDat
                         <FormField name="name" control={form.control} render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Partner Name & Address</FormLabel>
-                                <FormControl><Textarea placeholder="Enter name and address" {...field} /></FormControl>
+                                <FormControl><Textarea placeholder="Enter name and address" {...field} value={field.value ?? ''} /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}/>
@@ -2102,14 +2102,14 @@ function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialDat
                             <FormField name="mobile" control={form.control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Mobile No.</FormLabel>
-                                    <FormControl><Input placeholder="Enter mobile number" {...field} /></FormControl>
+                                    <FormControl><Input placeholder="Enter mobile number" {...field} value={field.value ?? ''} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}/>
                             <FormField name="secondaryMobile" control={form.control} render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Secondary Mobile No.</FormLabel>
-                                    <FormControl><Input placeholder="Enter secondary mobile" {...field} /></FormControl>
+                                    <FormControl><Input placeholder="Enter secondary mobile" {...field} value={field.value ?? ''} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}/>
