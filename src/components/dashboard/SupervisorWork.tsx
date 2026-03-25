@@ -120,7 +120,7 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" />Supervisor's Ongoing Work</CardTitle>
+        <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" />Supervisor&apos;s Ongoing Work</CardTitle>
         <CardDescription>Select a staff member to view their assigned ongoing projects by category.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col md:flex-row gap-6">

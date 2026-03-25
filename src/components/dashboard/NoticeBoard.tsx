@@ -1,4 +1,3 @@
-
 // src/components/dashboard/NoticeBoard.tsx
 "use client";
 
@@ -38,8 +37,14 @@ const getColorClass = (nameOrEmail: string): string => {
 };
 
 const getInitials = (name?: string) => {
-  if (!name) return 'U';
-  return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+  if (!name || name.trim() === '') return 'U';
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(n => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 };
 
 interface NoticeBoardProps {
@@ -135,7 +140,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
                       <AvatarFallback className="text-4xl">{getInitials(selectedBirthday?.name)}</AvatarFallback>
                     </Avatar>
                     <h2 className="text-2xl font-bold text-primary">Happy Birthday!</h2>
-                    <p className="mt-4 text-foreground">Wishing you a fantastic day filled with joy and celebration!</p>
+                    <p className="mt-4 text-foreground">{`Wishing you a fantastic day filled with joy and celebration!`}</p>
                 </div>
             </div>
           </DialogContent>

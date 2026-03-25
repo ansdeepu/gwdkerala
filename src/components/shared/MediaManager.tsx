@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { ImagePlus, Video, PlusCircle, Pencil, Trash2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import Image from 'next/image';
 
 const MediaManager = ({
   title,
@@ -101,11 +102,11 @@ const MediaManager = ({
                 className="w-full h-full flex items-center justify-center hover:opacity-80 transition-opacity"
               >
                 {type === 'image' ? (
-                  <img src={field.url} alt={field.description || ''} className="w-full h-full object-cover" />
+                  <Image src={field.url} alt={field.description || ''} className="object-cover" fill sizes="20vw" />
                 ) : (
                   <div className="w-full h-full relative">
                     {getYouTubeThumbnail(field.url) ? (
-                      <img src={getYouTubeThumbnail(field.url)!} alt={field.description || ''} className="w-full h-full object-cover" />
+                      <Image src={getYouTubeThumbnail(field.url)!} alt={field.description || ''} className="object-cover" fill sizes="20vw"/>
                     ) : (
                       <video src={field.url} className="w-full h-full object-cover" preload="metadata" />
                     )}
@@ -166,10 +167,12 @@ const MediaManager = ({
               {lightboxIndex !== null && fields[lightboxIndex] && (
                 <>
                   {type === 'image' ? (
-                    <img
+                    <Image
                       src={fields[lightboxIndex].url}
                       alt={fields[lightboxIndex].description || ''}
-                      className="max-w-full max-h-full object-contain shadow-2xl"
+                      className="object-contain shadow-2xl"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   ) : (
                     <div className="w-full aspect-video bg-black flex items-center justify-center overflow-hidden rounded-lg shadow-2xl">

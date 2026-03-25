@@ -401,54 +401,52 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
     const isLoading = Object.values(loadingStates).some(Boolean);
 
     const useAddVehicle = <T extends {}>(collectionName: string) => {
-      return useCallback(async (data: T) => {
-          if (!user) throw new Error("User must be logged in.");
-          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-          if (!officeLoc) throw new Error("An office location must be selected to add staff.");
-          const collectionPath = `offices/${officeLoc.toLowerCase()}/${collectionName}`;
-          const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-          if ('id' in payload) delete (payload as any).id;
-          await addDoc(collection(db, collectionPath), payload);
-          toast({ title: 'Item Added', description: 'The new item has been saved.' });
-      }, [user, selectedOffice]);
-    };
-  
-    const useUpdateVehicle = <T extends { id?: string }>(collectionName: string) => {
-      return useCallback(async (data: T) => {
-          if (!user) throw new Error("User must be logged in.");
-          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-          if (!officeLoc) throw new Error("User must have an office location.");
-          if (!data.id) throw new Error("Document ID is missing for update.");
-          const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, data.id);
-          const payload = { ...data, updatedAt: serverTimestamp() };
-          if ('id' in payload) delete (payload as any).id;
-          await updateDoc(docRef, payload);
-          toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
-      }, [user, selectedOffice]);
-    };
-  
-    const useDeleteVehicle = (collectionName: string) => {
-      return useCallback(async (id: string, name: string) => {
-          if (!user) throw new Error("User must be logged in.");
-          const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-          if (!officeLoc) throw new Error("User must have an office location.");
-          const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, id);
-          deleteDoc(docRef)
-              .then(() => {
-                  toast({ title: 'Item Deleted', description: `${name} has been removed.` });
-              })
-              .catch(error => {
-                  if (error.code === 'permission-denied') {
-                      errorEmitter.emit('permission-error', new FirestorePermissionError({
-                          path: docRef.path,
-                          operation: 'delete',
-                      }));
-                  } else {
-                      toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
-                  }
-              });
-      }, [user, selectedOffice]);
-    };
+        return useCallback(async (data: T) => {
+            if (!user) throw new Error("User must be logged in.");
+            const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+            if (!officeLoc) throw new Error("An office location must be selected to add staff.");
+            const collectionPath = `offices/${officeLoc.toLowerCase()}/${collectionName}`;
+            const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+            if ('id' in payload) delete (payload as any).id;
+            await addDoc(collection(db, collectionPath), payload);
+        }, [user, selectedOffice, collectionName]);
+      };
+    
+      const useUpdateVehicle = <T extends { id?: string }>(collectionName: string) => {
+        return useCallback(async (data: T) => {
+            if (!user) throw new Error("User must be logged in.");
+            const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+            if (!officeLoc) throw new Error("User must have an office location.");
+            if (!data.id) throw new Error("Document ID is missing for update.");
+            const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, data.id);
+            const payload = { ...data, updatedAt: serverTimestamp() };
+            if ('id' in payload) delete (payload as any).id;
+            await updateDoc(docRef, payload);
+        }, [user, selectedOffice, collectionName]);
+      };
+    
+      const useDeleteVehicle = (collectionName: string) => {
+        return useCallback(async (id: string, name: string) => {
+            if (!user) throw new Error("User must be logged in.");
+            const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
+            if (!officeLoc) throw new Error("User must have an office location.");
+            const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, id);
+            deleteDoc(docRef)
+                .then(() => {
+                    toast({ title: 'Item Deleted', description: `${name} has been removed.` });
+                })
+                .catch(error => {
+                    if (error.code === 'permission-denied') {
+                        errorEmitter.emit('permission-error', new FirestorePermissionError({
+                            path: docRef.path,
+                            operation: 'delete',
+                        }));
+                    } else {
+                        toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
+                    }
+                });
+        }, [user, selectedOffice, collectionName]);
+      };
 
     const addDepartmentVehicle = useAddVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
     const updateDepartmentVehicle = useUpdateVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);

@@ -1,4 +1,3 @@
-
 // src/hooks/useE_tenders.ts
 "use client";
 
@@ -112,7 +111,7 @@ export function useE_tenders() {
         if (!user.officeLocation) throw new Error("User has no office location.");
         const collectionPath = `offices/${user.officeLocation.toLowerCase()}/eTenders`;
         await deleteDoc(doc(db, collectionPath, id));
-    }, [user, toast]);
+    }, [user]);
     
     const getTender = useCallback(async (id: string): Promise<E_tender | null> => {
         // First, try to find the tender in the already-loaded list. This is the most reliable.

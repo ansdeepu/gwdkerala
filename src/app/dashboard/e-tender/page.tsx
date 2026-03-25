@@ -1,4 +1,3 @@
-
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
@@ -825,7 +824,7 @@ export default function ETenderListPage() {
             <Dialog open={isLeaderboardOpen} onOpenChange={setIsLeaderboardOpen}>
               <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
                 <DialogHeader className="p-6 pb-4 border-b">
-                  <DialogTitle>Contractor's List</DialogTitle>
+                  <DialogTitle>{`Contractor's List`}</DialogTitle>
                    <div className="flex flex-col sm:flex-row gap-2 pt-4 items-end">
                         <div className="grid w-full sm:w-auto flex-1 gap-1.5">
                             <Label htmlFor="l1-start-date-dialog">From</Label>

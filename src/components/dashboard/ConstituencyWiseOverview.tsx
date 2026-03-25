@@ -199,7 +199,7 @@ export default function ConstituencyWiseOverview({ allWorks, depositWorksCount, 
           Constituency-wise Works ({allWorks.length})
         </CardTitle>
          <CardDescription>
-            Summary of all public works. Deposit: {depositWorksCount}, Collector's: {collectorWorksCount}, Plan Fund: {planFundWorksCount}, ARS: {arsWorksCount}. Total Completed: <span className="font-semibold text-green-600">{totalCompletedCount}</span>. Filter by completion date.
+            {`Summary of all public works. Deposit: ${depositWorksCount}, Collector's: ${collectorWorksCount}, Plan Fund: ${planFundWorksCount}, ARS: ${arsWorksCount}. Total Completed: `}<span className="font-semibold text-green-600">{totalCompletedCount}</span>. Filter by completion date.
         </CardDescription>
         <div className="flex flex-wrap items-center gap-2 pt-4 border-t mt-4">
             <Input

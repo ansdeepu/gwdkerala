@@ -241,7 +241,7 @@ export default function BiddersListPage() {
                   <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-md">
                       <DialogHeader className="p-6 pb-2">
                           <DialogTitle>Move Bidder</DialogTitle>
-                          <DialogDescription>Move "{bidderToReorder?.name}" to a new position in the list.</DialogDescription>
+                          <DialogDescription>{`Move "${bidderToReorder?.name}" to a new position in the list.`}</DialogDescription>
                       </DialogHeader>
                       <form onSubmit={(e) => {
                           e.preventDefault();

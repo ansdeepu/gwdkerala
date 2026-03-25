@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/office-management/page.tsx
 "use client";
 
@@ -301,7 +300,7 @@ export default function OfficeManagementPage() {
                   <FormItem>
                     <FormLabel>Admin Email</FormLabel>
                     <FormControl><Input type="email" placeholder="e.g. gwdklm@gmail.com" {...field} /></FormControl>
-                    <FormDescription>Scientist & Engineer emails will be generated from this prefix.</FormDescription>
+                    <FormDescription>Scientist &amp; Engineer emails will be generated from this prefix.</FormDescription>
                      <div className="!mt-2 flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-md text-sm text-blue-800">
                         <Info className="h-4 w-4 mt-0.5 shrink-0" />
                         <p>Default password for all auto-created accounts: <strong>123456</strong></p>
@@ -328,7 +327,7 @@ export default function OfficeManagementPage() {
                 <DialogHeader>
                     <DialogTitle>Edit User: {userToEdit.name}</DialogTitle>
                     <DialogDescription>
-                        Modify the user's name or reassign their office location.
+                        Modify the user&apos;s name or reassign their office location.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...editUserForm}>

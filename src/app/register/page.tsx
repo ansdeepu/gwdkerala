@@ -8,16 +8,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 import { Button } from "@/components/ui/button";
+import { Loader2, ShieldAlert } from "lucide-react";
+
 
 export const dynamic = 'force-dynamic';
-
-const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-);
-const ShieldAlert = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-);
-
 
 export default function AdminRegisterPage() {
   const router = useRouter();
@@ -78,7 +72,7 @@ export default function AdminRegisterPage() {
             <div className="mt-4 rounded-md border border-accent/30 bg-accent/10 p-3 text-center md:text-left">
               <p className="text-sm font-medium text-accent">Important:</p>
               <p className="text-xs text-accent/80">
-                Newly created users will have the 'viewer' role and will need to be approved before they can log in.
+                Newly created users will have the {`'viewer'`} role and will need to be approved before they can log in.
               </p>
             </div>
           </div>

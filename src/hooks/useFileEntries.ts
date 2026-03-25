@@ -1,4 +1,3 @@
-
 // src/hooks/useFileEntries.ts
 "use client";
 
@@ -64,7 +63,6 @@ export function useFileEntries() {
   const { allFileEntries, isLoading: dataStoreLoading } = useDataStore(); // Use the central store
   const [fileEntries, setFileEntries] = useState<DataEntryFormData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
   const { getPendingUpdates } = usePendingUpdates();
   const [pendingUpdatesMap, setPendingUpdatesMap] = useState<Record<string, boolean>>({});
 
@@ -170,7 +168,7 @@ export function useFileEntries() {
         const finalPayload = { ...payload, updatedAt: serverTimestamp() };
         const sanitizedPayload = sanitizeDataForFirestore(finalPayload);
 
-        if (approveUpdateId && user.role === 'admin') {
+        if (approveUpdateId && (user.role === 'admin' || user.role === 'scientist' || user.role === 'engineer')) {
             const batch = writeBatch(db);
             batch.update(docRef, sanitizedPayload);
             const updateRef = doc(db, `offices/${user.officeLocation.toLowerCase()}/pendingUpdates`, approveUpdateId);
@@ -204,7 +202,7 @@ export function useFileEntries() {
         console.error(`Error deleting file with ID ${docId}:`, error);
         toast({ title: "Error", description: error.message, variant: "destructive" });
     }
-  }, [user, toast]);
+  }, [user]);
 
   const batchDeleteFileEntries = useCallback(async (fileNos: string[]): Promise<{ successCount: number; failureCount: number }> => {
     if (user?.role !== 'admin') {
@@ -226,7 +224,7 @@ export function useFileEntries() {
     
     await batch.commit();
     return { successCount, failureCount: fileNos.length - successCount };
-  }, [user, toast]);
+  }, [user]);
 
   const getFileEntry = useCallback((fileNo: string): DataEntryFormData | undefined => {
     return allFileEntries.find(entry => entry.fileNo === fileNo);

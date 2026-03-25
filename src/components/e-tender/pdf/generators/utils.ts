@@ -1,4 +1,3 @@
-
 // src/components/e-tender/pdf/generators/utils.ts
 
 import type { E_tender } from '@/hooks/useE_tenders';
@@ -12,11 +11,11 @@ export const numberToWords = (num: number): string => {
     const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
     const thousands = ['', 'Thousand', 'Lakh', 'Crore'];
 
-    const numToWords = (n: number, isRecursive: boolean = false): string => {
+    const numToWords = (n: number): string => {
         if (n < 10) return ones[n];
         if (n < 20) return teens[n - 10];
         if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ` ${ones[n % 10]}` : '');
-        if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ` and ${numToWords(n % 100, true)}` : '');
+        if (n < 1000) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ` and ${numToWords(n % 100)}` : '');
         return '';
     };
 

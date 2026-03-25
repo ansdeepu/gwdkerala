@@ -1,16 +1,14 @@
 // src/app/dashboard/e-tender/[id]/layout.tsx
 "use client";
 
-import { useEffect, useState, ReactNode } from "react";
+import { useEffect, useState, ReactNode, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useE_tenders, type E_tender } from "@/hooks/useE_tenders";
 import { TenderDataProvider } from "@/components/e-tender/TenderDataContext";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { Loader2 } from "lucide-react";
 
-const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-);
 
 export default function TenderLayout({ children }: { children: ReactNode }) {
     const params = useParams();
@@ -22,6 +20,8 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
 
     const [tender, setTender] = useState<E_tender | null>(null);
     const [error, setError] = useState<string | null>(null);
+
+    const stableToast = useCallback(toast, []);
 
     useEffect(() => {
         // Don't do anything until both authentication and data store are ready.
@@ -60,14 +60,14 @@ export default function TenderLayout({ children }: { children: ReactNode }) {
                     // Set an error state instead of a toast that disappears.
                     setError("The requested tender could not be found.");
                     // Redirect back to the main e-tender list after a delay.
-                    toast({ title: "Tender Not Found", description: "Redirecting back to the tender list.", variant: "destructive" });
+                    stableToast({ title: "Tender Not Found", description: "Redirecting back to the tender list.", variant: "destructive" });
                     setTimeout(() => router.replace('/dashboard/e-tender'), 2000);
                 }
             }
         };
 
         loadTender();
-    }, [id, getTender, toast, isTendersLoading, isAuthLoading, user, router]);
+    }, [id, getTender, isTendersLoading, isAuthLoading, user, router, stableToast]);
 
     const isLoading = isAuthLoading || isTendersLoading;
 

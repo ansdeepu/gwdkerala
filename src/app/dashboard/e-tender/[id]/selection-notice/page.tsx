@@ -98,7 +98,7 @@ export default function SelectionNoticePrintPage() {
         <div className="-m-6 bg-white min-h-screen">
           <div className="max-w-4xl mx-auto p-12 space-y-4 font-serif text-base">
               <div className="text-center">
-                  <h1 className="font-bold underline">"ഭരണഭാഷ-മാതൃഭാഷ"</h1>
+                  <h1 className="font-bold underline">{`"ഭരണഭാഷ-മാതൃഭാഷ"`}</h1>
               </div>
               
               <div className="flex justify-between pt-2">

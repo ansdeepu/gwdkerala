@@ -1,4 +1,3 @@
-
 // src/hooks/useAgencyApplications.ts
 "use client";
 
@@ -97,7 +96,7 @@ export function useAgencyApplications() {
     const collectionPath = `offices/${user.officeLocation.toLowerCase()}/agencyApplications`;
     const docRef = doc(db, collectionPath, id);
     await deleteDoc(docRef);
-  }, [user, toast]);
+  }, [user]);
   
   return { 
     applications: allAgencyApplications, 

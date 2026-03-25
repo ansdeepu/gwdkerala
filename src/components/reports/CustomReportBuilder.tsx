@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -206,12 +205,12 @@ export default function CustomReportBuilder() {
                             <SelectTrigger><SelectValue/></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="deposit">Deposit Works</SelectItem>
-                                <SelectItem value="collector">Collector's Deposit Works</SelectItem>
+                                <SelectItem value="collector">{`Collector's Deposit Works`}</SelectItem>
                                 <SelectItem value="private">Private Deposit Works</SelectItem>
                                 <SelectItem value="planFund">Plan Fund Works</SelectItem>
                                 <SelectItem value="ars">ARS</SelectItem>
                                 <SelectItem value="gwInvestigation">GW Investigation</SelectItem>
-                                <SelectItem value="loggingPumpingTest">Logging & Pumping Test</SelectItem>
+                                <SelectItem value="loggingPumpingTest">Logging &amp; Pumping Test</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

@@ -1,4 +1,3 @@
-
 // src/hooks/useArsEntries.ts
 "use client";
 
@@ -161,7 +160,7 @@ export function useArsEntries() {
     }
     const collectionPath = `offices/${user.officeLocation.toLowerCase()}/arsEntries`;
     await deleteDoc(doc(db, collectionPath, id));
-  }, [user, toast]);
+  }, [user]);
   
   const getArsEntryById = useCallback(async (id: string): Promise<ArsEntry | null> => {
     // Find the entry from the already loaded data in the central store.
@@ -188,7 +187,7 @@ export function useArsEntries() {
     const batch = writeBatch(db);
     snapshot.docs.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
-  }, [user, toast]);
+  }, [user]);
   
   const refreshArsEntries = useCallback(() => {
     // This function can be a no-op because the central store handles refetching

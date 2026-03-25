@@ -142,7 +142,7 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
                                     <FormItem>
                                         <FormLabel>Tender Fee (Rs.)</FormLabel>
                                         <FormControl><Input readOnly type="number" {...field} value={field.value ?? ''} className="bg-muted/50 font-semibold" /></FormControl>
-                                        <FormDescription className="text-xs">Auto-calculated. Includes GST for 'Purchase' type.</FormDescription>
+                                        <FormDescription className="text-xs">{`Auto-calculated. Includes GST for 'Purchase' type.`}</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
