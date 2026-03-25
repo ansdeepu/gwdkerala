@@ -149,7 +149,7 @@ export default function ArsPlanPage() {
           site.arsStatus,
           site.supervisorName,
           site.workRemarks,
-          site.officeLocation
+          (site as any).officeLocation || (site as any).officeLocationFromPath
         ].filter(Boolean).map(String).join(' ').toLowerCase();
 
         return searchableContent.includes(lowercasedFilter);
@@ -246,7 +246,7 @@ export default function ArsPlanPage() {
       "Completion Date": formatDateSafe(site.dateOfCompletion),
       "No. of Beneficiaries": site.noOfBeneficiary || 'N/A',
       "Remarks": site.workRemarks || 'N/A',
-      "Office Location": (site as any).officeLocation || 'N/A'
+      "Office Location": (site as any).officeLocation || (site as any).officeLocationFromPath || 'N/A'
     }));
 
     const workbook = new ExcelJS.Workbook();
