@@ -224,10 +224,9 @@ export default function FileDatabaseTable({
                 let sitesToDisplay: SiteDetailFormData[] = entry.siteDetails || [];
                 if (user?.role === 'supervisor') {
                     sitesToDisplay = sitesToDisplay.filter(site => {
-                        const isAssigned = site.supervisorUid === user.uid;
-                        const isOngoing = site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
-                        const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
-                        return isAssigned && (isOngoing || hasPendingUpdate);
+                        const isAssignedByUid = site.supervisorUid === user.uid;
+                        const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
+                        return isAssignedByUid || isAssignedByName;
                     });
                 }
                 return (
@@ -240,7 +239,7 @@ export default function FileDatabaseTable({
                       <span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>
                         {site.nameOfSite}{idx < sitesToDisplay.length - 1 ? ', ' : ''}
                       </span>
-                    )) : <span className="text-muted-foreground italic">No active sites</span>}
+                    )) : <span className="text-muted-foreground italic">No assigned sites for this file.</span>}
                   </TableCell>
                   <TableCell className="w-[10%] px-2 py-2 text-sm">
                     {sitesToDisplay.map((site, idx) => (

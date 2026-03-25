@@ -1,4 +1,3 @@
-
 // src/hooks/useFileEntries.ts
 "use client";
 
@@ -98,8 +97,7 @@ export function useFileEntries() {
             const isAssigned = entry.siteDetails?.some(site => {
                 const isAssignedByUid = site.supervisorUid === user.uid;
                 const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
-                const isOngoing = site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus);
-                return (isAssignedByUid || isAssignedByName) && isOngoing;
+                return isAssignedByUid || isAssignedByName;
             });
             const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
             return isAssigned || hasPendingUpdate;

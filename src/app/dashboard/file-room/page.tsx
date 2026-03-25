@@ -124,7 +124,11 @@ export default function FileManagerPage() {
     let totalSiteCount = 0;
     if (user?.role === 'supervisor' && user.uid) {
         totalSiteCount = entries.reduce((acc, entry) => {
-            const supervisorSites = entry.siteDetails?.filter(site => site.supervisorUid === user.uid && site.workStatus && SUPERVISOR_ONGOING_STATUSES.includes(site.workStatus as SiteWorkStatus)) || [];
+            const supervisorSites = entry.siteDetails?.filter(site => {
+                const isAssignedByUid = site.supervisorUid === user.uid;
+                const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
+                return isAssignedByUid || isAssignedByName;
+            }) || [];
             return acc + supervisorSites.length;
         }, 0);
     } else {
