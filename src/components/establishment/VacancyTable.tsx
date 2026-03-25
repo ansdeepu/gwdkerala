@@ -41,7 +41,7 @@ export default function VacancyTable({ canManage, user }: VacancyTableProps) {
     const [detailSearch, setDetailSearch] = useState("");
 
     const filteredDesignations = useMemo(() => {
-        const allDesignations = (designationOptions || []).filter(d => d !== "District Officer");
+        const allDesignations = (designationOptions || []);
 
         if (user?.role === 'superAdmin') {
             return allDesignations;
