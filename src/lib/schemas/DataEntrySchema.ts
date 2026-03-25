@@ -466,7 +466,7 @@ export const SiteDetailSchema = z.object({
   supervisorName: z.string().optional().nullable(),
   supervisorDesignation: z.string().optional().nullable(),
   totalExpenditure: optionalNumber(),
-  workStatus: z.string({ required_error: "Work Status is required." }).min(1, "Work Status is required."),
+  workStatus: z.enum(siteWorkStatusOptions).optional().nullable(),
   implementationRemarks: z.string().optional().nullable().default(""),
   workRemarks: z.string().optional().nullable().default(""),
   surveyOB: z.string().optional().nullable(),
