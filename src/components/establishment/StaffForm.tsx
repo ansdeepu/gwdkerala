@@ -110,6 +110,11 @@ const districtsOrder = [
     "Lab TVM", "Lab EKM", "Lab KKD"
 ];
 
+const formatDateForInput = (date: Date | string | null | undefined): string => {
+    if (!date) return "";
+    try { return format(new Date(date), 'yyyy-MM-dd'); } catch { return ""; }
+};
+
 export default function StaffForm({ onSubmit, initialData, isSubmitting, onCancel, isViewer = false, allOfficeAddresses, allUsers }: StaffFormProps) {
   const { user } = useAuth();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -161,27 +166,10 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
     );
     const email = normalize(getField(rawData, 'email') || userForStaff?.email);
 
-    let dobDateStr = "";
-    const rawDob = getField(rawData, 'dateOfBirth');
-    if (rawDob) {
-        const d = toDateOrNull(rawDob);
-        if (d && isValid(d)) dobDateStr = format(d, 'yyyy-MM-dd');
-    }
-
-    let serviceStartDateStr = "";
-    const rawServiceStartDate = getField(rawData, 'serviceStartDate');
-    if (rawServiceStartDate) {
-        const d = toDateOrNull(rawServiceStartDate);
-        if (d && isValid(d)) serviceStartDateStr = format(d, 'yyyy-MM-dd');
-    }
-
-    let serviceEndDateStr = "";
-    const rawServiceEndDate = getField(rawData, 'serviceEndDate');
-    if (rawServiceEndDate) {
-        const d = toDateOrNull(rawServiceEndDate);
-        if (d && isValid(d)) serviceEndDateStr = format(d, 'yyyy-MM-dd');
-    }
-
+    const dob = getField(rawData, 'dateOfBirth') ? toDateOrNull(getField(rawData, 'dateOfBirth')) : null;
+    const serviceStartDate = getField(rawData, 'serviceStartDate') ? toDateOrNull(getField(rawData, 'serviceStartDate')) : null;
+    const serviceEndDate = getField(rawData, 'serviceEndDate') ? toDateOrNull(getField(rawData, 'serviceEndDate')) : null;
+    
     return {
         name: normalize(getField(rawData, 'name')),
         nameMalayalam: normalize(getField(rawData, 'nameMalayalam')),
@@ -189,9 +177,9 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
         designationMalayalam: formDesignationMalayalamOptions.find(o => o.toLowerCase().trim() === designationMalayalamValue.toLowerCase()) as any,
         pen: normalize(getField(rawData, 'pen')),
         email,
-        dateOfBirth: dobDateStr,
-        serviceStartDate: serviceStartDateStr,
-        serviceEndDate: serviceEndDateStr,
+        dateOfBirth: dob as any,
+        serviceStartDate: serviceStartDate as any,
+        serviceEndDate: serviceEndDate as any,
         phoneNo: normalize(getField(rawData, 'phoneNo')),
         roles: normalize(getField(rawData, 'roles')),
         photoUrl: normalize(getField(rawData, 'photoUrl')),
@@ -381,7 +369,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Date of Birth</FormLabel>
                     <FormControl>
-                       <Input type="date" {...field} value={field.value || ""} readOnly={isViewer}/>
+                       <Input type="date" {...field} value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)} readOnly={isViewer}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -397,7 +385,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Period of Service (From)</FormLabel>
                     <FormControl>
-                       <Input type="date" {...field} value={field.value || ""} readOnly={isViewer}/>
+                       <Input type="date" {...field} value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)} readOnly={isViewer}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -410,7 +398,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                   <FormItem>
                     <FormLabel>Period of Service (To)</FormLabel>
                     <FormControl>
-                       <Input type="date" {...field} value={field.value || ""} readOnly={isViewer}/>
+                       <Input type="date" {...field} value={formatDateForInput(field.value)} onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)} readOnly={isViewer}/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -461,10 +449,12 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                                   aria-label={imagePreview ? "View larger image" : "Image preview"}
                                 >
                                   {imagePreview && !imageLoadError ? (
-                                    <img
+                                    <Image
                                         src={imagePreview}
                                         alt="Staff photo preview"
                                         className="rounded-md object-cover h-full w-full"
+                                        width={96}
+                                        height={96}
                                         onError={() => {
                                             setImageLoadError(true);
                                         }}
@@ -488,7 +478,7 @@ export default function StaffForm({ onSubmit, initialData, isSubmitting, onCance
                                {imagePreview && !imageLoadError && (
                                 <DialogContent className="p-2 border-0 bg-transparent shadow-none max-w-[90vw] flex justify-center">
                                   <div className="flex justify-center items-center max-h-[85vh] overflow-hidden">
-                                    <img src={imagePreview} alt="Staff photo enlarged" className="max-w-full max-h-full object-contain rounded-md shadow-2xl"/>
+                                    <Image src={imagePreview} alt="Staff photo enlarged" width={800} height={800} className="max-w-full max-h-full object-contain rounded-md shadow-2xl"/>
                                   </div>
                                 </DialogContent>
                               )}

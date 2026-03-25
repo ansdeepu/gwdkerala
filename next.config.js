@@ -1,6 +1,6 @@
 
 /** @type {import('next').NextConfig} */
-// FORCE REBUILD: 1778900000010
+// FORCE REBUILD: 1778900000011
 const nextConfig = {
   reactStrictMode: true,
   typescript: {
@@ -60,7 +60,7 @@ const nextConfig = {
     ],
   },
   env: {
-    CACHE_BUSTER: `force-rebuild-final-1778900000010`,
+    CACHE_BUSTER: `force-rebuild-final-1778900000011`,
   },
 };
 
