@@ -6,7 +6,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { AgencyApplication } from '@/lib/schemas';
-import { agencyRigTypeOptions, type AgencyRigType as RigType } from '@/lib/schemas/eTenderSchema';
+import { agencyRigTypeOptions, type AgencyRigType as RigType } from '@/lib/schemas';
 import { addYears, isValid, isWithinInterval, startOfMonth, endOfMonth, format } from 'date-fns';
 import { cn } from "@/lib/utils";
 

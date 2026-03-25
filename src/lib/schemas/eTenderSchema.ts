@@ -12,6 +12,81 @@ const optionalNumberSchema = z.preprocess(
 
 const optionalStringSchema = z.string().optional().nullable();
 
+export const OwnerInfoSchema = z.object({
+    name: z.string().min(1, "Owner Name & Address is required."),
+    address: optionalStringSchema,
+    mobile: optionalStringSchema,
+    secondaryMobile: optionalStringSchema,
+});
+export type OwnerInfo = z.infer<typeof OwnerInfoSchema>;
+
+export const applicationFeeTypes = ["Agency Registration", "Rig Registration"] as const;
+export type ApplicationFeeType = typeof applicationFeeTypes[number];
+
+export const ApplicationFeeSchema = z.object({
+  id: z.string(),
+  applicationFeeType: z.enum(applicationFeeTypes).optional().nullable(),
+  applicationFeeAmount: optionalNumberSchema,
+  applicationFeePaymentDate: z.any().optional().nullable(),
+  applicationFeeChallanNo: optionalStringSchema,
+});
+export type ApplicationFee = z.infer<typeof ApplicationFeeSchema>;
+
+export const agencyRigTypeOptions = ["Hand Bore", "Filter Point Rig", "Calyx Rig", "Rotary Rig", "DTH Rig", "Rotary cum DTH Rig"] as const;
+export type AgencyRigType = typeof agencyRigTypeOptions[number];
+
+export const RigRenewalSchema = z.object({
+    id: z.string(),
+    renewalDate: z.any().optional().nullable(),
+    renewalFee: optionalNumberSchema,
+    paymentDate: z.any().optional().nullable(),
+    challanNo: optionalStringSchema,
+    validTill: z.any().optional().nullable(),
+});
+export type RigRenewal = z.infer<typeof RigRenewalSchema>;
+
+export const VehicleDetailsSchema = z.object({
+  type: optionalStringSchema,
+  regNo: optionalStringSchema,
+  chassisNo: optionalStringSchema,
+  engineNo: optionalStringSchema,
+});
+export type VehicleDetails = z.infer<typeof VehicleDetailsSchema>;
+
+export const EquipmentDetailsSchema = z.object({
+  model: optionalStringSchema,
+  capacity: optionalStringSchema,
+  type: optionalStringSchema,
+  engineNo: optionalStringSchema,
+});
+export type EquipmentDetails = z.infer<typeof EquipmentDetailsSchema>;
+
+export const RigRegistrationSchema = z.object({
+    id: z.string(),
+    rigRegistrationNo: optionalStringSchema,
+    typeOfRig: z.enum(agencyRigTypeOptions).optional().nullable(),
+    registrationDate: z.any().optional().nullable(),
+    registrationFee: optionalNumberSchema,
+    paymentDate: z.any().optional().nullable(),
+    challanNo: optionalStringSchema,
+    additionalRegistrationFee: optionalNumberSchema,
+    additionalPaymentDate: z.any().optional().nullable(),
+    additionalChallanNo: optionalStringSchema,
+    status: z.enum(['Active', 'Cancelled']).default('Active'),
+    cancellationDate: z.any().optional().nullable(),
+    cancellationReason: optionalStringSchema,
+    renewals: z.array(RigRenewalSchema).optional(),
+    history: z.array(z.string()).optional(),
+
+    // Optional details
+    rigVehicle: VehicleDetailsSchema.optional().nullable(),
+    compressorVehicle: VehicleDetailsSchema.optional().nullable(),
+    supportingVehicle: VehicleDetailsSchema.optional().nullable(),
+    compressorDetails: EquipmentDetailsSchema.optional().nullable(),
+    generatorDetails: EquipmentDetailsSchema.optional().nullable(),
+});
+export type RigRegistration = z.infer<typeof RigRegistrationSchema>;
+
 
 export const eTenderStatusOptions = [
     "Tender Preparation",
