@@ -884,6 +884,8 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         toast({ title: "Site Cloned", description: `Cloned Site #${index + 1}` });
     };
 
+  const isDeferredFunding = workTypeContext === 'planFund' || workTypeContext === 'collector';
+  const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction" : "2. Remittance Details";
   const totalRemittanceWatched = watch('totalRemittance');
   const totalReappropriationWatched = watch('totalReappropriation');
   const totalReappropriationCreditWatched = watch('totalReappropriationCredit');
