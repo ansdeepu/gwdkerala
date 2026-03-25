@@ -404,7 +404,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
                 {category === 'Complaints' && (
                     <div className="flex items-start gap-2 p-3 mt-2 text-sm text-amber-800 bg-amber-100/50 border border-amber-200 rounded-md">
                         <Info className="h-4 w-4 mt-0.5 shrink-0" />
-                        <p>For the 'Complaints' category, remittance is not applicable. Please enter the amount as zero and select any bank account to proceed.</p>
+                        <p>For the &apos;Complaints&apos; category, remittance is not applicable. Please enter the amount as zero and select any bank account to proceed.</p>
                     </div>
                 )}
             </DialogHeader>
@@ -546,7 +546,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                         <FormMessage />
                     </FormItem> 
                 )}/>
-                <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any specific reasons or notes..." /></FormControl><FormMessage /></FormItem> )}/>
+                <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any specific reasons or notes..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
@@ -607,13 +607,13 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                                                 className={isLinkedToRemittance ? 'bg-muted/50' : ''}
                                             />
                                         </FormControl>
-                                        {isLinkedToRemittance && <FormDescription className="text-xs">Auto-managed by a 'Revenue Head' remittance.</FormDescription>}
+                                        {isLinkedToRemittance && <FormDescription className="text-xs">Auto-managed by a &apos;Revenue Head&apos; remittance.</FormDescription>}
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
                           <Separator/>
-                          <FormField name="paymentRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this payment entry..." /></FormControl><FormMessage /></FormItem>} />
+                          <FormField name="paymentRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this payment entry..." /></FormControl><FormMessage /></FormItem>} />
                       </div>
                   </ScrollArea>
                 </div>
