@@ -126,7 +126,7 @@ export default function VacancyTable({ canManage, user }: VacancyTableProps) {
                 .filter(row => row.designation.toLowerCase().includes(lowerSearch));
         }
         if (detailType === 'active') {
-            const allActiveStaff = (allStaffMembers || []).filter(s => s.status === 'Active' && s.designation !== "District Officer");
+            const allActiveStaff = (allStaffMembers || []).filter(s => s.status === 'Active');
             return allActiveStaff.filter(s => 
                 s.name.toLowerCase().includes(lowerSearch) || 
                 s.designation?.toLowerCase().includes(lowerSearch) ||
