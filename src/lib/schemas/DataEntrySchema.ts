@@ -1,3 +1,4 @@
+
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -194,10 +195,10 @@ export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"]
 export const fileStatusOptions = ["File Under Process", "Rig Accessibility Inspection", "Technical Sanction", "Tender Process", "Work Initiated", "Fully Completed", "Partially Completed", "Completed Except Disputed", "Partially Completed Except Disputed", "Fully Disputed", "To be Refunded", "Bill Preparation", "Payments", "Utilization Certificate", "File Closed"] as const;
 export type FileStatus = typeof fileStatusOptions[number];
 
-export const INVESTIGATION_FILE_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
+export const INVESTIGATION_FILE_STATUS_OPTIONS = ["File Under Process", "Pending", "VES Pending", "Completed", "File Closed"] as const;
 export const LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS = ["Under Process", "Completed"] as const;
 
-export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = ["Geological logging", "Geophysical Logging", "Industry Pumping test", "MWSS Pumping test", "Pumping Test Others"] as const;
+export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = ["Geological logging", "Geophysical Logging", "Industry Pumping test", "MWSS Pumping test", "Others", "Pumping Test Others"] as const;
 
 export const sitePurposeOptions = ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS", "GW Investigation", "Geological logging", "Geophysical Logging", "VES", "Pumping test", "Industry Pumping test", "MWSS Pumping test", "Others", "Pumping Test Others"] as const;
 export type SitePurpose = typeof sitePurposeOptions[number];
@@ -309,10 +310,10 @@ export const SiteDetailSchema = z.object({
   nameOfInvestigator: z.string().optional().nullable(),
   dateOfInvestigation: nativeDateSchema,
   typeOfWell: z.enum(typeOfWellOptions).optional().nullable(),
-  vesRequired: z.preprocess((val) => val === "" ? undefined : val, z.enum(["Yes", "No"]).optional().nullable()),
+  vesRequired: z.preprocess((val) => val === "" || val === null ? undefined : val, z.enum(["Yes", "No"]).optional().nullable()),
   vesInvestigator: z.string().optional().nullable(),
   vesDate: nativeDateSchema,
-  feasibility: z.preprocess((val) => val === "" ? undefined : val, z.enum(["Yes", "No"]).optional().nullable()),
+  feasibility: z.preprocess((val) => val === "" || val === null ? undefined : val, z.enum(["Yes", "No"]).optional().nullable()),
   hydrogeologicalRemarks: z.string().optional().nullable().default(""),
   geophysicalRemarks: z.string().optional().nullable().default(""),
   workImages: z.array(MediaItemSchema).optional().default([]),
