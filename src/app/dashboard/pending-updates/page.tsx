@@ -308,7 +308,7 @@ export default function PendingUpdatesPage() {
 
     const originalSites = update.isArsUpdate ? [originalEntry] : (originalEntry as DataEntryFormData).siteDetails || [];
 
-    update.updatedSiteDetails.forEach((updatedSite) => {
+    update.updatedSiteDetails.forEach((updatedSite: SiteDetailFormData | ArsEntryFormData) => {
         let originalSite: SiteDetailFormData | ArsEntryFormData | undefined;
         if (!update.isArsUpdate) {
           originalSite = (originalSites as SiteDetailFormData[]).find(
