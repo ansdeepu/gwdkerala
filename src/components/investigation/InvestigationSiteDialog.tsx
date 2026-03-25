@@ -1,3 +1,4 @@
+
 // src/components/investigation/InvestigationSiteDialog.tsx
 "use client";
 
@@ -6,7 +7,7 @@ import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -133,6 +134,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
             <form id="investigation-site-dialog-form" onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col h-full overflow-hidden">
                 <DialogHeader className="p-6 pb-4 shrink-0 border-b">
                     <DialogTitle>{initialData?.nameOfSite ? `Edit Site: ${initialData.nameOfSite}` : 'Add New Site'}</DialogTitle>
+                    <DialogDescription>Enter site specific details for the Investigation work.</DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 min-h-0">
                     <ScrollArea className="h-full px-6 py-4">
@@ -140,8 +142,8 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                             <Card>
                                 <CardHeader><CardTitle className="text-lg text-primary">Main Details</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                    <FormField name="purpose" control={control} render={({ field }) => <FormItem><FormLabel>Purpose</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="purpose" control={control} render={({ field }) => <FormItem><FormLabel>Purpose</FormLabel><FormControl><Input {...field} value={field.value ?? ''} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>} />
                                     <FormField name="localSelfGovt" control={control} render={({ field }) => <FormItem><FormLabel>Local Self Govt.</FormLabel><Select onValueChange={(val) => handleLsgChange(val, field.onChange)} value={field.value || ""} disabled={isReadOnly}><FormControl><SelectTrigger><SelectValue placeholder="Select LSG" /></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_">-- Clear Selection --</SelectItem>{sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                     <FormField name="constituency" control={control} render={({ field }) => <FormItem><FormLabel>Constituency (LAC)</FormLabel><Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isConstituencyDisabled}><FormControl><SelectTrigger><SelectValue placeholder={!watchedLsg ? "Select LSG first" : "Select Constituency"} /></SelectTrigger></FormControl><SelectContent className="max-h-80"><SelectItem value="_clear_">-- Clear Selection --</SelectItem>{constituencyOptionsForLsg.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                                     <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={latLongReadOnly} /></FormControl><FormMessage /></FormItem>} />
