@@ -1,4 +1,3 @@
-
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -240,6 +239,74 @@ export type SiteConditions = typeof siteConditionsOptions[number];
 export const typeOfWellOptions = ["Open Well", "Pond", "Bore Well", "Tube Well", "Filter Point Well"] as const;
 export type TypeOfWell = typeof typeOfWellOptions[number];
 
+const optionalStringSchema = z.string().optional().nullable();
+
+export const arsWorkStatusOptions = [
+    "Proposal Submitted", 
+    "AS & TS Issued", 
+    "Tendered", 
+    "Selection Notice Issued", 
+    "Work Order Issued", 
+    "Work Initiated", 
+    "Work in Progress", 
+    "Work Failed", 
+    "Work Completed", 
+    "Bill Prepared", 
+    "Payment Completed"
+] as const;
+export type ArsStatus = typeof arsWorkStatusOptions[number];
+
+export const arsTypeOfSchemeOptions = [
+  "Dugwell Recharge",
+  "Borewell Recharge",
+  "Recharge Pit",
+  "Check Dam",
+  "Sub-Surface Dyke",
+  "Pond Renovation",
+  "Percolation Ponds",
+] as const;
+
+export const ArsEntrySchema = z.object({
+  id: z.string().optional(),
+  fileNo: z.string().min(1, 'File No is required.'),
+  nameOfSite: z.string().min(1, 'Name of Site is required.'),
+  localSelfGovt: optionalStringSchema,
+  constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
+  arsBlock: optionalStringSchema,
+  latitude: optionalNumber(),
+  longitude: optionalNumber(),
+  arsTypeOfScheme: z.enum(arsTypeOfSchemeOptions).optional().nullable(),
+  arsNumberOfStructures: optionalNumber(),
+  arsStorageCapacity: optionalNumber(),
+  arsNumberOfFillings: optionalNumber(),
+  estimateAmount: optionalNumber(),
+  arsAsTsDetails: optionalStringSchema,
+  arsSanctionedDate: optionalDateSchema,
+  tsAmount: optionalNumber(),
+  arsTenderNo: optionalStringSchema,
+  arsTenderedAmount: optionalNumber(),
+  arsAwardedAmount: optionalNumber(),
+  arsContractorName: optionalStringSchema,
+  supervisorUid: optionalStringSchema,
+  supervisorName: optionalStringSchema,
+  noOfBeneficiary: optionalStringSchema,
+  arsStatus: z.enum(arsWorkStatusOptions, { required_error: "Work Status is required." }),
+  dateOfCompletion: optionalDateSchema,
+  totalExpenditure: optionalNumber(),
+  workRemarks: optionalStringSchema,
+  workImages: z.array(MediaItemSchema).optional().default([]),
+  workVideos: z.array(MediaItemSchema).optional().default([]),
+}).superRefine((data, ctx) => {
+    if (data.arsStatus === 'Work Completed' && !data.dateOfCompletion) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Completion Date is required when work is completed.",
+            path: ["dateOfCompletion"],
+        });
+    }
+});
+export type ArsEntryFormData = z.infer<typeof ArsEntrySchema>;
+
 export const SiteDetailSchema = z.object({
   id: z.string().optional(),
   nameOfSite: z.string().min(1, "Name of Site is required."),
@@ -426,160 +493,6 @@ export interface OfficeAddress {
   bankBranch?: string;
   bankIfsc?: string;
 }
-
-export const arsWorkStatusOptions = [
-    "Proposal Submitted",
-    "AS & TS Issued",
-    "Tendered",
-    "Selection Notice Issued",
-    "Work Order Issued",
-    "Work Initiated",
-    "Work in Progress",
-    "Work Failed",
-    "Work Completed",
-    "Bill Prepared",
-    "Payment Completed"
-] as const;
-
-// Vehicle Management Schemas
-export const rcStatusOptions = ["Active", "Cancelled", "Garaged"] as const;
-export type RCStatus = typeof rcStatusOptions[number];
-
-export const DepartmentVehicleSchema = z.object({
-    id: z.string().optional(),
-    registrationNumber: z.string().min(1, "Registration Number is required."),
-    model: z.string().optional(),
-    chassisNo: z.string().optional(),
-    typeOfVehicle: z.string().optional(),
-    vehicleClass: z.string().optional(),
-    registrationDate: optionalDateSchema,
-    rcStatus: z.enum(rcStatusOptions).optional(),
-    fuelConsumptionRate: z.string().optional(),
-    fitnessExpiry: optionalDateSchema,
-    taxExpiry: optionalDateSchema,
-    insuranceExpiry: optionalDateSchema,
-    pollutionExpiry: optionalDateSchema,
-    fuelTestExpiry: optionalDateSchema,
-    officeLocation: z.string().optional(),
-});
-export type DepartmentVehicle = z.infer<typeof DepartmentVehicleSchema>;
-
-export const HiredVehicleSchema = z.object({
-    id: z.string().optional(),
-    registrationNumber: z.string().min(1, "Registration Number is required."),
-    model: z.string().optional(),
-    ownerName: z.string().optional(),
-    ownerAddress: z.string().optional(),
-    agreementValidity: optionalDateSchema,
-    vehicleClass: z.string().optional(),
-    registrationDate: optionalDateSchema,
-    rcStatus: z.enum(rcStatusOptions).optional(),
-    hireCharges: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
-    fitnessExpiry: optionalDateSchema,
-    taxExpiry: optionalDateSchema,
-    insuranceExpiry: optionalDateSchema,
-    pollutionExpiry: optionalDateSchema,
-    permitExpiry: optionalDateSchema,
-    officeLocation: z.string().optional(),
-});
-export type HiredVehicle = z.infer<typeof HiredVehicleSchema>;
-
-export const rigStatusOptions = ["Active", "Garaged"] as const;
-export type RigStatus = typeof rigStatusOptions[number];
-
-export const RigCompressorSchema = z.object({
-    id: z.string().optional(),
-    typeOfRigUnit: z.string().optional(),
-    status: z.enum(rigStatusOptions).default('Active').optional(),
-    fuelConsumption: z.string().optional(),
-    rigVehicleRegNo: z.string().optional(),
-    compressorVehicleRegNo: z.string().optional(),
-    supportingVehicleRegNo: z.string().optional(),
-    compressorDetails: z.string().optional(),
-    remarks: z.string().optional(),
-    officeLocation: z.string().optional(),
-    isExternal: z.boolean().optional().default(false),
-    externalOffice: z.string().optional().nullable(),
-}).superRefine((data, ctx) => {
-    if (data.isExternal) {
-        if (!data.externalOffice) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Owning Office is required.",
-                path: ["externalOffice"],
-            });
-        }
-    } else {
-        if (!data.typeOfRigUnit || data.typeOfRigUnit.trim() === "") {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "Type of Rig Unit is required.",
-                path: ["typeOfRigUnit"],
-            });
-        }
-    }
-});
-export type RigCompressor = z.infer<typeof RigCompressorSchema>;
-
-    
-// Staff Schemas
-export const staffStatusOptions = ["Active", "Transferred", "Retired", "Pending Transfer"] as const;
-export type StaffStatusType = typeof staffStatusOptions[number];
-
-const dateOrString = z.union([
-  z.date(),
-  z.string().refine(val => !val || !isNaN(Date.parse(val)), {
-    message: "Invalid date format"
-  })
-]);
-
-const BaseStaffMemberFormDataSchema = z.object({
-  photoUrl: z.string().url({ message: "Please enter a valid image URL." }).optional().or(z.literal("")),
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  nameMalayalam: z.string().optional().nullable(),
-  designation: z.string().optional().nullable(),
-  designationMalayalam: z.string().optional().nullable(),
-  pen: z.string().min(1, { message: "PEN is required." }),
-  email: z.string().email().optional().nullable(),
-  dateOfBirth: z.string().optional().nullable(),
-  serviceStartDate: z.string().optional().nullable(),
-  serviceEndDate: z.string().optional().nullable(),
-  phoneNo: z.string().regex(/^\d{10}$/, { message: "Phone number must be 10 digits." }).optional().or(z.literal("")),
-  roles: z.string().optional().nullable(),
-  status: z.preprocess((val) => (val === "" ? undefined : val), z.enum(staffStatusOptions).default('Active')),
-  remarks: z.string().optional().default(""),
-  officeLocation: z.string().optional().nullable(),
-  
-  // Fields for creating a user account
-  createUserAccount: z.boolean().optional().default(false),
-  password: z.string().optional().nullable(),
-});
-
-export const StaffMemberFormDataSchema = BaseStaffMemberFormDataSchema.superRefine((data, ctx) => {
-    if (data.createUserAccount) {
-      if (!data.email || !z.string().email().safeParse(data.email).success) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "A valid email is required.",
-          path: ["email"],
-        });
-      }
-    }
-});
-export type StaffMemberFormData = z.infer<typeof StaffMemberFormDataSchema>;
-
-
-export const StaffMemberSchema = BaseStaffMemberFormDataSchema.extend({
-  id: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  status: z.enum(staffStatusOptions).default('Active'),
-  remarks: z.string().optional().default(""),
-  dateOfBirth: dateOrString.nullable().optional(),
-  serviceStartDate: dateOrString.nullable().optional(),
-  serviceEndDate: dateOrString.nullable().optional(),
-});
-export type StaffMember = z.infer<typeof StaffMemberSchema>;
 
 export const gwdRateCategories = [
     "GW Investigation",

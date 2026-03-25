@@ -1901,7 +1901,7 @@ function ApplicationFeeDialogContent({ initialData, onConfirm, onCancel }: { ini
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label>Type of Application</Label>
-                        <Select onValueChange={(value) => setData(d => ({ ...d, applicationFeeType: value as ApplicationFeeType }))} value={data.applicationFeeType}>
+                        <Select onValueChange={(value) => setData(d => ({ ...d, applicationFeeType: value as ApplicationFeeType }))} value={data.applicationFeeType ?? ''}>
                             <SelectTrigger><SelectValue placeholder="Select Type" /></SelectTrigger>
                             <SelectContent>{applicationFeeTypes.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
                         </Select>

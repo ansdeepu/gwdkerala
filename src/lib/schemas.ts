@@ -34,34 +34,6 @@ export const userRoleOptions = ['superAdmin', 'admin', 'scientist', 'engineer', 
 export type UserRole = typeof userRoleOptions[number];
 
 
-// ARS Schemas
-export const arsStatusOptions = [
-    "Proposal Submitted", 
-    "AS & TS Issued", 
-    "Tendered", 
-    "Selection Notice Issued", 
-    "Work Order Issued", 
-    "Work Initiated", 
-    "Work in Progress", 
-    "Work Failed", 
-    "Work Completed", 
-    "Bill Prepared", 
-    "Payment Completed"
-] as const;
-export type ArsStatus = typeof arsStatusOptions[number];
-
-
-export const arsTypeOfSchemeOptions = [
-  "Dugwell Recharge",
-  "Borewell Recharge",
-  "Recharge Pit",
-  "Check Dam",
-  "Sub-Surface Dyke",
-  "Pond Renovation",
-  "Percolation Ponds",
-] as const;
-
-
 // Re-export everything from specialized schema files
 export * from './schemas/DataEntrySchema';
 export * from './schemas/eTenderSchema';
