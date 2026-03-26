@@ -1,4 +1,3 @@
-
 // src/components/shared/DataEntryForm.tsx
 "use client";
 
@@ -799,11 +798,11 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         if (isSupervisor) {
             await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
             toast({ title: "Update Submitted" });
-            reset(data); // Mark form as not dirty
+            reset(data);
         } else if (fileIdToEdit) {
             await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
             toast({ title: "File Updated" });
-            reset(data); // Mark form as not dirty
+            reset(data);
         } else {
             const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
@@ -811,7 +810,11 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 router.push(`${pathname}?id=${newDocId}${workTypeContext ? `&workType=${workTypeContext}` : ''}${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`);
             }
         }
-    } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { if (fileIdToEdit) setIsSubmitting(false); }
+    } catch (error: any) { 
+        toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
+    } finally { 
+        setIsSubmitting(false);
+    }
   };
 
   const openDialog = (type: 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite', data: any, isView: boolean = false) => setDialogState({ type, data, isView });
@@ -1105,5 +1108,3 @@ function ReorderSitesDialog({ initialData, onConfirm, onCancel }: { initialData:
         </div>
     );
 }
-
-    

@@ -1,4 +1,3 @@
-
 // src/components/investigation/LoggingPumpingTestDataEntryForm.tsx
 "use client";
 
@@ -43,7 +42,6 @@ import {
   PaymentDetailSchema,
   SiteDetailSchema,
   type SiteDetailFormData,
-  applicationTypeOptions,
   applicationTypeDisplayMap,
   type ApplicationType,
   siteConditionsOptions,
@@ -823,7 +821,11 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                 router.push(`${pathname}?id=${newDocId}${workTypeContext ? `&workType=${workTypeContext}` : ''}${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`);
             }
         }
-    } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { if (fileIdToEdit) setIsSubmitting(false); }
+    } catch (error: any) { 
+        toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
+    } finally { 
+        setIsSubmitting(false); 
+    }
   };
 
   const openDialog = (type: 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite', data: any, isView: boolean = false) => setDialogState({ type, data, isView });
@@ -1042,6 +1044,3 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string 
     if (status === 'Pending') return 'text-yellow-600';
     return 'text-muted-foreground';
 };
-
-
-  
