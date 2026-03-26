@@ -305,7 +305,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
                     <Label>Type of Application *</Label>
                     {uniqueOptions.length === 1 ? (
                         <Input 
-                            value={applicationTypeDisplayMap[uniqueOptions[0]] || uniqueOptions[0]} 
+                            value={applicationTypeDisplayMap[uniqueOptions[0] as ApplicationType] || uniqueOptions[0]} 
                             readOnly 
                             className="bg-muted font-semibold"
                         />
@@ -370,7 +370,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
                             <SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
                     )}
                 </div>
-                <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{isDeferredFunding ? 'AS Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
+                <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{isDeferredFunding ? 'AS Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
@@ -533,7 +533,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
     ]);
 
     const totalAmount = useMemo(() => {
-        return watchedValues.reduce((sum, value) => sum + (Number(value) || 0), 0);
+        return watchedValues.reduce((sum: number, value) => sum + (Number(value) || 0), 0);
     }, [watchedValues]);
     
     const handleConfirmSubmit = (data: PaymentDetailFormData) => {
@@ -1099,3 +1099,5 @@ function ReorderSitesDialog({ initialData, onConfirm, onCancel }: { initialData:
         </div>
     );
 }
+
+    
