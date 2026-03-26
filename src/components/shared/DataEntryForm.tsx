@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Trash2, PlusCircle, X, Save, Clock, Eye, ArrowUpDown, Copy, Info, ChevronLeft, ChevronRight, Edit } from "lucide-react";
 import {
   DataEntrySchema,
   type DataEntryFormData,
@@ -114,53 +114,67 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
   return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
 };
 
-const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): string[] => {
-  const messages = new Set<string>();
-
-  const processPath = (path: string, index: number): string => {
-    if (path === 'siteDetails') return `Site #${index + 1}`;
-    if (path === 'remittanceDetails') return `Remittance #${index + 1}`;
-    if (path === 'reappropriationDetails') return `Re-appropriation #${index + 1}`;
-    if (path === 'paymentDetails') return `Payment #${index + 1}`;
-    return path;
-  };
-
-  const formattedFieldName = (fieldName: string) => {
-    return fieldName
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase());
-  };
-
-  function findMessages(obj: any, parentPath: string = "") {
-    if (!obj) return;
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        const value = obj[key];
-        const newPath = parentPath ? `${parentPath}.${key}` : key;
-        
-        if (value?.message && typeof value.message === 'string') {
-          messages.add(`${formattedFieldName(key)}: ${value.message}`);
-        } else if (Array.isArray(value)) {
-          value.forEach((item, index) => {
-            if (item && typeof item === 'object') {
-              for (const itemKey in item) {
-                if (item[itemKey]?.message) {
-                  const pathPrefix = processPath(newPath, index);
-                  messages.add(`${pathPrefix} - ${formattedFieldName(itemKey)}: ${item[itemKey].message}`);
+const getFormattedErrorMessages = (errors: FieldErrors<any>): string[] => {
+    const messages = new Set<string>();
+  
+    const processPath = (path: string, index: number): string => {
+      if (path === 'siteDetails') return `Site #${index + 1}`;
+      if (path === 'remittanceDetails') return `Remittance #${index + 1}`;
+      if (path === 'reappropriationDetails') return `Re-appropriation #${index + 1}`;
+      if (path === 'paymentDetails') return `Payment #${index + 1}`;
+      return path;
+    };
+  
+    const formattedFieldName = (fieldName: string) => {
+      return fieldName
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, str => str.toUpperCase());
+    };
+  
+    function findMessages(obj: any, parentPath: string = "") {
+      if (!obj) return;
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const value = obj[key];
+          const newPath = parentPath ? `${parentPath}.${key}` : key;
+          
+          if (value?.message && typeof value.message === 'string') {
+            const pathParts = newPath.split('.');
+            let formattedPath = '';
+            
+            for (let i = 0; i < pathParts.length; i++) {
+                const part = pathParts[i];
+                if (!isNaN(parseInt(part))) { // It's an index
+                    const prevPart = pathParts[i-1];
+                    formattedPath += ` #${parseInt(part) + 1}`;
+                } else {
+                    if (i > 0 && isNaN(parseInt(pathParts[i-1]))) {
+                         formattedPath += ` > ${formattedFieldName(part)}`;
+                    } else if (i === 0) {
+                         formattedPath += formattedFieldName(part);
+                    } else {
+                        formattedPath += ` > ${formattedFieldName(part)}`;
+                    }
                 }
-              }
             }
-          });
-        } else if (value && typeof value === 'object' && key !== 'root') {
-          findMessages(value, newPath);
+            messages.add(`${formattedPath}: ${value.message}`);
+          } else if (Array.isArray(value)) {
+             value.forEach((item, index) => {
+                if(item && typeof item === 'object') {
+                    const itemPath = `${newPath}.${index}`;
+                    findMessages(item, itemPath);
+                }
+            });
+          } else if (value && typeof value === 'object' && key !== 'root') {
+            findMessages(value, newPath);
+          }
         }
       }
     }
-  }
-
-  findMessages(errors);
-  return Array.from(messages);
-};
+  
+    findMessages(errors);
+    return Array.from(messages);
+  };
 
 
 const DetailRow = ({ label, value, className }: { label: string; value: any, className?: string }) => {
@@ -795,14 +809,17 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         };
         if (!user) throw new Error("Authentication error.");
 
+        const fileLevelUpdates = {
+            fileStatus: sanitizedData.fileStatus,
+            remarks: sanitizedData.remarks
+        }
+        
         if (isSupervisor) {
-            await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
+            await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, fileLevelUpdates);
             toast({ title: "Update Submitted" });
-            reset(data);
         } else if (fileIdToEdit) {
             await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
             toast({ title: "File Updated" });
-            reset(data);
         } else {
             const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
@@ -813,7 +830,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     } catch (error: any) { 
         toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
     } finally { 
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
