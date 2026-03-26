@@ -1,6 +1,6 @@
 
 /** @type {import('next').NextConfig} */
-// FORCE REBUILD: 1779000000003
+// FORCE REBUILD: 1779000000004
 const nextConfig = {
   reactStrictMode: true,
   typescript: {
@@ -34,7 +34,7 @@ const nextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https' ,
+        protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
         port: '',
         pathname: '/**',
@@ -60,7 +60,7 @@ const nextConfig = {
     ],
   },
   env: {
-    CACHE_BUSTER: `force-rebuild-final-1779000000003`,
+    CACHE_BUSTER: `force-rebuild-final-1779000000004`,
   },
 };
 

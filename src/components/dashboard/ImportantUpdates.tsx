@@ -4,9 +4,9 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import type { DataEntryFormData, SiteWorkStatus } from '@/lib/schemas';
+import type { DataEntryFormData, SiteWorkStatus, PendingUpdate } from '@/lib/schemas';
 import { useAuth } from '@/hooks/useAuth';
-import { usePendingUpdates, type PendingUpdate } from '@/hooks/usePendingUpdates';
+import { usePendingUpdates } from '@/hooks/usePendingUpdates';
 import { ScrollArea } from '../ui/scroll-area';
 import { Bell, MessageSquareWarning } from 'lucide-react';
 
