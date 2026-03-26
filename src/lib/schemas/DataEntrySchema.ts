@@ -642,3 +642,23 @@ export const GwdRateItemSchema = GwdRateItemFormDataSchema.extend({
   category: z.enum(gwdRateCategories).optional(),
 });
 export type GwdRateItem = z.infer<typeof GwdRateItemSchema>;
+
+export const PendingUpdateSchema = z.object({
+    id: z.string(),
+    fileNo: z.string(),
+    arsId: z.string().optional().nullable(),
+    updatedSiteDetails: z.array(z.lazy(() => SiteDetailSchema.or(ArsEntrySchema))),
+    fileLevelUpdates: z.object({
+      fileStatus: z.string().optional().nullable(),
+      remarks: z.string().optional().nullable(),
+    }).optional().nullable(),
+    submittedByUid: z.string(),
+    submittedByName: z.string(),
+    submittedAt: z.any(),
+    status: z.enum(['pending', 'approved', 'rejected', 'supervisor-unassigned']),
+    isArsUpdate: z.boolean(),
+    reviewedByUid: z.string().optional().nullable(),
+    reviewedAt: z.any().optional().nullable(),
+    notes: z.string().optional().nullable(),
+});
+export type PendingUpdate = z.infer<typeof PendingUpdateSchema>;

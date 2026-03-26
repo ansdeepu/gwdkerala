@@ -255,6 +255,3 @@ export function usePendingUpdates(): PendingUpdatesState {
     subscribeToPendingUpdates,
   };
 }
-
-// Re-export type for use in other components
-export type { PendingUpdate };
