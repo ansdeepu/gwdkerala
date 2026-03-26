@@ -522,8 +522,8 @@ export const DataEntrySchema = z.object({
   applicantName: z.string().min(1, "Applicant is required."),
   phoneNo: z.string().optional().nullable(),
   secondaryMobileNo: z.string().optional().nullable(),
-  category: z.enum(['Govt', 'Private', 'Complaints']).optional(),
-  applicationType: z.enum(applicationTypeOptions).optional(),
+  category: z.enum(['Govt', 'Private', 'Complaints']).optional().nullable(),
+  applicationType: z.enum(applicationTypeOptions).optional().nullable(),
   constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
   estimateAmount: optionalNumber(),
   assignedSupervisorUids: z.array(z.string()).optional(),
@@ -541,6 +541,27 @@ export const DataEntrySchema = z.object({
   remarks: z.string().optional().nullable(),
 });
 export type DataEntryFormData = z.infer<typeof DataEntrySchema>;
+
+export const PendingUpdateSchema = z.object({
+    id: z.string(),
+    fileNo: z.string(),
+    arsId: z.string().optional().nullable(),
+    updatedSiteDetails: z.array(z.lazy(() => SiteDetailSchema.or(ArsEntrySchema))),
+    fileLevelUpdates: z.object({
+      fileStatus: z.string().optional().nullable(),
+      remarks: z.string().optional().nullable(),
+    }).optional().nullable(),
+    submittedByUid: z.string(),
+    submittedByName: z.string(),
+    submittedAt: z.any(),
+    status: z.enum(['pending', 'approved', 'rejected', 'supervisor-unassigned']),
+    isArsUpdate: z.boolean(),
+    reviewedByUid: z.string().optional().nullable(),
+    reviewedAt: z.any().optional().nullable(),
+    notes: z.string().optional().nullable(),
+});
+export type PendingUpdate = z.infer<typeof PendingUpdateSchema>;
+
 
 // The schemas below were originally in this file and are kept for compatibility.
 // In the future, they should be moved to their own specialized files.
@@ -642,23 +663,3 @@ export const GwdRateItemSchema = GwdRateItemFormDataSchema.extend({
   category: z.enum(gwdRateCategories).optional(),
 });
 export type GwdRateItem = z.infer<typeof GwdRateItemSchema>;
-
-export const PendingUpdateSchema = z.object({
-    id: z.string(),
-    fileNo: z.string(),
-    arsId: z.string().optional().nullable(),
-    updatedSiteDetails: z.array(z.lazy(() => SiteDetailSchema.or(ArsEntrySchema))),
-    fileLevelUpdates: z.object({
-      fileStatus: z.string().optional().nullable(),
-      remarks: z.string().optional().nullable(),
-    }).optional().nullable(),
-    submittedByUid: z.string(),
-    submittedByName: z.string(),
-    submittedAt: z.any(),
-    status: z.enum(['pending', 'approved', 'rejected', 'supervisor-unassigned']),
-    isArsUpdate: z.boolean(),
-    reviewedByUid: z.string().optional().nullable(),
-    reviewedAt: z.any().optional().nullable(),
-    notes: z.string().optional().nullable(),
-});
-export type PendingUpdate = z.infer<typeof PendingUpdateSchema>;
