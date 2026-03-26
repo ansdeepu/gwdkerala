@@ -1,3 +1,4 @@
+
 // src/components/shared/DataEntryForm.tsx
 "use client";
 
@@ -136,17 +137,17 @@ const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): stri
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const value = obj[key];
-        const newPath = parentPath ? `${parentPath}.${key}` : key;
+        const newPath = parentPath ? `\${parentPath}.${key}` : key;
         
         if (value?.message && typeof value.message === 'string') {
-          messages.add(`${formattedFieldName(key)}: ${value.message}`);
+          messages.add(`\${formattedFieldName(key)}: \${value.message}`);
         } else if (Array.isArray(value)) {
           value.forEach((item, index) => {
             if (item && typeof item === 'object') {
               for (const itemKey in item) {
                 if (item[itemKey]?.message) {
                   const pathPrefix = processPath(newPath, index);
-                  messages.add(`${pathPrefix} - ${formattedFieldName(itemKey)}: ${item[itemKey].message}`);
+                  messages.add(`\${pathPrefix} - \${formattedFieldName(itemKey)}: \${item[itemKey].message}`);
                 }
               }
             }
@@ -288,18 +289,18 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
              <div className="grid grid-cols-3 gap-4 items-start">
                 <div className="space-y-2 col-span-1">
                     <Label htmlFor="fileNo">File No *</Label>
-                    <Input id="fileNo" value={data.fileNo} onChange={(e) => handleChange('fileNo', e.target.value)} disabled={isChecking}/>
+                    <Input id="fileNo" value={data.fileNo || ''} onChange={(e) => handleChange('fileNo', e.target.value)} disabled={isChecking}/>
                     {errors?.fileNo && <p className="text-xs text-destructive mt-1">{errors.fileNo}</p>}
                 </div>
                 <div className="space-y-2 col-span-2">
                     <Label htmlFor="applicantName">Name & Address of Institution/Applicant *</Label>
-                    <Textarea id="applicantName" value={data.applicantName} onChange={(e) => handleChange('applicantName', e.target.value)} className="min-h-[40px]" disabled={isChecking}/>
+                    <Textarea id="applicantName" value={data.applicantName || ''} onChange={(e) => handleChange('applicantName', e.target.value)} className="min-h-[40px]" disabled={isChecking}/>
                     {errors?.applicantName && <p className="text-xs text-destructive mt-1">{errors.applicantName}</p>}
                 </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo} onChange={(e) => handleChange('phoneNo', e.target.value)} disabled={isChecking} /></div>
-                <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} disabled={isChecking}/></div>
+                <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo || ''} onChange={(e) => handleChange('phoneNo', e.target.value)} disabled={isChecking} /></div>
+                <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo || ''} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} disabled={isChecking}/></div>
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
                     {uniqueOptions.length === 1 ? (
@@ -369,7 +370,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
                             <SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
                     )}
                 </div>
-                <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{isDeferredFunding ? 'AS Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
+                <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{isDeferredFunding ? 'AS Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
@@ -438,9 +439,9 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
         if (foundEntry) {
             let details = '';
             if (watchedPageType === 'ARS') {
-                details = `Site: ${foundEntry.nameOfSite || 'N/A'}\nScheme: ${foundEntry.arsTypeOfScheme || 'N/A'}`;
+                details = `Site: \${foundEntry.nameOfSite || 'N/A'}\nScheme: \${foundEntry.arsTypeOfScheme || 'N/A'}`;
             } else {
-                details = (foundEntry.siteDetails || []).map((s: any) => `Site: ${s.nameOfSite || 'N/A'} (${s.purpose || 'N/A'})`).join('\n');
+                details = (foundEntry.siteDetails || []).map((s: any) => `Site: \${s.nameOfSite || 'N/A'} (\${s.purpose || 'N/A'})`).join('\n');
             }
             form.setValue('fileDetails', details || 'No site details found.');
         } else {
@@ -499,7 +500,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                         <FormMessage />
                     </FormItem> 
                 )}/>
-                <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} placeholder="Add any specific reasons or notes..." /></FormControl><FormMessage /></FormItem> )}/>
+                <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any specific reasons or notes..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
@@ -519,7 +520,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
         dateOfPayment: formatDateForInput(initialData?.dateOfPayment),
       },
     });
-
+    
     const { watch } = form;
 
     const watchedValues = watch([
@@ -602,7 +603,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                             </span>
                           </div>
                           <Separator />
-                          <FormField name="paymentRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this payment entry..." /></FormControl><FormMessage /></FormItem>} />
+                          <FormField name="paymentRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Add any remarks for this payment entry..." /></FormControl><FormMessage /></FormItem>} />
                       </div>
                   </ScrollArea>
                 </div>
