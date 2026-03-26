@@ -62,6 +62,13 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
     const watchedLsg = watch("localSelfGovt");
     const watchedWorkStatus = watch('workStatus');
 
+    const investigatorList = useMemo(() => 
+        allStaffMembers.filter(s => 
+            s.status === 'Active' && 
+            ['Hydrogeologist', 'Junior Hydrogeologist', 'Junior Geophysicist', 'Geological Assistant', 'Geophysical Assistant'].includes(s.designation as any)
+        ).sort((a, b) => a.name.localeCompare(b.name)), 
+    [allStaffMembers]);
+
     // Auto-populate Constituency logic adopted from GW Investigation page
     useEffect(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) {
@@ -174,6 +181,18 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                                 <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Well Type" /></SelectTrigger></FormControl>
                                                     <SelectContent>{typeOfWellOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                        <FormField name="nameOfInvestigator" control={control} render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Name of Staff</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
+                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Staff Member" /></SelectTrigger></FormControl>
+                                                    <SelectContent>
+                                                        {investigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}
+                                                    </SelectContent>
                                                 </Select>
                                                 <FormMessage />
                                             </FormItem>
