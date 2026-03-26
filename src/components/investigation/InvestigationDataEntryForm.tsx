@@ -120,52 +120,49 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
 };
 
 const getFormattedErrorMessages = (errors: FieldErrors<any>): string[] => {
-  const messages = new Set<string>();
-
-  const processPath = (path: string, index: number): string => {
-    if (path === 'siteDetails') return `Site #${index + 1}`;
-    if (path === 'remittanceDetails') return `Remittance #${index + 1}`;
-    if (path === 'reappropriationDetails') return `Re-appropriation #${index + 1}`;
-    if (path === 'paymentDetails') return `Payment #${index + 1}`;
-    return path;
-  };
-
-  const formattedFieldName = (fieldName: string) => {
-    return fieldName
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase());
-  };
-
-  function findMessages(obj: any, parentPath: string = "") {
-    if (!obj) return;
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        const value = obj[key];
-        const newPath = parentPath ? `${parentPath}.${key}` : key;
-        
-        if (value?.message && typeof value.message === 'string') {
-          messages.add(`${formattedFieldName(key)}: ${value.message}`);
-        } else if (Array.isArray(value)) {
-          value.forEach((item, index) => {
-            if (item && typeof item === 'object') {
-              for (const itemKey in item) {
-                if (item[itemKey]?.message) {
-                  const pathPrefix = processPath(newPath, index);
-                  messages.add(`${pathPrefix} - ${formattedFieldName(itemKey)}: ${item[itemKey].message}`);
-                }
+    const messages = new Set<string>();
+  
+    const processPath = (path: string, index: number): string => {
+        if (path === 'siteDetails') return `Site #${index + 1}`;
+        if (path === 'remittanceDetails') return `Remittance #${index + 1}`;
+        if (path === 'reappropriationDetails') return `Re-appropriation #${index + 1}`;
+        if (path === 'paymentDetails') return `Payment #${index + 1}`;
+        return path;
+    };
+  
+    const formattedFieldName = (fieldName: string) => {
+      return fieldName
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (str) => str.toUpperCase());
+    };
+  
+    function findMessages(obj: any, parentPath: string = '') {
+      if (!obj) return;
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const value = obj[key];
+          const newPath = parentPath ? `${parentPath}.${key}` : key;
+  
+          if (value?.message && typeof value.message === 'string') {
+            const finalPath = parentPath ? `${parentPath} -> ${formattedFieldName(key)}` : formattedFieldName(key);
+            messages.add(`${finalPath}: ${value.message}`);
+          } else if (Array.isArray(value)) {
+            value.forEach((item, index) => {
+              if (item && typeof item === 'object') {
+                const pathPrefix = processPath(newPath, index);
+                findMessages(item, pathPrefix);
               }
-            }
-          });
-        } else if (value && typeof value === 'object' && key !== 'root') {
-          findMessages(value, newPath);
+            });
+          } else if (value && typeof value === 'object' && key !== 'root') {
+            findMessages(value, newPath);
+          }
         }
       }
     }
-  }
-
-  findMessages(errors);
-  return Array.from(messages);
-};
+  
+    findMessages(errors);
+    return Array.from(messages);
+  };
 
 
 const DetailRow = ({ label, value, className }: { label: string; value: any, className?: string }) => {
@@ -635,6 +632,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
 
 export default function InvestigationDataEntryFormComponent({ fileNoToEdit, initialData, allStaffMembers, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps }: DataEntryFormProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const fileIdToEdit = searchParams.get("id");
   const approveUpdateId = searchParams.get("approveUpdateId");
@@ -825,10 +823,15 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
             const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
             if (newDocId) {
-                router.push(`${pathname}?id=${newDocId}&workType=${workTypeContext}`);
+                const newPath = `${pathname}?id=${newDocId}${workTypeContext ? `&workType=${workTypeContext}` : ''}${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`;
+                router.push(newPath);
             }
         }
-    } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { if (fileIdToEdit) setIsSubmitting(false); }
+    } catch (error: any) { 
+        toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const openDialog = (type: 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite', data: any, isView: boolean = false) => setDialogState({ type, data, isView });
@@ -991,7 +994,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={getValues('category')} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><InvestigationSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} isInvestigator={isInvestigator} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reorderSite'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl flex flex-col p-0"><ReorderSitesDialog initialData={dialogState.data || []} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </div>
@@ -1040,10 +1043,3 @@ function ReorderSitesDialog({ initialData, onConfirm, onCancel }: { initialData:
         </div>
     );
 }
-
-const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string => {
-    if (!status) return 'text-muted-foreground';
-    if (status === 'Completed') return 'text-green-600';
-    if (status === 'Pending') return 'text-yellow-600';
-    return 'text-muted-foreground';
-};
