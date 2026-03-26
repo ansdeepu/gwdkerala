@@ -641,7 +641,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const isEditing = !!fileIdToEdit;
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
-  const { control, handleSubmit, setValue, getValues, watch, formState: { isDirty } } = form;
+  const { control, handleSubmit, setValue, getValues, watch, formState: { isDirty }, reset } = form;
   
   const currentFileNo = watch("fileNo");
   
@@ -799,11 +799,11 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         if (isSupervisor) {
             await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
             toast({ title: "Update Submitted" });
-            form.reset(data); // Mark form as not dirty
+            reset(data); // Mark form as not dirty
         } else if (fileIdToEdit) {
             await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
             toast({ title: "File Updated" });
-            form.reset(data); // Mark form as not dirty
+            reset(data); // Mark form as not dirty
         } else {
             const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
@@ -811,7 +811,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 router.push(`${pathname}?id=${newDocId}${workTypeContext ? `&workType=${workTypeContext}` : ''}${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`);
             }
         }
-    } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
+    } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { if (fileIdToEdit) setIsSubmitting(false); }
   };
 
   const openDialog = (type: 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite', data: any, isView: boolean = false) => setDialogState({ type, data, isView });
@@ -904,13 +904,13 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. Application Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
             
             <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">{remittanceTitle}</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('remittance', createDefaultRemittanceDetail())} disabled={isSupervisor || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount (₹)</TableHead><TableHead>Account</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{remittanceFields.length > 0 ? remittanceFields.map((item, index) => (
-                <TableRow key={item.id}>
-                    <TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance), 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                    <TableCell>{(Number(item.amountRemitted) || 0).toLocaleString('en-IN')}</TableCell>
-                    <TableCell>{item.remittedAccount}</TableCell>
-                    <TableCell>{item.remittanceRemarks}</TableCell>
-                    {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
-                </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
+              <TableRow key={item.id}>
+                  <TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                  <TableCell>{(Number(item.amountRemitted) || 0).toLocaleString('en-IN')}</TableCell>
+                  <TableCell>{item.remittedAccount}</TableCell>
+                  <TableCell>{item.remittanceRemarks}</TableCell>
+                  {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
+              </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
             
             <Accordion 
               type="single" 
@@ -1105,3 +1105,5 @@ function ReorderSitesDialog({ initialData, onConfirm, onCancel }: { initialData:
         </div>
     );
 }
+
+    
