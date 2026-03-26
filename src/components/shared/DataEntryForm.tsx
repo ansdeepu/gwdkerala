@@ -5,7 +5,7 @@
 import React from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useFieldArray, type FieldErrors, FormProvider, useWatch } from "react-hook-form";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   FormControl,
@@ -36,7 +36,6 @@ import {
   siteTypeOfRigOptions,
   fileStatusOptions,
   remittedAccountOptions,
-  paymentAccountOptions,
   type RemittanceDetailFormData,
   RemittanceDetailSchema,
   type PaymentDetailFormData,
@@ -370,7 +369,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
                             <SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
                     )}
                 </div>
-                <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{isDeferredFunding ? 'AS Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ""} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
+                <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{isDeferredFunding ? 'AS Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
@@ -439,9 +438,9 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
         if (foundEntry) {
             let details = '';
             if (watchedPageType === 'ARS') {
-                details = `Site: \${foundEntry.nameOfSite || 'N/A'}\nScheme: \${foundEntry.arsTypeOfScheme || 'N/A'}`;
+                details = `Site: ${foundEntry.nameOfSite || 'N/A'}\nScheme: ${foundEntry.arsTypeOfScheme || 'N/A'}`;
             } else {
-                details = (foundEntry.siteDetails || []).map((s: any) => `Site: \${s.nameOfSite || 'N/A'} (\${s.purpose || 'N/A'})`).join('\n');
+                details = (foundEntry.siteDetails || []).map((s: any) => `Site: ${s.nameOfSite || 'N/A'} (${s.purpose || 'N/A'})`).join('\n');
             }
             form.setValue('fileDetails', details || 'No site details found.');
         } else {
@@ -589,7 +588,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                                       </FormItem>
                                   )}
                               />
-                              <FormField name="contractorsPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Contractor's Payment (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
+                              <FormField name="contractorsPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Contractor&apos;s Payment (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
                               <FormField name="gst" control={form.control} render={({ field }) => <FormItem><FormLabel>GST (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
                               <FormField name="incomeTax" control={form.control} render={({ field }) => <FormItem><FormLabel>Income Tax (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
                               <FormField name="kbcwb" control={form.control} render={({ field }) => <FormItem><FormLabel>KBCWB (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
@@ -618,6 +617,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
 
 export default function DataEntryFormComponent({ fileNoToEdit, initialData, supervisorList, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, formOptions = [] }: DataEntryFormProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const fileIdToEdit = searchParams.get("id");
   const approveUpdateId = searchParams.get("approveUpdateId");
@@ -640,7 +640,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const isEditing = !!fileIdToEdit;
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
-  const { control, handleSubmit, setValue, getValues, watch } = form;
+  const { control, handleSubmit, setValue, getValues, watch, formState: { isDirty } } = form;
   
   const currentFileNo = watch("fileNo");
   
@@ -798,12 +798,17 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         if (isSupervisor) {
             await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
             toast({ title: "Update Submitted" });
+            form.reset(data);
         } else if (fileIdToEdit) {
             await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
             toast({ title: "File Updated" });
+            form.reset(data);
         } else {
-            await addFileEntry(sanitizedData);
+            const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
+            if (newDocId) {
+                router.push(`${pathname}?id=${newDocId}${workTypeContext ? `&workType=${workTypeContext}` : ''}${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`);
+            }
         }
     } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
   };
@@ -902,7 +907,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                     <TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                     <TableCell>{(Number(item.amountRemitted) || 0).toLocaleString('en-IN')}</TableCell>
                     <TableCell>{item.remittedAccount}</TableCell>
-                    <TableCell>{item.remittanceRemarks || ''}</TableCell>
+                    <TableCell>{item.remittanceRemarks}</TableCell>
                     {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
                 </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
             
@@ -1040,7 +1045,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                     <X className="mr-2 h-4 w-4" /> Close
                 </Button>
                 {!(isViewer || isFormDisabled) && (
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting || !isDirty}>
                         <Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save'}
                     </Button>
                 )}
