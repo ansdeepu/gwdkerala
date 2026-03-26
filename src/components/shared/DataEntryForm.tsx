@@ -36,6 +36,7 @@ import {
   siteTypeOfRigOptions,
   fileStatusOptions,
   remittedAccountOptions,
+  paymentAccountOptions,
   type RemittanceDetailFormData,
   RemittanceDetailSchema,
   type PaymentDetailFormData,
@@ -281,7 +282,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, formOption
 
     return (
       <div className="flex flex-col h-auto">
-        <DialogHeader>
+        <DialogHeader className="p-6 pb-4">
           <DialogTitle>Application Details</DialogTitle>
         </DialogHeader>
         <div className="p-6 pt-0 space-y-4 flex-1">
@@ -355,7 +356,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
             form.handleSubmit(handleConfirmSubmit)(e);
           }}
         >
-            <DialogHeader>
+            <DialogHeader className="p-6 pb-4">
                 <DialogTitle>{isDeferredFunding ? 'Administrative Sanction Details' : 'Remittance Details'}</DialogTitle>
                 {isDeferredFunding && <DialogDescription className="text-amber-700 bg-amber-100/50 border border-amber-200 rounded-md">The amount entered here is the deferred amount, which the department has already received for this scheme.</DialogDescription>}
             </DialogHeader>
@@ -457,7 +458,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
     return (
       <Form {...form}>
         <form onSubmit={(e) => { e.stopPropagation(); e.preventDefault(); form.handleSubmit(handleConfirmSubmit)(e); }}>
-            <DialogHeader>
+            <DialogHeader className="p-6 pb-4">
                 <DialogTitle>Re-appropriation Details</DialogTitle>
                 <DialogDescription>Track funds transferred from this file to another file.</DialogDescription>
             </DialogHeader>
@@ -793,16 +794,16 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
           ...data,
           constituency: data.constituency === undefined ? null : data.constituency,
         };
-
         if (!user) throw new Error("Authentication error.");
+
         if (isSupervisor) {
             await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
             toast({ title: "Update Submitted" });
-            form.reset(data);
+            form.reset(data); // Mark form as not dirty
         } else if (fileIdToEdit) {
             await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
             toast({ title: "File Updated" });
-            form.reset(data);
+            form.reset(data); // Mark form as not dirty
         } else {
             const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
@@ -1104,5 +1105,3 @@ function ReorderSitesDialog({ initialData, onConfirm, onCancel }: { initialData:
         </div>
     );
 }
-
-    

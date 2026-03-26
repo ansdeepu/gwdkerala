@@ -328,7 +328,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
 
     return (
       <div className="flex flex-col h-auto">
-        <DialogHeader>
+        <DialogHeader className="p-6 pb-4">
           <DialogTitle>{pageTitle} Application Details</DialogTitle>
         </DialogHeader>
         <div className="p-6 pt-0 space-y-4 flex-1">
@@ -409,7 +409,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
             form.handleSubmit(handleConfirmSubmit)(e);
           }}
         >
-            <DialogHeader>
+            <DialogHeader className="p-6 pb-4">
                 <DialogTitle>Remittance Details</DialogTitle>
                 {category === 'Complaints' && (
                     <div className="flex items-start gap-2 p-3 mt-2 text-sm text-amber-800 bg-amber-100/50 border border-amber-200 rounded-md">
@@ -495,9 +495,9 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
         if (foundEntry) {
             let details = '';
             if (watchedPageType === 'ARS') {
-                details = `Site: \${foundEntry.nameOfSite || 'N/A'}\nScheme: \${foundEntry.arsTypeOfScheme || 'N/A'}`;
+                details = `Site: ${foundEntry.nameOfSite || 'N/A'}\nScheme: ${foundEntry.arsTypeOfScheme || 'N/A'}`;
             } else {
-                details = (foundEntry.siteDetails || []).map((s: any) => `Site: \${s.nameOfSite || 'N/A'} (\${s.purpose || 'N/A'})`).join('\n');
+                details = (foundEntry.siteDetails || []).map((s: any) => `Site: ${s.nameOfSite || 'N/A'} (${s.purpose || 'N/A'})`).join('\n');
             }
             form.setValue('fileDetails', details || 'No site details found.');
         } else {
@@ -514,7 +514,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
     return (
       <Form {...form}>
         <form onSubmit={(e) => { e.stopPropagation(); e.preventDefault(); form.handleSubmit(handleConfirmSubmit)(e); }}>
-            <DialogHeader>
+            <DialogHeader className="p-6 pb-4">
                 <DialogTitle>Re-appropriation Details</DialogTitle>
                 <DialogDescription>Track funds transferred from this file to another file.</DialogDescription>
             </DialogHeader>
@@ -636,9 +636,8 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
     );
 };
 
-export default function InvestigationDataEntryFormComponent({ fileNoToEdit, initialData, allStaffMembers, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps }: DataEntryFormProps) {
+export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit, initialData, allStaffMembers, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps }: DataEntryFormProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const fileIdToEdit = searchParams.get("id");
   const approveUpdateId = searchParams.get("approveUpdateId");
@@ -662,7 +661,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const isEditing = !!fileIdToEdit;
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
-  const { control, handleSubmit, setValue, getValues, watch, formState: { isDirty } } = form;
+  const { control, handleSubmit, setValue, getValues, watch } = form;
   
   const currentFileNo = watch("fileNo");
   
@@ -829,7 +828,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
             const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
             if (newDocId) {
-                router.push(`${pathname}?id=${newDocId}${workTypeContext ? `&workType=${workTypeContext}` : ''}${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`);
+                router.push(`?id=${newDocId}&workType=${workTypeContext}`);
             }
         }
     } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
@@ -977,13 +976,13 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
                 <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>
                 <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
                 <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor || isInvestigator}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{INVESTIGATION_FILE_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor || isInvestigator} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
+                <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor || isInvestigator}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor || isInvestigator} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
             <CardFooter className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}>
                     <X className="mr-2 h-4 w-4" /> Close
                 </Button>
                 {!(isViewer || isFormDisabled) && (
-                    <Button type="submit" disabled={isSubmitting || !isDirty}>
+                    <Button type="submit" disabled={isSubmitting}>
                         <Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save'}
                     </Button>
                 )}
@@ -992,7 +991,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={getValues('category')} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><InvestigationSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} isInvestigator={isInvestigator} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><LoggingPumpingTestSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} isInvestigator={isInvestigator} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reorderSite'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl flex flex-col p-0"><ReorderSitesDialog initialData={dialogState.data || []} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
@@ -1047,10 +1046,5 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string 
     if (!status) return 'text-muted-foreground';
     if (status === 'Completed') return 'text-green-600';
     if (status === 'Pending') return 'text-yellow-600';
-    if (status === 'VES Pending') return 'text-orange-600';
     return 'text-muted-foreground';
 };
-
-
-    
-
