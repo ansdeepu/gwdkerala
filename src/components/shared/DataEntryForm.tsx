@@ -137,17 +137,17 @@ const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): stri
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const value = obj[key];
-        const newPath = parentPath ? `\${parentPath}.${key}` : key;
+        const newPath = parentPath ? `${parentPath}.${key}` : key;
         
         if (value?.message && typeof value.message === 'string') {
-          messages.add(`\${formattedFieldName(key)}: \${value.message}`);
+          messages.add(`${formattedFieldName(key)}: ${value.message}`);
         } else if (Array.isArray(value)) {
           value.forEach((item, index) => {
             if (item && typeof item === 'object') {
               for (const itemKey in item) {
                 if (item[itemKey]?.message) {
                   const pathPrefix = processPath(newPath, index);
-                  messages.add(`\${pathPrefix} - \${formattedFieldName(itemKey)}: \${item[itemKey].message}`);
+                  messages.add(`${pathPrefix} - ${formattedFieldName(itemKey)}: ${item[itemKey].message}`);
                 }
               }
             }
@@ -372,7 +372,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
                 </div>
                 <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{isDeferredFunding ? 'AS Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button type="submit">Save</Button>
             </DialogFooter>
@@ -502,7 +502,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                 )}/>
                 <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any specific reasons or notes..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button type="submit">Save</Button>
             </DialogFooter>
