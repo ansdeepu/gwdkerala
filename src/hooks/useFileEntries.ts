@@ -1,3 +1,4 @@
+
 // src/hooks/useFileEntries.ts
 "use client";
 
@@ -61,6 +62,7 @@ const sanitizeDataForFirestore = (data: any): any => {
 export function useFileEntries() {
   const { user } = useAuth();
   const { allFileEntries, isLoading: dataStoreLoading } = useDataStore(); // Use the central store
+  const { toast } = useToast();
   const [fileEntries, setFileEntries] = useState<DataEntryFormData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { getPendingUpdates } = usePendingUpdates();
@@ -202,7 +204,7 @@ export function useFileEntries() {
         console.error(`Error deleting file with ID ${docId}:`, error);
         toast({ title: "Error", description: error.message, variant: "destructive" });
     }
-  }, [user]);
+  }, [user, toast]);
 
   const batchDeleteFileEntries = useCallback(async (fileNos: string[]): Promise<{ successCount: number; failureCount: number }> => {
     if (user?.role !== 'admin') {
@@ -224,7 +226,7 @@ export function useFileEntries() {
     
     await batch.commit();
     return { successCount, failureCount: fileNos.length - successCount };
-  }, [user]);
+  }, [user, toast]);
 
   const getFileEntry = useCallback((fileNo: string): DataEntryFormData | undefined => {
     return allFileEntries.find(entry => entry.fileNo === fileNo);
