@@ -102,7 +102,7 @@ const toDateOrNull = (value: any): Date | null => {
         if (isValid(d)) return d;
     }
     if (typeof value === 'string') {
-        let d = parseISO(value); 
+        let d = parseISO(value);
         if (isValid(d)) return d;
         d = new Date(value);
         if (isValid(d)) return d;
@@ -112,7 +112,7 @@ const toDateOrNull = (value: any): Date | null => {
 
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ id: uuidv4(), amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
 const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "GW Investigation", fileDetails: "" });
-const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ 
+const createDefaultPaymentDetail = (): PaymentDetailFormData => ({
 id: uuidv4(), remittanceId: null, dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
 
 const createDefaultSiteDetail = (): z.infer<typeof SiteDetailSchema> => ({ nameOfSite: "", localSelfGovt: "", constituency: undefined, latitude: undefined, longitude: undefined, purpose: "GW Investigation", estimateAmount: undefined, remittedAmount: undefined, siteConditions: undefined, tsAmount: undefined, tenderNo: "", diameter: undefined, totalDepth: undefined, casingPipeUsed: "", outerCasingPipe: "", innerCasingPipe: "", yieldDischarge: "", zoneDetails: "", waterLevel: "", drillingRemarks: "", developingRemarks: "", schemeRemarks: "", descriptionOfWork: "", pumpDetails: "", waterTankCapacity: "", noOfTapConnections: undefined, noOfBeneficiary: "", dateOfCompletion: "", typeOfRig: undefined, contractorName: "", supervisorUid: undefined, supervisorName: undefined, supervisorDesignation: undefined, totalExpenditure: undefined, workStatus: "Pending", workRemarks: "", surveyOB: "", surveyLocation: "", surveyRemarks: "", surveyRecommendedDiameter: "", surveyRecommendedTD: "", surveyRecommendedOB: "", surveyRecommendedCasingPipe: "", surveyRecommendedPlainPipe: "", surveyRecommendedSlottedPipe: "", surveyRecommendedMsCasingPipe: "", arsTypeOfScheme: undefined, arsPanchayath: undefined, arsBlock: undefined, arsAsTsDetails: undefined, arsSanctionedDate: "", arsTenderedAmount: undefined, arsAwardedAmount: undefined, arsNumberOfStructures: undefined, arsStorageCapacity: undefined, arsNumberOfFillings: undefined, isArsImport: false, pilotDrillingDepth: "", pumpingLineLength: "", deliveryLineLength: "", implementationRemarks: "", workImages: [], workVideos: [], hydrogeologicalRemarks: "", geophysicalRemarks: "" });
@@ -144,17 +144,17 @@ const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): stri
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const value = obj[key];
-        const newPath = parentPath ? `\${parentPath}.${key}` : key;
-        
+        const newPath = parentPath ? `${parentPath}.${key}` : key;
+
         if (value?.message && typeof value.message === 'string') {
-          messages.add(`\${formattedFieldName(key)}: \${value.message}`);
+          messages.add(`${formattedFieldName(key)}: ${value.message}`);
         } else if (Array.isArray(value)) {
           value.forEach((item, index) => {
             if (item && typeof item === 'object') {
               for (const itemKey in item) {
                 if (item[itemKey]?.message) {
                   const pathPrefix = processPath(newPath, index);
-                  messages.add(`\${pathPrefix} - \${formattedFieldName(itemKey)}: \${item[itemKey].message}`);
+                  messages.add(`${pathPrefix} - ${formattedFieldName(itemKey)}: ${item[itemKey].message}`);
                 }
               }
             }
@@ -177,7 +177,7 @@ const DetailRow = ({ label, value, className }: { label: string; value: any, cla
     }
 
     let displayValue = String(value);
-    
+
     if (label.toLowerCase().includes('date') && value) {
         try {
             displayValue = format(new Date(value), "dd/MM/yyyy");
@@ -201,7 +201,7 @@ interface DataEntryFormProps {
     allStaffMembers: StaffMember[];
     userRole?: UserRole;
     workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | 'gwInvestigation' | 'loggingPumpingTest' | null;
-    returnPath: string; 
+    returnPath: string;
     pageToReturnTo: string | null;
     isFormDisabled?: boolean;
     allLsgConstituencyMaps: any[];
@@ -212,10 +212,10 @@ const formatDateForInput = (date: Date | string | null | undefined): string => {
     try { return format(new Date(date), 'yyyy-MM-dd'); } catch { return ""; }
 };
 
-const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeContext, isEditing }: { 
-    initialData: any, 
-    onConfirm: (data: any) => void, 
-    onCancel: () => void, 
+const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeContext, isEditing }: {
+    initialData: any,
+    onConfirm: (data: any) => void,
+    onCancel: () => void,
     workTypeContext: string | null,
     isEditing: boolean
 }) => {
@@ -228,9 +228,9 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
         category: initialData?.category || undefined,
     });
     const [errors, setErrors] = useState<{ fileNo?: string; applicantName?: string; applicationType?: string; category?: string; }>({});
-    
+
     const pageTitle = workTypeContext === 'loggingPumpingTest' ? 'Logging & Pumping Test' : 'GW Investigation';
-    
+
     const filteredAppTypeOptions: ApplicationType[] = useMemo(() => {
         let options: ApplicationType[] = [];
         if (workTypeContext === 'gwInvestigation') {
@@ -256,7 +256,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
             setData((prev: any) => ({ ...prev, applicationType: undefined }));
         }
     };
-    
+
     const handleSave = async () => {
         const newErrors: { fileNo?: string; applicantName?: string; applicationType?: string; category?: string; } = {};
         if (!data.fileNo?.trim()) {
@@ -271,7 +271,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
         if (!data.category) {
             newErrors.category = "Category is required.";
         }
-        
+
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             return;
@@ -289,13 +289,13 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                     const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes(docData.category);
                     const hasInvestigationPurpose = docData.siteDetails?.some((site: any) => site.purpose === 'GW Investigation');
                     const hasLoggingPumpingPurpose = docData.siteDetails?.some((site: any) => LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose));
-                    
+
                     if (workTypeContext === 'gwInvestigation') {
                         return (isInvestigationCategory || hasInvestigationPurpose) && !hasLoggingPumpingPurpose;
                     }
                     return false;
                 });
-                
+
                 if (hasDuplicate) {
                     toast({
                         title: "Duplicate File Number",
@@ -303,7 +303,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                         variant: "destructive",
                     });
                     setIsChecking(false);
-                    return; 
+                    return;
                 }
             } catch (error) {
                 toast({
@@ -347,7 +347,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="space-y-2"><Label>Phone No.</Label><Input value={data.phoneNo || ''} onChange={(e) => handleChange('phoneNo', e.target.value)} disabled={isChecking} /></div>
                 <div className="space-y-2"><Label>Secondary Mobile No.</Label><Input value={data.secondaryMobileNo || ''} onChange={(e) => handleChange('secondaryMobileNo', e.target.value)} disabled={isChecking}/></div>
-                
+
                 <div className="space-y-2">
                     <Label>Category *</Label>
                     <Select onValueChange={(value) => handleChange('category', value)} value={data.category}>
@@ -362,9 +362,9 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                  <div className="space-y-2">
                     <Label>Type of Application *</Label>
                     {filteredAppTypeOptions.length === 1 ? (
-                        <Input 
-                            value={applicationTypeDisplayMap[filteredAppTypeOptions[0] as ApplicationType] || filteredAppTypeOptions[0]} 
-                            readOnly 
+                        <Input
+                            value={applicationTypeDisplayMap[filteredAppTypeOptions[0] as ApplicationType] || filteredAppTypeOptions[0]}
+                            readOnly
                             className="bg-muted font-semibold"
                         />
                     ) : (
@@ -397,7 +397,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
     const handleConfirmSubmit = (data: RemittanceDetailFormData) => {
         onConfirm(data);
     };
-    
+
     const availableRemittanceAccounts = ["Bank", "STSB", "Revenue Head"];
 
     return (
@@ -414,7 +414,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
                 {category === 'Complaints' && (
                     <div className="flex items-start gap-2 p-3 mt-2 text-sm text-amber-800 bg-amber-100/50 border border-amber-200 rounded-md">
                         <Info className="h-4 w-4 mt-0.5 shrink-0" />
-                        <p>For the &apos;Complaints&apos; category, remittance is not applicable. Please enter the amount as zero and select any bank account to proceed.</p>
+                        <p>For the 'Complaints' category, remittance is not applicable. Please enter the amount as zero and select any bank account to proceed.</p>
                     </div>
                 )}
             </DialogHeader>
@@ -428,7 +428,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
                 </div>
                 <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{category === 'Complaints' ? 'Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button type="submit">Save</Button>
             </DialogFooter>
@@ -457,7 +457,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
 
     const suggestions = useMemo(() => {
         if (!watchedPageType) return [];
-        
+
         let filtered: string[] = [];
         if (watchedPageType === 'ARS') {
             filtered = allArsEntries.map(e => e.fileNo).filter(Boolean);
@@ -465,13 +465,13 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
             const source = allFileEntries.filter(entry => {
                 const appType = entry.applicationType as any;
                 if (watchedPageType === "Deposit Work") return PUBLIC_DEPOSIT_APPLICATION_TYPES.includes(appType) || PRIVATE_APPLICATION_TYPES.includes(appType) || COLLECTOR_APPLICATION_TYPES.includes(appType) || PLAN_FUND_APPLICATION_TYPES.includes(appType);
-                
+
                 const hasInvestigation = entry.siteDetails?.some(s => s.purpose === 'GW Investigation');
                 const hasLoggingPumping = entry.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
-                
+
                 if (watchedPageType === "GW Investigation") return hasInvestigation && !hasLoggingPumping;
                 if (watchedPageType === "Logging & Pumping Test") return hasLoggingPumping && !hasInvestigation;
-                
+
                 return false;
             });
             filtered = source.map(e => e.fileNo).filter(Boolean);
@@ -521,7 +521,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
             <div className="p-6 pt-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField name="date" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Date <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                    <FormField name="pageType" control={form.control} render={({ field }) => ( 
+                    <FormField name="pageType" control={form.control} render={({ field }) => (
                         <FormItem>
                             <FormLabel>Type of Page</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
@@ -531,10 +531,10 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                                 </SelectContent>
                             </Select>
                             <FormMessage />
-                        </FormItem> 
+                        </FormItem>
                     )}/>
                     <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField name="refFileNo" control={form.control} render={({ field }) => ( 
+                        <FormField name="refFileNo" control={form.control} render={({ field }) => (
                             <FormItem>
                                 <FormLabel>File No. <span className="text-destructive">*</span></FormLabel>
                                 <FormControl>
@@ -544,21 +544,21 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                                     {suggestions.map(no => <option key={no} value={no} />)}
                                 </datalist>
                                 <FormMessage />
-                            </FormItem> 
+                            </FormItem>
                         )}/>
                         <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
                     </div>
                 </div>
-                <FormField name="fileDetails" control={form.control} render={({ field }) => ( 
+                <FormField name="fileDetails" control={form.control} render={({ field }) => (
                     <FormItem>
                         <FormLabel>File Details</FormLabel>
                         <FormControl><Textarea {...field} className="bg-muted resize-none" value={field.value || ""} readOnly disabled/></FormControl>
                         <FormMessage />
-                    </FormItem> 
+                    </FormItem>
                 )}/>
                 <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any specific reasons or notes..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button type="submit">Save</Button>
             </DialogFooter>
@@ -576,7 +576,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
         dateOfPayment: formatDateForInput(initialData?.dateOfPayment),
       },
     });
-    
+
     const handleConfirmSubmit = (data: PaymentDetailFormData) => {
         onConfirm(data);
     };
@@ -602,22 +602,22 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                               </Select><FormMessage /></FormItem>} />
                           </div>
                           <Separator/>
-                            <FormField 
-                                name="revenueHead" 
-                                control={form.control} 
+                            <FormField
+                                name="revenueHead"
+                                control={form.control}
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Revenue Head (₹)</FormLabel>
                                         <FormControl>
-                                            <Input 
-                                                type="number" 
-                                                {...field} 
-                                                onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} 
+                                            <Input
+                                                type="number"
+                                                {...field}
+                                                onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                                                 readOnly={isLinkedToRemittance}
                                                 className={isLinkedToRemittance ? 'bg-muted/50' : ''}
                                             />
                                         </FormControl>
-                                        {isLinkedToRemittance && <FormDescription className="text-xs">Auto-managed by a &apos;Revenue Head&apos; remittance.</FormDescription>}
+                                        {isLinkedToRemittance && <FormDescription className="text-xs">Auto-managed by a 'Revenue Head' remittance.</FormDescription>}
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -647,7 +647,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const { toast } = useToast();
   const { user } = useAuth();
   const { allFileEntries, allArsEntries } = useDataStore();
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
   const [reappAccordionValue, setReappAccordionValue] = useState<string | undefined>(undefined);
@@ -659,12 +659,12 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const isInvestigator = userRole === 'investigator';
   const isViewer = userRole === 'viewer';
   const isEditing = !!fileIdToEdit;
-  
+
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
-  const { control, handleSubmit, setValue, getValues, watch } = form;
-  
+  const { control, handleSubmit, setValue, getValues, watch, formState: { isDirty } } = form;
+
   const currentFileNo = watch("fileNo");
-  
+
   const { fields: remittanceFields, append: appendRemittance, remove: removeRemittance, update: updateRemittance } = useFieldArray({ control, name: "remittanceDetails" });
   const { fields: reappropriationFields, append: appendReappropriation, remove: removeReappropriation, update: updateReappropriation } = useFieldArray({ control, name: "reappropriationDetails" });
   const { fields: siteFields, append: appendSite, remove: removeSite, update: updateSite, move: moveSite } = useFieldArray({ control, name: "siteDetails" });
@@ -699,7 +699,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     });
     return credits;
   }, [currentFileNo, allFileEntries]);
-  
+
   const sortedCombinedReappropriations = useMemo(() => {
     const manual = reappropriationFields.map((field, index) => ({
         ...field,
@@ -732,9 +732,9 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
    useEffect(() => {
         const currentRemittances = getValues('remittanceDetails') || [];
         const manualPayments = (getValues('paymentDetails') || []).filter(p => !p.remittanceId);
-        
+
         const autoGeneratedPayments: PaymentDetailFormData[] = [];
-        
+
         currentRemittances.forEach(remittance => {
             if (remittance.remittedAccount === 'Revenue Head' && remittance.id) {
                 const amount = Number(remittance.amountRemitted) || 0;
@@ -752,7 +752,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                 }
             }
         });
-        
+
         const newPayments = [...manualPayments, ...autoGeneratedPayments];
 
         if (JSON.stringify((getValues('paymentDetails') || []).map(p => ({...p, id: ''}))) !== JSON.stringify(newPayments.map(p => ({...p, id: ''})))) {
@@ -776,12 +776,12 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         return sum + (Number(item.amount) || 0);
     }, 0);
     setValue("totalReappropriationCredit", totalReappCredit);
-    
+
     const totalPayment = watchedPaymentDetails?.reduce((sum, item) => sum + calculatePaymentEntryTotalGlobal(item), 0) || 0;
     setValue("totalPaymentAllEntries", totalPayment);
 
     setValue("overallBalance", totalRemittance + totalReappCredit - totalPayment - totalReappDebit);
-    
+
   }, [watchedRemittanceDetails, watchedReappropriationDetails, watchedPaymentDetails, autoCredits, setValue]);
 
     const paymentFieldsToDisplay = useMemo(() => {
@@ -793,8 +793,8 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
           { key: 'kbcwb', label: 'KBCWB (₹)' },
           { key: 'refundToParty', label: 'Refund to Party (₹)' }
         ];
-        
-        return fields.filter(field => 
+
+        return fields.filter(field =>
             paymentFields.some(payment => {
                 const value = payment[field.key];
                 return typeof value === 'number' && value > 0;
@@ -806,7 +806,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
     const messages = getFormattedErrorMessages(errors);
     toast({ title: "Validation Error", description: (<ul className="list-disc pl-5 mt-2 space-y-1">{messages.map((msg, i) => <li key={i} className="text-xs">{msg}</li>)}</ul>), variant: "destructive", duration: 10000 });
   };
-  
+
   const onSubmit = async (data: DataEntryFormData) => {
     setIsSubmitting(true);
     try {
@@ -929,12 +929,12 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                   <TableCell>{item.remittanceRemarks}</TableCell>
                   {isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('remittance', { index, ...item }, false)}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'remittance', index})} disabled={isSupervisor || isInvestigator || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}
               </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No remittance details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
-              
+
               <Accordion type="single" collapsible className="w-full" value={reappAccordionValue} onValueChange={setReappAccordionValue}><AccordionItem value="reappropriation-details" className="border-b-0"><Card><AccordionTrigger className="w-full p-6 hover:no-underline [&[data-state=open]]:border-b"><div className="flex flex-1 items-center justify-between"><CardTitle className="text-xl">3. Re-appropriation Details</CardTitle>{isEditor && !isFormDisabled && (<Button type="button" variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openDialog('reappropriation', createDefaultReappropriationDetail()); }} disabled={isSupervisor || isInvestigator || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>)}</div></AccordionTrigger><AccordionContent><CardContent className="pt-6"><div className="relative max-h-[400px] overflow-auto"><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Type of Page</TableHead><TableHead>File No</TableHead><TableHead>File Details</TableHead><TableHead className="text-right">Credit</TableHead><TableHead className="text-right">Debit</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{sortedCombinedReappropriations.length > 0 ? sortedCombinedReappropriations.map((item, index) => {
                   if (item._source === 'auto') return (<TableRow key={`credit-${index}`} className="bg-green-50/50"><TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell><TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell><TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell><TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-bold text-muted-foreground">-</TableCell><TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>{isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}</TableRow>);
                   else return (<TableRow key={item.id}><TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell><TableCell className="font-mono text-xs">{item.refFileNo}</TableCell><TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell><TableCell className="text-right font-bold text-muted-foreground">-</TableCell><TableCell className="text-right font-bold text-red-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell><TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index: item._originalIndex, ...item })} disabled={isSupervisor || isInvestigator || isViewer}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index: item._originalIndex})} disabled={isSupervisor || isInvestigator || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>);
                   }) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow className="bg-muted/50 font-bold"><TableCell colSpan={4} className="text-right">Totals</TableCell><TableCell className="text-right text-green-600">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell><TableCell className="text-right text-red-600">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell><TableCell colSpan={isEditor && !isFormDisabled ? 2 : 1} className="text-right">Balance: <span className={cn((totalReappropriationCreditWatched - totalReappropriationWatched) >= 0 ? "text-green-600" : "text-red-600")}>₹{Math.abs(totalReappropriationCreditWatched - totalReappropriationWatched).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></TableCell></TableRow></TableFooterComponent></Table></div></CardContent></AccordionContent></Card></AccordionItem></Accordion>
-  
+
               <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">4. Site Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('site', {})} disabled={isSupervisor || isInvestigator || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add Site</Button>}</CardHeader><CardContent><Accordion type="single" collapsible className="w-full space-y-2" value={activeAccordionItem} onValueChange={setActiveAccordionItem}>{siteFields.length > 0 ? siteFields.map((site, index) => (<AccordionItem key={site.id} value={`site-${index}`} className="border bg-background rounded-lg shadow-sm"><AccordionTrigger className="flex-1 text-base font-semibold px-4 group" disabled={isFormDisabled}><div className="flex justify-between items-center w-full"><div className={cn("text-left flex-1", getStatusColorClass(site.workStatus as any))}>Site #{index + 1}: {site.nameOfSite || "Unnamed Site"} ({site.purpose || 'N/A'})</div><div className="flex items-center space-x-1 mr-2"><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('site', { index, ...site }, false); }}><Eye className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>View / Edit Site</p></TooltipContent></Tooltip></TooltipProvider>{!isFormDisabled && !isViewer && (<><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleCopySite(index); }}><Copy className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Copy Site</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDialog('reorderSite', getValues('siteDetails')); }}><ArrowUpDown className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent><p>Reorder Sites</p></TooltipContent></Tooltip></TooltipProvider><TooltipProvider><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToDelete({type: 'site', index}); }}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Delete Site</p></TooltipContent></Tooltip></TooltipProvider></>)}</div></div></AccordionTrigger><AccordionContent className="p-6 pt-0"><div className="border-t pt-6 space-y-4"><dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-4"><DetailRow label="Purpose" value={site.purpose} /><DetailRow label="Status" value={site.workStatus} /><DetailRow label="Contractor" value={site.contractorName} /><DetailRow label="Supervisor" value={site.supervisorName} /></dl></div></AccordionContent></AccordionItem>)) : <div className="text-center py-8 text-muted-foreground">No sites added.</div>}</Accordion></CardContent></Card>
               <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">5. Payment Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('payment', createDefaultPaymentDetail())} disabled={isSupervisor || isInvestigator || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Acct.</TableHead>
                 {paymentFieldsToDisplay.map(field => (
@@ -976,13 +976,13 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                 <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>
                 <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
                 <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor || isInvestigator}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor || isInvestigator} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
+                <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor || isInvestigator}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{INVESTIGATION_FILE_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor || isInvestigator} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
             <CardFooter className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}>
                     <X className="mr-2 h-4 w-4" /> Close
                 </Button>
                 {!(isViewer || isFormDisabled) && (
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting || !isDirty}>
                         <Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save'}
                     </Button>
                 )}
@@ -1048,3 +1048,5 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string 
     if (status === 'Pending') return 'text-yellow-600';
     return 'text-muted-foreground';
 };
+
+    
