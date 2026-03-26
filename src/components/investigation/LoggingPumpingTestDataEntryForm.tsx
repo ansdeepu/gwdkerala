@@ -319,7 +319,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
 
     return (
       <div className="flex flex-col h-auto">
-        <DialogHeader>
+        <DialogHeader className="p-6 pb-4">
           <DialogTitle>Application Details</DialogTitle>
         </DialogHeader>
         <div className="p-6 pt-0 space-y-4 flex-1">
@@ -400,7 +400,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
             form.handleSubmit(handleConfirmSubmit)(e);
           }}
         >
-            <DialogHeader>
+            <DialogHeader className="p-6 pb-4">
                 <DialogTitle>Remittance Details</DialogTitle>
                 {category === 'Complaints' && (
                     <div className="flex items-start gap-2 p-3 mt-2 text-sm text-amber-800 bg-amber-100/50 border border-amber-200 rounded-md">
@@ -419,7 +419,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
                 </div>
                 <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{category === 'Complaints' ? 'Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button type="submit">Save</Button>
             </DialogFooter>
@@ -505,7 +505,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
     return (
       <Form {...form}>
         <form onSubmit={(e) => { e.stopPropagation(); e.preventDefault(); form.handleSubmit(handleConfirmSubmit)(e); }}>
-            <DialogHeader>
+            <DialogHeader className="p-6 pb-4">
                 <DialogTitle>Re-appropriation Details</DialogTitle>
                 <DialogDescription>Track funds transferred from this file to another file.</DialogDescription>
             </DialogHeader>
@@ -549,7 +549,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                 )}/>
                 <FormField name="remarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any specific reasons or notes..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
-            <DialogFooter>
+            <DialogFooter className="p-6 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button type="submit">Save</Button>
             </DialogFooter>
@@ -608,7 +608,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                                                 className={isLinkedToRemittance ? 'bg-muted/50' : ''}
                                             />
                                         </FormControl>
-                                        {isLinkedToRemittance && <FormDescription className="text-xs">Auto-managed by a &apos;Revenue Head&apos; remittance.</FormDescription>}
+                                        {isLinkedToRemittance && <FormDescription className="text-xs">Auto-managed by a 'Revenue Head' remittance.</FormDescription>}
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -652,7 +652,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const isEditing = !!fileIdToEdit;
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
-  const { control, handleSubmit, setValue, getValues, watch } = form;
+  const { control, handleSubmit, setValue, getValues, watch, formState: { isDirty } } = form;
   
   const currentFileNo = watch("fileNo");
   
@@ -805,17 +805,22 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
           ...data,
           constituency: data.constituency === undefined ? null : data.constituency,
         };
-
         if (!user) throw new Error("Authentication error.");
+
         if (isSupervisor || isInvestigator) {
             await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
             toast({ title: "Update Submitted" });
+            form.reset(data);
         } else if (fileIdToEdit) {
             await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
             toast({ title: "File Updated" });
+            form.reset(data);
         } else {
-            await addFileEntry(sanitizedData);
+            const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
+            if (newDocId) {
+                router.push(`${pathname}?id=${newDocId}${workTypeContext ? `&workType=${workTypeContext}` : ''}${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`);
+            }
         }
     } catch (error: any) { toast({ title: "Submission Failed", description: error.message, variant: "destructive" }); } finally { setIsSubmitting(false); }
   };
@@ -897,6 +902,8 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         toast({ title: "Site Cloned", description: `Cloned Site #${index + 1}` });
     };
 
+  const isDeferredFunding = workTypeContext === 'planFund' || workTypeContext === 'collector';
+  const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction" : "2. Remittance Details";
   const totalRemittanceWatched = watch('totalRemittance');
   const totalReappropriationWatched = watch('totalReappropriation');
   const totalReappropriationCreditWatched = watch('totalReappropriationCredit');
@@ -905,9 +912,9 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   return (
     <FormProvider {...form}>
       <div>
-          <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
-              <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. Application Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isInvestigator || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
-              <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">2. Remittance Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('remittance', createDefaultRemittanceDetail())} disabled={isSupervisor || isInvestigator || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount (₹)</TableHead><TableHead>Account</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{remittanceFields.length > 0 ? remittanceFields.map((item, index) => (
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
+            <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">1. Application Details</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('application', getValues(), false)} disabled={isSupervisor || isInvestigator || isViewer}><Eye className="h-4 w-4 mr-2" />Edit</Button>}</CardHeader><CardContent><div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4"><DetailRow label="File No." value={watch('fileNo')} /><DetailRow label="Applicant Name &amp; Address" value={watch('applicantName')} /><DetailRow label="Phone No." value={watch('phoneNo')} /><DetailRow label="Secondary Mobile No." value={watch('secondaryMobileNo')} /><DetailRow label="Category" value={watch('category')} /><DetailRow label="Type of Application" value={watch('applicationType') ? applicationTypeDisplayMap[watch('applicationType') as ApplicationType] : ''} /></div></CardContent></Card>
+            <Card><CardHeader className="flex flex-row justify-between items-start"><div><CardTitle className="text-xl">{remittanceTitle}</CardTitle></div>{isEditor && !isFormDisabled && <Button type="button" onClick={() => openDialog('remittance', createDefaultRemittanceDetail())} disabled={isSupervisor || isInvestigator || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>}</CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Amount (₹)</TableHead><TableHead>Account</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{remittanceFields.length > 0 ? remittanceFields.map((item, index) => (
               <TableRow key={item.id}>
                   <TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                   <TableCell>{(Number(item.amountRemitted) || 0).toLocaleString('en-IN')}</TableCell>
@@ -968,7 +975,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                     <X className="mr-2 h-4 w-4" /> Close
                 </Button>
                 {!(isViewer || isFormDisabled) && (
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting || !isDirty}>
                         <Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save'}
                     </Button>
                 )}
@@ -1034,6 +1041,3 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string 
     if (status === 'Pending') return 'text-yellow-600';
     return 'text-muted-foreground';
 };
-
-
-    

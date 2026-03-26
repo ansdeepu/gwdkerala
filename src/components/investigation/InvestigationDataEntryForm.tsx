@@ -70,7 +70,6 @@ import {
   LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS,
   INVESTIGATION_FILE_STATUS_OPTIONS,
   type StaffMember,
-  type PendingUpdate,
 } from '@/lib/schemas';
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -121,7 +120,7 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
   return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
 };
 
-const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): string[] => {
+const getFormattedErrorMessages = (errors: FieldErrors<any>): string[] => {
   const messages = new Set<string>();
 
   const processPath = (path: string, index: number): string => {
@@ -144,7 +143,7 @@ const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): stri
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         const value = obj[key];
         const newPath = parentPath ? `${parentPath}.${key}` : key;
-
+        
         if (value?.message && typeof value.message === 'string') {
           messages.add(`${formattedFieldName(key)}: ${value.message}`);
         } else if (Array.isArray(value)) {
@@ -660,7 +659,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const isEditing = !!fileIdToEdit;
   
   const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
-  const { control, handleSubmit, setValue, getValues, watch } = form;
+  const { control, handleSubmit, setValue, getValues, watch, formState: { isDirty } } = form;
   
   const currentFileNo = watch("fileNo");
   
