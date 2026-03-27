@@ -204,6 +204,21 @@ export default function ArsPage() {
     }
     
     sites.sort((a, b) => {
+        // Primary sort: Sanctioned Date (Descending)
+        const sanctionedA = a.arsSanctionedDate ? safeParseDate(a.arsSanctionedDate) : null;
+        const sanctionedB = b.arsSanctionedDate ? safeParseDate(b.arsSanctionedDate) : null;
+
+        if (sanctionedA && sanctionedB) {
+            if (sanctionedA.getTime() !== sanctionedB.getTime()) {
+                return sanctionedB.getTime() - sanctionedA.getTime();
+            }
+        } else if (sanctionedA) {
+            return -1;
+        } else if (sanctionedB) {
+            return 1;
+        }
+
+        // Secondary sort: Creation Date (Descending)
         const dateA = a.createdAt ? safeParseDate(a.createdAt) : null;
         const dateB = b.createdAt ? safeParseDate(b.createdAt) : null;
 
