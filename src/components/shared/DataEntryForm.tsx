@@ -80,6 +80,14 @@ import SiteDialogContent from "./SiteDialogContent";
 
 const db = getFirestore(app);
 
+const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string => {
+    if (!status) return 'text-muted-foreground';
+    const completedOrFailed: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed"];
+    if (completedOrFailed.includes(status as SiteWorkStatus)) return 'text-red-600';
+    if (status === 'To be Refunded') return 'text-yellow-600';
+    return 'text-green-600';
+};
+
 const toDateOrNull = (value: any): Date | null => {
     if (value === null || value === undefined || value === '') return null;
     if (value instanceof Date && isValid(value)) return value;
@@ -96,14 +104,6 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
  };
 
-const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string => {
-    if (!status) return 'text-muted-foreground';
-    const completedOrFailed: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed"];
-    if (completedOrFailed.includes(status as SiteWorkStatus)) return 'text-red-600';
-    if (status === 'To be Refunded') return 'text-yellow-600';
-    return 'text-green-600';
-};
-
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ id: uuidv4(), amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
 const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "Deposit Work", fileDetails: "" });
 const createDefaultPaymentDetail = (): PaymentDetailFormData => ({ id: uuidv4(), remittanceId: null, dateOfPayment: "", paymentAccount: "Bank", revenueHead: undefined, contractorsPayment: undefined, gst: undefined, incomeTax: undefined, kbcwb: undefined, refundToParty: undefined, totalPaymentPerEntry: 0, paymentRemarks: "" });
@@ -115,66 +115,39 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
 };
 
 const getFormattedErrorMessages = (errors: FieldErrors<any>): string[] => {
-    const messages = new Set<string>();
-  
-    const processPath = (path: string, index: number): string => {
-      if (path === 'siteDetails') return `Site #${index + 1}`;
-      if (path === 'remittanceDetails') return `Remittance #${index + 1}`;
-      if (path === 'reappropriationDetails') return `Re-appropriation #${index + 1}`;
-      if (path === 'paymentDetails') return `Payment #${index + 1}`;
-      return path;
-    };
-  
-    const formattedFieldName = (fieldName: string) => {
-      return fieldName
-        .replace(/([A-Z])/g, ' $1')
-        .replace(/^./, str => str.toUpperCase());
-    };
-  
-    function findMessages(obj: any, parentPath: string = "") {
-      if (!obj) return;
-      for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          const value = obj[key];
-          const newPath = parentPath ? `${parentPath}.${key}` : key;
-          
-          if (value?.message && typeof value.message === 'string') {
-            const pathParts = newPath.split('.');
-            let formattedPath = '';
-            
-            for (let i = 0; i < pathParts.length; i++) {
-                const part = pathParts[i];
-                if (!isNaN(parseInt(part))) { // It's an index
-                    const prevPart = pathParts[i-1];
-                    formattedPath += ` #${parseInt(part) + 1}`;
-                } else {
-                    if (i > 0 && isNaN(parseInt(pathParts[i-1]))) {
-                         formattedPath += ` > ${formattedFieldName(part)}`;
-                    } else if (i === 0) {
-                         formattedPath += formattedFieldName(part);
-                    } else {
-                        formattedPath += ` > ${formattedFieldName(part)}`;
-                    }
-                }
-            }
-            messages.add(`${formattedPath}: ${value.message}`);
-          } else if (Array.isArray(value)) {
-             value.forEach((item, index) => {
-                if(item && typeof item === 'object') {
-                    const itemPath = `${newPath}.${index}`;
-                    findMessages(item, itemPath);
-                }
-            });
-          } else if (value && typeof value === 'object' && key !== 'root') {
-            findMessages(value, newPath);
-          }
+  const messages = new Set<string>();
+
+  const formattedFieldName = (fieldName: string) => {
+    return fieldName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  };
+
+  function findMessages(obj: any, parentPath: string[] = []) {
+    if (!obj) return;
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const value = obj[key];
+        const newPath = [...parentPath, key];
+        
+        if (value?.message && typeof value.message === 'string') {
+          const pathString = newPath.map((part, index) => {
+              if (!isNaN(parseInt(part))) {
+                  const prevPart = newPath[index - 1];
+                  const singular = prevPart.endsWith('s') ? prevPart.slice(0, -1) : prevPart;
+                  return `${formattedFieldName(singular)} #${parseInt(part) + 1}`;
+              }
+              return formattedFieldName(part);
+          }).join(' > ');
+          messages.add(`${pathString}: ${value.message}`);
+        } else if (value && typeof value === 'object' && key !== 'root') {
+          findMessages(value, newPath);
         }
       }
     }
-  
-    findMessages(errors);
-    return Array.from(messages);
-  };
+  }
+
+  findMessages(errors);
+  return Array.from(messages);
+};
 
 
 const DetailRow = ({ label, value, className }: { label: string; value: any, className?: string }) => {
@@ -667,6 +640,10 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const watchedReappropriationDetails = watch("reappropriationDetails");
   const watchedPaymentDetails = watch("paymentDetails");
 
+  useEffect(() => {
+    reset(initialData);
+  }, [initialData, reset]);
+
   const autoCredits = useMemo(() => {
     if (!currentFileNo) return [];
     const normalizedFileNo = currentFileNo.toLowerCase().trim();
@@ -830,7 +807,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
     } catch (error: any) { 
         toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
     } finally { 
-      setIsSubmitting(false);
+        setIsSubmitting(false); 
     }
   };
 

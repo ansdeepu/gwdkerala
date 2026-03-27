@@ -129,9 +129,7 @@ const getFormattedErrorMessages = (errors: FieldErrors<any>): string[] => {
   const messages = new Set<string>();
 
   const formattedFieldName = (fieldName: string) => {
-    return fieldName
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase());
+    return fieldName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
   };
 
   function findMessages(obj: any, parentPath: string[] = []) {
@@ -628,7 +626,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
     );
 };
 
-export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit, initialData, allStaffMembers, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps }: DataEntryFormProps) {
+export default function InvestigationDataEntryFormComponent({ fileNoToEdit, initialData, allStaffMembers, userRole, workTypeContext, returnPath, pageToReturnTo, isFormDisabled = false, allLsgConstituencyMaps }: DataEntryFormProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -666,6 +664,10 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const watchedRemittanceDetails = watch("remittanceDetails");
   const watchedReappropriationDetails = watch("reappropriationDetails");
   const watchedPaymentDetails = watch("paymentDetails");
+
+  useEffect(() => {
+    reset(initialData);
+  }, [initialData, reset]);
 
   const autoCredits = useMemo(() => {
     if (!currentFileNo) return [];
@@ -809,8 +811,13 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
         };
         if (!user) throw new Error("Authentication error.");
 
+        const fileLevelUpdates = {
+            fileStatus: sanitizedData.fileStatus,
+            remarks: sanitizedData.remarks
+        }
+        
         if (isSupervisor || isInvestigator) {
-            await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, {});
+            await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, fileLevelUpdates);
             toast({ title: "Update Submitted" });
         } else if (fileIdToEdit) {
             await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
@@ -819,7 +826,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
             const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
             if (newDocId) {
-                const newPath = `/dashboard/data-entry?id=${newDocId}&workType=loggingPumpingTest${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`;
+                const newPath = `/dashboard/data-entry?id=${newDocId}&workType=gwInvestigation${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`;
                 router.push(newPath);
             }
         }
