@@ -29,9 +29,6 @@ const db = getFirestore(app);
 const FILE_ENTRIES_COLLECTION = 'fileEntries';
 const PENDING_UPDATES_COLLECTION = 'pendingUpdates';
 
-// Statuses that are considered "ongoing" for a supervisor
-const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
-
 // Helper function to recursively remove `undefined` values, replacing them with `null`.
 const sanitizeDataForFirestore = (data: any): any => {
     if (data === undefined) {
@@ -95,6 +92,8 @@ export function useFileEntries() {
 
       if (isFieldStaff && user.uid) {
         const filteredEntries: DataEntryFormData[] = allFileEntries.filter(entry => {
+            // A file should be visible to field staff if they are assigned to ANY site within it,
+            // regardless of the site's work status. This ensures completed works remain visible.
             const isAssigned = entry.siteDetails?.some(site => {
                 if (user.role === 'supervisor') {
                     const isAssignedByUid = site.supervisorUid === user.uid;
@@ -102,12 +101,13 @@ export function useFileEntries() {
                     return isAssignedByUid || isAssignedByName;
                 }
                 if (user.role === 'investigator') {
-                    // Investigators are matched by name to either of the investigator fields
                     return site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
                 }
                 return false;
             });
+
             const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
+
             return isAssigned || hasPendingUpdate;
         });
         setFileEntries(filteredEntries);

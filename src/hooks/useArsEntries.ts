@@ -1,3 +1,4 @@
+
 // src/hooks/useArsEntries.ts
 "use client";
 
@@ -20,8 +21,6 @@ export type ArsEntry = ArsEntryFormData & {
   updatedAt?: Date;
   isPending?: boolean;
 };
-
-const SUPERVISOR_EDITABLE_STATUSES: ArsStatus[] = ["Work Order Issued", "Work in Progress", "Work Completed", "Work Failed"];
 
 const processArsDoc = (docSnap: DocumentData): ArsEntry => {
     const data = docSnap.data();
@@ -80,7 +79,8 @@ export function useArsEntries() {
       if (user.role === "supervisor" || user.role === "investigator") {
         finalEntries = finalEntries.filter((entry) => {
             const isAssigned = entry.supervisorUid === user.uid;
-            // Removed the isActionable filter to show all assigned works, not just ongoing.
+            // The filter should only check for assignment, not work status,
+            // to ensure completed works remain visible to the assigned supervisor.
             return isAssigned;
         });
       }
