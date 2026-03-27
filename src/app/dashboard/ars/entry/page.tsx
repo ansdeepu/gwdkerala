@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { useAuth, type UserProfile } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -58,6 +58,7 @@ const formatDateForInput = (date: any): string => {
 export default function ArsEntryPage() {
     const { setHeader } = usePageHeader();
     const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
     const { user, isLoading: authLoading } = useAuth();
     const { toast } = useToast();
@@ -103,7 +104,7 @@ export default function ArsEntryPage() {
         defaultValues: {},
     });
 
-    const { control, handleSubmit, setValue, getValues, watch, reset } = form;
+    const { control, handleSubmit, setValue, getValues, watch, reset, formState: { isDirty } } = form;
     const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
     const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
     const watchedLsg = watch("localSelfGovt");
@@ -117,7 +118,6 @@ export default function ArsEntryPage() {
 
         if (arsEntry) {
             // When an existing entry is loaded, reset the form with its data.
-            // The arsEntry object already has Date objects for date fields from the data store.
             reset(arsEntry);
         }
     }, [arsEntry, id, reset]);
@@ -232,11 +232,14 @@ export default function ArsEntryPage() {
                     await updateArsEntry(id, data, approveUpdateId || undefined, user || undefined);
                     toast({ title: "ARS Entry Updated", description: "The ARS details have been saved." });
                 }
+                // Reset form with current data to clear isDirty flag
+                reset(data);
             } else {
-                await addArsEntry(data);
+                const newId = await addArsEntry(data);
                 toast({ title: "ARS Entry Created", description: "The new ARS entry has been saved." });
+                // For new entries, we redirect to the edit page for the newly created ID to ensure stayed-on-page functionality
+                router.replace(`${pathname}?id=${newId}`);
             }
-            router.push('/dashboard/ars');
         } catch (error: any) {
             toast({ title: 'Submission Failed', description: error.message, variant: 'destructive' });
         } finally {
@@ -345,12 +348,12 @@ export default function ArsEntryPage() {
                 </Card>
 
                 <CardFooter className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
+                    <Button type="button" variant="outline" onClick={() => router.push('/dashboard/ars')} disabled={isSubmitting}>
                         <X className="mr-2 h-4 w-4" /> Close
                     </Button>
                     {!isReadOnly && (
-                        <Button type="submit" disabled={isSubmitting}>
-                            <Save className="mr-2 h-4 w-4"/> {isSubmitting ? "Saving..." : 'Save'}
+                        <Button type="submit" disabled={isSubmitting || !isDirty}>
+                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>} {isSubmitting ? "Saving..." : 'Save'}
                         </Button>
                     )}
                 </CardFooter>
