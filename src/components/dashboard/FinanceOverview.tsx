@@ -1,4 +1,3 @@
-
 // src/components/dashboard/FinanceOverview.tsx
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -14,6 +13,7 @@ import { sitePurposeOptions, COLLECTOR_APPLICATION_TYPES, PLAN_FUND_APPLICATION_
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Loader2, RefreshCw, XCircle, Landmark, TrendingUp, TrendingDown, Wallet, CalendarIcon } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface SiteDetailWithFileContext extends SiteDetailFormData {
   fileNo: string;
@@ -430,52 +430,59 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
                             </CardContent>
                         </Card>
                       
-                        <Card className="shadow-inner bg-background/50">
-                            <CardHeader className="pb-4">
-                                <CardTitle className="text-lg">Revenue Head Summary (Purpose-wise Breakdown)</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Purpose</TableHead>
-                                            <TableHead className="text-right">Amount Credited (₹)</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {Object.entries(transformedFinanceMetrics.revenueHeadBreakdown)
-                                            .filter(([_, data]) => data.total > 0)
-                                            .sort((a, b) => b[1].total - a[1].total)
-                                            .map(([purpose, data]) => (
-                                                <TableRow key={purpose}>
-                                                    <TableCell className="font-medium">{purpose}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Button variant="link" className="text-green-600 p-0 h-auto font-bold font-mono" onClick={() => handleAmountClick('RevenueHead', 'credit', purpose)}>
-                                                            ₹{data.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                        }
-                                        {transformedFinanceMetrics.revenueHeadCredit === 0 && (
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="revenue-head" className="border rounded-lg bg-background/50 shadow-inner overflow-hidden">
+                                <AccordionTrigger className="px-6 py-4 hover:no-underline [&[data-state=open]]:border-b">
+                                    <div className="flex items-center justify-between w-full pr-4">
+                                        <span className="text-lg font-semibold">Revenue Head Summary (Purpose-wise Breakdown)</span>
+                                        <span className="text-lg font-bold font-mono text-green-600 ml-4">
+                                            ₹{transformedFinanceMetrics.revenueHeadCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent className="p-0">
+                                    <Table>
+                                        <TableHeader className="bg-muted/30">
                                             <TableRow>
-                                                <TableCell colSpan={2} className="text-center py-4 text-muted-foreground italic">No credits to Revenue Head found for this period.</TableCell>
+                                                <TableHead className="pl-6">Purpose</TableHead>
+                                                <TableHead className="text-right pr-6">Amount Credited (₹)</TableHead>
                                             </TableRow>
-                                        )}
-                                    </TableBody>
-                                    <TableFooter>
-                                        <TableRow className="bg-muted">
-                                            <TableCell className="font-bold">Total Credited to Revenue Head</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="link" className="text-green-600 p-0 h-auto text-lg font-bold font-mono" onClick={() => handleAmountClick('RevenueHead', 'credit')} disabled={!transformedFinanceMetrics.revenueHeadCredit}>
-                                                    ₹{transformedFinanceMetrics.revenueHeadCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableFooter>
-                                </Table>
-                            </CardContent>
-                        </Card>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {Object.entries(transformedFinanceMetrics.revenueHeadBreakdown)
+                                                .filter(([_, data]) => data.total > 0)
+                                                .sort((a, b) => b[1].total - a[1].total)
+                                                .map(([purpose, data]) => (
+                                                    <TableRow key={purpose}>
+                                                        <TableCell className="font-medium pl-6">{purpose}</TableCell>
+                                                        <TableCell className="text-right pr-6">
+                                                            <Button variant="link" className="text-green-600 p-0 h-auto font-bold font-mono" onClick={() => handleAmountClick('RevenueHead', 'credit', purpose)}>
+                                                                ₹{data.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            }
+                                            {transformedFinanceMetrics.revenueHeadCredit === 0 && (
+                                                <TableRow>
+                                                    <TableCell colSpan={2} className="text-center py-4 text-muted-foreground italic">No credits to Revenue Head found for this period.</TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                        <TableFooter>
+                                            <TableRow className="bg-muted/50">
+                                                <TableCell className="font-bold pl-6">Total Credited to Revenue Head</TableCell>
+                                                <TableCell className="text-right pr-6">
+                                                    <Button variant="link" className="text-green-600 p-0 h-auto text-lg font-bold font-mono" onClick={() => handleAmountClick('RevenueHead', 'credit')} disabled={!transformedFinanceMetrics.revenueHeadCredit}>
+                                                        ₹{transformedFinanceMetrics.revenueHeadCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        </TableFooter>
+                                    </Table>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                     </>
                 ) : (
                     <div className="h-40 flex items-center justify-center"><p className="text-muted-foreground">Calculating financial data...</p></div>
