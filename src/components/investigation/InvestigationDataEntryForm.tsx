@@ -126,39 +126,39 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
 };
 
 const getFormattedErrorMessages = (errors: FieldErrors<any>): string[] => {
-  const messages = new Set<string>();
-
-  const formattedFieldName = (fieldName: string) => {
-    return fieldName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-  };
-
-  function findMessages(obj: any, parentPath: string[] = []) {
-    if (!obj) return;
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        const value = obj[key];
-        const newPath = [...parentPath, key];
-        
-        if (value?.message && typeof value.message === 'string') {
-          const pathString = newPath.map((part, index) => {
-              if (!isNaN(parseInt(part))) {
-                  const prevPart = newPath[index - 1];
-                  const singular = prevPart.endsWith('s') ? prevPart.slice(0, -1) : prevPart;
-                  return `${formattedFieldName(singular)} #${parseInt(part) + 1}`;
-              }
-              return formattedFieldName(part);
-          }).join(' > ');
-          messages.add(`${pathString}: ${value.message}`);
-        } else if (value && typeof value === 'object' && key !== 'root') {
-          findMessages(value, newPath);
+    const messages = new Set<string>();
+  
+    const formattedFieldName = (fieldName: string) => {
+      return fieldName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+    };
+  
+    function findMessages(obj: any, parentPath: string[] = []) {
+      if (!obj) return;
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const value = obj[key];
+          const newPath = [...parentPath, key];
+          
+          if (value?.message && typeof value.message === 'string') {
+            const pathString = newPath.map((part, index) => {
+                if (!isNaN(parseInt(part))) {
+                    const prevPart = newPath[index - 1];
+                    const singular = prevPart.endsWith('s') ? prevPart.slice(0, -1) : prevPart;
+                    return `${formattedFieldName(singular)} #${parseInt(part) + 1}`;
+                }
+                return formattedFieldName(part);
+            }).join(' > ');
+            messages.add(`${pathString}: ${value.message}`);
+          } else if (value && typeof value === 'object' && key !== 'root') {
+            findMessages(value, newPath);
+          }
         }
       }
     }
-  }
-
-  findMessages(errors);
-  return Array.from(messages);
-};
+  
+    findMessages(errors);
+    return Array.from(messages);
+  };
 
 
 const DetailRow = ({ label, value, className }: { label: string; value: any, className?: string }) => {
@@ -997,7 +997,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={getValues('category')} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><InvestigationSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={isViewer || isFormDisabled} isSupervisor={isSupervisor} isInvestigator={isInvestigator} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reorderSite'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl flex flex-col p-0"><ReorderSitesDialog initialData={dialogState.data || []} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </div>

@@ -398,7 +398,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
                 {category === 'Complaints' && (
                     <div className="flex items-start gap-2 p-3 mt-2 text-sm text-amber-800 bg-amber-100/50 border border-amber-200 rounded-md">
                         <Info className="h-4 w-4 mt-0.5 shrink-0" />
-                        <p>For the &apos;Complaints&apos; category, remittance is not applicable. Please enter the amount as zero and select any bank account to proceed.</p>
+                        <p>For the 'Complaints' category, remittance is not applicable. Please enter the amount as zero and select any bank account to proceed.</p>
                     </div>
                 )}
             </DialogHeader>
@@ -815,13 +815,14 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
             const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
             if (newDocId) {
-                router.push(`${pathname}?id=${newDocId}${workTypeContext ? `&workType=${workTypeContext}` : ''}${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`);
+                const newPath = `/dashboard/data-entry?id=${newDocId}&workType=loggingPumpingTest${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`;
+                router.push(newPath);
             }
         }
     } catch (error: any) { 
         toast({ title: "Submission Failed", description: error.message, variant: "destructive" });
     } finally { 
-        setIsSubmitting(false); 
+        setIsSubmitting(false);
     }
   };
 
