@@ -88,7 +88,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from "@/components/ui/badge";
-import InvestigationSiteDialog from '@/components/investigation/InvestigationSiteDialog';
 import LoggingPumpingTestSiteDialog from './LoggingPumpingTestSiteDialog';
 
 const db = getFirestore(app);
