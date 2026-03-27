@@ -263,14 +263,9 @@ export type RemittedAccount = typeof remittedAccountOptions[number];
 export const RemittanceDetailSchema = z.object({
   id: z.string().optional(),
   amountRemitted: optionalNumber("Amount Remitted must be a valid number."),
-  dateOfRemittance: z.string().optional(),
-  remittedAccount: z.enum(remittedAccountOptions),
+  dateOfRemittance: z.string().min(1, "Date is required."),
+  remittedAccount: z.enum(remittedAccountOptions, { required_error: "Account is required." }),
   remittanceRemarks: z.string().optional().nullable(),
-}).superRefine((data, ctx) => {
-    const hasAnyValue = (data.amountRemitted && data.amountRemitted > 0) || (data.remittanceRemarks && data.remittanceRemarks.trim() !== '');
-    if (hasAnyValue && (!data.dateOfRemittance || !data.remittedAccount)) {
-        if (!data.dateOfRemittance) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "is required when details are entered.", path: ["dateOfRemittance"] });
-    }
 });
 export type RemittanceDetailFormData = z.infer<typeof RemittanceDetailSchema>;
 
@@ -295,8 +290,8 @@ export type PaymentAccount = typeof paymentAccountOptions[number];
 export const PaymentDetailSchema = z.object({
   id: z.string().optional(),
   remittanceId: z.string().optional().nullable(),
-  dateOfPayment: z.string().optional(),
-  paymentAccount: z.enum(paymentAccountOptions),
+  dateOfPayment: z.string().min(1, "Date of payment is required."),
+  paymentAccount: z.enum(paymentAccountOptions, { required_error: "Payment account is required." }),
   revenueHead: optionalNumber(),
   contractorsPayment: optionalNumber(),
   gst: optionalNumber(),
@@ -379,7 +374,7 @@ export const ArsEntrySchema = z.object({
   id: z.string().optional(),
   fileNo: z.string().min(1, 'File No is required.'),
   nameOfSite: z.string().min(1, 'Name of Site is required.'),
-  localSelfGovt: optionalStringSchema,
+  localSelfGovt: z.string().min(1, "Local Self Govt. is required."),
   constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
   arsBlock: optionalStringSchema,
   latitude: optionalNumber(),
@@ -419,7 +414,7 @@ export type ArsEntryFormData = z.infer<typeof ArsEntrySchema>;
 export const SiteDetailSchema = z.object({
   id: z.string().optional(),
   nameOfSite: z.string().min(1, "Name of Site is required."),
-  localSelfGovt: z.string().optional().nullable(),
+  localSelfGovt: z.string().min(1, "Local Self Govt. is required."),
   constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
   latitude: optionalNumber(),
   longitude: optionalNumber(),

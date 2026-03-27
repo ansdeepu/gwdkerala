@@ -1,3 +1,4 @@
+
 // src/components/investigation/LoggingPumpingTestSiteDialog.tsx
 "use client";
 import React, { useEffect, useMemo, useCallback } from 'react';
@@ -142,7 +143,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     )} />
                                     <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Local Self Govt.</FormLabel>
+                                            <FormLabel>Local Self Govt. <span className="text-destructive">*</span></FormLabel>
                                             <Select onValueChange={(value) => handleLsgChange(value, field.onChange)} value={field.value || ""} disabled={isReadOnly}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
