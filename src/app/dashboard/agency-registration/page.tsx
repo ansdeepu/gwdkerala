@@ -1,4 +1,3 @@
-
 // src/app/dashboard/agency-registration/page.tsx
 "use client";
 
@@ -272,9 +271,9 @@ const DetailRow = ({ label, value }: { label: string; value: any }) => {
     }
 
     return (
-        <div>
+        <div className="flex flex-col">
             <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-            <dd className="text-sm">{displayValue}</dd>
+            <dd className="text-sm font-semibold">{displayValue}</dd>
         </div>
     );
 };
@@ -590,7 +589,7 @@ export default function AgencyRegistrationPage() {
     },
   });
 
-  const { control } = form;
+  const { control, formState: { isDirty }, reset } = form;
   
   const { fields: partnerFields, append: appendPartner, remove: removePartner, update: updatePartner } = useFieldArray({ control, name: "partners" });
   const { fields: feeFields, append: appendFee, remove: removeFee, update: updateFee } = useFieldArray({ control, name: "applicationFees" });
@@ -610,7 +609,7 @@ export default function AgencyRegistrationPage() {
   useEffect(() => {
     if (selectedApplicationId) {
         if (selectedApplicationId === 'new') {
-            form.reset({
+            reset({
                 owner: createDefaultOwner(),
                 partners: [],
                 applicationFees: [],
@@ -624,16 +623,16 @@ export default function AgencyRegistrationPage() {
             const app = allAgencyApplications.find((a: AgencyApplication) => a.id === selectedApplicationId);
             if (app) {
                  const processedApp = processDataForForm(app);
-                 form.reset(processedApp);
+                 reset(processedApp);
             } else {
                 setSelectedApplicationId(null);
-                form.reset({ owner: createDefaultOwner(), partners: [], applicationFees: [], rigs: [], history: [], remarks: '' });
+                reset({ owner: createDefaultOwner(), partners: [], applicationFees: [], rigs: [], history: [], remarks: '' });
             }
         }
     } else {
-        form.reset({ owner: createDefaultOwner(), partners: [], applicationFees: [], rigs: [], history: [], remarks: '' });
+        reset({ owner: createDefaultOwner(), partners: [], applicationFees: [], rigs: [], history: [], remarks: '' });
     }
-  }, [selectedApplicationId, allAgencyApplications, form, setIsNavigating]);
+  }, [selectedApplicationId, allAgencyApplications, reset, setIsNavigating]);
   
     const generateHistoryEntry = (rig: RigRegistrationType): string | null => {
         const logParts: string[] = [];
@@ -773,6 +772,7 @@ export default function AgencyRegistrationPage() {
                 };
 
                 await updateApplication(selectedApplicationId, finalPayload);
+                reset(data);
                 toast({ title: "Application Updated", description: "The registration details have been updated." });
             } else {
                 throw new Error("Original application not found for update.");
@@ -787,8 +787,11 @@ export default function AgencyRegistrationPage() {
                     return { ...rig, history: newHistory };
                 })
             };
-            await addApplication(dataWithHistory);
+            const newId = await addApplication(dataWithHistory);
             toast({ title: "Application Created", description: "The new agency registration has been saved." });
+            if (newId) {
+                router.replace(`${pathname}?id=${newId}`);
+            }
         }
     } catch (error: any) {
         console.error("Submission failed:", error);
@@ -1545,7 +1548,7 @@ export default function AgencyRegistrationPage() {
                     {!isReadOnly && (
                     <div className="flex justify-end gap-2 pt-4">
                         <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}><X className="mr-2 h-4 w-4"/> Close</Button>
-                        <Button type="submit" disabled={isSubmitting}>
+                        <Button type="submit" disabled={isSubmitting || !isDirty}>
                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
                             Save
                         </Button>
@@ -1943,7 +1946,7 @@ function RenewalDialogContent({ initialData, onConfirm, onCancel }: { initialDat
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value, type } = e.target as HTMLInputElement;
+    const { id, value, type } = e.target as HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement;
     setData(prev => ({
       ...prev,
       [id]: type === 'number' ? (value === '' ? undefined : +value) : value,
@@ -2124,4 +2127,3 @@ function PartnerDialogContent({ initialData, onConfirm, onCancel }: { initialDat
         </Form>
     );
 }
-    

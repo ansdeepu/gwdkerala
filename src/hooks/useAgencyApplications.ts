@@ -54,7 +54,7 @@ export function useAgencyApplications() {
   const { user } = useAuth();
   const { allAgencyApplications, isLoading: dataStoreLoading } = useDataStore(); // Use the central store
 
-  const addApplication = useCallback(async (applicationData: Omit<AgencyApplication, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addApplication = useCallback(async (applicationData: Omit<AgencyApplication, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> => {
     if (!user) throw new Error("User must be logged in to add an application.");
     if (!user.officeLocation) throw new Error("User must have an office location.");
 
@@ -66,7 +66,8 @@ export function useAgencyApplications() {
     };
     const collectionPath = `offices/${user.officeLocation.toLowerCase()}/agencyApplications`;
     const sanitizedPayload = sanitizeDataForFirestore(payload);
-    await addDoc(collection(db, collectionPath), sanitizedPayload);
+    const docRef = await addDoc(collection(db, collectionPath), sanitizedPayload);
+    return docRef.id;
   }, [user]);
 
   const updateApplication = useCallback(async (id: string, applicationData: Partial<AgencyApplication>) => {
