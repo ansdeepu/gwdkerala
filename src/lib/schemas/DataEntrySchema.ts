@@ -450,7 +450,7 @@ export const SiteDetailSchema = z.object({
   supervisorName: z.string().optional().nullable(),
   supervisorDesignation: z.string().optional().nullable(),
   totalExpenditure: optionalNumber(),
-  workStatus: z.enum(siteWorkStatusOptions).optional().nullable(),
+  workStatus: z.enum(siteWorkStatusOptions, { required_error: "Work Status is required." }),
   implementationRemarks: z.string().optional().nullable().default(""),
   workRemarks: z.string().optional().nullable().default(""),
   surveyOB: z.string().optional().nullable(),
@@ -512,6 +512,15 @@ export const SiteDetailSchema = z.object({
                 path: ["workStatus"],
             });
         }
+    }
+}).superRefine((data, ctx) => {
+    const isWellPurpose = ['BWC', 'TWC', 'FPW'].includes(data.purpose as any);
+    if (isWellPurpose && !data.diameter) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Actual Diameter is required.",
+            path: ["diameter"],
+        });
     }
 });
 export type SiteDetailFormData = z.infer<typeof SiteDetailSchema>;
