@@ -1,4 +1,3 @@
-
 // src/components/e-tender/TenderDetails.tsx
 "use client";
 
@@ -152,7 +151,7 @@ export default function TenderDetails() {
         defaultValues: tender,
     });
 
-    const { control, getValues, setValue, handleSubmit: handleFormSubmit, watch } = form;
+    const { control, getValues, setValue, handleSubmit: handleFormSubmit, watch, formState: { isDirty }, reset } = form;
     const { fields: bidderFields, append: appendBidder, update: updateBidder, remove: removeBidder } = useFieldArray({ control, name: "bidders" });
     const { fields: corrigendumFields, append: appendCorrigendum, update: updateCorrigendum, remove: removeCorrigendum } = useFieldArray({ control, name: "corrigendums" });
     const { fields: retenderFields, append: appendRetender, update: updateRetender, remove: removeRetender } = useFieldArray({ control, name: "retenders" });
@@ -205,10 +204,13 @@ export default function TenderDetails() {
                 toast({ title: "Tender Created", description: "The new e-Tender has been saved. You can now edit other sections." });
                 if (!isFinalSave) {
                     router.replace(`/dashboard/e-tender/${newTenderId}`, { scroll: false });
+                } else {
+                    router.replace(`/dashboard/e-tender/${newTenderId}`);
                 }
             } else {
                 await saveTenderToDb(tender.id, dataForSave);
                 updateTender(dataForSave);
+                reset(updatedData); // Reset to clear isDirty flag
                 if (!isFinalSave) {
                    toast({ title: "Details Saved", description: "Your changes have been saved to the database." });
                 }
@@ -227,8 +229,8 @@ export default function TenderDetails() {
 
 
     useEffect(() => {
-        form.reset(tender);
-    }, [tender, form]);
+        reset(tender);
+    }, [tender, reset]);
 
     const handleBidderSave = (bidderData: Bidder) => {
         if (activeModal === 'addBidder') {
@@ -755,7 +757,7 @@ export default function TenderDetails() {
                                 Close
                             </Button>
                             {!isReadOnly && 
-                              <Button type="button" size="lg" onClick={handleFinalSave} disabled={isSubmitting}>
+                              <Button type="button" size="lg" onClick={handleFinalSave} disabled={isSubmitting || !isDirty}>
                                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                                   Save
                               </Button>
