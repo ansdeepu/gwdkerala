@@ -23,6 +23,7 @@ import {
     applicationTypeOptions,
     LOGGING_PUMPING_TEST_PURPOSE_OPTIONS
 } from '@/lib/schemas';
+import { Timestamp } from "firebase/firestore";
 
 export const dynamic = 'force-dynamic';
 
@@ -42,31 +43,58 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
  };
 
-const processDataForForm = (data: any): any => {
-  const transform = (obj: any): any => {
-    if (obj === null || obj === undefined) return obj;
-    if (Array.isArray(obj)) return obj.map(transform);
-    if (typeof obj === 'object') {
-      const maybeDate = toDateOrNull(obj);
-      if (maybeDate) return format(maybeDate, 'yyyy-MM-dd');
-      const newObj: { [key: string]: any } = {};
-      for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          const value = obj[key];
-          if (key.toLowerCase().includes('date')) {
-            const date = toDateOrNull(value);
-            newObj[key] = date && isValid(date) ? format(date, 'yyyy-MM-dd') : "";
-          } else {
-            newObj[key] = transform(value);
+ const processDataForForm = (data: any): any => {
+    const transform = (obj: any): any => {
+      if (obj === null || obj === undefined) return obj;
+  
+      if (obj instanceof Timestamp) {
+        return obj.toDate();
+      }
+  
+      if (Array.isArray(obj)) {
+        return obj.map(transform);
+      }
+  
+      if (typeof obj === 'object' && !(obj instanceof Date)) {
+        const newObj: { [key: string]: any } = {};
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            newObj[key] = transform(obj[key]);
           }
         }
+        return newObj;
       }
-      return newObj;
-    }
-    return obj;
+      
+      return obj;
+    };
+  
+    const fullyProcessed = transform(data);
+  
+    const formatForInput = (obj: any): any => {
+       if (obj === null || obj === undefined) return obj;
+       if (Array.isArray(obj)) return obj.map(formatForInput);
+  
+       if (typeof obj === 'object' && !(obj instanceof Date)) {
+          const newObj: { [key: string]: any } = {};
+          const dateInputKeys = ['dateOfRemittance', 'dateOfPayment', 'dateOfCompletion', 'dateOfInvestigation', 'vesDate', 'arsSanctionedDate', 'serviceStartDate', 'serviceEndDate', 'dateOfBirth', 'date'];
+  
+          for (const key in obj) {
+              if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                  const value = obj[key];
+                  if (dateInputKeys.includes(key) && value instanceof Date) {
+                      newObj[key] = format(value, 'yyyy-MM-dd');
+                  } else {
+                      newObj[key] = formatForInput(value);
+                  }
+              }
+          }
+          return newObj;
+       }
+       return obj;
+    };
+  
+    return formatForInput(fullyProcessed);
   };
-  return transform(data);
-};
 
 const getFormDefaults = (workType: string | null): DataEntryFormData => ({
   fileNo: "", 
@@ -202,8 +230,9 @@ export default function DataEntryPage() {
                 }
             }
             
+            const { createdAt, updatedAt, ...restOfData } = dataForForm;
             setFileNoForHeader(dataForForm.fileNo);
-            setPageData({ initialData: processDataForForm(dataForForm) });
+            setPageData({ initialData: processDataForForm(restOfData) });
 
         } catch (error) {
             setErrorState("Could not load all required data.");
