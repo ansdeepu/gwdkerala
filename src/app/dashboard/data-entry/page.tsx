@@ -92,7 +92,6 @@ const getFormDefaults = (workType: string | null): DataEntryFormData => ({
 
 interface PageData {
   initialData: DataEntryFormData;
-  allUsers: UserProfile[];
 }
 
 export default function DataEntryPage() {
@@ -104,11 +103,11 @@ export default function DataEntryPage() {
   const workTypeContext = searchParams?.get('workType') as 'public' | 'private' | 'collector' | 'planFund' | 'gwInvestigation' | 'loggingPumpingTest' | null;
   const readOnlyParam = searchParams?.get('readOnly');
 
-  const { user, isLoading: authIsLoading, fetchAllUsers } = useAuth();
+  const { user, isLoading: authIsLoading } = useAuth();
   const { getPendingUpdateById, hasPendingUpdateForFile } = usePendingUpdates();
   const { toast } = useToast();
   const { setHeader } = usePageHeader();
-  const { allLsgConstituencyMaps, allStaffMembers, allFileEntries, isLoading: dataStoreLoading } = useDataStore();
+  const { allLsgConstituencyMaps, allStaffMembers, allFileEntries, allUsers, isLoading: dataStoreLoading } = useDataStore();
   
   const [pageData, setPageData] = useState<PageData | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
@@ -163,11 +162,9 @@ export default function DataEntryPage() {
 
         setDataLoading(true);
         try {
-            const allUsersResult = (user.role === 'admin' || user.role === 'superAdmin') ? await fetchAllUsers() : [];
-
             if (!fileIdToEdit) {
                 let defaultData = getFormDefaults(workTypeContext);
-                setPageData({ initialData: defaultData, allUsers: allUsersResult });
+                setPageData({ initialData: defaultData });
                 return;
             }
 
@@ -206,7 +203,7 @@ export default function DataEntryPage() {
             }
             
             setFileNoForHeader(dataForForm.fileNo);
-            setPageData({ initialData: processDataForForm(dataForForm), allUsers: allUsersResult });
+            setPageData({ initialData: processDataForForm(dataForForm) });
 
         } catch (error) {
             setErrorState("Could not load all required data.");
@@ -219,7 +216,7 @@ export default function DataEntryPage() {
     if (!authIsLoading && !dataStoreLoading) {
         loadData();
     }
-}, [fileIdToEdit, approveUpdateId, user, authIsLoading, fetchAllUsers, getPendingUpdateById, allFileEntries, hasPendingUpdateForFile, workTypeContext, toast, isApprovingUpdate, dataStoreLoading]);
+}, [fileIdToEdit, approveUpdateId, user, authIsLoading, allFileEntries, hasPendingUpdateForFile, workTypeContext, toast, isApprovingUpdate, dataStoreLoading, getPendingUpdateById]);
 
   useEffect(() => {
     let title = "Loading...";
@@ -248,14 +245,14 @@ export default function DataEntryPage() {
   }, [fileIdToEdit, user, approveUpdateId, setHeader, fileNoForHeader, workTypeContext, dataLoading, errorState, readOnlyParam, effectiveUserRole]);
 
   const supervisorList = useMemo(() => {
-    if (!user || !pageData) return [];
-    const sourceUsers = (user.role === 'admin' || user.role === 'superAdmin') ? pageData.allUsers : allUsers; // `allUsers` from useDataStore is office-specific for sub-admins
+    if (!user) return [];
+    const sourceUsers = allUsers;
     
     return sourceUsers.filter(u => u.role === 'supervisor' && u.isApproved && u.staffId).map(userProfile => {
         const staffInfo = allStaffMembers.find(s => s.id === userProfile.staffId && s.status === 'Active');
         return staffInfo ? { ...staffInfo, uid: userProfile.uid, name: staffInfo.name } : null;
     }).filter((s): s is (StaffMember & { uid: string; name: string }) => s !== null).sort((a, b) => a.name.localeCompare(b.name));
-   }, [pageData, allStaffMembers, user, allUsers]);
+   }, [allStaffMembers, user, allUsers]);
   
   const hasInvestigationPurpose = useMemo(() => 
     pageData?.initialData?.siteDetails?.some(site => site.purpose === 'GW Investigation'), 
