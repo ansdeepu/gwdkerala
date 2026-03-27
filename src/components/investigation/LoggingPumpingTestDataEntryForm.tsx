@@ -290,11 +290,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
                     return; 
                 }
             } catch (error) {
-                toast({
-                    title: "Validation Error",
-                    description: "Could not verify file number. Please try again.",
-                    variant: "destructive",
-                });
+                toast({ title: "Validation Error", description: "Could not verify file number.", variant: "destructive" });
                 setIsChecking(false);
                 return;
             }
@@ -729,7 +725,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                 const amount = Number(remittance.amountRemitted) || 0;
                 if (amount > 0) {
                     const newPayment: Partial<PaymentDetailFormData> = {
-                        id: uuidv4(),
+                        id: `auto-payment-${remittance.id}`,
                         remittanceId: remittance.id,
                         dateOfPayment: remittance.dateOfRemittance,
                         paymentAccount: 'Bank',

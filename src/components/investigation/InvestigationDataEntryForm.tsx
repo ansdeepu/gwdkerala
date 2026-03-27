@@ -735,7 +735,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
                 const amount = Number(remittance.amountRemitted) || 0;
                 if (amount > 0) {
                     const newPayment: Partial<PaymentDetailFormData> = {
-                        id: uuidv4(),
+                        id: `auto-payment-${remittance.id}`,
                         remittanceId: remittance.id,
                         dateOfPayment: remittance.dateOfRemittance,
                         paymentAccount: 'Bank',
