@@ -641,7 +641,13 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const isViewer = userRole === 'viewer';
   const isEditing = !!fileIdToEdit;
   
-  const form = useForm<DataEntryFormData>({ resolver: zodResolver(DataEntrySchema), defaultValues: initialData });
+  const form = useForm<DataEntryFormData>({ 
+    resolver: zodResolver(DataEntrySchema), 
+    defaultValues: {
+        ...initialData,
+        fileStatus: initialData.fileStatus || LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS[0]
+    }
+  });
   const { control, handleSubmit, setValue, getValues, watch, formState: { isDirty }, reset } = form;
   
   const currentFileNo = watch("fileNo");
@@ -656,7 +662,10 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
   const watchedPaymentDetails = watch("paymentDetails");
 
   useEffect(() => {
-    reset(initialData);
+    reset({
+        ...initialData,
+        fileStatus: initialData.fileStatus || LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS[0]
+    });
   }, [initialData, reset]);
 
   const autoCredits = useMemo(() => {

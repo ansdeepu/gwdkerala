@@ -1,4 +1,3 @@
-
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -418,7 +417,7 @@ export const SiteDetailSchema = z.object({
   constituency: z.preprocess((val) => (val === "" || val === undefined ? null : val), z.enum(constituencyOptions).optional().nullable()),
   latitude: optionalNumber(),
   longitude: optionalNumber(),
-  purpose: z.string().min(1).optional().nullable(),
+  purpose: z.string().min(1, "Purpose is required.").optional().nullable(),
   estimateAmount: optionalNumber(),
   remittedAmount: optionalNumber(),
   siteConditions: z.preprocess((val) => (val === "" || val === null ? undefined : val), z.enum(siteConditionsOptions).optional()),
@@ -502,20 +501,20 @@ export const SiteDetailSchema = z.object({
     const isInvestigation = data.purpose === 'GW Investigation';
     const isLoggingPumping = LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(data.purpose as any);
 
-    if ((isInvestigation || isLoggingPumping) && !data.workStatus) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Work Status is required.",
-            path: ["workStatus"],
-        });
-    }
-    
-    if (isInvestigation && !data.typeOfWell) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Type of Well is required.",
-            path: ["typeOfWell"],
-        });
+    if ((isInvestigation || isLoggingPumping)) {
+        if (!data.purpose) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Purpose is required.", path: ["purpose"] });
+        }
+        if (!data.typeOfWell) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Type of Well is required.", path: ["typeOfWell"] });
+        }
+        if (!data.workStatus) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Work Status is required.",
+                path: ["workStatus"],
+            });
+        }
     }
 });
 export type SiteDetailFormData = z.infer<typeof SiteDetailSchema>;

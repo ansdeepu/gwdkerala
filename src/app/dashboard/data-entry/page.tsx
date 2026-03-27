@@ -96,27 +96,34 @@ const toDateOrNull = (value: any): Date | null => {
     return formatForInput(fullyProcessed);
   };
 
-const getFormDefaults = (workType: string | null): DataEntryFormData => ({
-  fileNo: "", 
-  applicantName: "", 
-  phoneNo: "", 
-  secondaryMobileNo: "",
-  category: undefined,
-  applicationType: undefined, 
-  constituency: undefined,
-  assignedSupervisorUids: [],
-  remittanceDetails: [], 
-  totalRemittance: 0, 
-  reappropriationDetails: [],
-  totalReappropriation: 0,
-  totalReappropriationCredit: 0,
-  siteDetails: [], 
-  paymentDetails: [], 
-  totalPaymentAllEntries: 0, 
-  overallBalance: 0,
-  fileStatus: 'File Under Process', 
-  remarks: "",
-});
+const getFormDefaults = (workType: string | null): DataEntryFormData => {
+  let fileStatus: any = 'File Under Process';
+  if (workType === 'loggingPumpingTest') {
+    fileStatus = 'Under Process';
+  }
+
+  return {
+    fileNo: "", 
+    applicantName: "", 
+    phoneNo: "", 
+    secondaryMobileNo: "",
+    category: undefined,
+    applicationType: undefined, 
+    constituency: undefined,
+    assignedSupervisorUids: [],
+    remittanceDetails: [], 
+    totalRemittance: 0, 
+    reappropriationDetails: [],
+    totalReappropriation: 0,
+    totalReappropriationCredit: 0,
+    siteDetails: [], 
+    paymentDetails: [], 
+    totalPaymentAllEntries: 0, 
+    overallBalance: 0,
+    fileStatus: fileStatus, 
+    remarks: "",
+  };
+};
 
 interface PageData {
   initialData: DataEntryFormData;
