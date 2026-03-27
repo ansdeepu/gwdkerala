@@ -595,28 +595,28 @@ export type UpdatePasswordFormData = z.infer<typeof UpdatePasswordSchema>;
 // Agency Registration Schemas
 export const AgencyApplicationSchema = z.object({
   id: z.string().optional(),
-  fileNo: z.string().optional(),
+  fileNo: z.string().optional().nullable(),
   agencyName: z.string().min(1, "Agency name & address is required."),
   owner: OwnerInfoSchema,
-  partners: z.array(OwnerInfoSchema).optional(),
+  partners: z.array(OwnerInfoSchema).optional().nullable(),
   
-  applicationFees: z.array(ApplicationFeeSchema).optional(),
+  applicationFees: z.array(ApplicationFeeSchema).optional().nullable(),
 
   // Agency Registration
-  agencyRegistrationNo: z.string().optional(),
+  agencyRegistrationNo: z.string().optional().nullable(),
   agencyRegistrationDate: optionalDateSchema,
   agencyRegistrationFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
   agencyPaymentDate: optionalDateSchema,
-  agencyChallanNo: z.string().optional(),
+  agencyChallanNo: z.string().optional().nullable(),
   agencyAdditionalRegFee: z.preprocess((val) => (val === "" ? undefined : val), z.coerce.number().optional()),
   agencyAdditionalPaymentDate: optionalDateSchema,
-  agencyAdditionalChallanNo: z.string().optional(),
+  agencyAdditionalChallanNo: z.string().optional().nullable(),
   
   rigs: z.array(RigRegistrationSchema),
   status: z.enum(['Active', 'Pending Verification']),
-  history: z.array(z.string()).optional(),
-  remarks: z.string().optional(),
-  officeLocation: z.string().optional(),
+  history: z.array(z.string()).optional().nullable(),
+  remarks: z.string().optional().nullable(),
+  officeLocation: z.string().optional().nullable(),
 });
 export type AgencyApplication = z.infer<typeof AgencyApplicationSchema>;
 
