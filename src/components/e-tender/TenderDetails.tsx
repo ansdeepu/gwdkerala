@@ -1,3 +1,4 @@
+
 // src/components/e-tender/TenderDetails.tsx
 "use client";
 
@@ -138,7 +139,6 @@ export default function TenderDetails() {
     const [activeModal, setActiveModal] = useState<ModalType>(null);
     const [modalData, setModalData] = useState<any>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [activeAccordion, setActiveAccordion] = useState<string>("basic-details");
     const [isClearOpeningDetailsConfirmOpen, setIsClearOpeningDetailsConfirmOpen] = useState(false);
     const [isClearSelectionNoticeConfirmOpen, setIsClearSelectionNoticeConfirmOpen] = useState(false);
     const [isClearWorkOrderConfirmOpen, setIsClearWorkOrderConfirmOpen] = useState(false);
@@ -161,7 +161,7 @@ export default function TenderDetails() {
         setIsSubmitting(true);
         try {
             await handleSave(getValues(), true);
-            toast({ title: "Tender Saved", description: "All changes have been saved." });
+            toast({ title: "Tender Saved", description: "All changes have been successfully persisted." });
         } catch (error: any) {
             toast({ title: "Error", description: error.message, variant: "destructive" });
         } finally {
@@ -170,6 +170,15 @@ export default function TenderDetails() {
     };
 
     const handleSave = async (data: Partial<E_tenderFormData>, isFinalSave = false) => {
+        if (!isFinalSave) {
+            // Update local state ONLY
+            Object.entries(data).forEach(([key, value]) => {
+                setValue(key as keyof E_tenderFormData, value, { shouldDirty: true, shouldValidate: true });
+            });
+            setActiveModal(null);
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             const currentData = getValues();
@@ -201,19 +210,12 @@ export default function TenderDetails() {
 
             if (tender.id === 'new') {
                 const newTenderId = await addTender(dataForSave);
-                toast({ title: "Tender Created", description: "The new e-Tender has been saved. You can now edit other sections." });
-                if (!isFinalSave) {
-                    router.replace(`/dashboard/e-tender/${newTenderId}`, { scroll: false });
-                } else {
-                    router.replace(`/dashboard/e-tender/${newTenderId}`);
-                }
+                toast({ title: "Tender Created", description: "Initial creation successful." });
+                router.replace(`/dashboard/e-tender/${newTenderId}`);
             } else {
                 await saveTenderToDb(tender.id, dataForSave);
                 updateTender(dataForSave);
                 reset(updatedData); // Reset to clear isDirty flag
-                if (!isFinalSave) {
-                   toast({ title: "Details Saved", description: "Your changes have been saved to the database." });
-                }
             }
         } catch (error: any) {
             console.error("Save Error:", error);
@@ -221,9 +223,7 @@ export default function TenderDetails() {
             throw error;
         } finally {
             setIsSubmitting(false);
-            if (!isFinalSave) {
-               setActiveModal(null);
-            }
+            setActiveModal(null);
         }
     };
 
@@ -238,7 +238,7 @@ export default function TenderDetails() {
         } else if (activeModal === 'editBidder' && modalData?.index !== undefined) {
             updateBidder(modalData.index, bidderData);
         }
-        handleSave({ bidders: getValues('bidders') });
+        // Local state updated via useFieldArray
         setActiveModal(null);
         setModalData(null);
     };
@@ -249,7 +249,7 @@ export default function TenderDetails() {
         } else if (activeModal === 'editCorrigendum' && modalData?.index !== undefined) {
             updateCorrigendum(modalData.index, corrigendumData);
         }
-        handleSave({ corrigendums: getValues('corrigendums') });
+        // Local state updated via useFieldArray
         setActiveModal(null);
         setModalData(null);
     };
@@ -260,7 +260,7 @@ export default function TenderDetails() {
         } else if (activeModal === 'editRetender' && modalData?.index !== undefined) {
             updateRetender(modalData.index, retenderData);
         }
-        handleSave({ retenders: getValues('retenders') });
+        // Local state updated via useFieldArray
         setActiveModal(null);
         setModalData(null);
     };
@@ -268,9 +268,8 @@ export default function TenderDetails() {
     const confirmDeleteRetender = () => {
         if (!retenderToDelete) return;
         removeRetender(retenderToDelete.index);
-        handleSave({ retenders: getValues('retenders') });
         setRetenderToDelete(null);
-        toast({ title: "Retender Deleted", description: "The retender entry has been removed." });
+        toast({ title: "Removed locally" });
     };
 
     const handleEditCorrigendumClick = (corrigendum: Corrigendum, index: number) => {
@@ -283,30 +282,27 @@ export default function TenderDetails() {
         setActiveModal('editRetender');
     };
     
-    const handleClearOpeningDetails = async () => {
+    const handleClearOpeningDetails = () => {
         Object.entries(OPENING_DETAILS_CLEAR_DATA).forEach(([key, value]) => {
-            setValue(key as keyof E_tenderFormData, value);
+            setValue(key as keyof E_tenderFormData, value, { shouldDirty: true });
         });
-        await handleSave(OPENING_DETAILS_CLEAR_DATA);
-        toast({ title: "Opening Details Cleared", description: "The details have been cleared and saved." });
+        toast({ title: "Opening Details Cleared Locally" });
         setIsClearOpeningDetailsConfirmOpen(false);
     };
 
-    const handleClearSelectionNotice = async () => {
+    const handleClearSelectionNotice = () => {
         Object.entries(SELECTION_NOTICE_CLEAR_DATA).forEach(([key, value]) => {
-            setValue(key as keyof E_tenderFormData, value);
+            setValue(key as keyof E_tenderFormData, value, { shouldDirty: true });
         });
-        await handleSave(SELECTION_NOTICE_CLEAR_DATA);
-        toast({ title: "Selection Notice Details Cleared", description: "Selection notice details have been permanently removed." });
+        toast({ title: "Selection Notice Details Cleared Locally" });
         setIsClearSelectionNoticeConfirmOpen(false);
     };
     
-    const handleClearWorkOrderDetails = async () => {
+    const handleClearWorkOrderDetails = () => {
         Object.entries(WORK_ORDER_CLEAR_DATA).forEach(([key, value]) => {
-            setValue(key as keyof E_tenderFormData, value);
+            setValue(key as keyof E_tenderFormData, value, { shouldDirty: true });
         });
-        await handleSave(WORK_ORDER_CLEAR_DATA);
-        toast({ title: "Work Order Details Cleared", description: "The details have been cleared and saved." });
+        toast({ title: "Work Order Details Cleared Locally" });
         setIsClearWorkOrderConfirmOpen(false);
     };
     
@@ -821,7 +817,7 @@ export default function TenderDetails() {
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>This will clear all tender opening details, including dates and committee members. This action cannot be undone until you save all changes.</AlertDialogDescription>
+                            <AlertDialogDescription>This will clear all tender opening details locally. You must save at the bottom to commit this change.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -834,11 +830,11 @@ export default function TenderDetails() {
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>This action will permanently delete the selection notice details. This cannot be undone.</AlertDialogDescription>
+                            <AlertDialogDescription>This will clear all selection notice details locally. You must save at the bottom to commit this change.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleClearSelectionNotice}>Yes, Delete</AlertDialogAction>
+                            <AlertDialogAction onClick={handleClearSelectionNotice}>Yes, Clear</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
@@ -847,7 +843,7 @@ export default function TenderDetails() {
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>This will clear all work order details. This action cannot be undone until you save all changes.</AlertDialogDescription>
+                            <AlertDialogDescription>This will clear all work order details locally. You must save at the bottom to commit this change.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -859,12 +855,12 @@ export default function TenderDetails() {
                 <AlertDialog open={!!retenderToDelete} onOpenChange={() => setRetenderToDelete(null)}>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-                            <AlertDialogDescription>Are you sure you want to delete this retender entry? This action cannot be undone.</AlertDialogDescription>
+                            <AlertDialogTitle>Confirm Removal</AlertDialogTitle>
+                            <AlertDialogDescription>Remove this retender entry locally? You must hit Save at the bottom to update the database.</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={confirmDeleteRetender} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                            <AlertDialogAction onClick={confirmDeleteRetender} className="bg-destructive hover:bg-destructive/90">Remove</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
