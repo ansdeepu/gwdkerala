@@ -52,10 +52,11 @@ export const optionalDateSchema = z.preprocess((val) => {
 }, z.date().nullable().optional());
 
 const nativeDateSchema = z.preprocess(
-  (val) => (val === "" ? undefined : val),
+  (val) => (val === "" ? null : val),
   z.string()
     .optional()
-    .refine((val) => !val || !isNaN(Date.parse(val)) || val === '', { message: "Invalid date" })
+    .nullable()
+    .refine((val) => !val || !isNaN(Date.parse(val)), { message: "Invalid date" })
 );
 
 export const MediaItemSchema = z.object({
@@ -513,8 +514,21 @@ export const SiteDetailSchema = z.object({
             path: ["dateOfCompletion"],
         });
     }
+}).superRefine((data, ctx) => {
+    const isInvestigation = data.purpose === 'GW Investigation';
+    const isLoggingPumping = LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(data.purpose as any);
+
+    if ((isInvestigation || isLoggingPumping) && !data.workStatus) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Work Status is required.",
+            path: ["workStatus"],
+        });
+    }
 });
 export type SiteDetailFormData = z.infer<typeof SiteDetailSchema>;
+
+const allFileStatusOptions = [...new Set([...fileStatusOptions, ...INVESTIGATION_FILE_STATUS_OPTIONS, ...LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS])];
 
 export const DataEntrySchema = z.object({
   id: z.string().optional(),
@@ -537,7 +551,10 @@ export const DataEntrySchema = z.object({
   paymentDetails: z.array(PaymentDetailSchema).optional(),
   totalPaymentAllEntries: z.coerce.number().optional(),
   overallBalance: z.coerce.number().optional(),
-  fileStatus: z.string().min(1, "File Status is required."),
+  fileStatus: z.enum(allFileStatusOptions, {
+    required_error: "File Status is required.",
+    invalid_type_error: "Please select a valid file status."
+  }),
   remarks: z.string().optional().nullable(),
 });
 export type DataEntryFormData = z.infer<typeof DataEntrySchema>;
