@@ -715,7 +715,7 @@ export default function TenderDetails() {
                                                 control={control}
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <Select onValueChange={(value) => { field.onChange(value); updateTender({ presentStatus: value as any }); }} value={field.value || undefined} disabled={isReadOnly}>
+                                                        <Select onValueChange={(value) => { field.onChange(value); }} value={field.value || undefined} disabled={isReadOnly}>
                                                             <FormControl><SelectTrigger><SelectValue placeholder="Select current status" /></SelectTrigger></FormControl>
                                                             <SelectContent>{dynamicStatusOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
                                                         </Select>
@@ -738,7 +738,6 @@ export default function TenderDetails() {
                                                     value={field.value ?? ""}
                                                     onChange={(e) => {
                                                         field.onChange(e);
-                                                        updateTender({ remarks: e.target.value });
                                                     }}
                                                     placeholder="Add any remarks about the current status..."
                                                     readOnly={isReadOnly}
