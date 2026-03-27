@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { ShieldAlert, Loader2 } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
-import { useFileEntries } from "@/hooks/useFileEntries";
 import { useMemo, useEffect, useState } from "react";
 import type { DataEntryFormData, ApplicationType, StaffMember } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
@@ -106,11 +105,10 @@ export default function DataEntryPage() {
   const readOnlyParam = searchParams?.get('readOnly');
 
   const { user, isLoading: authIsLoading, fetchAllUsers } = useAuth();
-  const { fetchEntryForEditing } = useFileEntries();
   const { getPendingUpdateById, hasPendingUpdateForFile } = usePendingUpdates();
   const { toast } = useToast();
   const { setHeader } = usePageHeader();
-  const { allLsgConstituencyMaps, allStaffMembers } = useDataStore();
+  const { allLsgConstituencyMaps, allStaffMembers, allFileEntries, isLoading: dataStoreLoading } = useDataStore();
   
   const [pageData, setPageData] = useState<PageData | null>(null);
   const [dataLoading, setDataLoading] = useState(true);
@@ -118,7 +116,7 @@ export default function DataEntryPage() {
   const [fileNoForHeader, setFileNoForHeader] = useState<string | null>(null);
   const [isFormDisabledForSupervisor, setIsFormDisabledForSupervisor] = useState(false);
   
-  const isApprovingUpdate = !!(user?.role === 'admin' && approveUpdateId);
+  const isApprovingUpdate = !!((user?.role === 'admin' || user?.role === 'scientist' || user?.role === 'engineer') && approveUpdateId);
   const effectiveUserRole = readOnlyParam === 'true' ? 'viewer' : user?.role;
   
   const returnPath = useMemo(() => {
@@ -157,40 +155,71 @@ export default function DataEntryPage() {
 }, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
 
   useEffect(() => {
-    const loadAllData = async () => {
+    const loadData = async () => {
+        if (!user) {
+            if (!authIsLoading) setErrorState("You must be logged in.");
+            return;
+        }
+
         setDataLoading(true);
-        if (authIsLoading) return;
-        if (!user) { setErrorState("You must be logged in."); setDataLoading(false); return; }
         try {
-            const allUsersResult = (user.role === 'admin') ? await fetchAllUsers() : [];
-            if (!fileIdToEdit) { 
+            const allUsersResult = (user.role === 'admin' || user.role === 'superAdmin') ? await fetchAllUsers() : [];
+
+            if (!fileIdToEdit) {
                 let defaultData = getFormDefaults(workTypeContext);
-                setPageData({ initialData: defaultData, allUsers: allUsersResult }); 
-                setDataLoading(false);
-                return; 
+                setPageData({ initialData: defaultData, allUsers: allUsersResult });
+                return;
             }
-            const originalEntry = await fetchEntryForEditing(fileIdToEdit);
-            if (!originalEntry) { setErrorState("Could not find the requested file."); setDataLoading(false); return; }
-             if (user.role === 'supervisor' && user.uid) {
+
+            const originalEntry = allFileEntries.find(entry => entry.id === fileIdToEdit);
+            
+            if (!originalEntry) {
+                 if (allFileEntries.length > 0 && !dataStoreLoading) {
+                     setErrorState("Could not find the requested file. It may have been deleted or you may not have permission to view it.");
+                 } // If allFileEntries is empty or loading, we might still be loading, so don't show an error yet.
+                 return;
+            }
+
+            if (user.role === 'supervisor' && user.uid) {
                 const hasPending = await hasPendingUpdateForFile(originalEntry.fileNo, user.uid);
-                if (hasPending) { setIsFormDisabledForSupervisor(true); toast({ title: "Edits Locked", description: "Pending update review required." }); }
+                if (hasPending) {
+                    setIsFormDisabledForSupervisor(true);
+                    toast({ title: "Edits Locked", description: "Pending update review required." });
+                }
             }
-            let dataForForm: DataEntryFormData = originalEntry;
+
+            let dataForForm = originalEntry;
             if (isApprovingUpdate && approveUpdateId) {
                 const pendingUpdate = await getPendingUpdateById(approveUpdateId);
                 if (pendingUpdate) {
                     let mergedData = JSON.parse(JSON.stringify(originalEntry));
-                    const updatedSitesMap = new Map(pendingUpdate.updatedSiteDetails.map((site: any) => [site.nameOfSite, site]));
-                    mergedData.siteDetails = mergedData.siteDetails?.map((originalSite: any) => updatedSitesMap.get(originalSite.nameOfSite) || originalSite) || [];
+                    const updatedSitesMap = new Map((pendingUpdate.updatedSiteDetails || []).map((site: any) => [site.nameOfSite, site]));
+                    mergedData.siteDetails = (mergedData.siteDetails || []).map((site: any) => updatedSitesMap.get(site.nameOfSite) || site);
+                    
+                    if (pendingUpdate.fileLevelUpdates) {
+                        mergedData.fileStatus = pendingUpdate.fileLevelUpdates.fileStatus || mergedData.fileStatus;
+                        mergedData.remarks = pendingUpdate.fileLevelUpdates.remarks || mergedData.remarks;
+                    }
+
                     dataForForm = mergedData;
                 }
             }
+            
             setFileNoForHeader(dataForForm.fileNo);
             setPageData({ initialData: processDataForForm(dataForForm), allUsers: allUsersResult });
-        } catch (error) { setErrorState("Could not load all required data."); } finally { setDataLoading(false); }
+
+        } catch (error) {
+            setErrorState("Could not load all required data.");
+            console.error(error);
+        } finally {
+            setDataLoading(false);
+        }
     };
-    loadAllData();
-  }, [fileIdToEdit, approveUpdateId, user, authIsLoading, fetchAllUsers, fetchEntryForEditing, getPendingUpdateById, toast, isApprovingUpdate, hasPendingUpdateForFile, workTypeContext]);
+
+    if (!authIsLoading && !dataStoreLoading) {
+        loadData();
+    }
+}, [fileIdToEdit, approveUpdateId, user, authIsLoading, fetchAllUsers, getPendingUpdateById, allFileEntries, hasPendingUpdateForFile, workTypeContext, toast, isApprovingUpdate, dataStoreLoading]);
 
   useEffect(() => {
     let title = "Loading...";
@@ -220,11 +249,13 @@ export default function DataEntryPage() {
 
   const supervisorList = useMemo(() => {
     if (!user || !pageData) return [];
-    return pageData.allUsers.filter(u => u.role === 'supervisor' && u.isApproved && u.staffId).map(userProfile => {
+    const sourceUsers = (user.role === 'admin' || user.role === 'superAdmin') ? pageData.allUsers : allUsers; // `allUsers` from useDataStore is office-specific for sub-admins
+    
+    return sourceUsers.filter(u => u.role === 'supervisor' && u.isApproved && u.staffId).map(userProfile => {
         const staffInfo = allStaffMembers.find(s => s.id === userProfile.staffId && s.status === 'Active');
         return staffInfo ? { ...staffInfo, uid: userProfile.uid, name: staffInfo.name } : null;
     }).filter((s): s is (StaffMember & { uid: string; name: string }) => s !== null).sort((a, b) => a.name.localeCompare(b.name));
-   }, [pageData, allStaffMembers, user]);
+   }, [pageData, allStaffMembers, user, allUsers]);
   
   const hasInvestigationPurpose = useMemo(() => 
     pageData?.initialData?.siteDetails?.some(site => site.purpose === 'GW Investigation'), 
