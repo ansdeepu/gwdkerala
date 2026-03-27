@@ -509,6 +509,14 @@ export const SiteDetailSchema = z.object({
             path: ["workStatus"],
         });
     }
+    
+    if (isInvestigation && !data.typeOfWell) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Type of Well is required.",
+            path: ["typeOfWell"],
+        });
+    }
 });
 export type SiteDetailFormData = z.infer<typeof SiteDetailSchema>;
 
@@ -554,7 +562,7 @@ export const PendingUpdateSchema = z.object({
     }).optional().nullable(),
     submittedByUid: z.string(),
     submittedByName: z.string(),
-    submittedAt: z.any(),
+    submittedAt: any,
     status: z.enum(['pending', 'approved', 'rejected', 'supervisor-unassigned']),
     isArsUpdate: z.boolean(),
     reviewedByUid: z.string().optional().nullable(),
