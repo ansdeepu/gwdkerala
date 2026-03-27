@@ -58,7 +58,7 @@ const SITE_DIALOG_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
     (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending", "Completed"].includes(status)
 );
 
-export default function SiteDialogContent({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, supervisorList, allLsgConstituencyMaps, allE_tenders, allStaffMembers, allBidders, allRigCompressors }: {
+export default function SiteDialogContent({ initialData, onConfirm, onCancel, isReadOnly, isSupervisor, supervisorList, allLsgConstituencyMaps, allE_tenders, allStaffMembers, allBidders, allRigCompressors, workTypeContext }: {
     initialData: Partial<SiteDetailFormData>;
     onConfirm: (data: SiteDetailFormData) => void;
     onCancel: () => void;
@@ -70,6 +70,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     allStaffMembers: StaffMember[];
     allBidders: Bidder[];
     allRigCompressors: RigCompressor[];
+    workTypeContext: 'public' | 'private' | 'collector' | 'planFund' | 'gwInvestigation' | 'loggingPumpingTest' | null;
 }) {
     const form = useForm<SiteDetailFormData>({
         resolver: zodResolver(SiteDetailSchema),
@@ -93,6 +94,8 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     const watchedTenderNo = watch('tenderNo');
     const watchedContractorName = watch('contractorName');
     const watchedSupervisorName = watch('supervisorName');
+
+    const isPrivateWork = workTypeContext === 'private';
 
     useEffect(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) {
@@ -189,11 +192,13 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                 setValue('supervisorUid', null); 
             }
         } else if (watchedTenderNo === '_clear_' || !watchedTenderNo) {
-            setValue('contractorName', '');
-            setValue('supervisorName', '');
-            setValue('supervisorUid', undefined);
+            if (!isPrivateWork) {
+                setValue('contractorName', '');
+                setValue('supervisorName', '');
+                setValue('supervisorUid', undefined);
+            }
         }
-    }, [watchedTenderNo, isTenderSelected, isQuotation, allE_tenders, allStaffMembers, setValue]);
+    }, [watchedTenderNo, isTenderSelected, isQuotation, allE_tenders, allStaffMembers, setValue, isPrivateWork]);
 
     const quotationSupervisorList = useMemo(() => {
         const targetDesignations = ["Master Driller", "Senior Driller", "Driller", "Driller Mechanic", "Drilling Assistant", "Tracer", "Draftsman"];
@@ -381,52 +386,56 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                         <FormField name="tsAmount" control={control} render={({ field }) => <FormItem><FormLabel>TS Amount (₹)</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
                                                     </div>
                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                        <FormField name="tenderNo" control={control} render={({ field }) => (
-                                                            <FormItem>
-                                                                <FormLabel>Tender No.</FormLabel>
-                                                                <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
-                                                                    <FormControl><SelectTrigger><SelectValue placeholder="Select Tender or Quotation" /></SelectTrigger></FormControl>
-                                                                    <SelectContent className="max-h-80">
-                                                                        <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                                        <SelectItem value="Quotation">Quotation</SelectItem>
-                                                                        {(allE_tenders || []).filter(t => t.eTenderNo).map(t => <SelectItem key={t.id} value={t.eTenderNo!}>{t.eTenderNo}</SelectItem>)}
-                                                                    </SelectContent>
-                                                                </Select>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )} />
-                                                        <FormField name="contractorName" control={control} render={({ field }) => (
-                                                            <FormItem>
-                                                                <FormLabel>Contractor</FormLabel>
-                                                                {isQuotation ? (
-                                                                    <Select 
-                                                                        onValueChange={(val) => {
-                                                                            if (val === '_clear_') {
-                                                                                field.onChange('');
-                                                                            } else {
-                                                                                const bidder = allBidders?.find(b => b.name === val);
-                                                                                field.onChange(bidder ? `${bidder.name}, ${bidder.address || ''}` : val);
-                                                                            }
-                                                                        }} 
-                                                                        value={watchedContractorName ? watchedContractorName.split(',')[0].trim() : ""}
-                                                                        disabled={isFieldReadOnly(false)}
-                                                                    >
-                                                                        <FormControl><SelectTrigger><SelectValue placeholder="Select Contractor" /></SelectTrigger></FormControl>
-                                                                        <SelectContent className="max-h-80">
-                                                                            <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
-                                                                            {(allBidders || []).filter(b => b.name).map(b => <SelectItem key={b.id} value={b.name!}>{b.name}</SelectItem>)}
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                ) : (
-                                                                    <FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isTenderSelected || isFieldReadOnly(false)} className={cn((isTenderSelected || isFieldReadOnly(false)) && "bg-muted min-h-[40px]")} /></FormControl>
-                                                                )}
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )} />
+                                                        {!isPrivateWork && (
+                                                            <>
+                                                                <FormField name="tenderNo" control={control} render={({ field }) => (
+                                                                    <FormItem>
+                                                                        <FormLabel>Tender No.</FormLabel>
+                                                                        <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
+                                                                            <FormControl><SelectTrigger><SelectValue placeholder="Select Tender or Quotation" /></SelectTrigger></FormControl>
+                                                                            <SelectContent className="max-h-80">
+                                                                                <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                                                <SelectItem value="Quotation">Quotation</SelectItem>
+                                                                                {(allE_tenders || []).filter(t => t.eTenderNo).map(t => <SelectItem key={t.id} value={t.eTenderNo!}>{t.eTenderNo}</SelectItem>)}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                        <FormMessage />
+                                                                    </FormItem>
+                                                                )} />
+                                                                <FormField name="contractorName" control={control} render={({ field }) => (
+                                                                    <FormItem>
+                                                                        <FormLabel>Contractor</FormLabel>
+                                                                        {isQuotation ? (
+                                                                            <Select 
+                                                                                onValueChange={(val) => {
+                                                                                    if (val === '_clear_') {
+                                                                                        field.onChange('');
+                                                                                    } else {
+                                                                                        const bidder = allBidders?.find(b => b.name === val);
+                                                                                        field.onChange(bidder ? `${bidder.name}, ${bidder.address || ''}` : val);
+                                                                                    }
+                                                                                }} 
+                                                                                value={watchedContractorName ? watchedContractorName.split(',')[0].trim() : ""}
+                                                                                disabled={isFieldReadOnly(false)}
+                                                                            >
+                                                                                <FormControl><SelectTrigger><SelectValue placeholder="Select Contractor" /></SelectTrigger></FormControl>
+                                                                                <SelectContent className="max-h-80">
+                                                                                    <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
+                                                                                    {(allBidders || []).filter(b => b.name).map(b => <SelectItem key={b.id} value={b.name!}>{b.name}</SelectItem>)}
+                                                                                </SelectContent>
+                                                                            </Select>
+                                                                        ) : (
+                                                                            <FormControl><Textarea {...field} value={field.value ?? ''} readOnly={isTenderSelected || isFieldReadOnly(false)} className={cn((isTenderSelected || isFieldReadOnly(false)) && "bg-muted min-h-[40px]")} /></FormControl>
+                                                                        )}
+                                                                        <FormMessage />
+                                                                    </FormItem>
+                                                                )} />
+                                                            </>
+                                                        )}
                                                         <FormField name="supervisorName" control={control} render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className={cn(isPrivateWork && "md:col-span-3")}>
                                                                 <FormLabel>Supervisor</FormLabel>
-                                                                {isQuotation ? (
+                                                                {isQuotation || isPrivateWork ? (
                                                                     <Select 
                                                                         onValueChange={(val) => {
                                                                             if (val === '_clear_') {
