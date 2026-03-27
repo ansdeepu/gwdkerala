@@ -5,17 +5,16 @@ import React, { useEffect, useMemo, useCallback } from 'react';
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Save, X, Info } from "lucide-react";
+import { Save, X, Expand } from "lucide-react";
 import {
   SiteDetailSchema,
   type SiteDetailFormData,
-  type SitePurpose,
   type StaffMember,
   type Constituency,
   LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
@@ -29,8 +28,13 @@ import { Separator } from '@/components/ui/separator';
 
 const formatDateForInput = (date: any): string => {
     if (!date) return '';
-    try { return new Date(date).toISOString().split('T')[0]; } catch { return ''; }
+    try { 
+        const d = new Date(date);
+        return isValidDate(d) ? d.toISOString().split('T')[0] : ''; 
+    } catch { return ''; }
 };
+
+const isValidDate = (d: any) => d instanceof Date && !isNaN(d.getTime());
 
 interface LoggingPumpingTestSiteDialogProps {
     initialData: Partial<SiteDetailFormData>;
@@ -70,7 +74,6 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
         ).sort((a, b) => a.name.localeCompare(b.name)), 
     [allStaffMembers]);
 
-    // Auto-populate Constituency logic adopted from GW Investigation page
     useEffect(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) {
             return;
@@ -95,7 +98,8 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
     const constituencyOptionsForLsg = useMemo(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) return [];
         const map = allLsgConstituencyMaps.find(m => m.name === watchedLsg);
-        return map?.constituencies?.sort((a: string, b: string) => a.localeCompare(b)) || [];
+        if (!map || !map.constituencies) return [];
+        return [...map.constituencies].sort((a, b) => a.localeCompare(b));
     }, [watchedLsg, allLsgConstituencyMaps]);
 
     const isConstituencyDisabled = useMemo(() => {
@@ -127,7 +131,13 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                             <Card>
                                 <CardHeader><CardTitle className="text-lg text-primary">Main Details</CardTitle></CardHeader>
                                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <FormField name="nameOfSite" control={control} render={({ field }) => <FormItem><FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="nameOfSite" control={control} render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel>
+                                            <FormControl><Input {...field} readOnly={isReadOnly} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
                                     <FormField name="purpose" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
@@ -191,7 +201,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                                 <FormLabel>Name of Staff</FormLabel>
                                                 <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Staff Member" /></SelectTrigger></FormControl>
-                                                    <SelectContent>
+                                                    <SelectContent className="max-h-80">
                                                         {investigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}
                                                     </SelectContent>
                                                 </Select>

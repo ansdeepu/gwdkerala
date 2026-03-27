@@ -83,7 +83,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         },
     });
     
-    const { control, setValue, trigger, watch, handleSubmit, getValues } = form;
+    const { control, setValue, watch, handleSubmit, getValues } = form;
 
     const { fields: imageFields, append: appendImage, remove: removeImage, update: updateImage } = useFieldArray({ control, name: "workImages" });
     const { fields: videoFields, append: appendVideo, remove: removeVideo, update: updateVideo } = useFieldArray({ control, name: "workVideos" });
@@ -438,7 +438,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                                                 const staff = quotationSupervisorList.find(s => s.name === val);
                                                                                 if (staff) {
                                                                                     field.onChange(staff.name);
-                                                                                    const linkedUser = supervisorList.find(u => u.id === staff.id);
+                                                                                    const linkedUser = supervisorList.find(u => u.name === staff.name);
                                                                                     setValue('supervisorUid', linkedUser?.uid || null);
                                                                                     setValue('supervisorDesignation', staff.designation);
                                                                                 }

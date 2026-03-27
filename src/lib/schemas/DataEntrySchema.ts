@@ -562,7 +562,7 @@ export const PendingUpdateSchema = z.object({
     }).optional().nullable(),
     submittedByUid: z.string(),
     submittedByName: z.string(),
-    submittedAt: any,
+    submittedAt: z.any(),
     status: z.enum(['pending', 'approved', 'rejected', 'supervisor-unassigned']),
     isArsUpdate: z.boolean(),
     reviewedByUid: z.string().optional().nullable(),
