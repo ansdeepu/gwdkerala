@@ -126,10 +126,13 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     const isARSPurpose = useMemo(() => watchedPurpose === 'ARS', [watchedPurpose]);
 
     const filteredPurposeOptions = useMemo(() => {
+        if (isPrivateWork) {
+            return ["BWC", "TWC", "FPW", "BW Dev", "TW Dev", "FPW Dev"];
+        }
         const arsIndex = (sitePurposeOptions || []).indexOf("ARS");
         if (arsIndex === -1) return sitePurposeOptions;
         return sitePurposeOptions.slice(0, arsIndex + 1);
-    }, []);
+    }, [isPrivateWork]);
 
     const isFieldReadOnly = (isSupervisorEditable: boolean) => {
         if (isReadOnly) return true;
@@ -433,7 +436,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                             </>
                                                         )}
                                                         <FormField name="supervisorName" control={control} render={({ field }) => (
-                                                            <FormItem className={cn(isPrivateWork && "md:col-span-3")}>
+                                                            <FormItem className={cn(isPrivateWork && "md:col-span-2")}>
                                                                 <FormLabel>Supervisor</FormLabel>
                                                                 {isQuotation || isPrivateWork ? (
                                                                     <Select 
