@@ -1,4 +1,3 @@
-
 // src/components/investigation/InvestigationSiteDialog.tsx
 "use client";
 
@@ -72,7 +71,6 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
     const watchedTypeOfWell = watch("typeOfWell");
     const watchedFeasibility = watch("feasibility");
     const watchedWorkStatus = watch("workStatus");
-    const watchedPurpose = watch("purpose");
 
     useEffect(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) {
@@ -252,7 +250,10 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                                 <FormLabel>VES Required?</FormLabel>
                                                 <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Yes/No" /></SelectTrigger></FormControl>
-                                                    <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                                                    <SelectContent>
+                                                        <SelectItem value="Yes">Yes</SelectItem>
+                                                        <SelectItem value="No">No</SelectItem>
+                                                    </SelectContent>
                                                 </Select>
                                                 <FormMessage />
                                             </FormItem>
@@ -299,7 +300,10 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                                 <FormLabel>Feasibility</FormLabel>
                                                 <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Yes/No" /></SelectTrigger></FormControl>
-                                                    <SelectContent><SelectItem value="Yes">Yes</SelectItem><SelectItem value="No">No</SelectItem></SelectContent>
+                                                    <SelectContent>
+                                                        <SelectItem value="Yes">Yes</SelectItem>
+                                                        <SelectItem value="No">No</SelectItem>
+                                                    </SelectContent>
                                                 </Select>
                                                 <FormMessage />
                                             </FormItem>
@@ -351,20 +355,20 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
 
                                             <FormField name="surveyRecommendedTD" control={control} render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel>TD (m)</FormLabel>
+                                                    <FormLabel>Total Depth (m)</FormLabel>
                                                     <FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
                                             
-                                            {watchedPurpose === 'BWC' && (
+                                            {watchedTypeOfWell === 'Bore Well' && (
                                                 <>
                                                     <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
                                                     <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
                                                 </>
                                             )}
 
-                                            {watchedPurpose === 'TWC' && (
+                                            {watchedTypeOfWell === 'Tube Well' && (
                                                 <>
                                                     <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
                                                     <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
@@ -372,7 +376,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                                 </>
                                             )}
 
-                                            {(watchedTypeOfWell === 'Bore Well' || watchedTypeOfWell === 'Filter Point Well') && (
+                                            {watchedTypeOfWell === 'Filter Point Well' && (
                                                 <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
                                             )}
                                         </div>
