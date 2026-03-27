@@ -75,6 +75,8 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
         let planFundDeferredAmount = 0;
         let collectorFundDeferredAmount = 0;
 
+        const revenueHeadBreakdown: Record<string, { total: number }> = {};
+
         const operationalAccountEntries: DataEntryFormData[] = [];
         const adminSanctionEntries: DataEntryFormData[] = [];
 
@@ -136,28 +138,39 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
             });
         });
 
-        // Revenue Head (all entries)
+        // Revenue Head (all entries with breakdown)
         allFileEntries.forEach(entry => {
+            const purpose = entry.siteDetails?.[0]?.purpose || 'Others';
+            if (!revenueHeadBreakdown[purpose]) {
+                revenueHeadBreakdown[purpose] = { total: 0 };
+            }
+
              entry.remittanceDetails?.forEach(rd => {
                 const remDate = rd.dateOfRemittance ? safeParseDate(rd.dateOfRemittance) : null;
                 const isInPeriod = !isDateFilterActive || (remDate && isValid(remDate) && sDate && eDate && isWithinInterval(remDate, { start: sDate, end: eDate }));
                 if (isInPeriod && rd.remittedAccount === 'Revenue Head') {
-                    revenueHeadCreditDirect += Number(rd.amountRemitted) || 0;
+                    const amount = Number(rd.amountRemitted) || 0;
+                    revenueHeadCreditDirect += amount;
+                    revenueHeadBreakdown[purpose].total += amount;
                 }
             });
             entry.paymentDetails?.forEach(pd => {
                 const paymentDate = pd.dateOfPayment ? safeParseDate(pd.dateOfPayment) : null;
                 const isInPeriod = !isDateFilterActive || (paymentDate && isValid(paymentDate) && sDate && eDate && isWithinInterval(paymentDate, { start: sDate, end: eDate }));
                  if (isInPeriod && pd.revenueHead) {
-                    revenueHeadCreditDirect += Number(pd.revenueHead) || 0;
+                    const amount = Number(pd.revenueHead) || 0;
+                    revenueHeadCreditDirect += amount;
+                    revenueHeadBreakdown[purpose].total += amount;
                  }
             });
         });
 
         return {
           sbiCredit, sbiDebit, sbiBalance: sbiCredit - sbiDebit,
-          stsbCredit, stsbDebit, stsbBalance: stsbCredit - stsbDebit,
+          stsbCredit, stsbDebit, sbiBalanceSTSB: stsbCredit - stsbDebit, // rename helper
+          stsbBalance: stsbCredit - stsbDebit,
           revenueHeadCredit: revenueHeadCreditDirect,
+          revenueHeadBreakdown,
           planFundDeferredAmount,
           collectorFundDeferredAmount,
           planFundExpenditure,
@@ -170,7 +183,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
         onSetDates({ start: undefined, end: undefined });
     };
     
-    const handleAmountClick = (account: 'Bank' | 'STSB' | 'RevenueHead' | 'PlanFund' | 'CollectorFund', type: 'credit' | 'debit' | 'expenditure') => {
+    const handleAmountClick = (account: 'Bank' | 'STSB' | 'RevenueHead' | 'PlanFund' | 'CollectorFund', type: 'credit' | 'debit' | 'expenditure', purposeFilter?: string) => {
         let title = '';
         const dataForDialog: Array<Record<string, any>> = [];
         let columnsForDialog: Array<{ key: string; label: string; isNumeric?: boolean; }> = [];
@@ -188,6 +201,9 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
         };
       
         allFileEntries.forEach(entry => {
+          const entryPurpose = entry.siteDetails?.[0]?.purpose || 'Others';
+          if (purposeFilter && entryPurpose !== purposeFilter) return;
+
           const siteNames = entry.siteDetails?.map(sd => sd.nameOfSite || 'N/A').filter(Boolean).join(', ') || 'N/A';
           const sitePurposes = entry.siteDetails?.map(sd => sd.purpose || 'N/A').filter(Boolean).join(', ') || 'N/A';
 
@@ -250,7 +266,7 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
               }
             });
           } else if (account === 'RevenueHead' && type === 'credit') {
-            title = 'Revenue Head - Credit Details';
+            title = `Revenue Head - Credit Details ${purposeFilter ? `(${purposeFilter})` : ''}`;
             columnsForDialog = [
               { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' }, { key: 'applicantName', label: 'Applicant Name' },
               { key: 'siteNames', label: 'Site(s)' }, { key: 'sitePurposes', label: 'Purpose(s)' },
@@ -416,15 +432,48 @@ export default function FinanceOverview({ allFileEntries, onOpenDialog, dates, o
                       
                         <Card className="shadow-inner bg-background/50">
                             <CardHeader className="pb-4">
-                                <CardTitle className="text-lg">Revenue Head Summary</CardTitle>
+                                <CardTitle className="text-lg">Revenue Head Summary (Purpose-wise Breakdown)</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="p-4 flex items-center justify-between">
-                                    <span className="font-medium">Total Credited to Revenue Head</span>
-                                    <Button variant="link" className="text-green-600 p-0 h-auto text-lg font-bold font-mono" onClick={() => handleAmountClick('RevenueHead', 'credit')} disabled={!transformedFinanceMetrics.revenueHeadCredit}>
-                                        ₹{transformedFinanceMetrics.revenueHeadCredit.toLocaleString('en-IN')}
-                                    </Button>
-                                </div>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Purpose</TableHead>
+                                            <TableHead className="text-right">Amount Credited (₹)</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {Object.entries(transformedFinanceMetrics.revenueHeadBreakdown)
+                                            .filter(([_, data]) => data.total > 0)
+                                            .sort((a, b) => b[1].total - a[1].total)
+                                            .map(([purpose, data]) => (
+                                                <TableRow key={purpose}>
+                                                    <TableCell className="font-medium">{purpose}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button variant="link" className="text-green-600 p-0 h-auto font-bold font-mono" onClick={() => handleAmountClick('RevenueHead', 'credit', purpose)}>
+                                                            ₹{data.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        }
+                                        {transformedFinanceMetrics.revenueHeadCredit === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={2} className="text-center py-4 text-muted-foreground italic">No credits to Revenue Head found for this period.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                    <TableFooter>
+                                        <TableRow className="bg-muted">
+                                            <TableCell className="font-bold">Total Credited to Revenue Head</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="link" className="text-green-600 p-0 h-auto text-lg font-bold font-mono" onClick={() => handleAmountClick('RevenueHead', 'credit')} disabled={!transformedFinanceMetrics.revenueHeadCredit}>
+                                                    ₹{transformedFinanceMetrics.revenueHeadCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    </TableFooter>
+                                </Table>
                             </CardContent>
                         </Card>
                     </>
