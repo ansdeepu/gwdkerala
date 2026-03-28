@@ -114,9 +114,11 @@ export function useFileEntries() {
               }
               
               if (user.role === 'investigator') {
-                const isCompletedAndApproved = site.workStatus === 'Completed' && !hasPendingUpdate;
-                // An investigator sees an assigned site unless it's completed and the update has been approved (no longer pending).
-                return !isCompletedAndApproved;
+                const isConsideredFinished = site.workStatus === 'Completed' || site.vesRequired === 'Yes';
+                const isFinishedAndApproved = isConsideredFinished && !hasPendingUpdate;
+                // An investigator sees an assigned site unless it's in a finished state
+                // AND there's no pending update from them for it.
+                return !isFinishedAndApproved;
               }
 
               // Original logic for Supervisor
