@@ -54,12 +54,16 @@ interface ProgressStats {
   toBeRefunded: number;
   totalApplications: number;
   completed: number;
+  feasible: number;
+  nonFeasible: number;
   balance: number;
   previousBalanceData: SiteDetailWithFileContext[];
   currentApplicationsData: SiteDetailWithFileContext[];
   toBeRefundedData: SiteDetailWithFileContext[];
   totalApplicationsData: SiteDetailWithFileContext[];
   completedData: SiteDetailWithFileContext[];
+  feasibleData: SiteDetailWithFileContext[];
+  nonFeasibleData: SiteDetailWithFileContext[];
   balanceData: SiteDetailWithFileContext[];
 }
 
@@ -110,13 +114,18 @@ const ReportDetailsTable = ({
         { key: 'toBeRefunded', label: 'To be Refunded' },
         { key: 'totalApplications', label: 'Total Application' },
         { key: 'completed', label: 'Completed' },
+        { key: 'feasible', label: 'Feasible' },
+        { key: 'nonFeasible', label: 'Non-feasible' },
         { key: 'balance', label: 'Balance' },
     ];
     
-    const { categoryTotals, hasData } = useMemo(() => {
-        const totals: ProgressStats = { previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], balanceData: [] };
+    const { categoryTotals, hasData, activeMetrics } = useMemo(() => {
+        const totals: ProgressStats = { previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, feasible: 0, nonFeasible: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], feasibleData: [], nonFeasibleData: [], balanceData: [] };
         let dataFound = false;
         
+        const metricActivity = new Map<string, boolean>();
+        metrics.forEach(m => metricActivity.set(m.key, false));
+
         categoryKeys.forEach(catKey => {
             const stats = data[catKey];
             if (stats) {
@@ -125,6 +134,8 @@ const ReportDetailsTable = ({
                 }
                 metrics.forEach(metric => {
                     const count = (stats[metric.key] as number) || 0;
+                    if (count > 0) metricActivity.set(metric.key, true);
+
                     const dataKey = `${metric.key}Data` as keyof ProgressStats;
                     const metricData = stats[dataKey] as SiteDetailWithFileContext[] | undefined;
                     
@@ -135,8 +146,14 @@ const ReportDetailsTable = ({
                 });
             }
         });
-        return { categoryTotals: totals, hasData: dataFound };
-    }, [data, categoryKeys, metrics]);
+
+        // Always show the basic balance metrics
+        ['previousBalance', 'currentApplications', 'toBeRefunded', 'totalApplications', 'completed', 'balance'].forEach(k => metricActivity.set(k, true));
+
+        const active = metrics.filter(m => metricActivity.get(m.key));
+
+        return { categoryTotals: totals, hasData: dataFound, activeMetrics: active };
+    }, [data, categoryKeys]);
     
     if (!hasData) {
         return <p className="text-center text-sm text-muted-foreground p-4">No data available for this category in the selected period.</p>;
@@ -148,7 +165,7 @@ const ReportDetailsTable = ({
                 <TableHeader>
                     <TableRow>
                         <TableHead className="border p-2 align-middle text-left min-w-[200px] font-semibold">Category</TableHead>
-                        {metrics.map(metric => (
+                        {activeMetrics.map(metric => (
                             <TableHead key={metric.key} className="border p-2 text-center font-semibold min-w-[100px] whitespace-normal break-words">{metric.label}</TableHead>
                         ))}
                     </TableRow>
@@ -160,7 +177,7 @@ const ReportDetailsTable = ({
                         return (
                             <TableRow key={catKey}>
                                 <TableCell className="border p-2 text-left font-medium">{categoryLabels[catKey] || catKey}</TableCell>
-                                {metrics.map(metric => {
+                                {activeMetrics.map(metric => {
                                     const count = stats[metric.key] as number ?? 0;
                                     const metricData = stats[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[] ?? [];
                                     return (
@@ -178,7 +195,7 @@ const ReportDetailsTable = ({
                 <TableFooter>
                     <TableRow className="bg-muted/50">
                         <TableCell className="border p-2 text-left font-bold">Total</TableCell>
-                        {metrics.map(metric => (
+                        {activeMetrics.map(metric => (
                             <TableCell key={`total-${metric.key}`} className={cn("border p-2 text-center font-bold")}>
                                 <Button variant="link" className="p-0 h-auto font-bold" disabled={(categoryTotals[metric.key] as number) === 0} onClick={() => onCountClick(categoryTotals[`${metric.key}Data` as keyof ProgressStats] as SiteDetailWithFileContext[], `Total for ${titlePrefix} - ${metric.label}`)}>
                                     {categoryTotals[metric.key] as number}
@@ -367,7 +384,7 @@ export default function ProgressReportPage() {
         })
     );
 
-    const initialStats = (): ProgressStats => ({ previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], balanceData: [] });
+    const initialStats = (): ProgressStats => ({ previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, feasible: 0, nonFeasible: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], feasibleData: [], nonFeasibleData: [], balanceData: [] });
     
     const createNestedStructure = (outerKeys: readonly string[], innerKeys: readonly string[]): Record<string, Record<string, ProgressStats>> => {
         const structure: Record<string, Record<string, ProgressStats>> = {};
@@ -426,7 +443,21 @@ export default function ProgressReportPage() {
             if (!statsObj) return;
             if (isCurrentApplicationInPeriod) { statsObj.currentApplications++; statsObj.currentApplicationsData.push(siteWithFileContext); }
             if (wasActiveBeforePeriod) { statsObj.previousBalance++; statsObj.previousBalanceData.push(siteWithFileContext); }
-            if (isCompletedInPeriod) { statsObj.completed++; statsObj.completedData.push(siteWithFileContext); }
+            if (isCompletedInPeriod) { 
+                statsObj.completed++; 
+                statsObj.completedData.push(siteWithFileContext); 
+                
+                // Track Feasibility for investigations
+                if (purpose === 'GW Investigation' || LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(purpose as any)) {
+                    if (site.feasibility === 'Yes') {
+                        statsObj.feasible++;
+                        statsObj.feasibleData.push(siteWithFileContext);
+                    } else if (site.feasibility === 'No') {
+                        statsObj.nonFeasible++;
+                        statsObj.nonFeasibleData.push(siteWithFileContext);
+                    }
+                }
+            }
             if (isToBeRefunded && fileRemittanceDate && isDateFilterActive && isBefore(fileRemittanceDate, eDate!)) { statsObj.toBeRefunded++; statsObj.toBeRefundedData.push(siteWithFileContext); }
         };
 
@@ -519,12 +550,16 @@ export default function ProgressReportPage() {
             total.toBeRefunded += stats.toBeRefunded;
             total.totalApplications += stats.totalApplications;
             total.completed += stats.completed;
+            total.feasible += stats.feasible;
+            total.nonFeasible += stats.nonFeasible;
             total.balance += stats.balance;
             total.previousBalanceData.push(...stats.previousBalanceData);
             total.currentApplicationsData.push(...stats.currentApplicationsData);
             total.toBeRefundedData.push(...stats.toBeRefundedData);
             total.totalApplicationsData.push(...stats.totalApplicationsData);
             total.completedData.push(...stats.completedData);
+            total.feasibleData.push(...stats.feasibleData);
+            total.nonFeasibleData.push(...stats.nonFeasibleData);
             total.balanceData.push(...stats.balanceData);
         });
         gwInvestigationAggregated[wellType] = total;
