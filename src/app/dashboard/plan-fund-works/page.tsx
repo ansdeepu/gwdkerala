@@ -271,6 +271,7 @@ export default function PlanFundWorksPage() {
                 totalEntries={filteredEntries.length}
                 isReadOnly={isSuperAdmin}
                 currentPage={currentPage}
+                userRole={user?.role}
             />
         </CardContent>
          {totalPages > 1 && (

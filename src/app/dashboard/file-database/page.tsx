@@ -8,6 +8,7 @@ import { useFileEntries } from "@/hooks/useFileEntries";
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { useSearchParams, useRouter } from "next/navigation";
 import PaginationControls from "@/components/shared/PaginationControls";
+import { useAuth } from "@/hooks/useAuth";
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,7 @@ export default function FileDatabasePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
+  const { user } = useAuth();
 
   useEffect(() => {
     setHeader('All File Entries', 'Browse, view, edit, or delete submitted file entries.');
@@ -58,6 +60,7 @@ export default function FileDatabasePage() {
             searchActive={false} 
             totalEntries={fileEntries.length}
             currentPage={currentPage}
+            userRole={user?.role}
           />
           <div className="flex justify-center pt-4">
             {totalPages > 1 && <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />}

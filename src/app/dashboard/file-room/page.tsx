@@ -219,6 +219,7 @@ export default function FileManagerPage() {
                 searchActive={!!searchTerm}
                 totalEntries={filteredEntries.length}
                 currentPage={currentPage}
+                userRole={user?.role}
             />
         </CardContent>
          {totalPages > 1 && (

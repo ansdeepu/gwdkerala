@@ -267,6 +267,7 @@ export default function CollectorsDepositWorksPage() {
                 searchActive={!!searchTerm}
                 totalEntries={filteredEntries.length}
                 currentPage={currentPage}
+                userRole={user?.role}
             />
         </CardContent>
         {totalPages > 1 && (

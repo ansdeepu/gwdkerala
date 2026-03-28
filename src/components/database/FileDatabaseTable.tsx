@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Eye, Trash2, Loader2, Copy } from "lucide-react";
-import type { DataEntryFormData, SiteWorkStatus, SiteDetailFormData, ApplicationType } from "@/lib/schemas";
+import type { DataEntryFormData, SiteWorkStatus, SiteDetailFormData, ApplicationType, UserRole } from "@/lib/schemas";
 import { 
     LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
     PUBLIC_DEPOSIT_APPLICATION_TYPES,
@@ -78,6 +78,7 @@ interface FileDatabaseTableProps {
   totalEntries: number;
   isReadOnly?: boolean;
   currentPage?: number;
+  userRole?: UserRole;
 }
 
 export default function FileDatabaseTable({ 
@@ -86,7 +87,8 @@ export default function FileDatabaseTable({
   searchActive, 
   totalEntries, 
   isReadOnly = false,
-  currentPage = 1
+  currentPage = 1,
+  userRole
 }: FileDatabaseTableProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -215,7 +217,11 @@ export default function FileDatabaseTable({
               <TableHead className="w-[25%] px-2 py-3 text-sm">Site Name(s)</TableHead>
               <TableHead className="w-[10%] px-2 py-3 text-sm">Purpose(s)</TableHead>
               <TableHead className="w-[10%] px-2 py-3 text-sm">Remittance</TableHead>
-              <TableHead className="w-[10%] px-2 py-3 text-sm">File Status</TableHead>
+              {userRole === 'supervisor' ? (
+                <TableHead className="w-[10%] px-2 py-3 text-sm">Work Status</TableHead>
+              ) : (
+                <TableHead className="w-[10%] px-2 py-3 text-sm">File Status</TableHead>
+              )}
               <TableHead className="text-center w-[15%] px-2 py-3 text-sm">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -251,7 +257,17 @@ export default function FileDatabaseTable({
                   <TableCell className="w-[10%] px-2 py-2 text-sm">
                     {entry.remittanceDetails?.[0]?.dateOfRemittance ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), "dd/MM/yyyy") : "N/A"}
                   </TableCell>
-                  <TableCell className="font-semibold w-[10%] px-2 py-2 text-sm">{entry.fileStatus}</TableCell>
+                  {userRole === 'supervisor' ? (
+                    <TableCell className="w-[10%] px-2 py-2 text-sm">
+                        {sitesToDisplay.map((site, idx) => (
+                            <span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>
+                                {site.workStatus || 'N/A'}{idx < sitesToDisplay.length - 1 ? ', ' : ''}
+                            </span>
+                        ))}
+                    </TableCell>
+                  ) : (
+                    <TableCell className="font-semibold w-[10%] px-2 py-2 text-sm">{entry.fileStatus}</TableCell>
+                  )}
                   <TableCell className="text-right w-[15%] px-2 py-2">
                       <div className="flex items-center justify-end space-x-1">
                         <TooltipProvider><Tooltip><TooltipTrigger asChild>

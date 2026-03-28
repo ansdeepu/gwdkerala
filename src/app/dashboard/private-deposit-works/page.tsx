@@ -265,6 +265,7 @@ export default function PrivateDepositWorksPage() {
                 searchActive={!!searchTerm}
                 totalEntries={filteredEntries.length}
                 currentPage={currentPage}
+                userRole={user?.role}
             />
         </CardContent>
          {totalPages > 1 && (
