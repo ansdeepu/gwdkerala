@@ -23,6 +23,7 @@ import {
   type TypeOfWell,
   PUBLIC_DEPOSIT_APPLICATION_TYPES,
   PRIVATE_APPLICATION_TYPES,
+  LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
 } from '@/lib/schemas/DataEntrySchema';
 import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
