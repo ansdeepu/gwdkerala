@@ -77,11 +77,21 @@ export function useArsEntries() {
   
       // VISIBILITY LOGIC FOR FIELD STAFF
       if (user.role === "supervisor" || user.role === "investigator") {
+        const ongoingStatuses: ArsStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated"];
+        
+        // Fetch all pending updates for this user to check against
+        const pendingUpdates = await getPendingUpdates(null, user.uid);
+        const pendingArsIds = new Set(pendingUpdates.filter(u => u.isArsUpdate && u.status === 'pending').map(u => u.arsId));
+
         finalEntries = finalEntries.filter((entry) => {
-            const isAssigned = entry.supervisorUid === user.uid;
-            // The filter should only check for assignment, not work status,
-            // to ensure completed works remain visible to the assigned supervisor.
-            return isAssigned;
+            const isAssigned = entry.supervisorUid === user.uid || (user.name && entry.supervisorName === user.name);
+            if (!isAssigned) return false;
+
+            const isOngoing = entry.arsStatus && (ongoingStatuses as string[]).includes(entry.arsStatus);
+            const hasPendingUpdate = pendingArsIds.has(entry.id);
+
+            // Entry is visible if it's ongoing OR if it has a pending update from the supervisor
+            return isOngoing || hasPendingUpdate;
         });
       }
       
@@ -92,7 +102,7 @@ export function useArsEntries() {
     if (!dataStoreLoading) {
       processEntries();
     }
-  }, [user, allArsEntries, dataStoreLoading]);
+  }, [user, allArsEntries, dataStoreLoading, getPendingUpdates]);
 
 
   const addArsEntry = useCallback(async (entryData: ArsEntryFormData): Promise<string> => {

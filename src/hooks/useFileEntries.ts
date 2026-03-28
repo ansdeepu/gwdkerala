@@ -91,25 +91,41 @@ export function useFileEntries() {
       const isFieldStaff = user.role === 'supervisor' || user.role === 'investigator';
 
       if (isFieldStaff && user.uid) {
-        const filteredEntries: DataEntryFormData[] = allFileEntries.filter(entry => {
-            // A file should be visible to field staff if they are assigned to ANY site within it,
-            // regardless of the site's work status. This ensures completed works remain visible.
-            const isAssigned = entry.siteDetails?.some(site => {
-                if (user.role === 'supervisor') {
-                    const isAssignedByUid = site.supervisorUid === user.uid;
-                    const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
-                    return isAssignedByUid || isAssignedByName;
-                }
-                if (user.role === 'investigator') {
-                    return site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
-                }
-                return false;
-            });
+        const filteredEntries = allFileEntries
+          .map(entry => {
+            if (!entry.siteDetails || entry.siteDetails.length === 0) {
+              return null; // No sites to check, so file is not visible
+            }
 
             const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
+            const ongoingStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated", "Pending", "VES Pending"];
+            
+            const visibleSites = entry.siteDetails.filter(site => {
+              let isAssigned = false;
+              if (user.role === 'supervisor') {
+                isAssigned = site.supervisorUid === user.uid || (user.name && site.supervisorName?.includes(user.name));
+              } else if (user.role === 'investigator') {
+                isAssigned = site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
+              }
 
-            return isAssigned || hasPendingUpdate;
-        });
+              if (!isAssigned) {
+                return false;
+              }
+
+              const isOngoing = site.workStatus && (ongoingStatuses as string[]).includes(site.workStatus);
+              // A site is visible if it's ongoing OR if there's a pending update for the file.
+              return isOngoing || hasPendingUpdate;
+            });
+            
+            // If after filtering, there are visible sites, return the entry with only those sites.
+            if (visibleSites.length > 0) {
+              return { ...entry, siteDetails: visibleSites };
+            }
+            
+            return null; // Otherwise, this file entry is not visible to the user.
+          })
+          .filter((entry): entry is DataEntryFormData => entry !== null);
+          
         setFileEntries(filteredEntries);
       } else {
         // For other roles (Admin, Engineer, Scientist, Viewer), show all entries.
