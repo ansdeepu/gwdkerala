@@ -5,7 +5,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { format, startOfDay, endOfDay, isWithinInterval, isValid, isBefore, parseISO, startOfMonth, endOfMonth, isAfter, parse } from 'date-fns';
+import { format, startOfDay, endOfDay, isWithinInterval, isValid, isBefore, parseISO, startOfMonth, endOfMonth, parse } from 'date-fns';
 import { cn } from "@/lib/utils";
 import {
   applicationTypeOptions,
@@ -34,7 +34,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { generateProgressReportPdf } from '@/components/reports/pdf/progressReportPdfGenerator';
 import download from 'downloadjs';
 import { useDataStore } from '@/hooks/use-data-store';
-import { Play, XCircle, FileDown, Loader2, Landmark } from 'lucide-react';
+import { Play, XCircle, FileDown, Loader2, Landmark, CheckCircle } from 'lucide-react';
 
 
 export const dynamic = 'force-dynamic';
@@ -74,7 +74,7 @@ interface FinancialSummary {
   totalPayment: number;
   applicationData: DataEntryFormData[];
   completedData: SiteDetailWithFileContext[];
-  paymentData: any[]; // To hold detailed payment records
+  paymentData: any[];
 }
 type FinancialSummaryReport = Record<string, FinancialSummary>;
 
@@ -233,7 +233,6 @@ const ReportCategoryTable = ({
             return Object.values(stats).some(val => {
                 if (typeof val === 'number' && val > 0) return true;
                 if (Array.isArray(val) && val.length > 0) return true;
-                // Deeper check for nested data
                 if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
                     return Object.values(val).some((nestedVal: any) => 
                         (typeof nestedVal === 'number' && nestedVal > 0) || 
@@ -306,6 +305,24 @@ const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { 
 };
 
 
+const safeParseDate = (dateValue: any): Date | null => {
+  if (!dateValue) return null;
+  if (dateValue instanceof Date) return dateValue;
+  if (typeof dateValue === 'object' && dateValue !== null && typeof (dateValue as any).seconds === 'number') {
+    return new Date((dateValue as any).seconds * 1000);
+  }
+  if (typeof dateValue === 'string' || typeof dateValue === 'number') {
+    const parsed = new Date(dateValue);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+  return null;
+};
+
+const calculatePaymentEntryTotalGlobal = (payment: any): number => {
+  if (!payment) return 0;
+  return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
+};
+
 export default function ProgressReportPage() {
   const { setHeader } = usePageHeader();
   const { reportEntries: fileEntries, isReportLoading: entriesLoading } = useAllFileEntriesForReports();
@@ -341,11 +358,6 @@ export default function ProgressReportPage() {
     setEndDate(endOfMonth(new Date()));
   }, []);
   
-  const calculatePaymentEntryTotalGlobal = (payment: any): number => {
-    if (!payment) return 0;
-    return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
-  };
-
   const handleGenerateReport = useCallback(() => {
     if (!startDate || !endDate) {
         toast({ title: "Date Range Required", description: "Please select both a 'From' and 'To' date to generate the report.", variant: "destructive" });
@@ -358,20 +370,6 @@ export default function ProgressReportPage() {
     const eDate = endOfDay(endDate);
     const isDateFilterActive = !!sDate && !!eDate;
 
-    const safeParseDate = (dateInput: any): Date | null => {
-        if (!dateInput) return null;
-        if (dateInput instanceof Date && isValid(dateInput)) return dateInput;
-        if (dateInput.toDate && typeof dateInput.toDate === 'function') {
-            const d = dateInput.toDate();
-            return isValid(d) ? d : null;
-        }
-        if (typeof dateInput === 'string') {
-            const d = parseISO(dateInput);
-            if (isValid(d)) return d;
-        }
-        return null;
-    };
-    
     const includedSites: SiteDetailWithFileContext[] = fileEntries.flatMap(entry => 
         (entry.siteDetails || [])
         .filter(site => site.workStatus !== "Addl. AS Awaited")
@@ -444,7 +442,6 @@ export default function ProgressReportPage() {
                 statsObj.completed++; 
                 statsObj.completedData.push(siteWithFileContext); 
                 
-                // Track Feasibility for investigations
                 if (purpose === 'GW Investigation' || LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(purpose as any)) {
                     if (site.feasibility === 'Yes') {
                         statsObj.feasible++;
@@ -537,7 +534,6 @@ export default function ProgressReportPage() {
     });
     Object.values(otherSchemesData).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal));
 
-    // Aggregate nested data for UI display
     const gwInvestigationAggregated: Record<string, ProgressStats> = {};
     Object.entries(gwInvestigationData).forEach(([wellType, appTypeMap]) => {
         const total = initialStats();
@@ -562,7 +558,6 @@ export default function ProgressReportPage() {
         gwInvestigationAggregated[wellType] = total;
     });
 
-    // Financial Summary Calculation
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
     const revenueHeadBreakdown: Record<string, { total: number, data: any[] }> = {};
@@ -595,11 +590,6 @@ export default function ProgressReportPage() {
                     if (checkDateInRange(rd.dateOfRemittance)) {
                         const amount = (Number(rd.amountRemitted) || 0);
                         summaryData[purpose].totalRemittance += amount;
-                        if (rd.remittedAccount === 'Revenue Head' && amount > 0) {
-                            revenueHeadBreakdown[purpose].total += amount;
-                            revenueHeadBreakdown[purpose].data.push({ entryId: entry.id, amount });
-                            revenueHeadCreditData.push({ entryId: entry.id, amount });
-                        }
                     }
                 });
             }
@@ -661,7 +651,7 @@ export default function ProgressReportPage() {
     setEndDate(endOfMonth(today));
   };
   
-  const handleExportExcel = async () => { /* Excel export logic here */ };
+  const handleExportExcel = async () => { /* Excel export logic */ };
   
     const handleGeneratePdfReport = async () => {
     if (!reportData) {
@@ -1016,9 +1006,6 @@ export default function ProgressReportPage() {
             </ScrollArea>
           </div>
           <DialogFooter className="p-6 pt-4 border-t">
-              <Button variant="outline" disabled={detailDialogData.length === 0} onClick={handleExportExcel}>
-                  <FileDown className="mr-2 h-4 w-4" /> Export to Excel
-              </Button>
               <DialogClose asChild>
                   <Button type="button" variant="secondary">Close</Button>
               </DialogClose>
