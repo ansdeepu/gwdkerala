@@ -17,11 +17,8 @@ import {
   type SiteWorkStatus,
   REPORTING_PURPOSE_ORDER,
   PUMPING_TEST_AGGREGATE_PURPOSES,
-  INVESTIGATION_APP_TYPE_PURPOSES,
-  INVESTIGATION_WELL_TYPE_PURPOSES,
-  typeOfWellOptions,
   type TypeOfWell,
-  PUBLIC_DEPOSIT_APPLICATION_TYPES,
+  typeOfWellOptions,
   PRIVATE_APPLICATION_TYPES,
   LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
 } from '@/lib/schemas/DataEntrySchema';
@@ -68,7 +65,6 @@ interface ProgressStats {
   balanceData: SiteDetailWithFileContext[];
 }
 
-type ApplicationTypeProgress = Record<string, any>; 
 type OtherServiceProgress = Record<SitePurpose, ProgressStats>;
 
 interface FinancialSummary {
@@ -569,6 +565,7 @@ export default function ProgressReportPage() {
     // Financial Summary Calculation
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
+    const revenueHeadBreakdown: Record<string, { total: number, data: any[] }> = {};
     const revenueHeadCreditData: any[] = [];
     
     const privateEntries = fileEntries.filter(entry => entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any));
@@ -584,13 +581,27 @@ export default function ProgressReportPage() {
 
         entries.forEach(entry => {
             const purpose = entry.siteDetails?.[0]?.purpose || 'Others';
+            if (!revenueHeadBreakdown[purpose]) {
+                revenueHeadBreakdown[purpose] = { total: 0, data: [] };
+            }
+
             const hasRemittanceInPeriod = entry.remittanceDetails?.some(rd => checkDateInRange(rd.dateOfRemittance));
 
             if (hasRemittanceInPeriod) {
                 if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                 summaryData[purpose].totalApplications++;
                 summaryData[purpose].applicationData.push(entry);
-                entry.remittanceDetails?.forEach(rd => { if (checkDateInRange(rd.dateOfRemittance)) summaryData[purpose].totalRemittance += (Number(rd.amountRemitted) || 0) });
+                entry.remittanceDetails?.forEach(rd => { 
+                    if (checkDateInRange(rd.dateOfRemittance)) {
+                        const amount = (Number(rd.amountRemitted) || 0);
+                        summaryData[purpose].totalRemittance += amount;
+                        if (rd.remittedAccount === 'Revenue Head' && amount > 0) {
+                            revenueHeadBreakdown[purpose].total += amount;
+                            revenueHeadBreakdown[purpose].data.push({ entryId: entry.id, amount });
+                            revenueHeadCreditData.push({ entryId: entry.id, amount });
+                        }
+                    }
+                });
             }
 
             entry.paymentDetails?.forEach(pd => {
@@ -598,6 +609,13 @@ export default function ProgressReportPage() {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalPayment += calculatePaymentEntryTotalGlobal(pd);
                     summaryData[purpose].paymentData.push({ ...pd, fileNo: entry.fileNo, applicantName: entry.applicantName, siteDetails: entry.siteDetails || [] });
+                    
+                    if (pd.revenueHead && Number(pd.revenueHead) > 0) {
+                        const amount = Number(pd.revenueHead);
+                        revenueHeadBreakdown[purpose].total += amount;
+                        revenueHeadBreakdown[purpose].data.push({ entryId: entry.id, amount });
+                        revenueHeadCreditData.push({ entryId: entry.id, amount });
+                    }
                 }
             });
 
@@ -615,33 +633,12 @@ export default function ProgressReportPage() {
     processFinancialSummary(privateEntries, privateFinancialSummaryData);
     processFinancialSummary(governmentEntries, governmentFinancialSummaryData);
 
-    const uniqueRevenueCredits = new Map<string, { entryId: string; amount: number }>();
-    fileEntries.forEach(entry => {
-        if (!entry.id) return;
-        if (isDateFilterActive) {
-            entry.paymentDetails?.forEach(pd => {
-                const paymentDate = safeParseDate(pd.dateOfPayment);
-                if (paymentDate && isValid(paymentDate) && sDate && eDate && isWithinInterval(paymentDate, { start: sDate, end: eDate }) && pd.revenueHead) {
-                    const amount = Number(pd.revenueHead) || 0;
-                    if (amount > 0) {
-                        const existing = uniqueRevenueCredits.get(entry.id!);
-                        if (existing) {
-                            existing.amount += amount;
-                        } else {
-                            uniqueRevenueCredits.set(entry.id!, { entryId: entry.id!, amount });
-                        }
-                    }
-                }
-            });
-        }
-    });
-
-    const totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, item) => sum + item.amount, 0);
+    const totalRevenueHeadCredit = revenueHeadCreditData.reduce((sum, item) => sum + item.amount, 0);
 
     setReportData({ 
         bwcData, twcData, fpwData, progressSummaryData, gwInvestigationData, gwInvestigationAggregated, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
         otherSchemesData, privateFinancialSummaryData, governmentFinancialSummaryData,
-        totalRevenueHeadCredit, revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
+        totalRevenueHeadCredit, revenueHeadCreditData, revenueHeadBreakdown,
         typeOfWellOptionsWithUnassigned,
     });
     setIsFiltering(false);
@@ -699,7 +696,7 @@ export default function ProgressReportPage() {
 
     const isPaymentData = data[0] && 'paymentAccount' in data[0];
     const isFileLevelData = data[0] && 'siteDetails' in data[0];
-    const isRevenueHeadData = title === 'Revenue Head Credits';
+    const isRevenueHeadData = title.includes('Revenue Head Credits');
     
     if (isRevenueHeadData) {
         columns = [
@@ -928,14 +925,62 @@ export default function ProgressReportPage() {
                     <CardContent><FinancialSummaryTable data={reportData.governmentFinancialSummaryData} onCellClick={(dataType, purpose, data, title) => handleCountClick(data, title)} onTotalClick={(type) => handleFinancialTotalClick(type, reportData.governmentFinancialSummaryData, "Government")} category="Government" /></CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader><CardTitle className="flex items-center gap-2"><Landmark className="h-5 w-5 text-primary" />Revenue Head Summary</CardTitle><CardDescription>Total amount credited to the Revenue Head within the selected period.</CardDescription></CardHeader>
-                    <CardContent className="text-center">
-                        <Button variant="link" className="text-4xl font-bold text-green-600 p-0 h-auto hover:underline" onClick={() => handleCountClick(reportData.revenueHeadCreditData, 'Revenue Head Credits')} disabled={reportData.totalRevenueHeadCredit === 0}>
-                            ₹{reportData.totalRevenueHeadCredit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </Button>
-                    </CardContent>
-                </Card>
+                <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="revenue-head" className="border rounded-lg bg-background/50 shadow-inner overflow-hidden">
+                        <AccordionTrigger className="px-6 py-4 hover:no-underline [&[data-state=open]]:border-b">
+                            <div className="flex items-center justify-between w-full pr-4">
+                                <span className="text-lg font-semibold flex items-center gap-2">
+                                    <Landmark className="h-5 w-5 text-primary" />
+                                    Revenue Head Summary
+                                </span>
+                                <span className="text-lg font-bold font-mono text-green-600 ml-4">
+                                    ₹{reportData.totalRevenueHeadCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="p-0">
+                            <Table>
+                                <TableHeader className="bg-muted/30">
+                                    <TableRow>
+                                        <TableHead className="pl-6">Purpose</TableHead>
+                                        <TableHead className="text-right pr-6">Amount Credited (₹)</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {Object.entries(reportData.revenueHeadBreakdown)
+                                        .filter(([_, data]: any) => data.total > 0)
+                                        .sort((a, b) => b[1].total - a[1].total)
+                                        .map(([purpose, data]: any) => (
+                                            <TableRow key={purpose}>
+                                                <TableCell className="font-medium pl-6">{purpose}</TableCell>
+                                                <TableCell className="text-right pr-6">
+                                                    <Button variant="link" className="text-green-600 p-0 h-auto font-bold font-mono" onClick={() => handleCountClick(data.data, `Revenue Head Credits - ${purpose}`)}>
+                                                        ₹{data.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    }
+                                    {reportData.totalRevenueHeadCredit === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="text-center py-4 text-muted-foreground italic">No credits to Revenue Head found for this period.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                                <TableFooter>
+                                    <TableRow className="bg-muted/50">
+                                        <TableCell className="font-bold pl-6">Total Credited to Revenue Head</TableCell>
+                                        <TableCell className="text-right pr-6">
+                                            <Button variant="link" className="text-green-600 p-0 h-auto text-lg font-bold font-mono" onClick={() => handleCountClick(reportData.revenueHeadCreditData, 'Revenue Head Credits')} disabled={reportData.totalRevenueHeadCredit === 0}>
+                                                ₹{reportData.totalRevenueHeadCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                </TableFooter>
+                            </Table>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
             </>
             ) : (
                 <div className="flex items-center justify-center py-10 border-2 border-dashed rounded-lg"><p className="text-muted-foreground">Select a date range and click "Generate Report" to view progress.</p></div>
@@ -943,7 +988,7 @@ export default function ProgressReportPage() {
         </div>
       </ScrollArea>
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="sm:max-w-4xl flex flex-col h-[90vh]">
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-4xl flex flex-col h-[90vh]">
           <DialogHeader className="p-6 pb-4 border-b">
             <DialogTitle>{detailDialogTitle}</DialogTitle>
             <DialogDescription>Showing {detailDialogData.length} records.</DialogDescription>
