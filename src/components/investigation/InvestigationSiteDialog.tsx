@@ -1,4 +1,3 @@
-
 // src/components/investigation/InvestigationSiteDialog.tsx
 "use client";
 
@@ -83,34 +82,41 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
 
     const isFieldDisabled = (fieldName: string): boolean => {
         if (isReadOnly || isSupervisor) return true;
-        if (!isInvestigator) return false;
+        if (!isInvestigator) return false; // Admin/Scientist can edit everything
 
-        const hydroEditableFields = [
+        // Rule: Investigators cannot edit these core fields
+        if (['nameOfInvestigator', 'typeOfWell'].includes(fieldName)) {
+            return true;
+        }
+
+        const hydroEditableFields = new Set([
             'dateOfInvestigation', 'hydrogeologicalRemarks', 'vesRequired', 'feasibility',
             'surveyRecommendedDiameter', 'surveyRecommendedTD', 'surveyRecommendedOB',
-            'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe', 
-            'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe', 
+            'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe',
+            'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe',
             'surveyLocation', 'surveyRemarks', 'pondDimensions',
-            'workStatus', 'dateOfCompletion', 'workRemarks'
-        ];
+            'workStatus', 'dateOfCompletion', 'workRemarks',
+            'latitude', 'longitude'
+        ]);
 
-        const geoEditableFields = [
-            'vesDate', 'geophysicalRemarks', 'nameOfInvestigator',
+        const geoEditableFields = new Set([
+            'vesDate', 'geophysicalRemarks', 'vesInvestigator',
             'surveyRecommendedDiameter', 'surveyRecommendedTD', 'surveyRecommendedOB',
-            'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe', 
-            'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe', 
+            'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe',
+            'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe',
             'surveyLocation', 'surveyRemarks', 'pondDimensions',
             'workStatus', 'dateOfCompletion', 'workRemarks'
-        ];
-        
+        ]);
+
         if (isHydroInvestigator) {
-            return !hydroEditableFields.includes(fieldName);
+            return !hydroEditableFields.has(fieldName);
         }
         
         if (isGeoInvestigator) {
-            return !geoEditableFields.includes(fieldName);
+            return !geoEditableFields.has(fieldName);
         }
         
+        // Default to read-only for investigators without a matching designation
         return true;
     };
     
@@ -204,7 +210,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                     <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Local Self Govt. <span className="text-destructive">*</span></FormLabel>
-                                            <Select onValueChange={(val) => handleLsgChange(val, field.onChange)} value={field.value || ""} disabled={isFieldDisabled('localSelfGovt')}>
+                                            <Select onValueChange={(value) => handleLsgChange(value, field.onChange)} value={field.value || ""} disabled={isFieldDisabled('localSelfGovt')}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder="Select LSG" /></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
                                                     <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
