@@ -37,13 +37,12 @@ import MediaManager from '@/components/shared/MediaManager';
 const toDateOrNull = (value: any): Date | null => {
     if (!value) return null;
     if (value instanceof Date) return value;
-    if (typeof value === 'string') {
-        const d = parseISO(value);
-        if (isValid(d)) return d;
+    if (typeof value === 'object' && value !== null && typeof (value as any).seconds === 'number') {
+        return new Date((value as any).seconds * 1000);
     }
-    if (typeof value === 'object' && value.seconds) {
-        const d = new Date(value.seconds * 1000);
-        if (isValid(d)) return d;
+    if (typeof value === 'string') {
+        const parsed = new Date(value);
+        if (!isNaN(parsed.getTime())) return parsed;
     }
     return null;
 };
@@ -135,8 +134,15 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     }, [isPrivateWork]);
 
     const isFieldReadOnly = (isSupervisorEditable: boolean) => {
-        if (isReadOnly) return true;
-        if (isSupervisor) return !isSupervisorEditable;
+        if (isReadOnly) {
+            if (isSupervisor && isSupervisorEditable) {
+                return false; // Supervisors can edit this specific field
+            }
+            return true;
+        }
+        if (isSupervisor) {
+            return !isSupervisorEditable;
+        }
         return false;
     };
 
@@ -302,8 +308,8 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                 <FormMessage/>
                                             </FormItem>
                                         )} />
-                                        <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                                        <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
+                                        <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
                                     </div>
                                 </CardContent>
                             </Card>
@@ -436,7 +442,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                             </>
                                                         )}
                                                         <FormField name="supervisorName" control={control} render={({ field }) => (
-                                                            <FormItem>
+                                                            <FormItem className={isPrivateWork ? "md:col-span-1" : ""}>
                                                                 <FormLabel>Supervisor</FormLabel>
                                                                 {isQuotation || isPrivateWork ? (
                                                                     <Select 
@@ -715,4 +721,3 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         </div>
     );
 }
-

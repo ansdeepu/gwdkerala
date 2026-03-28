@@ -72,6 +72,19 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
     const watchedFeasibility = watch("feasibility");
     const watchedWorkStatus = watch("workStatus");
 
+    const isFieldReadOnly = (isSupervisorEditable: boolean) => {
+        if (isReadOnly) {
+            if ((isSupervisor || isInvestigator) && isSupervisorEditable) {
+                return false;
+            }
+            return true;
+        }
+        if (isSupervisor || isInvestigator) {
+            return !isSupervisorEditable;
+        }
+        return false;
+    };
+    
     useEffect(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) {
             return;
@@ -128,7 +141,6 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
     }, [isReadOnly, watchedLsg, constituencyOptionsForLsg]);
 
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
-    const latLongReadOnly = isReadOnly && !isSupervisor && !isInvestigator;
 
     return (
         <FormProvider {...form}>
@@ -146,7 +158,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                     <FormField name="nameOfSite" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel>
-                                            <FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly} /></FormControl>
+                                            <FormControl><Input {...field} value={field.value ?? ''} readOnly={isFieldReadOnly(false)} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
@@ -160,7 +172,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                     <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Local Self Govt. <span className="text-destructive">*</span></FormLabel>
-                                            <Select onValueChange={(val) => handleLsgChange(val, field.onChange)} value={field.value || ""} disabled={isReadOnly}>
+                                            <Select onValueChange={(val) => handleLsgChange(val, field.onChange)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder="Select LSG" /></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
                                                     <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -186,14 +198,14 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                     <FormField name="latitude" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Latitude</FormLabel>
-                                            <FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={latLongReadOnly} /></FormControl>
+                                            <FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
                                     <FormField name="longitude" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Longitude</FormLabel>
-                                            <FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={latLongReadOnly} /></FormControl>
+                                            <FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
@@ -207,7 +219,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                         <FormField name="nameOfInvestigator" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Investigator (Hydrogeological)</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
+                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isFieldReadOnly(false)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Investigator" /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         {hydroInvestigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}
@@ -219,7 +231,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                         <FormField name="typeOfWell" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Type of Well <span className="text-destructive">*</span></FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
+                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isFieldReadOnly(false)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Well Type" /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         {typeOfWellOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
@@ -231,7 +243,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                         <FormField name="dateOfInvestigation" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Date of Investigation</FormLabel>
-                                                <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl>
+                                                <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
@@ -239,7 +251,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                     <FormField name="hydrogeologicalRemarks" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Hydrogeological Remarks</FormLabel>
-                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl>
+                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
@@ -248,7 +260,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                         <FormField name="vesRequired" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>VES Required?</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
+                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isFieldReadOnly(false)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Yes/No" /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="Yes">Yes</SelectItem>
@@ -267,14 +279,14 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                                 <FormField name="vesDate" control={control} render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Date of VES Conducted</FormLabel>
-                                                        <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl>
+                                                        <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )} />
                                                 <FormField name="vesInvestigator" control={control} render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Name of Investigator (Geophysical)</FormLabel>
-                                                        <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
+                                                        <Select onValueChange={field.onChange} value={field.value || ''} disabled={isFieldReadOnly(false)}>
                                                             <FormControl><SelectTrigger><SelectValue placeholder="Select Investigator" /></SelectTrigger></FormControl>
                                                             <SelectContent>
                                                                 {geoInvestigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}
@@ -287,7 +299,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                             <FormField name="geophysicalRemarks" control={control} render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Geophysical Remarks</FormLabel>
-                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl>
+                                                    <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
@@ -298,7 +310,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                         <FormField name="feasibility" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Feasibility</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isReadOnly}>
+                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isFieldReadOnly(false)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Yes/No" /></SelectTrigger></FormControl>
                                                     <SelectContent>
                                                         <SelectItem value="Yes">Yes</SelectItem>
@@ -321,7 +333,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                                 <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Diameter (mm)</FormLabel>
-                                                        <FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} placeholder="Enter diameter" /></FormControl>
+                                                        <FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} placeholder="Enter diameter" /></FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )} />
@@ -331,7 +343,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                                 <FormField name="pondDimensions" control={control} render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Length × Breadth (m)</FormLabel>
-                                                        <FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} placeholder="e.g. 10x15" /></FormControl>
+                                                        <FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} placeholder="e.g. 10x15" /></FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )} />
@@ -341,7 +353,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                                 <FormField name="surveyRecommendedDiameter" control={control} render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Diameter (mm)</FormLabel>
-                                                        <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly}>
+                                                        <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
                                                             <FormControl><SelectTrigger><SelectValue placeholder="Select Diameter" /></SelectTrigger></FormControl>
                                                             <SelectContent>
                                                                 <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -356,33 +368,33 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                             <FormField name="surveyRecommendedTD" control={control} render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel>Total Depth (m)</FormLabel>
-                                                    <FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl>
+                                                    <FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
                                             
                                             {watchedTypeOfWell === 'Bore Well' && (
                                                 <>
-                                                    <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                                    <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedOB" control={control} render={({ field }) => <FormItem><FormLabel>OB (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
                                                 </>
                                             )}
 
                                             {watchedTypeOfWell === 'Tube Well' && (
                                                 <>
-                                                    <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                                    <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
-                                                    <FormField name="surveyRecommendedMsCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedPlainPipe" control={control} render={({ field }) => <FormItem><FormLabel>Plain Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedSlottedPipe" control={control} render={({ field }) => <FormItem><FormLabel>Slotted Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                                    <FormField name="surveyRecommendedMsCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>MS Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
                                                 </>
                                             )}
 
                                             {watchedTypeOfWell === 'Filter Point Well' && (
-                                                <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl><FormMessage /></FormItem>} />
+                                                <FormField name="surveyRecommendedCasingPipe" control={control} render={({ field }) => <FormItem><FormLabel>Casing Pipe (m)</FormLabel><FormControl><Input {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
                                             )}
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem><FormLabel>Well Location</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} className="min-h-[40px]" /></FormControl><FormMessage /></FormItem>} />
-                                            <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} className="min-h-[40px]" /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField name="surveyLocation" control={control} render={({ field }) => <FormItem><FormLabel>Well Location</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} className="min-h-[40px]" /></FormControl><FormMessage /></FormItem>} />
+                                            <FormField name="surveyRemarks" control={control} render={({ field }) => <FormItem><FormLabel>Remarks</FormLabel><FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} className="min-h-[40px]" /></FormControl><FormMessage /></FormItem>} />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -390,12 +402,12 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
 
                             <Card>
                                 <CardHeader><CardTitle className="text-lg text-primary">Work Status</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
+                                <CardContent>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField name="workStatus" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isReadOnly}>
+                                                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isFieldReadOnly(false)}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         {INVESTIGATION_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
@@ -407,15 +419,15 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                         <FormField name="dateOfCompletion" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel>
-                                                <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isReadOnly} /></FormControl>
+                                                <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)}/></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
                                     </div>
                                     <FormField name="workRemarks" control={control} render={({ field }) => (
-                                        <FormItem>
+                                        <FormItem className="mt-4">
                                             <FormLabel>Status Remarks</FormLabel>
-                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isReadOnly} placeholder="Remarks regarding completion or pending status..." /></FormControl>
+                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} placeholder="Remarks regarding completion or pending status..." /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
