@@ -421,6 +421,33 @@ export default function ProgressReportPage() {
         otherSchemesData[p] = createSingleStructure(uniqueApplicationTypesWithUnassigned);
     });
     
+    const calculateBalanceAndTotal = (stats: ProgressStats) => {
+        if(!stats) return;
+        stats.totalApplications = (stats.previousBalance || 0) + (stats.currentApplications || 0) - (stats.toBeRefunded || 0);
+        stats.balance = stats.totalApplications - (stats.completed || 0);
+        
+        const totalApplicationSites = new Map<string, SiteDetailWithFileContext>();
+        if (stats.previousBalanceData) {
+            stats.previousBalanceData.forEach(site => { 
+                const key = `${site.fileNo}-${site.nameOfSite}`; 
+                if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
+            });
+        }
+        if (stats.currentApplicationsData) {
+            stats.currentApplicationsData.forEach(site => { 
+                const key = `${site.fileNo}-${site.nameOfSite}`; 
+                if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
+            });
+        }
+        
+        const toBeRefundedKeys = new Set((stats.toBeRefundedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
+        toBeRefundedKeys.forEach(key => totalApplicationSites.delete(key));
+        stats.totalApplicationsData = Array.from(totalApplicationSites.values());
+        
+        const completedKeys = new Set((stats.completedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
+        stats.balanceData = (stats.totalApplicationsData || []).filter(site => !completedKeys.has(`${site.fileNo}-${site.nameOfSite}`));
+    };
+
     includedSites.forEach(siteWithFileContext => {
         const { fileRemittanceDate, ...site } = siteWithFileContext;
         const purpose = site.purpose as SitePurpose;
@@ -492,33 +519,6 @@ export default function ProgressReportPage() {
         }
     });
 
-    const calculateBalanceAndTotal = (stats: ProgressStats) => {
-        if(!stats) return;
-        stats.totalApplications = (stats.previousBalance || 0) + (stats.currentApplications || 0) - (stats.toBeRefunded || 0);
-        stats.balance = stats.totalApplications - (stats.completed || 0);
-        
-        const totalApplicationSites = new Map<string, SiteDetailWithFileContext>();
-        if (stats.previousBalanceData) {
-            stats.previousBalanceData.forEach(site => { 
-                const key = `${site.fileNo}-${site.nameOfSite}`; 
-                if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
-            });
-        }
-        if (stats.currentApplicationsData) {
-            stats.currentApplicationsData.forEach(site => { 
-                const key = `${site.fileNo}-${site.nameOfSite}`; 
-                if (!totalApplicationSites.has(key)) totalApplicationSites.set(key, site); 
-            });
-        }
-        
-        const toBeRefundedKeys = new Set((stats.toBeRefundedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
-        toBeRefundedKeys.forEach(key => totalApplicationSites.delete(key));
-        stats.totalApplicationsData = Array.from(totalApplicationSites.values());
-        
-        const completedKeys = new Set((stats.completedData || []).map(site => `${site.fileNo}-${site.nameOfSite}`));
-        stats.balanceData = (stats.totalApplicationsData || []).filter(site => !completedKeys.has(`${site.fileNo}-${site.nameOfSite}`));
-    };
-    
     Object.values(progressSummaryData).forEach(calculateBalanceAndTotal);
     
     Object.values(gwInvestigationData).forEach(wellTypeData => Object.values(wellTypeData).forEach(calculateBalanceAndTotal));
