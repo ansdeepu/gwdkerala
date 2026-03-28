@@ -15,13 +15,13 @@ import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS, type SitePurpose, DataEntryFormData } from '@/lib/schemas';
+import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS, type SitePurpose, DataEntryFormData, type Designation } from '@/lib/schemas';
 import PaginationControls from '@/components/shared/PaginationControls';
 
 export const dynamic = 'force-dynamic';
 
-const FilePlus2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><path d="M14 2v6h6"/><path d="M3 15h6"/><path d="M6 12v6"/></svg> );
-const Clock = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> );
+const FilePlus2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4"/><path d="M14 2v6h6"/><path d="M3 15h6"/><path d="M6 12v6"/></svg> );
+const Clock = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> );
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -42,6 +42,8 @@ export default function LoggingPumpingTestPage() {
   const { setHeader } = usePageHeader();
   const { user } = useAuth();
   const { fileEntries, isLoading } = useFileEntries();
+  const { allStaffMembers } = useDataStore();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("Geological");
   const router = useRouter();
@@ -51,7 +53,7 @@ export default function LoggingPumpingTestPage() {
   
   useEffect(() => { setHeader('Logging & Pumping Test', 'List of all Logging & Pumping Test files.'); }, [setHeader]);
 
-  const canCreate = user?.role === 'admin' || user?.role === 'scientist' || user?.role === 'investigator';
+  const canCreate = user?.role === 'admin' || user?.role === 'scientist';
 
   useEffect(() => {
     const page = searchParams?.get('page');
@@ -61,6 +63,33 @@ export default function LoggingPumpingTestPage() {
       setCurrentPage(1);
     }
   }, [searchParams]);
+
+  const userDesignation = useMemo(() => {
+    if (!user || !user.staffId) return null;
+    return allStaffMembers.find(s => s.id === user.staffId)?.designation;
+  }, [user, allStaffMembers]);
+
+  const visibleTabs = useMemo(() => {
+    if (user?.role !== 'investigator' || !userDesignation) {
+        return ['Geological', 'Geophysical', 'PumpingTest'];
+    }
+    const hydroDesignations: Designation[] = ["Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant"];
+    const geoDesignations: Designation[] = ["Geophysicist", "Junior Geophysicist", "Geophysical Assistant"];
+
+    if (geoDesignations.includes(userDesignation as any)) {
+        return ['Geophysical'];
+    }
+    if (hydroDesignations.includes(userDesignation as any)) {
+        return ['Geological', 'PumpingTest'];
+    }
+    return ['Geological', 'Geophysical', 'PumpingTest']; // Fallback for investigators with other designations
+  }, [user, userDesignation]);
+
+  useEffect(() => {
+    if (!visibleTabs.map(t => t.toLowerCase()).includes(activeTab.toLowerCase())) {
+        setActiveTab(visibleTabs[0]);
+    }
+  }, [visibleTabs, activeTab]);
 
   const { geologicalLoggingEntries, geophysicalLoggingEntries, pumpingTestEntries, lastCreatedDate } = useMemo(() => {
     const allLoggingAndPumpingEntries = fileEntries.filter(entry => {
@@ -179,9 +208,9 @@ export default function LoggingPumpingTestPage() {
            <div className="flex justify-between items-center gap-4 pt-4 border-t">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
                     <TabsList className="grid w-full grid-cols-3 sm:w-auto">
-                        <TabsTrigger value="Geological">Geological logging <Badge variant="secondary" className="ml-2">{geologicalLoggingEntries.length}</Badge></TabsTrigger>
-                        <TabsTrigger value="Geophysical">Geophysical Logging <Badge variant="secondary" className="ml-2">{geophysicalLoggingEntries.length}</Badge></TabsTrigger>
-                        <TabsTrigger value="PumpingTest">Pumping Test <Badge variant="secondary" className="ml-2">{pumpingTestEntries.length}</Badge></TabsTrigger>
+                        {visibleTabs.includes('Geological') && <TabsTrigger value="Geological">Geological logging <Badge variant="secondary" className="ml-2">{geologicalLoggingEntries.length}</Badge></TabsTrigger>}
+                        {visibleTabs.includes('Geophysical') && <TabsTrigger value="Geophysical">Geophysical Logging <Badge variant="secondary" className="ml-2">{geophysicalLoggingEntries.length}</Badge></TabsTrigger>}
+                        {visibleTabs.includes('PumpingTest') && <TabsTrigger value="PumpingTest">Pumping Test <Badge variant="secondary" className="ml-2">{pumpingTestEntries.length}</Badge></TabsTrigger>}
                     </TabsList>
                 </Tabs>
                 <div className="flex flex-col items-end gap-2">
