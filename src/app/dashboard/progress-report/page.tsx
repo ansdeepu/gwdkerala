@@ -26,7 +26,7 @@ import {
 } from '@/lib/schemas/DataEntrySchema';
 import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAllFileEntriesForReports } from '@/hooks/useAllFileEntriesForReports';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -505,7 +505,6 @@ export default function ProgressReportPage() {
 
     uniqueApplicationTypesWithUnassigned.forEach(appType => {
       BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
-      TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateTotalBalance(twcData[appType][d]) }); // Incorrect ref, should be calculateBalanceAndTotal
       TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
       FPW_DIAMETERS.forEach(d => { if(fpwData[appType]?.[d]) calculateBalanceAndTotal(fpwData[appType][d]) });
     });
