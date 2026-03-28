@@ -7,7 +7,7 @@ import InvestigationTable from "@/components/investigation/InvestigationTable";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { parseISO, isValid, format } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -43,11 +43,14 @@ export default function GWInvestigationPage() {
   const { user } = useAuth();
   const { fileEntries, isLoading } = useFileEntries();
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("Govt");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { setIsNavigating } = usePageNavigation();
   const [currentPage, setCurrentPage] = useState(1);
+
+  const tabFromUrl = searchParams?.get('tab');
+  const [activeTab, setActiveTab] = useState(tabFromUrl || "Govt");
   
   useEffect(() => { setHeader('GW Investigation', 'List of all Ground Water Investigation files.'); }, [setHeader]);
 
@@ -61,6 +64,20 @@ export default function GWInvestigationPage() {
       setCurrentPage(1);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+        setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl, activeTab]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('tab', value);
+    params.set('page', '1');
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   const allInvestigationEntries = useMemo(() => {
     let entries = fileEntries.filter(entry => {
@@ -93,10 +110,25 @@ export default function GWInvestigationPage() {
     return entries;
   }, [fileEntries]);
 
+  // Global search filtering applied BEFORE splitting into tab categories
+  const searchFilteredEntries = useMemo(() => {
+    if (!searchTerm) return allInvestigationEntries;
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return allInvestigationEntries.filter(entry => {
+        const searchableContent = [
+            entry.fileNo, 
+            entry.applicantName,
+            ...(entry.siteDetails || []).map(s => s.nameOfSite),
+            entry.phoneNo
+        ].filter(Boolean).map(val => String(val).toLowerCase()).join(' ');
+        return searchableContent.includes(lowerSearchTerm);
+    });
+  }, [allInvestigationEntries, searchTerm]);
+
   const { investigationEntries, counts, lastCreatedDate, totalSites } = useMemo(() => {
-    const govt = allInvestigationEntries.filter(e => (e as any).category === 'Govt' || (e.applicationType === 'GW_Investigation' && !(e as any).category));
-    const pvt = allInvestigationEntries.filter(e => (e as any).category === 'Private');
-    const complaints = allInvestigationEntries.filter(e => (e as any).category === 'Complaints');
+    const govt = searchFilteredEntries.filter(e => (e as any).category === 'Govt' || (e.applicationType === 'GW_Investigation' && !(e as any).category));
+    const pvt = searchFilteredEntries.filter(e => (e as any).category === 'Private');
+    const complaints = searchFilteredEntries.filter(e => (e as any).category === 'Complaints');
 
     let filtered = govt;
     if (activeTab === 'Private') filtered = pvt;
@@ -116,26 +148,14 @@ export default function GWInvestigationPage() {
         lastCreatedDate: lastCreated,
         totalSites: currentTabTotalSites
     };
-  }, [allInvestigationEntries, activeTab]);
+  }, [searchFilteredEntries, allInvestigationEntries, activeTab]);
   
-  const filteredEntries = useMemo(() => {
-    if (!searchTerm) return investigationEntries;
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    return investigationEntries.filter(entry => [entry.fileNo, entry.applicantName].some(v => v?.toLowerCase().includes(lowerSearchTerm)));
-  }, [investigationEntries, searchTerm]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams?.toString());
-    params.set('page', '1');
-    router.replace(`?${params.toString()}`, { scroll: false });
-  }, [activeTab, router, searchParams]);
-
-  const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(investigationEntries.length / ITEMS_PER_PAGE);
 
   const paginatedEntries = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredEntries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredEntries, currentPage]);
+    return investigationEntries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [investigationEntries, currentPage]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -144,38 +164,44 @@ export default function GWInvestigationPage() {
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
+  const handleAddNewClick = () => {
+    setIsNavigating(true);
+    router.push(`/dashboard/data-entry?workType=gwInvestigation&tab=${activeTab}${currentPage > 1 ? `&page=${currentPage}` : ''}`);
+  };
+
   return (
     <div className="space-y-6">
        <Card>
          <CardContent className="p-4 space-y-4">
            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="relative flex-grow w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Search all fields..."
-                  className="w-full rounded-lg bg-background shadow-sm"
+                  placeholder="Search across all categories (File No, Applicant, Site Name)..."
+                  className="w-full rounded-lg bg-background shadow-sm pl-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
                <div className="flex items-center gap-4 w-full sm:w-auto">
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                    Total Files: <span className="font-bold text-primary">{filteredEntries.length}</span>
+                    Tab Total: <span className="font-bold text-primary">{investigationEntries.length}</span>
                 </div>
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
                     Total Sites: <span className="font-bold text-primary">{totalSites}</span>
                 </div>
                 
                 {canCreate && (
-                    <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=gwInvestigation'); }} size="sm" className="w-full sm:w-auto shrink-0">
+                    <Button onClick={handleAddNewClick} size="sm" className="w-full sm:w-auto shrink-0">
                         <FilePlus2 className="mr-2 h-4 w-4" /> New File
                     </Button>
                 )}
                </div>
             </div>
            
-           <div className="flex justify-between items-center gap-4 pt-4 border-t">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+           <div className="flex flex-wrap justify-between items-center gap-4 pt-4 border-t">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full sm:w-auto">
                     <TabsList className="grid w-full grid-cols-3 sm:w-auto">
                         <TabsTrigger value="Govt">Govt <Badge variant="secondary" className="ml-2">{counts.Govt}</Badge></TabsTrigger>
                         <TabsTrigger value="Private">Private <Badge variant="secondary" className="ml-2">{counts.Private}</Badge></TabsTrigger>
@@ -204,7 +230,14 @@ export default function GWInvestigationPage() {
       <Card>
         <CardContent className="p-0">
           <div className="max-h-[70vh] overflow-auto">
-            <InvestigationTable fileEntries={paginatedEntries} isLoading={isLoading} searchActive={!!searchTerm} totalEntries={filteredEntries.length} />
+            <InvestigationTable 
+                fileEntries={paginatedEntries} 
+                isLoading={isLoading} 
+                searchActive={!!searchTerm} 
+                totalEntries={investigationEntries.length}
+                activeTab={activeTab}
+                currentPage={currentPage}
+            />
           </div>
         </CardContent>
         {totalPages > 1 && (

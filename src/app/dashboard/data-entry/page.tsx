@@ -136,6 +136,7 @@ export default function DataEntryPage() {
   const fileIdToEdit = searchParams?.get("id");
   const approveUpdateId = searchParams?.get("approveUpdateId");
   const pageToReturnTo = searchParams?.get('page') ?? null;
+  const activeTab = searchParams?.get('tab') ?? null;
   const workTypeContext = searchParams?.get('workType') as 'public' | 'private' | 'collector' | 'planFund' | 'gwInvestigation' | 'loggingPumpingTest' | null;
   const readOnlyParam = searchParams?.get('readOnly');
 
@@ -186,8 +187,13 @@ export default function DataEntryPage() {
         }
     }
     
-    return pageToReturnTo ? `${base}?page=${pageToReturnTo}` : base;
-}, [approveUpdateId, pageToReturnTo, fileIdToEdit, workTypeContext, pageData]);
+    const params = new URLSearchParams();
+    if (pageToReturnTo) params.set('page', pageToReturnTo);
+    if (activeTab) params.set('tab', activeTab);
+    
+    const queryString = params.toString();
+    return queryString ? `${base}?${queryString}` : base;
+}, [approveUpdateId, pageToReturnTo, activeTab, fileIdToEdit, workTypeContext, pageData]);
 
   useEffect(() => {
     const loadData = async () => {

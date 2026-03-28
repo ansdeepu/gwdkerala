@@ -1,3 +1,4 @@
+
 // src/components/investigation/LoggingPumpingTestTable.tsx
 "use client";
 
@@ -41,9 +42,11 @@ interface LoggingPumpingTestTableProps {
   isLoading: boolean;
   searchActive: boolean;
   totalEntries: number;
+  activeTab?: string;
+  currentPage?: number;
 }
 
-export default function LoggingPumpingTestTable({ fileEntries, isLoading, searchActive, totalEntries }: LoggingPumpingTestTableProps) {
+export default function LoggingPumpingTestTable({ fileEntries, isLoading, searchActive, totalEntries, activeTab, currentPage }: LoggingPumpingTestTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -61,6 +64,8 @@ export default function LoggingPumpingTestTable({ fileEntries, isLoading, search
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
     const queryParams = new URLSearchParams({ id: item.id, workType: 'loggingPumpingTest' });
+    if (activeTab) queryParams.set('tab', activeTab);
+    if (currentPage && currentPage > 1) queryParams.set('page', String(currentPage));
     router.push(`/dashboard/data-entry?${queryParams.toString()}`);
   };
 
@@ -102,7 +107,9 @@ export default function LoggingPumpingTestTable({ fileEntries, isLoading, search
           }
           
           toast({ title: 'File Copied', description: `A copy of ${itemToCopy.fileNo} was created. You can now edit it.` });
-          router.push(`/dashboard/data-entry?id=${newDocId}&workType=loggingPumpingTest`);
+          const queryParams = new URLSearchParams({ id: newDocId, workType: 'loggingPumpingTest' });
+          if (activeTab) queryParams.set('tab', activeTab);
+          router.push(`/dashboard/data-entry?${queryParams.toString()}`);
 
       } catch (error: any) {
           toast({ title: 'Copy Failed', description: error.message || 'Could not copy the file.', variant: 'destructive' });
@@ -144,7 +151,7 @@ export default function LoggingPumpingTestTable({ fileEntries, isLoading, search
           <TableBody>
             {fileEntries.map((entry, index) => (
               <TableRow key={entry.id}>
-                <TableCell className="text-center">{index + 1}</TableCell>
+                <TableCell className="text-center">{(currentPage ? (currentPage - 1) * 50 : 0) + index + 1}</TableCell>
                 <TableCell className="font-medium">{entry.fileNo}</TableCell>
                 <TableCell>{entry.applicantName}</TableCell>
                 <TableCell>{entry.siteDetails?.map((site, idx) => (<span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>{site.nameOfSite}{idx < entry.siteDetails!.length - 1 ? ', ' : ''}</span>))}</TableCell>
