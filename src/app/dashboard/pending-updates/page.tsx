@@ -148,10 +148,28 @@ export default function PendingUpdatesPage() {
 
   const handleViewChanges = (update: PendingUpdate) => {
     let originalEntry: any | undefined;
+    
     if (update.isArsUpdate) {
         originalEntry = arsEntries.find(f => f.id === update.arsId);
     } else {
-        originalEntry = fileEntries.find(f => f.fileNo === update.fileNo);
+        const firstSite = update.updatedSiteDetails?.[0] as SiteDetailFormData | undefined;
+        const isGwInvestigationUpdate = firstSite?.purpose === 'GW Investigation';
+        const isLoggingPumpingTestUpdate = firstSite?.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(firstSite.purpose as any);
+
+        originalEntry = fileEntries.find(f => {
+            if (f.fileNo !== update.fileNo) return false;
+
+            const isOriginalGwInvestigation = f.siteDetails?.some(s => s.purpose === 'GW Investigation');
+            const isOriginalLoggingPumping = f.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
+
+            if (isGwInvestigationUpdate) {
+                return isOriginalGwInvestigation && !isOriginalLoggingPumping;
+            }
+            if (isLoggingPumpingTestUpdate) {
+                return isOriginalLoggingPumping;
+            }
+            return !isOriginalGwInvestigation && !isOriginalLoggingPumping;
+        });
     }
 
     if (!originalEntry) {

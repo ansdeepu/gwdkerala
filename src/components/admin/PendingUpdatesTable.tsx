@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { PendingUpdate, SiteDetailFormData, ArsEntryFormData, DataEntryFormData } from '@/lib/schemas';
+import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export const UpdateTable = ({
@@ -67,7 +68,32 @@ export const UpdateTable = ({
               {updates.length > 0 ? (
                 updates.map((update, index) => {
                   const isUnassigned = update.status === 'supervisor-unassigned';
-                  const parentFile = isArsTable ? arsEntries.find(a => a.id === update.arsId) : fileEntries.find(f => f.fileNo === update.fileNo);
+                  
+                  const parentFile = (() => {
+                    if (isArsTable) {
+                      return arsEntries.find(a => a.id === update.arsId);
+                    }
+                  
+                    const firstSite = update.updatedSiteDetails?.[0] as SiteDetailFormData | undefined;
+                    const isGwInvestigationUpdate = firstSite?.purpose === 'GW Investigation';
+                    const isLoggingPumpingTestUpdate = firstSite?.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(firstSite.purpose as any);
+                  
+                    return fileEntries.find(f => {
+                      if (f.fileNo !== update.fileNo) return false;
+                  
+                      const isOriginalGwInvestigation = f.siteDetails?.some(s => s.purpose === 'GW Investigation');
+                      const isOriginalLoggingPumping = f.siteDetails?.some(s => s.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(s.purpose as any));
+                  
+                      if (isGwInvestigationUpdate) {
+                        return isOriginalGwInvestigation && !isOriginalLoggingPumping;
+                      }
+                      if (isLoggingPumpingTestUpdate) {
+                        return isOriginalLoggingPumping;
+                      }
+                      return !isOriginalGwInvestigation && !isOriginalLoggingPumping;
+                    });
+                  })();
+
                   const applicantName = update.isArsUpdate ? 'N/A' : (parentFile as DataEntryFormData)?.applicantName || 'N/A';
                   const siteNames = update.updatedSiteDetails.map((s: SiteDetailFormData | ArsEntryFormData) => s.nameOfSite).join(', ');
                   
