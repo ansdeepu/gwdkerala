@@ -36,16 +36,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { generateProgressReportPdf } from '@/components/reports/pdf/progressReportPdfGenerator';
 import download from 'downloadjs';
 import { useDataStore } from '@/hooks/use-data-store';
+import { Play, XCircle, FileDown, Loader2, Landmark } from 'lucide-react';
 
 
 export const dynamic = 'force-dynamic';
-
-const BarChart3 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg> );
-const XCircle = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg> );
-const Loader2 = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> );
-const Play = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="6 3 20 12 6 21 6 3"/></svg> );
-const FileDown = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg> );
-const Landmark = (props: React.SVGProps<SVGSVGElement>) => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg> );
 
 interface SiteDetailWithFileContext extends SiteDetailFormData {
   fileNo: string;
@@ -225,7 +219,7 @@ const ReportCategoryTable = ({
             return Object.values(stats).some(val => {
                 if (typeof val === 'number' && val > 0) return true;
                 if (Array.isArray(val) && val.length > 0) return true;
-                // Deeper check for nested GW Investigation data
+                // Deeper check for nested data
                 if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
                     return Object.values(val).some((nestedVal: any) => 
                         (typeof nestedVal === 'number' && nestedVal > 0) || 
@@ -260,6 +254,7 @@ const ReportCategoryTable = ({
       </AccordionItem>
     );
   };
+
 const FinancialSummaryTable = ({ data, onCellClick, onTotalClick, category }: { data: FinancialSummaryReport, onCellClick: (dataType: 'application' | 'payment', purpose: string, data: any[], title: string) => void, onTotalClick: (type: 'applications' | 'remittance' | 'completed' | 'payment') => void, category: string }) => {
   const categories = Object.keys(data);
   const totals = {
@@ -514,6 +509,27 @@ export default function ProgressReportPage() {
     });
     Object.values(otherSchemesData).forEach(appTypes => Object.values(appTypes).forEach(calculateBalanceAndTotal));
 
+    // Aggregate nested data for UI display
+    const gwInvestigationAggregated: Record<string, ProgressStats> = {};
+    Object.entries(gwInvestigationData).forEach(([wellType, appTypeMap]) => {
+        const total = initialStats();
+        Object.values(appTypeMap).forEach(stats => {
+            total.previousBalance += stats.previousBalance;
+            total.currentApplications += stats.currentApplications;
+            total.toBeRefunded += stats.toBeRefunded;
+            total.totalApplications += stats.totalApplications;
+            total.completed += stats.completed;
+            total.balance += stats.balance;
+            total.previousBalanceData.push(...stats.previousBalanceData);
+            total.currentApplicationsData.push(...stats.currentApplicationsData);
+            total.toBeRefundedData.push(...stats.toBeRefundedData);
+            total.totalApplicationsData.push(...stats.totalApplicationsData);
+            total.completedData.push(...stats.completedData);
+            total.balanceData.push(...stats.balanceData);
+        });
+        gwInvestigationAggregated[wellType] = total;
+    });
+
     // Financial Summary Calculation
     const privateFinancialSummaryData: FinancialSummaryReport = {};
     const governmentFinancialSummaryData: FinancialSummaryReport = {};
@@ -587,7 +603,7 @@ export default function ProgressReportPage() {
     const totalRevenueHeadCredit = Array.from(uniqueRevenueCredits.values()).reduce((sum, item) => sum + item.amount, 0);
 
     setReportData({ 
-        bwcData, twcData, fpwData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
+        bwcData, twcData, fpwData, progressSummaryData, gwInvestigationData, gwInvestigationAggregated, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
         otherSchemesData, privateFinancialSummaryData, governmentFinancialSummaryData,
         totalRevenueHeadCredit, revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
         typeOfWellOptionsWithUnassigned,
@@ -851,7 +867,7 @@ export default function ProgressReportPage() {
                 </Card>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                    <ReportCategoryTable accordionId="gw-investigation" title={`GW Investigation (Balance - ${gwInvestigationBalance || 0})`} data={reportData.gwInvestigationData} categoryKeys={reportData.typeOfWellOptionsWithUnassigned} categoryLabels={Object.fromEntries(reportData.typeOfWellOptionsWithUnassigned.map((o: string) => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
+                    <ReportCategoryTable accordionId="gw-investigation" title={`GW Investigation (Balance - ${gwInvestigationBalance || 0})`} data={reportData.gwInvestigationAggregated} categoryKeys={reportData.typeOfWellOptionsWithUnassigned} categoryLabels={Object.fromEntries(reportData.typeOfWellOptionsWithUnassigned.map((o: string) => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="ves" title={`VES (Balance - ${vesBalance || 0})`} data={reportData.vesData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="pumping-test" title={`Pumping Test (Balance - ${pumpingTestBalance || 0})`} data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="geo-logging" title={`Geological Logging (Balance - ${geologicalLoggingBalance || 0})`} data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
