@@ -84,8 +84,9 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
         if (isReadOnly || isSupervisor) return true;
         if (!isInvestigator) return false; // Admin/Scientist can edit everything
 
-        // Rule: Investigators cannot edit these core fields
-        if (['nameOfInvestigator', 'typeOfWell'].includes(fieldName)) {
+        // Fields that are ALWAYS read-only for any investigator
+        const alwaysReadOnly = new Set(['nameOfInvestigator', 'typeOfWell', 'vesInvestigator']);
+        if (alwaysReadOnly.has(fieldName)) {
             return true;
         }
 
@@ -100,7 +101,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
         ]);
 
         const geoEditableFields = new Set([
-            'vesDate', 'geophysicalRemarks', 'vesInvestigator',
+            'vesDate', 'geophysicalRemarks', 'feasibility',
             'surveyRecommendedDiameter', 'surveyRecommendedTD', 'surveyRecommendedOB',
             'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe',
             'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe',
@@ -113,6 +114,10 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
         }
         
         if (isGeoInvestigator) {
+             // Geo can't edit these specific hydro fields
+            if (['dateOfInvestigation', 'hydrogeologicalRemarks', 'vesRequired'].includes(fieldName)) {
+                return true;
+            }
             return !geoEditableFields.has(fieldName);
         }
         
@@ -302,13 +307,6 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                         <div className="p-4 border rounded-lg bg-blue-50/30 space-y-4">
                                             <h4 className="text-sm font-bold text-blue-800">Geophysical (VES) Details</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <FormField name="vesDate" control={control} render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>Date of VES Conducted</FormLabel>
-                                                        <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldDisabled('vesDate')} /></FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )} />
                                                 <FormField name="vesInvestigator" control={control} render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Name of Investigator (Geophysical)</FormLabel>
@@ -318,6 +316,13 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                                                 {geoInvestigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}
                                                             </SelectContent>
                                                         </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} />
+                                                <FormField name="vesDate" control={control} render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Date of VES Conducted</FormLabel>
+                                                        <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldDisabled('vesDate')} /></FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )} />
