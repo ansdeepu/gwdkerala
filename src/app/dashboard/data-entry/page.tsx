@@ -148,7 +148,7 @@ export default function DataEntryPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [errorState, setErrorState] = useState<string | null>(null);
   const [fileNoForHeader, setFileNoForHeader] = useState<string | null>(null);
-  const [isFormDisabledForSupervisor, setIsFormDisabledForSupervisor] = useState(false);
+  const [isFormDisabledForFieldStaff, setIsFormDisabledForFieldStaff] = useState(false);
   
   const isApprovingUpdate = !!((user?.role === 'admin' || user?.role === 'scientist' || user?.role === 'engineer') && approveUpdateId);
   const effectiveUserRole = readOnlyParam === 'true' ? 'viewer' : user?.role;
@@ -212,11 +212,12 @@ export default function DataEntryPage() {
                  return;
             }
 
-            if (user.role === 'supervisor' && user.uid) {
+            const isFieldStaff = user.role === 'supervisor' || user.role === 'investigator';
+            if (isFieldStaff && user.uid) {
                 const hasPending = await hasPendingUpdateForFile(originalEntry.fileNo, user.uid);
                 if (hasPending) {
-                    setIsFormDisabledForSupervisor(true);
-                    toast({ title: "Edits Locked", description: "Pending update review required." });
+                    setIsFormDisabledForFieldStaff(true);
+                    toast({ title: "Edits Locked", description: "You have a submission pending review for this file. Editing is disabled.", duration: 7000 });
                 }
             }
 
@@ -329,7 +330,7 @@ export default function DataEntryPage() {
                     workTypeContext={workTypeContext}
                     returnPath={returnPath}
                     pageToReturnTo={pageToReturnTo} 
-                    isFormDisabled={isFormDisabledForSupervisor}
+                    isFormDisabled={isFormDisabledForFieldStaff}
                     allLsgConstituencyMaps={allLsgConstituencyMaps}
                 />
              ) : isLoggingPumpingTestType ? (
@@ -341,7 +342,7 @@ export default function DataEntryPage() {
                     workTypeContext={workTypeContext}
                     returnPath={returnPath}
                     pageToReturnTo={pageToReturnTo} 
-                    isFormDisabled={isFormDisabledForSupervisor}
+                    isFormDisabled={isFormDisabledForFieldStaff}
                     allLsgConstituencyMaps={allLsgConstituencyMaps}
                 />
              ) : (
@@ -353,7 +354,7 @@ export default function DataEntryPage() {
                     workTypeContext={workTypeContext}
                     returnPath={returnPath}
                     pageToReturnTo={pageToReturnTo}
-                    isFormDisabled={isFormDisabledForSupervisor}
+                    isFormDisabled={isFormDisabledForFieldStaff}
                     formOptions={formOptions}
                 />
               )
