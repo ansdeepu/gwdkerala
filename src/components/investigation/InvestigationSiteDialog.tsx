@@ -81,48 +81,56 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
     const isGeoInvestigator = useMemo(() => isInvestigator && userDesignation && geoDesignations.includes(userDesignation as any), [isInvestigator, userDesignation, geoDesignations]);
 
     const isFieldDisabled = (fieldName: string): boolean => {
-        if (isReadOnly || isSupervisor) return true;
-        if (!isInvestigator) return false; // Admin/Scientist can edit everything
+        if (isReadOnly) return true;
 
-        // Fields that are ALWAYS read-only for any investigator
-        const alwaysReadOnly = new Set(['nameOfInvestigator', 'typeOfWell', 'vesInvestigator']);
-        if (alwaysReadOnly.has(fieldName)) {
-            return true;
+        if (isSupervisor) {
+            const supervisorEditable = ['workStatus', 'dateOfCompletion', 'workRemarks', 'latitude', 'longitude'];
+            return !supervisorEditable.includes(fieldName);
         }
 
-        const hydroEditableFields = new Set([
-            'dateOfInvestigation', 'hydrogeologicalRemarks', 'vesRequired', 'feasibility',
-            'surveyRecommendedDiameter', 'surveyRecommendedTD', 'surveyRecommendedOB',
-            'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe',
-            'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe',
-            'surveyLocation', 'surveyRemarks', 'pondDimensions',
-            'workStatus', 'dateOfCompletion', 'workRemarks',
-            'latitude', 'longitude'
-        ]);
-
-        const geoEditableFields = new Set([
-            'vesDate', 'geophysicalRemarks', 'feasibility',
-            'surveyRecommendedDiameter', 'surveyRecommendedTD', 'surveyRecommendedOB',
-            'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe',
-            'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe',
-            'surveyLocation', 'surveyRemarks', 'pondDimensions',
-            'workStatus', 'dateOfCompletion', 'workRemarks'
-        ]);
-
-        if (isHydroInvestigator) {
-            return !hydroEditableFields.has(fieldName);
-        }
-        
-        if (isGeoInvestigator) {
-             // Geo can't edit these specific hydro fields
-            if (['dateOfInvestigation', 'hydrogeologicalRemarks', 'vesRequired'].includes(fieldName)) {
+        if (isInvestigator) {
+            const alwaysReadOnly = new Set(['nameOfInvestigator', 'typeOfWell', 'vesInvestigator']);
+            if (alwaysReadOnly.has(fieldName)) {
                 return true;
             }
-            return !geoEditableFields.has(fieldName);
+
+            const hydroEditableFields = new Set([
+                'dateOfInvestigation', 'hydrogeologicalRemarks', 'vesRequired', 'feasibility',
+                'surveyRecommendedDiameter', 'surveyRecommendedTD', 'surveyRecommendedOB',
+                'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe',
+                'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe',
+                'surveyLocation', 'surveyRemarks', 'pondDimensions',
+                'workStatus', 'dateOfCompletion', 'workRemarks',
+                'latitude', 'longitude'
+            ]);
+
+            const geoEditableFields = new Set([
+                'vesDate', 'geophysicalRemarks', 'feasibility',
+                'surveyRecommendedDiameter', 'surveyRecommendedTD', 'surveyRecommendedOB',
+                'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe',
+                'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe',
+                'surveyLocation', 'surveyRemarks', 'pondDimensions',
+                'workStatus', 'dateOfCompletion', 'workRemarks',
+                'latitude', 'longitude'
+            ]);
+
+            if (isHydroInvestigator) {
+                return !hydroEditableFields.has(fieldName);
+            }
+            
+            if (isGeoInvestigator) {
+                 if (['dateOfInvestigation', 'hydrogeologicalRemarks', 'vesRequired'].includes(fieldName)) {
+                    return true;
+                }
+                return !geoEditableFields.has(fieldName);
+            }
+            
+            // Default to read-only for investigators without a matching designation
+            return true;
         }
         
-        // Default to read-only for investigators without a matching designation
-        return true;
+        // Admin / Scientist can edit everything
+        return false;
     };
     
     useEffect(() => {

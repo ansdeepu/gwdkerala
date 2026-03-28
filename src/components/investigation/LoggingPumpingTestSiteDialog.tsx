@@ -68,9 +68,13 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
     const watchedLsg = watch("localSelfGovt");
     const watchedWorkStatus = watch('workStatus');
 
-    const isFieldReadOnly = (fieldName: string) => {
+    const isFieldReadOnly = (fieldName: string): boolean => {
         if (isReadOnly) return true;
-        if (isSupervisor) return true; // Supervisors can't edit investigation forms
+
+        if (isSupervisor) {
+            const supervisorEditable = ['latitude', 'longitude'];
+            return !supervisorEditable.includes(fieldName);
+        }
 
         if (isInvestigator) {
             const editableFields = ['descriptionOfWork', 'workRemarks', 'workStatus', 'dateOfCompletion', 'latitude', 'longitude'];
@@ -190,8 +194,8 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                             <FormMessage/>
                                         </FormItem>
                                     )} />
-                                    <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
-                                    <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly('latitude')} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly('longitude')} /></FormControl><FormMessage /></FormItem>} />
                                 </CardContent>
                             </Card>
 
