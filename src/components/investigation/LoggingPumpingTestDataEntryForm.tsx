@@ -35,7 +35,6 @@ import {
   siteTypeOfRigOptions,
   fileStatusOptions,
   remittedAccountOptions,
-  paymentAccountOptions,
   type RemittanceDetailFormData,
   RemittanceDetailSchema,
   type PaymentDetailFormData,
@@ -88,7 +87,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { v4 as uuidv4 } from 'uuid';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from "@/components/ui/badge";
-import LoggingPumpingTestSiteDialog from './LoggingPumpingTestSiteDialog';
+import LoggingPumpingTestSiteDialog from '@/components/investigation/LoggingPumpingTestSiteDialog';
 
 const db = getFirestore(app);
 
@@ -126,7 +125,7 @@ const calculatePaymentEntryTotalGlobal = (payment: PaymentDetailFormData | undef
   return (Number(payment.revenueHead) || 0) + (Number(payment.contractorsPayment) || 0) + (Number(payment.gst) || 0) + (Number(payment.incomeTax) || 0) + (Number(payment.kbcwb) || 0) + (Number(payment.refundToParty) || 0);
 };
 
-const getFormattedErrorMessages = (errors: FieldErrors<any>): string[] => {
+const getFormattedErrorMessages = (errors: FieldErrors<DataEntryFormData>): string[] => {
   const messages = new Set<string>();
 
   const formattedFieldName = (fieldName: string) => {
