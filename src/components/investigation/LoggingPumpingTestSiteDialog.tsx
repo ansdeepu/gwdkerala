@@ -18,7 +18,8 @@ import {
   type Constituency,
   LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
   LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS,
-  typeOfWellOptions
+  typeOfWellOptions,
+  Designation
 } from '@/lib/schemas';
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { ScrollArea } from "../ui/scroll-area";
@@ -45,9 +46,10 @@ interface LoggingPumpingTestSiteDialogProps {
     allLsgConstituencyMaps: any[];
     allStaffMembers: StaffMember[];
     workTypeContext: string | null;
+    userDesignation: Designation | null;
 }
 
-export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, onCancel, isReadOnly, isInvestigator, isSupervisor, allLsgConstituencyMaps, allStaffMembers }: LoggingPumpingTestSiteDialogProps) {
+export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, onCancel, isReadOnly, isInvestigator, isSupervisor, allLsgConstituencyMaps, allStaffMembers, userDesignation }: LoggingPumpingTestSiteDialogProps) {
     const form = useForm<SiteDetailFormData>({
         resolver: zodResolver(SiteDetailSchema),
         defaultValues: {
@@ -66,26 +68,18 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
     const watchedLsg = watch("localSelfGovt");
     const watchedWorkStatus = watch('workStatus');
 
-    const isFieldReadOnly = (isSupervisorEditable: boolean) => {
-        if (isReadOnly) {
-            if ((isSupervisor || isInvestigator) && isSupervisorEditable) {
-                return false;
-            }
-            return true;
+    const isFieldReadOnly = (fieldName: string) => {
+        if (isReadOnly) return true;
+        if (isSupervisor) return true; // Supervisors can't edit investigation forms
+
+        if (isInvestigator) {
+            const editableFields = ['descriptionOfWork', 'workRemarks', 'workStatus', 'dateOfCompletion', 'latitude', 'longitude'];
+            return !editableFields.includes(fieldName);
         }
-        if (isSupervisor || isInvestigator) {
-            return !isSupervisorEditable;
-        }
-        return false;
+        
+        return false; // Not read-only for admin/scientist
     };
-
-    const investigatorList = useMemo(() => 
-        allStaffMembers.filter(s => 
-            s.status === 'Active' && 
-            ['Hydrogeologist', 'Junior Hydrogeologist', 'Junior Geophysicist', 'Geological Assistant', 'Geophysical Assistant'].includes(s.designation as any)
-        ).sort((a, b) => a.name.localeCompare(b.name)), 
-    [allStaffMembers]);
-
+    
     useEffect(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) {
             return;
@@ -106,6 +100,15 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
         }
     }, [watchedLsg, allLsgConstituencyMaps, setValue, getValues]);
 
+    const investigatorList = useMemo(() => 
+        allStaffMembers.filter(s => 
+            s.status === 'Active' && 
+            ['Hydrogeologist', 'Junior Hydrogeologist', 'Junior Geophysicist', 'Geological Assistant', 'Geophysical Assistant'].includes(s.designation as any)
+        ).sort((a, b) => a.name.localeCompare(b.name)), 
+    [allStaffMembers]);
+
+    const handleFormSubmit = (data: SiteDetailFormData) => onConfirm(data);
+    
     const sortedLsgMaps = useMemo(() => [...(allLsgConstituencyMaps || [])].sort((a, b) => a.name.localeCompare(b.name)), [allLsgConstituencyMaps]);
     const constituencyOptionsForLsg = useMemo(() => {
         if (!watchedLsg || !allLsgConstituencyMaps) return [];
@@ -115,11 +118,11 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
     }, [watchedLsg, allLsgConstituencyMaps]);
 
     const isConstituencyDisabled = useMemo(() => {
-        if (isReadOnly) return true;
+        if (isReadOnly || isInvestigator || isSupervisor) return true;
         if (!watchedLsg) return true;
         if (constituencyOptionsForLsg.length <= 1) return true;
         return false;
-    }, [isReadOnly, watchedLsg, constituencyOptionsForLsg]);
+    }, [isReadOnly, isInvestigator, isSupervisor, watchedLsg, constituencyOptionsForLsg]);
 
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
@@ -130,7 +133,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
 
     return (
         <FormProvider {...form}>
-            <form id="logging-pumping-site-dialog-form" onSubmit={handleSubmit(onConfirm)} className="flex flex-col h-full overflow-hidden">
+            <form id="logging-pumping-site-dialog-form" onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col h-full overflow-hidden">
                 <DialogHeader className="p-6 pb-4 shrink-0 border-b">
                     <DialogTitle>{initialData?.nameOfSite ? `Edit Site: ${initialData.nameOfSite}` : 'Add New Site'}</DialogTitle>
                     <DialogDescription>Enter site specific details for the Logging & Pumping Test work.</DialogDescription>
@@ -144,14 +147,14 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     <FormField name="nameOfSite" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel>
-                                            <FormControl><Input {...field} readOnly={isFieldReadOnly(false)} /></FormControl>
+                                            <FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly || isInvestigator || isSupervisor} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
                                     <FormField name="purpose" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
-                                            <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
+                                            <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly || isInvestigator || isSupervisor}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
                                                     <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -164,8 +167,8 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Local Self Govt. <span className="text-destructive">*</span></FormLabel>
-                                            <Select onValueChange={(value) => handleLsgChange(value, field.onChange)} value={field.value || ""} disabled={isFieldReadOnly(false)}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder="Select LSG"/></SelectTrigger></FormControl>
+                                            <Select onValueChange={(value) => handleLsgChange(value, field.onChange)} value={field.value || ""} disabled={isReadOnly || isInvestigator || isSupervisor}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder="Select LSG" /></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
                                                     <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
                                                     {sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}
@@ -187,8 +190,8 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                             <FormMessage/>
                                         </FormItem>
                                     )} />
-                                    <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
-                                    <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(true)} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="latitude" control={control} render={({ field }) => <FormItem><FormLabel>Latitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
+                                    <FormField name="longitude" control={control} render={({ field }) => <FormItem><FormLabel>Longitude</FormLabel><FormControl><Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isFieldReadOnly(false)} /></FormControl><FormMessage /></FormItem>} />
                                 </CardContent>
                             </Card>
 
@@ -222,14 +225,14 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     <FormField name="descriptionOfWork" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Description of Work</FormLabel>
-                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} className="min-h-[80px]" placeholder="Detailed description of the logging or pumping test work..." /></FormControl>
+                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly('descriptionOfWork')} className="min-h-[80px]" placeholder="Detailed description of the logging or pumping test work..." /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
                                     <FormField name="workRemarks" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Remarks</FormLabel>
-                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} className="min-h-[60px]" placeholder="Add any technical or site observations..." /></FormControl>
+                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly('workRemarks')} className="min-h-[60px]" placeholder="Add any technical or site observations..." /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
@@ -243,7 +246,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                         <FormField name="workStatus" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Status <span className="text-destructive">*</span></FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isFieldReadOnly(false)}>
+                                                <Select onValueChange={field.onChange} value={field.value || ""} disabled={isFieldReadOnly('workStatus')}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Status" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         {LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
@@ -255,7 +258,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                         <FormField name="dateOfCompletion" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Completion Date {isCompletionDateRequired && <span className="text-destructive">*</span>}</FormLabel>
-                                                <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)}/></FormControl>
+                                                <FormControl><Input type="date" {...field} value={field.value || ''} readOnly={isFieldReadOnly('dateOfCompletion')}/></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )} />
@@ -263,7 +266,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     <FormField name="workRemarks" control={control} render={({ field }) => (
                                         <FormItem className="mt-4">
                                             <FormLabel>Status Remarks</FormLabel>
-                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly(false)} placeholder="Remarks regarding completion or pending status..." /></FormControl>
+                                            <FormControl><Textarea {...field} value={field.value || ''} readOnly={isFieldReadOnly('workRemarks')} placeholder="Remarks regarding completion or pending status..." /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />

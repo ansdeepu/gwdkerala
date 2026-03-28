@@ -1,4 +1,3 @@
-
 // src/hooks/useFileEntries.ts
 "use client";
 
@@ -98,12 +97,17 @@ export function useFileEntries() {
             }
 
             const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
-            const ongoingStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated", "Pending", "VES Pending"];
+            const supervisorOngoingStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
+            const investigatorOngoingStatuses: SiteWorkStatus[] = ["Pending", "VES Pending"];
+            
+            const ongoingStatuses = user.role === 'supervisor' ? supervisorOngoingStatuses : investigatorOngoingStatuses;
             
             const visibleSites = entry.siteDetails.filter(site => {
               let isAssigned = false;
               if (user.role === 'supervisor') {
-                isAssigned = site.supervisorUid === user.uid || (user.name && site.supervisorName?.includes(user.name));
+                const isAssignedByUid = site.supervisorUid === user.uid;
+                const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
+                isAssigned = isAssignedByUid || isAssignedByName;
               } else if (user.role === 'investigator') {
                 isAssigned = site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
               }
@@ -113,7 +117,7 @@ export function useFileEntries() {
               }
 
               const isOngoing = site.workStatus && (ongoingStatuses as string[]).includes(site.workStatus);
-              // A site is visible if it's ongoing OR if there's a pending update for the file.
+              // A site is visible if it's ongoing OR if there's a pending update for the file from this user.
               return isOngoing || hasPendingUpdate;
             });
             
