@@ -94,51 +94,48 @@ export function useFileEntries() {
         const filteredEntries = allFileEntries
           .map(entry => {
             if (!entry.siteDetails || entry.siteDetails.length === 0) {
-              return null; // No sites to check, so file is not visible
+              return null;
             }
 
-            const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
+            const hasPendingUpdateForThisFile = pendingUpdatesMap[entry.fileNo];
             
             const visibleSites = entry.siteDetails.filter(site => {
-              let isAssigned = false;
-              if (user.role === 'supervisor') {
-                  const isAssignedByUid = site.supervisorUid === user.uid;
-                  const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
-                  isAssigned = isAssignedByUid || isAssignedByName;
-              } else if (user.role === 'investigator') {
-                  isAssigned = site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
-              }
+                const isAssignedSupervisor = user.role === 'supervisor' && (site.supervisorUid === user.uid || (user.name && site.supervisorName?.includes(user.name)));
+                const isAssignedHydro = user.role === 'investigator' && site.nameOfInvestigator === user.name;
+                const isAssignedGeo = user.role === 'investigator' && site.vesInvestigator === user.name;
 
-              if (!isAssigned) {
-                return false;
-              }
+                if (!isAssignedSupervisor && !isAssignedHydro && !isAssignedGeo) {
+                    return false;
+                }
+
+                if (user.role === 'investigator') {
+                    if (isAssignedHydro) {
+                        const isHydroPartDone = site.vesRequired === 'Yes' || site.workStatus === 'Completed';
+                        if (isHydroPartDone && !hasPendingUpdateForThisFile) return false;
+                        return true;
+                    }
+                    if (isAssignedGeo) {
+                        if (site.workStatus === 'Completed' && !hasPendingUpdateForThisFile) return false;
+                        return true;
+                    }
+                    return false;
+                }
               
-              if (user.role === 'investigator') {
-                const isConsideredFinished = site.workStatus === 'Completed' || site.vesRequired === 'Yes';
-                const isFinishedAndApproved = isConsideredFinished && !hasPendingUpdate;
-                // An investigator sees an assigned site unless it's in a finished state
-                // AND there's no pending update from them for it.
-                return !isFinishedAndApproved;
-              }
-
-              // Original logic for Supervisor
-              const supervisorOngoingStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
-              const isSupervisorOngoing = site.workStatus && (supervisorOngoingStatuses as string[]).includes(site.workStatus);
-              return isSupervisorOngoing || hasPendingUpdate;
+                const supervisorOngoingStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
+                const isSupervisorOngoing = site.workStatus && (supervisorOngoingStatuses as string[]).includes(site.workStatus);
+                return isSupervisorOngoing || hasPendingUpdateForThisFile;
             });
             
-            // If after filtering, there are visible sites, return the entry with only those sites.
             if (visibleSites.length > 0) {
               return { ...entry, siteDetails: visibleSites };
             }
             
-            return null; // Otherwise, this file entry is not visible to the user.
+            return null;
           })
           .filter((entry): entry is DataEntryFormData => entry !== null);
           
         setFileEntries(filteredEntries);
       } else {
-        // For other roles (Admin, Engineer, Scientist, Viewer), show all entries.
         setFileEntries(allFileEntries);
       }
 
@@ -179,12 +176,10 @@ export function useFileEntries() {
         }
         const originalFileNo = originalDocSnap.data().fileNo?.trim().toUpperCase();
 
-        // Only perform the uniqueness check if the file number has actually changed
         if (originalFileNo !== fileNoTrimmed) {
             const q = query(collection(db, collectionPath), where("fileNo", "==", fileNoTrimmed));
             const querySnapshot = await getDocs(q);
 
-            // It's a duplicate if we find any document that is NOT the one we're currently editing.
             if (!querySnapshot.empty && querySnapshot.docs.some(doc => doc.id !== fileId)) {
                 throw new Error(`A file with the number "${entryData.fileNo}" already exists.`);
             }

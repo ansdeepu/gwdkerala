@@ -1,3 +1,4 @@
+
 // src/components/investigation/InvestigationSiteDialog.tsx
 "use client";
 
@@ -75,33 +76,41 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
     const watchedWorkStatus = watch("workStatus");
 
     const hydroDesignations: Designation[] = useMemo(() => ["Hydrogeologist", "Junior Hydrogeologist", "Geological Assistant"], []);
+    const geoDesignations: Designation[] = useMemo(() => ["Geophysicist", "Junior Geophysicist", "Geophysical Assistant"], []);
+    
     const isHydroInvestigator = useMemo(() => isInvestigator && userDesignation && hydroDesignations.includes(userDesignation as any), [isInvestigator, userDesignation, hydroDesignations]);
+    const isGeoInvestigator = useMemo(() => isInvestigator && userDesignation && geoDesignations.includes(userDesignation as any), [isInvestigator, userDesignation, geoDesignations]);
 
     const isFieldDisabled = (fieldName: string): boolean => {
-        // Global read-only or supervisor role disables everything.
         if (isReadOnly || isSupervisor) return true;
-        
-        // Admins/Scientists can edit everything.
         if (!isInvestigator) return false;
 
-        // Now, handle investigator logic. Only Hydro is specified.
+        const hydroEditableFields = [
+            'dateOfInvestigation', 'hydrogeologicalRemarks', 'vesRequired', 'feasibility',
+            'surveyRecommendedDiameter', 'surveyRecommendedTD', 'surveyRecommendedOB',
+            'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe', 
+            'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe', 
+            'surveyLocation', 'surveyRemarks', 'pondDimensions',
+            'workStatus', 'dateOfCompletion', 'workRemarks'
+        ];
+
+        const geoEditableFields = [
+            'vesDate', 'geophysicalRemarks', 'nameOfInvestigator',
+            'surveyRecommendedDiameter', 'surveyRecommendedTD', 'surveyRecommendedOB',
+            'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe', 
+            'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe', 
+            'surveyLocation', 'surveyRemarks', 'pondDimensions',
+            'workStatus', 'dateOfCompletion', 'workRemarks'
+        ];
+        
         if (isHydroInvestigator) {
-            const editableFields = [
-                'latitude', 'longitude', 'dateOfInvestigation', 'hydrogeologicalRemarks', 'vesRequired', 'feasibility',
-                'surveyRecommendedDiameter', 'surveyRecommendedTD', 'surveyRecommendedOB',
-                'surveyRecommendedCasingPipe', 'surveyRecommendedPlainPipe', 
-                'surveyRecommendedSlottedPipe', 'surveyRecommendedMsCasingPipe', 
-                'surveyLocation', 'surveyRemarks',
-                'workStatus', 'dateOfCompletion', 'workRemarks'
-            ];
-            // If the user is a Hydro Investigator, a field is disabled if it's NOT in their editable list.
-            return !editableFields.includes(fieldName);
+            return !hydroEditableFields.includes(fieldName);
         }
         
-        // For any other type of investigator (like geo), disable all fields except general status ones.
-        const generalEditable = ['workStatus', 'dateOfCompletion', 'workRemarks', 'latitude', 'longitude'];
-        if (generalEditable.includes(fieldName)) return false;
-
+        if (isGeoInvestigator) {
+            return !geoEditableFields.includes(fieldName);
+        }
+        
         return true;
     };
     
@@ -163,6 +172,8 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
         fieldOnChange(normalized);
     }, []);
 
+    const showVesSection = watchedVesRequired === 'Yes' && !isHydroInvestigator;
+
     return (
         <FormProvider {...form}>
             <form id="investigation-site-dialog-form" onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col h-full overflow-hidden">
@@ -200,7 +211,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                                     {sortedLsgMaps.map(map => <SelectItem key={map.id} value={map.name}>{map.name}</SelectItem>)}
                                                 </SelectContent>
                                             </Select>
-                                            <FormMessage />
+                                            <FormMessage/>
                                         </FormItem>
                                     )} />
                                     <FormField name="constituency" control={control} render={({ field }) => (
@@ -281,7 +292,7 @@ export default function InvestigationSiteDialog({ initialData, onConfirm, onCanc
                                         )} />
                                     </div>
 
-                                    {watchedVesRequired === 'Yes' && !isHydroInvestigator && (
+                                    {showVesSection && (
                                         <div className="p-4 border rounded-lg bg-blue-50/30 space-y-4">
                                             <h4 className="text-sm font-bold text-blue-800">Geophysical (VES) Details</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
