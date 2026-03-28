@@ -436,7 +436,7 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                                                             </>
                                                         )}
                                                         <FormField name="supervisorName" control={control} render={({ field }) => (
-                                                            <FormItem className={cn(isPrivateWork && "md:col-span-2")}>
+                                                            <FormItem>
                                                                 <FormLabel>Supervisor</FormLabel>
                                                                 {isQuotation || isPrivateWork ? (
                                                                     <Select 
@@ -709,9 +709,10 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
                 </ScrollArea>
             </div>
             <div className="flex justify-end p-6 pt-4 shrink-0 border-t gap-2">
-                <Button variant="outline" type="button" onClick={onCancel}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={onCancel}>{isReadOnly ? 'Close' : 'Cancel'}</Button>
                 {!isReadOnly && <Button type="submit" form="site-dialog-form">Save Changes</Button>}
             </div>
         </div>
     );
 }
+
