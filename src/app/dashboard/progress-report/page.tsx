@@ -1,3 +1,4 @@
+
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -21,7 +22,7 @@ import {
   typeOfWellOptions,
   PRIVATE_APPLICATION_TYPES,
   LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
-} from '@/lib/schemas/DataEntrySchema';
+} from '@/lib/schemas';
 import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -375,7 +376,7 @@ export default function ProgressReportPage() {
         .filter(site => site.workStatus !== "Addl. AS Awaited")
         .map(site => {
             const firstRemittanceDate = safeParseDate(entry.remittanceDetails?.[0]?.dateOfRemittance);
-            return { ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType!, fileRemittanceDate: firstRemittanceDate, id: entry.id };
+            return { ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: (entry.applicationType || UNASSIGNED_APP_TYPE) as ApplicationType, fileRemittanceDate: firstRemittanceDate, id: entry.id };
         })
     );
 
@@ -614,7 +615,7 @@ export default function ProgressReportPage() {
                 if (completionDate && isValid(completionDate) && checkDateInRange(completionDate)) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
-                    summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: entry.applicationType! });
+                    summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: (entry.applicationType || UNASSIGNED_APP_TYPE) as ApplicationType });
                 }
             });
         });
