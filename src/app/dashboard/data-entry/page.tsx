@@ -1,3 +1,4 @@
+
 // src/app/dashboard/data-entry/page.tsx
 "use client";
 import DataEntryFormComponent from "@/components/shared/DataEntryForm";
@@ -139,7 +140,7 @@ export default function DataEntryPage() {
   const readOnlyParam = searchParams?.get('readOnly');
 
   const { user, isLoading: authIsLoading } = useAuth();
-  const { getPendingUpdateById, hasPendingUpdateForFile } = usePendingUpdates();
+  const { getPendingUpdateById, getPendingUpdates } = usePendingUpdates();
   const { toast } = useToast();
   const { setHeader } = usePageHeader();
   const { allLsgConstituencyMaps, allStaffMembers, allFileEntries, allUsers, isLoading: dataStoreLoading } = useDataStore();
@@ -208,20 +209,34 @@ export default function DataEntryPage() {
             if (!originalEntry) {
                  if (allFileEntries.length > 0 && !dataStoreLoading) {
                      setErrorState("Could not find the requested file. It may have been deleted or you may not have permission to view it.");
-                 } // If allFileEntries is empty or loading, we might still be loading, so don't show an error yet.
+                 }
                  return;
             }
 
+            let dataForForm = originalEntry;
             const isFieldStaff = user.role === 'supervisor' || user.role === 'investigator';
+            
             if (isFieldStaff && user.uid) {
-                const hasPending = await hasPendingUpdateForFile(originalEntry.fileNo, user.uid);
-                if (hasPending) {
+                const updates = await getPendingUpdates(originalEntry.fileNo, user.uid);
+                const pendingUpdate = updates.find(u => u.status === 'pending');
+
+                if (pendingUpdate) {
                     setIsFormDisabledForFieldStaff(true);
-                    toast({ title: "Edits Locked", description: "You have a submission pending review for this file. Editing is disabled.", duration: 7000 });
+                    toast({ title: "Edits Locked", description: "You have a submission pending review. Editing is disabled until it is approved or rejected.", duration: 7000 });
+                    
+                    let mergedData = JSON.parse(JSON.stringify(originalEntry));
+                    const updatedSitesMap = new Map((pendingUpdate.updatedSiteDetails || []).map((site: any) => [site.nameOfSite, site]));
+                    mergedData.siteDetails = (mergedData.siteDetails || []).map((site: any) => updatedSitesMap.get(site.nameOfSite) || site);
+                    
+                    if (pendingUpdate.fileLevelUpdates) {
+                        mergedData.fileStatus = pendingUpdate.fileLevelUpdates.fileStatus || mergedData.fileStatus;
+                        mergedData.remarks = pendingUpdate.fileLevelUpdates.remarks || mergedData.remarks;
+                    }
+                    dataForForm = mergedData;
                 }
             }
 
-            let dataForForm = originalEntry;
+
             if (isApprovingUpdate && approveUpdateId) {
                 const pendingUpdate = await getPendingUpdateById(approveUpdateId);
                 if (pendingUpdate) {
@@ -253,7 +268,7 @@ export default function DataEntryPage() {
     if (!authIsLoading && !dataStoreLoading) {
         loadData();
     }
-}, [fileIdToEdit, approveUpdateId, user, authIsLoading, allFileEntries, hasPendingUpdateForFile, workTypeContext, toast, isApprovingUpdate, dataStoreLoading, getPendingUpdateById]);
+}, [fileIdToEdit, approveUpdateId, user, authIsLoading, allFileEntries, getPendingUpdates, workTypeContext, toast, isApprovingUpdate, dataStoreLoading, getPendingUpdateById]);
 
   useEffect(() => {
     let title = "Loading...";
