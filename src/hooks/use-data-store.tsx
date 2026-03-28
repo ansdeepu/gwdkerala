@@ -1,3 +1,4 @@
+
 // src/hooks/use-data-store.tsx
 "use client";
 
@@ -20,19 +21,11 @@ const db = getFirestore(app);
 
 /**
  * Robustly converts Firestore documents or data objects to JS objects.
- * Recursively converts Timestamps to Dates while preserving all other properties.
  */
 const processFirestoreData = (data: any): any => {
     if (data === null || data === undefined) return data;
-
-    if (data instanceof Timestamp) {
-        return data.toDate();
-    }
-
-    if (Array.isArray(data)) {
-        return data.map(processFirestoreData);
-    }
-
+    if (data instanceof Timestamp) return data.toDate();
+    if (Array.isArray(data)) return data.map(processFirestoreData);
     if (typeof data === 'object' && !(data instanceof Date)) {
         const processed: Record<string, any> = {};
         for (const key in data) {
@@ -42,7 +35,6 @@ const processFirestoreData = (data: any): any => {
         }
         return processed;
     }
-
     return data;
 };
 
@@ -59,9 +51,9 @@ export type RateDescriptionId = 'tenderFee' | 'emd' | 'performanceGuarantee' | '
 export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
     tenderFee: "For Works:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 500\n- Over 10 Lakhs up to 50 Lakhs: Rs 2500\n- Over 50 Lakhs up to 1 Crore: Rs 5000\n- Above 1 Crore: Rs 10000\n\nFor Purchase:\n- Up to Rs 1 Lakh: No Fee\n- Over 1 Lakh up to 10 Lakhs: Rs 800\n- Over 10 Lakhs up to 25 Lakhs: Rs 1600\n- Above 25 Lakhs: Rs 3000",
     emd: "For Works:\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\n- Above Rs. 10 Crore: Rs. 5 Lakh\n\nFor Purchase:\n- Up to 2 Crore: 1.00% of the project cost\n- Above 2 Crore: No EMD",
-    performanceGuarantee: "Performance Guarantee, the amount collected at the time of executing contract agreement will be 5% of the contract value (agreed PAC) and the deposit will be retained till the expiry of Defect Liability Period. At least fifty percent (50%) of this deposit shall be collected in the form of Treasury Fixed Deposit and the rest in the form of Bank Guarantee or any other forms prescribed in the revised PWD Manual.",
-    additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%. This deposit is calculated as 25% of the difference between the estimate cost and the tender amount, but it will not exceed 10% of the estimate cost. This deposit will be released after satisfactory completion of the work.",
-    stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,00,000 (or part) of the contract amount, subject to a minimum of ₹200 and a maximum of ₹1,00,000. For supplementary deeds, duty shall be based on the amount in the supplementary agreement.",
+    performanceGuarantee: "Performance Guarantee, the amount collected at the time of executing contract agreement will be 5% of the contract value (agreed PAC) and the deposit will be retained till the expiry of Defect Liability Period.",
+    additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%.",
+    stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,00,000 (or part) of the contract amount, subject to a minimum of ₹200.",
 };
 
 const COLLECTIONS = {
@@ -150,7 +142,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         await setDoc(docRef, { count, updatedAt: serverTimestamp() });
     }, [user, selectedOffice]);
 
-    // Effect for GLOBAL (non-office-specific) data
     useEffect(() => {
         if (!user) {
             setAllRateDescriptions(defaultRateDescriptions);
@@ -186,7 +177,6 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         return () => unsubscribes.forEach(unsub => unsub());
     }, [user]);
 
-    // Effect to set the single active office address
     useEffect(() => {
       if (!user) {
           setOfficeAddress(null);
@@ -201,13 +191,10 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       }
   
       const globalOffice = globalOfficeAddresses.find(oa => (oa.officeLocation || '').toLowerCase() === officeLocation.toLowerCase());
-      
       const subOfficeCollectionPath = `offices/${officeLocation.toLowerCase()}/officeAddresses`;
-      const q = query(collection(db, subOfficeCollectionPath));
       
-      const unsubscribe = onSnapshot(q, (snapshot) => {
+      const unsubscribe = onSnapshot(query(collection(db, subOfficeCollectionPath)), (snapshot) => {
           if (!snapshot.empty) {
-              // Find the document with the most fields to ensure we pick the correct one
               const bestDocSnap = snapshot.docs.reduce((prev, curr) => {
                   return Object.keys(curr.data()).length > Object.keys(prev.data()).length ? curr : prev;
               }, snapshot.docs[0]);
@@ -215,48 +202,20 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
               const subOfficeDoc = processFirestoreDoc<OfficeAddress>(bestDocSnap);
               setOfficeAddress({
                   ...subOfficeDoc,
-                  officeLocation: officeLocation, // Standardise case from auth/selection
+                  officeLocation: officeLocation,
                   officeCode: globalOffice?.officeCode || subOfficeDoc.officeCode || '',
               });
           } else {
-              if (globalOffice) {
-                  setOfficeAddress({ ...globalOffice, officeName: '', id: globalOffice.id });
-              } else {
-                  setOfficeAddress(null);
-              }
+              if (globalOffice) setOfficeAddress({ ...globalOffice, officeName: '', id: globalOffice.id });
+              else setOfficeAddress(null);
           }
-      }, (error) => {
-          console.error("Error fetching sub-collection officeAddress:", error);
-          setOfficeAddress(null);
       });
   
       return () => unsubscribe();
     }, [user, selectedOffice, globalOfficeAddresses]);
 
-    // Dedicated effect for ALL users when super admin is logged in. This is NOT dependent on selectedOffice.
-    useEffect(() => {
-        if (user?.email !== SUPER_ADMIN_EMAIL) return;
-    
-        setLoadingStates(prev => ({ ...prev, users: true }));
-        const q = query(collection(db, 'users'));
-    
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const usersList = snapshot.docs.map(doc => processFirestoreDoc<UserProfile>(doc));
-            setAllUsers(usersList);
-            setLoadingStates(prev => ({ ...prev, users: false }));
-        }, (error) => {
-            console.error("Error fetching all users for super admin:", error);
-            setLoadingStates(prev => ({ ...prev, users: false }));
-        });
-    
-        return () => unsubscribe();
-    }, [user]);
-    
-
-    // Effect for OFFICE-SCOPED data
     useEffect(() => {
         if (!user) {
-            // Clear all data if no user
             setAllFileEntries([]); setAllArsEntries([]); setAllStaffMembers([]);
             setAllAgencyApplications([]); setAllE_tenders([]); setAllDepartmentVehicles([]);
             setAllHiredVehicles([]); setAllRigCompressors([]); setAllLsgConstituencyMaps([]);
@@ -282,121 +241,58 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             bidders: { setter: setAllBidders, loaderKey: 'bidders' },
         };
         
-        // For sub-office users, also fetch their office-specific user list.
-        if (!isSuperAdminUser) {
-            officeScopedCollections.users = { setter: setAllUsers, loaderKey: 'users' };
-        }
+        if (!isSuperAdminUser) officeScopedCollections.users = { setter: setAllUsers, loaderKey: 'users' };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
-            
             let q;
             if (officeToQuery) {
                 const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
-                if (collectionName === 'bidders') {
-                    q = query(collection(db, path), orderBy("order"));
-                } else {
-                    q = query(collection(db, path));
-                }
+                q = collectionName === 'bidders' ? query(collection(db, path), orderBy("order")) : query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) {
-                // For super admin "All Offices", only perform collectionGroup for non-user collections
-                if (collectionName === 'users') {
-                    // This case is handled by the dedicated useEffect for super admin users, so we can skip.
-                    setLoadingStates(prev => ({...prev, [loaderKey]: false}));
-                    return () => {};
-                }
+                if (collectionName === 'users') { setLoadingStates(prev => ({...prev, [loaderKey]: false})); return () => {}; }
                 q = query(collectionGroup(db, collectionName));
             } else {
-                setter([]);
-                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
-                return () => {};
+                setter([]); setLoadingStates(prev => ({...prev, [loaderKey]: false})); return () => {};
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
                 const dataRaw = snapshot.docs.map(docSnap => {
                     const processedData = processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() }) as any;
-                    const path = docSnap.ref.path || '';
-                    const pathSegments = (path || '').split('/');
-                    if (Array.isArray(pathSegments)) {
-                        const officeIdIndex = pathSegments.indexOf('offices');
-                        if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) {
-                            processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
-                        }
-                    }
+                    const pathSegments = (docSnap.ref.path || '').split('/');
+                    const officeIdIndex = pathSegments.indexOf('offices');
+                    if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
                     return processedData;
                 });
 
                 let data = dataRaw;
-                
-                // This merging logic is primarily for sub-admins fetching their isolated user list,
-                // and it acts as a safeguard against any potential (though unlikely) data duplication.
                 if (collectionName === 'users') {
                     const uniqueUsers = new Map<string, any>();
-                    dataRaw.forEach((item: any) => {
-                        const uid = item.uid || item.id;
-                        if (!uniqueUsers.has(uid)) {
-                            uniqueUsers.set(uid, { ...item, uid });
-                        }
-                    });
+                    dataRaw.forEach((item: any) => { const uid = item.uid || item.id; if (!uniqueUsers.has(uid)) uniqueUsers.set(uid, { ...item, uid }); });
                     data = Array.from(uniqueUsers.values());
                 }
                 
                 if (needsSpecialSort && collectionName === 'staffMembers' && designationOptions) {
-                    const dOptions = Array.isArray(designationOptions) ? [...designationOptions] : [];
+                    const dOptions = [...designationOptions];
                     const designationSortOrder = dOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
                     (data as StaffMember[]).sort((a, b) => {
                         const orderA = a.designation ? (designationSortOrder[a.designation] ?? dOptions.length) : dOptions.length;
                         const orderB = b.designation ? (designationSortOrder[b.designation] ?? dOptions.length) : dOptions.length;
-                        if (orderA !== orderB) return orderA - orderB;
-                        return (a.name || '').localeCompare(b.name || '');
+                        return orderA !== orderB ? orderA - orderB : (a.name || '').localeCompare(b.name || '');
                     });
                 } else if (needsSpecialSort && collectionName === 'eTenders') {
-                    (data as E_tender[]).sort((a, b) => {
-                         const dateA = a.tenderDate instanceof Date ? a.tenderDate.getTime() : 0;
-                         const dateB = b.tenderDate instanceof Date ? b.tenderDate.getTime() : 0;
-                         return dateB - dateA;
-                    });
+                    (data as E_tender[]).sort((a, b) => (b.tenderDate instanceof Date ? b.tenderDate.getTime() : 0) - (a.tenderDate instanceof Date ? a.tenderDate.getTime() : 0));
                 }
-                setter(data);
-                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+                setter(data); setLoadingStates(prev => ({...prev, [loaderKey]: false}));
             }, (error) => {
-                 if (error.code === 'permission-denied') {
-                    errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `offices/.../${collectionName}`, operation: 'list' }));
-                } else {
-                    console.error(`Error fetching ${collectionName}:`, error);
-                    toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" });
-                }
-                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+                 if (error.code === 'permission-denied') errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `offices/.../${collectionName}`, operation: 'list' }));
+                 else { console.error(`Error fetching ${collectionName}:`, error); toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" }); }
+                 setLoadingStates(prev => ({...prev, [loaderKey]: false}));
             });
         });
 
-        // Dedicated listener for sanctioned strength
-        let sanctionedUnsub = () => {};
-        if (officeToQuery) {
-            setLoadingStates(prev => ({...prev, sanctionedStrength: true}));
-            const sanctionedRef = collection(db, `offices/${officeToQuery.toLowerCase()}/sanctionedStrength`);
-            sanctionedUnsub = onSnapshot(query(sanctionedRef), (snapshot) => {
-                const strength: Record<string, number> = {};
-                snapshot.docs.forEach(doc => {
-                    strength[doc.id] = doc.data().count || 0;
-                });
-                setAllSanctionedStrength(strength);
-                setLoadingStates(prev => ({...prev, sanctionedStrength: false}));
-            }, (error) => {
-                console.error("Error fetching sanctionedStrength:", error);
-                setLoadingStates(prev => ({...prev, sanctionedStrength: false}));
-            });
-        } else {
-            setAllSanctionedStrength({});
-            setLoadingStates(prev => ({...prev, sanctionedStrength: false}));
-        }
-
-        return () => {
-            unsubscribes.forEach(unsub => unsub());
-            sanctionedUnsub();
-        };
+        return () => unsubscribes.forEach(unsub => unsub());
     }, [user, selectedOffice]);
-    
 
     const isLoading = Object.values(loadingStates).some(Boolean);
 
@@ -404,12 +300,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
           const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-          if (!officeLoc) throw new Error("An office location must be selected to add staff.");
+          if (!officeLoc) throw new Error("Office location required.");
           const collectionPath = `offices/${officeLoc.toLowerCase()}/${collectionName}`;
           const payload = { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
           await addDoc(collection(db, collectionPath), payload);
-          toast({ title: 'Item Added', description: 'The new item has been saved.' });
       }, [user, selectedOffice]);
     };
   
@@ -417,13 +312,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       return useCallback(async (data: T) => {
           if (!user) throw new Error("User must be logged in.");
           const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-          if (!officeLoc) throw new Error("User must have an office location.");
-          if (!data.id) throw new Error("Document ID is missing for update.");
+          if (!officeLoc || !data.id) throw new Error("Missing office or ID.");
           const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, data.id);
           const payload = { ...data, updatedAt: serverTimestamp() };
           if ('id' in payload) delete (payload as any).id;
           await updateDoc(docRef, payload);
-          toast({ title: 'Item Updated', description: 'Your changes have been saved.' });
       }, [user, selectedOffice]);
     };
   
@@ -431,62 +324,31 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
       return useCallback(async (id: string, name: string) => {
           if (!user) throw new Error("User must be logged in.");
           const officeLoc = user.role === 'superAdmin' ? selectedOffice : user.officeLocation;
-          if (!officeLoc) throw new Error("User must have an office location.");
+          if (!officeLoc) throw new Error("Office location required.");
           const docRef = doc(db, `offices/${officeLoc.toLowerCase()}/${collectionName}`, id);
-          deleteDoc(docRef)
-              .then(() => {
-                  toast({ title: 'Item Deleted', description: `${name} has been removed.` });
-              })
+          deleteDoc(docRef).then(() => toast({ title: 'Item Deleted', description: `${name} removed.` }))
               .catch(error => {
-                  if (error.code === 'permission-denied') {
-                      errorEmitter.emit('permission-error', new FirestorePermissionError({
-                          path: docRef.path,
-                          operation: 'delete',
-                      }));
-                  } else {
-                      toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
-                  }
+                  if (error.code === 'permission-denied') errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+                  else toast({ title: "Error Deleting Item", description: error.message, variant: "destructive" });
               });
       }, [user, selectedOffice]);
     };
 
-    const addDepartmentVehicle = useAddVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
-    const updateDepartmentVehicle = useUpdateVehicle<DepartmentVehicle>(COLLECTIONS.DEPARTMENT);
-    const deleteDepartmentVehicle = useDeleteVehicle(COLLECTIONS.DEPARTMENT);
-
-    const addHiredVehicle = useAddVehicle<HiredVehicle>(COLLECTIONS.HIRED);
-    const updateHiredVehicle = useUpdateVehicle<HiredVehicle>(COLLECTIONS.HIRED);
-    const deleteHiredVehicle = useDeleteVehicle(COLLECTIONS.HIRED);
-
-    const addRigCompressor = useAddVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR);
-    const updateRigCompressor = useUpdateVehicle<RigCompressor>(COLLECTIONS.RIG_COMPRESSOR);
-    const deleteRigCompressor = useDeleteVehicle(COLLECTIONS.RIG_COMPRESSOR);
-
-
     return (
         <DataStoreContext.Provider value={{
-            selectedOffice, setSelectedOffice,
-            allUsers,
-            allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
+            selectedOffice, setSelectedOffice, allUsers, allFileEntries, allArsEntries, allStaffMembers, allAgencyApplications, allLsgConstituencyMaps, allRateDescriptions,
             allBidders, allE_tenders, allDepartmentVehicles, allHiredVehicles, allRigCompressors, 
-            allSanctionedStrength, updateSanctionedStrength,
-            allOfficeAddresses: globalOfficeAddresses,
-            officeAddress, 
-            isLoading,
-            refetchRateDescriptions,
-            deleteArsEntry, addDepartmentVehicle,
-            updateDepartmentVehicle, deleteDepartmentVehicle, addHiredVehicle, updateHiredVehicle, deleteHiredVehicle,
-            addRigCompressor, updateRigCompressor, deleteRigCompressor,
-        }}>
-            {children}
-        </DataStoreContext.Provider>
+            allSanctionedStrength, updateSanctionedStrength, allOfficeAddresses: globalOfficeAddresses, officeAddress, isLoading,
+            refetchRateDescriptions, deleteArsEntry, addDepartmentVehicle: useAddVehicle(COLLECTIONS.DEPARTMENT), updateDepartmentVehicle: useUpdateVehicle(COLLECTIONS.DEPARTMENT),
+            deleteDepartmentVehicle: useDeleteVehicle(COLLECTIONS.DEPARTMENT), addHiredVehicle: useAddVehicle(COLLECTIONS.HIRED), updateHiredVehicle: useUpdateVehicle(COLLECTIONS.HIRED),
+            deleteHiredVehicle: useDeleteVehicle(COLLECTIONS.HIRED), addRigCompressor: useAddVehicle(COLLECTIONS.RIG_COMPRESSOR), updateRigCompressor: useUpdateVehicle(COLLECTIONS.RIG_COMPRESSOR),
+            deleteRigCompressor: useDeleteVehicle(COLLECTIONS.RIG_COMPRESSOR),
+        }}>{children}</DataStoreContext.Provider>
     );
 }
 
 export function useDataStore() {
     const context = useContext(DataStoreContext);
-    if (!context) {
-        throw new Error('useDataStore must be used within a DataStoreProvider');
-    }
+    if (!context) throw new Error('useDataStore must be used within a DataStoreProvider');
     return context;
 }

@@ -145,13 +145,13 @@ const ReportDetailsTable = ({
             }
         });
 
-        // Always show the basic balance metrics
+        // Always show basic metrics
         ['previousBalance', 'currentApplications', 'toBeRefunded', 'totalApplications', 'completed', 'balance'].forEach(k => metricActivity.set(k, true));
 
         const active = metrics.filter(m => metricActivity.get(m.key));
 
         return { categoryTotals: totals, hasData: dataFound, activeMetrics: active };
-    }, [data, categoryKeys]);
+    }, [data, categoryKeys, metrics]);
     
     if (!hasData) {
         return <p className="text-center text-sm text-muted-foreground p-4">No data available for this category in the selected period.</p>;
@@ -382,46 +382,6 @@ export default function ProgressReportPage() {
 
     const initialStats = (): ProgressStats => ({ previousBalance: 0, currentApplications: 0, toBeRefunded: 0, totalApplications: 0, completed: 0, feasible: 0, nonFeasible: 0, balance: 0, previousBalanceData: [], currentApplicationsData: [], toBeRefundedData: [], totalApplicationsData: [], completedData: [], feasibleData: [], nonFeasibleData: [], balanceData: [] });
     
-    const createNestedStructure = (outerKeys: readonly string[], innerKeys: readonly string[]): Record<string, Record<string, ProgressStats>> => {
-        const structure: Record<string, Record<string, ProgressStats>> = {};
-        outerKeys.forEach(outerKey => {
-            structure[outerKey] = {};
-            innerKeys.forEach(innerKey => {
-                structure[outerKey][innerKey] = initialStats();
-            });
-        });
-        return structure;
-    };
-    const createSingleStructure = (keys: readonly string[]): Record<string, ProgressStats> => {
-        const structure: Record<string, ProgressStats> = {};
-        keys.forEach(key => {
-            structure[key] = initialStats();
-        });
-        return structure;
-    };
-
-    const progressSummaryData: OtherServiceProgress = {} as OtherServiceProgress;
-    REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
-
-    const bwcData = createNestedStructure(uniqueApplicationTypesWithUnassigned, BWC_DIAMETERS);
-    const twcData = createNestedStructure(uniqueApplicationTypesWithUnassigned, TWC_DIAMETERS);
-    const fpwData = createNestedStructure(uniqueApplicationTypesWithUnassigned, FPW_DIAMETERS);
-    
-    const UNASSIGNED_WELL_TYPE = 'Unassigned';
-    const typeOfWellOptionsWithUnassigned = [...typeOfWellOptions, UNASSIGNED_WELL_TYPE] as const;
-    const gwInvestigationData = createNestedStructure(typeOfWellOptionsWithUnassigned, uniqueApplicationTypesWithUnassigned);
-    
-    const vesData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
-    const geologicalLoggingData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
-    const geophysicalLoggingData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
-    const pumpingTestData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
-    
-    const otherSchemesData: Record<string, Record<string, ProgressStats>> = {};
-    const otherSchemesPurposes: SitePurpose[] = ["BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"];
-    otherSchemesPurposes.forEach(p => {
-        otherSchemesData[p] = createSingleStructure(uniqueApplicationTypesWithUnassigned);
-    });
-    
     const calculateBalanceAndTotal = (stats: ProgressStats) => {
         if(!stats) return;
         stats.totalApplications = (stats.previousBalance || 0) + (stats.currentApplications || 0) - (stats.toBeRefunded || 0);
@@ -449,6 +409,46 @@ export default function ProgressReportPage() {
         stats.balanceData = (stats.totalApplicationsData || []).filter(site => !completedKeys.has(`${site.fileNo}-${site.nameOfSite}`));
     };
 
+    const createNestedStructure = (outerKeys: readonly string[], innerKeys: readonly string[]): Record<string, Record<string, ProgressStats>> => {
+        const structure: Record<string, Record<string, ProgressStats>> = {};
+        outerKeys.forEach(outerKey => {
+            structure[outerKey] = {};
+            innerKeys.forEach(innerKey => {
+                structure[outerKey][innerKey] = initialStats();
+            });
+        });
+        return structure;
+    };
+    const createSingleStructure = (keys: readonly string[]): Record<string, ProgressStats> => {
+        const structure: Record<string, ProgressStats> = {};
+        keys.forEach(key => {
+            structure[key] = initialStats();
+        });
+        return structure;
+    };
+
+    const progressSummaryData: OtherServiceProgress = {} as OtherServiceProgress;
+    REPORTING_PURPOSE_ORDER.forEach(p => { progressSummaryData[p as SitePurpose] = initialStats(); });
+
+    const bwcData = createNestedStructure(uniqueApplicationTypesWithUnassigned, BWC_DIAMETERS);
+    const twcData = createNestedStructure(uniqueApplicationTypesWithUnassigned, TWC_DIAMETERS);
+    const fpwData = createNestedStructure(uniqueApplicationTypesWithUnassigned, FPW_DIAMETERS);
+    
+    const UNASSIGNED_WELL_TYPE = 'Other / Unassigned';
+    const typeOfWellOptionsWithUnassigned = [...typeOfWellOptions, UNASSIGNED_WELL_TYPE] as const;
+    const gwInvestigationData = createNestedStructure(typeOfWellOptionsWithUnassigned, uniqueApplicationTypesWithUnassigned);
+    
+    const vesData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    const geologicalLoggingData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    const geophysicalLoggingData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    const pumpingTestData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    
+    const otherSchemesData: Record<string, Record<string, ProgressStats>> = {};
+    const otherSchemesPurposes: SitePurpose[] = ["BW Dev", "TW Dev", "FPW Dev", "MWSS", "MWSS Ext", "Pumping Scheme", "MWSS Pump Reno", "HPS", "HPR", "ARS"];
+    otherSchemesPurposes.forEach(p => {
+        otherSchemesData[p] = createSingleStructure(uniqueApplicationTypesWithUnassigned);
+    });
+
     includedSites.forEach(siteWithFileContext => {
         const { fileRemittanceDate, ...site } = siteWithFileContext;
         const purpose = site.purpose as SitePurpose;
@@ -470,6 +470,7 @@ export default function ProgressReportPage() {
                 statsObj.completed++; 
                 statsObj.completedData.push(siteWithFileContext); 
                 
+                // Track Feasibility for completed investigations
                 if (purpose === 'GW Investigation' || LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(purpose as any)) {
                     if (site.feasibility === 'Yes') {
                         statsObj.feasible++;
@@ -652,7 +653,7 @@ export default function ProgressReportPage() {
     setEndDate(endOfMonth(today));
   };
   
-  const handleExportExcel = async () => { /* Excel export logic */ };
+  const handleExportExcel = async () => { /* Excel export logic stays as-is */ };
   
     const handleGeneratePdfReport = async () => {
     if (!reportData) {
@@ -922,7 +923,7 @@ export default function ProgressReportPage() {
                             <div className="flex items-center justify-between w-full pr-4">
                                 <span className="text-lg font-semibold flex items-center gap-2">
                                     <Landmark className="h-5 w-5 text-primary" />
-                                    Revenue Head Summary
+                                    Revenue Head Summary (Payment Details Only)
                                 </span>
                                 <span className="text-lg font-bold font-mono text-green-600 ml-4">
                                     ₹{reportData.totalRevenueHeadCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}

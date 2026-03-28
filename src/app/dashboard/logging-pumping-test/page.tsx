@@ -98,7 +98,7 @@ export default function LoggingPumpingTestPage() {
     if (hydroDesignations.includes(userDesignation as any)) {
         return ['Geological', 'PumpingTest'];
     }
-    return ['Geological', 'Geophysical', 'PumpingTest']; // Fallback for investigators with other designations
+    return ['Geological', 'Geophysical', 'PumpingTest']; // Fallback for investigators
   }, [user, userDesignation]);
 
   useEffect(() => {
@@ -134,7 +134,7 @@ export default function LoggingPumpingTestPage() {
     return entries;
   }, [fileEntries]);
 
-  // Global search filtering applied BEFORE splitting into tab categories
+  // Global search filtering
   const searchFilteredEntries = useMemo(() => {
     if (!searchTerm) return allRelevantEntries;
     const lowerSearchTerm = searchTerm.toLowerCase();
@@ -239,7 +239,7 @@ export default function LoggingPumpingTestPage() {
                 <div className="flex flex-col items-end gap-2">
                     {lastCreatedDate && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                            <Clock className="h-4 w-4" />
+                            <Clock className="h-3.5 w-3.5" />
                             Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                         </div>
                     )}

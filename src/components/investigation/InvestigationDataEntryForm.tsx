@@ -841,7 +841,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
             const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
             if (newDocId) {
-                const newPath = `/dashboard/data-entry?id=${newDocId}&workType=loggingPumpingTest${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`;
+                const newPath = `/dashboard/data-entry?id=${newDocId}&workType=gwInvestigation${pageToReturnTo ? `&page=${pageToReturnTo}` : ''}`;
                 router.push(newPath);
             }
         }
