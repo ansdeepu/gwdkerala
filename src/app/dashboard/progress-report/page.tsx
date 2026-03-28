@@ -3,7 +3,6 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { format, startOfDay, endOfDay, isWithinInterval, isValid, isBefore, parseISO, startOfMonth, endOfMonth, isAfter, parse } from 'date-fns';
 import { cn } from "@/lib/utils";
@@ -398,7 +397,11 @@ export default function ProgressReportPage() {
     const bwcData = createNestedStructure(uniqueApplicationTypesWithUnassigned, BWC_DIAMETERS);
     const twcData = createNestedStructure(uniqueApplicationTypesWithUnassigned, TWC_DIAMETERS);
     const fpwData = createNestedStructure(uniqueApplicationTypesWithUnassigned, FPW_DIAMETERS);
-    const gwInvestigationData = createNestedStructure(typeOfWellOptions, uniqueApplicationTypesWithUnassigned);
+    
+    const UNASSIGNED_WELL_TYPE = 'Unassigned';
+    const typeOfWellOptionsWithUnassigned = [...typeOfWellOptions, UNASSIGNED_WELL_TYPE] as const;
+    const gwInvestigationData = createNestedStructure(typeOfWellOptionsWithUnassigned, uniqueApplicationTypesWithUnassigned);
+    
     const vesData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
     const geologicalLoggingData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
     const geophysicalLoggingData = createSingleStructure(uniqueApplicationTypesWithUnassigned);
@@ -449,8 +452,8 @@ export default function ProgressReportPage() {
             else if (purpose === 'TWC' && diameter && twcData[applicationType]?.[diameter]) updateStats(twcData[applicationType][diameter]);
             else if (purpose === 'FPW' && diameter && fpwData[applicationType]?.[diameter]) updateStats(fpwData[applicationType][diameter]);
             else if (purpose === 'GW Investigation') {
-                const wellType = (site as any).typeOfWell as TypeOfWell;
-                if (wellType && applicationType && gwInvestigationData[wellType]?.[applicationType]) {
+                const wellType = ((site as any).typeOfWell as TypeOfWell) || UNASSIGNED_WELL_TYPE;
+                if (applicationType && gwInvestigationData[wellType]?.[applicationType]) {
                     updateStats(gwInvestigationData[wellType][applicationType]);
                 }
                 if (site.vesRequired === 'Yes' && vesData[applicationType]) {
@@ -586,6 +589,7 @@ export default function ProgressReportPage() {
         bwcData, twcData, fpwData, progressSummaryData, gwInvestigationData, vesData, geologicalLoggingData, geophysicalLoggingData, pumpingTestData, 
         otherSchemesData, privateFinancialSummaryData, governmentFinancialSummaryData,
         totalRevenueHeadCredit, revenueHeadCreditData: Array.from(uniqueRevenueCredits.values()),
+        typeOfWellOptionsWithUnassigned,
     });
     setIsFiltering(false);
   }, [fileEntries, startDate, endDate, toast, uniqueApplicationTypesWithUnassigned]);
@@ -846,7 +850,7 @@ export default function ProgressReportPage() {
                 </Card>
 
                 <Accordion type="multiple" className="w-full space-y-4" defaultValue={[]}>
-                    <ReportCategoryTable accordionId="gw-investigation" title={`GW Investigation (Balance - ${gwInvestigationBalance || 0})`} data={reportData.gwInvestigationData} categoryKeys={typeOfWellOptions} categoryLabels={Object.fromEntries(typeOfWellOptions.map(o => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
+                    <ReportCategoryTable accordionId="gw-investigation" title={`GW Investigation (Balance - ${gwInvestigationBalance || 0})`} data={reportData.gwInvestigationData} categoryKeys={reportData.typeOfWellOptionsWithUnassigned} categoryLabels={Object.fromEntries(reportData.typeOfWellOptionsWithUnassigned.map((o: string) => [o,o]))} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="ves" title={`VES (Balance - ${vesBalance || 0})`} data={reportData.vesData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="pumping-test" title={`Pumping Test (Balance - ${pumpingTestBalance || 0})`} data={reportData.pumpingTestData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
                     <ReportCategoryTable accordionId="geo-logging" title={`Geological Logging (Balance - ${geologicalLoggingBalance || 0})`} data={reportData.geologicalLoggingData} categoryKeys={uniqueApplicationTypesWithUnassigned} categoryLabels={applicationTypeDisplayMapWithUnassigned} onCountClick={handleCountClick} alwaysVisible />
