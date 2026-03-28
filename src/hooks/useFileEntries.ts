@@ -1,3 +1,4 @@
+
 // src/hooks/useFileEntries.ts
 "use client";
 
@@ -97,28 +98,31 @@ export function useFileEntries() {
             }
 
             const hasPendingUpdate = pendingUpdatesMap[entry.fileNo];
-            const supervisorOngoingStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
-            const investigatorOngoingStatuses: SiteWorkStatus[] = ["Pending", "VES Pending"];
-            
-            const ongoingStatuses = user.role === 'supervisor' ? supervisorOngoingStatuses : investigatorOngoingStatuses;
             
             const visibleSites = entry.siteDetails.filter(site => {
               let isAssigned = false;
               if (user.role === 'supervisor') {
-                const isAssignedByUid = site.supervisorUid === user.uid;
-                const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
-                isAssigned = isAssignedByUid || isAssignedByName;
+                  const isAssignedByUid = site.supervisorUid === user.uid;
+                  const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
+                  isAssigned = isAssignedByUid || isAssignedByName;
               } else if (user.role === 'investigator') {
-                isAssigned = site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
+                  isAssigned = site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
               }
 
               if (!isAssigned) {
                 return false;
               }
+              
+              if (user.role === 'investigator') {
+                const isCompletedAndApproved = site.workStatus === 'Completed' && !hasPendingUpdate;
+                // An investigator sees an assigned site unless it's completed and the update has been approved (no longer pending).
+                return !isCompletedAndApproved;
+              }
 
-              const isOngoing = site.workStatus && (ongoingStatuses as string[]).includes(site.workStatus);
-              // A site is visible if it's ongoing OR if there's a pending update for the file from this user.
-              return isOngoing || hasPendingUpdate;
+              // Original logic for Supervisor
+              const supervisorOngoingStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
+              const isSupervisorOngoing = site.workStatus && (supervisorOngoingStatuses as string[]).includes(site.workStatus);
+              return isSupervisorOngoing || hasPendingUpdate;
             });
             
             // If after filtering, there are visible sites, return the entry with only those sites.
