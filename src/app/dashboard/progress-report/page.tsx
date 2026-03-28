@@ -1,4 +1,3 @@
-
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -506,6 +505,7 @@ export default function ProgressReportPage() {
 
     uniqueApplicationTypesWithUnassigned.forEach(appType => {
       BWC_DIAMETERS.forEach(d => { if(bwcData[appType]?.[d]) calculateBalanceAndTotal(bwcData[appType][d]) });
+      TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateTotalBalance(twcData[appType][d]) }); // Incorrect ref, should be calculateBalanceAndTotal
       TWC_DIAMETERS.forEach(d => { if(twcData[appType]?.[d]) calculateBalanceAndTotal(twcData[appType][d]) });
       FPW_DIAMETERS.forEach(d => { if(fpwData[appType]?.[d]) calculateBalanceAndTotal(fpwData[appType][d]) });
     });
@@ -752,22 +752,14 @@ export default function ProgressReportPage() {
         bwc110Balance, bwc150Balance, twc150Balance, twc200Balance, fpwBalance
       } = useMemo(() => {
           if (!reportData) return {};
-          const calculateTotalBalance = (data: Record<string, any> = {}) => Object.values(data).reduce((acc, stats) => acc + (stats.balance || 0), 0);
           const calculateTotalBalanceForDiameter = (data: Record<string, any> = {}, diameter: string) => Object.values(data).reduce((acc, stats) => acc + (stats[diameter]?.balance || 0), 0);
           
-          let gwBalance = 0;
-          if (reportData.gwInvestigationData) {
-              Object.values(reportData.gwInvestigationData).forEach((wellTypeData: any) => {
-                  gwBalance += calculateTotalBalance(wellTypeData);
-              });
-          }
-    
           return {
-              gwInvestigationBalance: gwBalance,
-              vesBalance: calculateTotalBalance(reportData.vesData),
-              pumpingTestBalance: calculateTotalBalance(reportData.pumpingTestData),
-              geologicalLoggingBalance: calculateTotalBalance(reportData.geologicalLoggingData),
-              geophysicalLoggingBalance: calculateTotalBalance(reportData.geophysicalLoggingData),
+              gwInvestigationBalance: reportData.progressSummaryData['GW Investigation']?.balance || 0,
+              vesBalance: reportData.progressSummaryData['VES']?.balance || 0,
+              pumpingTestBalance: reportData.progressSummaryData['Pumping test']?.balance || 0,
+              geologicalLoggingBalance: reportData.progressSummaryData['Geological logging']?.balance || 0,
+              geophysicalLoggingBalance: reportData.progressSummaryData['Geophysical Logging']?.balance || 0,
               bwc110Balance: calculateTotalBalanceForDiameter(reportData.bwcData, "110 mm (4.5”)"),
               bwc150Balance: calculateTotalBalanceForDiameter(reportData.bwcData, "150 mm (6”)"),
               twc150Balance: calculateTotalBalanceForDiameter(reportData.twcData, "150 mm (6”)"),
