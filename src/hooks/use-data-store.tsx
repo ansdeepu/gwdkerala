@@ -239,6 +239,7 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
             bidders: { setter: setAllBidders, loaderKey: 'bidders' },
             users: { setter: setAllUsers, loaderKey: 'users' },
+            sanctionedStrength: { setter: setAllSanctionedStrength, loaderKey: 'sanctionedStrength' },
         };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
@@ -258,33 +259,43 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             }
             
             return onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-                const dataRaw = snapshot.docs.map(docSnap => {
-                    const processedData = processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() }) as any;
-                    const pathSegments = (docSnap.ref.path || '').split('/');
-                    const officeIdIndex = pathSegments.indexOf('offices');
-                    if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
-                    return processedData;
-                });
-
-                let data = dataRaw;
-                if (collectionName === 'users') {
-                    const uniqueUsers = new Map<string, any>();
-                    dataRaw.forEach((item: any) => { const uid = item.uid || item.id; if (!uniqueUsers.has(uid)) uniqueUsers.set(uid, { ...item, uid }); });
-                    data = Array.from(uniqueUsers.values());
-                }
-                
-                if (needsSpecialSort && collectionName === 'staffMembers' && designationOptions) {
-                    const dOptions = [...designationOptions];
-                    const designationSortOrder = dOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
-                    (data as StaffMember[]).sort((a, b) => {
-                        const orderA = a.designation ? (designationSortOrder[a.designation] ?? dOptions.length) : dOptions.length;
-                        const orderB = b.designation ? (designationSortOrder[b.designation] ?? dOptions.length) : dOptions.length;
-                        return orderA !== orderB ? orderA - orderB : (a.name || '').localeCompare(b.name || '');
+                if (collectionName === 'sanctionedStrength') {
+                    const strengthData = snapshot.docs.reduce((acc, docSnap) => {
+                        const data = docSnap.data();
+                        acc[docSnap.id] = data.count || 0;
+                        return acc;
+                    }, {} as Record<string, number>);
+                    setter(strengthData);
+                } else {
+                    const dataRaw = snapshot.docs.map(docSnap => {
+                        const processedData = processFirestoreDoc({ id: docSnap.id, data: () => docSnap.data() }) as any;
+                        const pathSegments = (docSnap.ref.path || '').split('/');
+                        const officeIdIndex = pathSegments.indexOf('offices');
+                        if (officeIdIndex > -1 && pathSegments.length > officeIdIndex + 1) processedData.officeLocationFromPath = pathSegments[officeIdIndex + 1];
+                        return processedData;
                     });
-                } else if (needsSpecialSort && collectionName === 'eTenders') {
-                    (data as E_tender[]).sort((a, b) => (b.tenderDate instanceof Date ? b.tenderDate.getTime() : 0) - (a.tenderDate instanceof Date ? a.tenderDate.getTime() : 0));
+
+                    let data = dataRaw;
+                    if (collectionName === 'users') {
+                        const uniqueUsers = new Map<string, any>();
+                        dataRaw.forEach((item: any) => { const uid = item.uid || item.id; if (!uniqueUsers.has(uid)) uniqueUsers.set(uid, { ...item, uid }); });
+                        data = Array.from(uniqueUsers.values());
+                    }
+                    
+                    if (needsSpecialSort && collectionName === 'staffMembers' && designationOptions) {
+                        const dOptions = [...designationOptions];
+                        const designationSortOrder = dOptions.reduce((acc, curr, index) => ({ ...acc, [curr]: index }), {} as Record<string, number>);
+                        (data as StaffMember[]).sort((a, b) => {
+                            const orderA = a.designation ? (designationSortOrder[a.designation] ?? dOptions.length) : dOptions.length;
+                            const orderB = b.designation ? (designationSortOrder[b.designation] ?? dOptions.length) : dOptions.length;
+                            return orderA !== orderB ? orderA - orderB : (a.name || '').localeCompare(b.name || '');
+                        });
+                    } else if (needsSpecialSort && collectionName === 'eTenders') {
+                        (data as E_tender[]).sort((a, b) => (b.tenderDate instanceof Date ? b.tenderDate.getTime() : 0) - (a.tenderDate instanceof Date ? a.tenderDate.getTime() : 0));
+                    }
+                    setter(data); 
                 }
-                setter(data); setLoadingStates(prev => ({...prev, [loaderKey]: false}));
+                setLoadingStates(prev => ({...prev, [loaderKey]: false}));
             }, (error) => {
                  if (error.code === 'permission-denied') errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `offices/.../${collectionName}`, operation: 'list' }));
                  else { console.error(`Error fetching ${collectionName}:`, error); toast({ title: `Error Loading ${collectionName}`, description: error.message, variant: "destructive" }); }
