@@ -247,7 +247,7 @@ export function DepartmentVehicleTable({ data, onEdit, onDelete, canEdit, onView
                 <TableHeader>
                     <TableRow>
                         <TableHead className="p-2 text-sm">Sl. No</TableHead>
-                        <TableHead className="p-2 text-sm min-w-[250px]">Vehicle Details</TableHead>
+                        <TableHead className="p-2 text-sm">Vehicle Details</TableHead>
                         <TableHead className="p-2 text-sm">Fuel Consumption</TableHead>
                         <TableHead className="p-2 text-sm">Fitness</TableHead>
                         <TableHead className="p-2 text-sm">Tax</TableHead>
@@ -323,7 +323,7 @@ export function HiredVehicleTable({ data, onEdit, onDelete, canEdit, onView }: H
                 <TableHeader>
                     <TableRow>
                         <TableHead className="p-2 text-sm">Sl. No</TableHead>
-                        <TableHead className="p-2 text-sm min-w-[250px]">Vehicle Details</TableHead>
+                        <TableHead className="p-2 text-sm">Vehicle Details</TableHead>
                         <TableHead className="p-2 text-sm">Agreement Validity</TableHead>
                         <TableHead className="p-2 text-sm">Hire Charges</TableHead>
                         <TableHead className="p-2 text-sm">Fitness</TableHead>
