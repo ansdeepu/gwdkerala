@@ -280,9 +280,9 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                             <Card>
                                 <CardHeader><CardTitle className="text-lg text-primary">Media Gallery</CardTitle></CardHeader>
                                 <CardContent className="space-y-6">
-                                    <MediaManager title="Work Images" type="image" fields={imageFields} append={appendImage} remove={removeImage} update={updateImage} isReadOnly={isReadOnly} />
+                                    <MediaManager title="Work Images" type="image" fields={imageFields} append={appendImage} remove={removeImage} update={updateImage} isReadOnly={isFieldReadOnly('workImages')} />
                                     <Separator />
-                                    <MediaManager title="Work Videos" type="video" fields={videoFields} append={appendVideo} remove={removeVideo} update={updateVideo} isReadOnly={isReadOnly} />
+                                    <MediaManager title="Work Videos" type="video" fields={videoFields} append={appendVideo} remove={removeVideo} update={updateVideo} isReadOnly={isFieldReadOnly('workVideos')} />
                                 </CardContent>
                             </Card>
                         </div>

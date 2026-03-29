@@ -132,13 +132,13 @@ const WorkProgressCategoryView = ({
                     if (completionDate && isValid(completionDate) && isWithinInterval(completionDate, { start: startOfMonthDate, end: endOfMonthDate })) {
                         const siteKey = `${entry.fileNo}-${site.nameOfSite}-${site.purpose}`;
                         if (!uniqueCompletedSites.has(siteKey)) {
-                            uniqueCompletedSites.set(siteKey, { ...site, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType as any });
+                            uniqueCompletedSites.set(siteKey, { ...site, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType as ApplicationType });
                         }
                     }
                 }
                 
                 if (site.workStatus && ongoingWorkStatuses.includes(site.workStatus as SiteWorkStatus)) {
-                    ongoingSites.push({ ...site, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType as any });
+                    ongoingSites.push({ ...site, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType as ApplicationType });
                 }
             }
         }

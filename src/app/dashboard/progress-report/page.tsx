@@ -151,7 +151,7 @@ const ReportDetailsTable = ({
         const active = metrics.filter(m => metricActivity.get(m.key));
 
         return { categoryTotals: totals, hasData: dataFound, activeMetrics: active };
-    }, [data, categoryKeys, metrics]);
+    }, [data, categoryKeys]);
     
     if (!hasData) {
         return <p className="text-center text-sm text-muted-foreground p-4">No data available for this category in the selected period.</p>;
@@ -493,7 +493,7 @@ export default function ProgressReportPage() {
              updateStats(progressSummaryData['Pumping test']);
         } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) {
             if (progressSummaryData[purpose]) {
-                updateStats(progressSummaryData[purpose]);
+                updateStats(purpose);
             }
         }
 
@@ -582,20 +582,6 @@ export default function ProgressReportPage() {
                 revenueHeadBreakdown[purpose] = { total: 0, data: [] };
             }
 
-            const hasRemittanceInPeriod = entry.remittanceDetails?.some(rd => checkDateInRange(rd.dateOfRemittance));
-
-            if (hasRemittanceInPeriod) {
-                if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
-                summaryData[purpose].totalApplications++;
-                summaryData[purpose].applicationData.push(entry);
-                entry.remittanceDetails?.forEach(rd => { 
-                    if (checkDateInRange(rd.dateOfRemittance)) {
-                        const amount = (Number(rd.amountRemitted) || 0);
-                        summaryData[purpose].totalRemittance += amount;
-                    }
-                });
-            }
-
             entry.paymentDetails?.forEach(pd => {
                 if (checkDateInRange(pd.dateOfPayment)) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
@@ -610,6 +596,20 @@ export default function ProgressReportPage() {
                     }
                 }
             });
+
+            // Re-calculate application received/remittance if relevant
+            const hasRemittanceInPeriod = entry.remittanceDetails?.some(rd => checkDateInRange(rd.dateOfRemittance));
+            if (hasRemittanceInPeriod) {
+                if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
+                summaryData[purpose].totalApplications++;
+                summaryData[purpose].applicationData.push(entry);
+                entry.remittanceDetails?.forEach(rd => { 
+                    if (checkDateInRange(rd.dateOfRemittance)) {
+                        const amount = (Number(rd.amountRemitted) || 0);
+                        summaryData[purpose].totalRemittance += amount;
+                    }
+                });
+            }
 
             entry.siteDetails?.forEach(site => {
                 const completionDate = safeParseDate(site.dateOfCompletion);
@@ -952,10 +952,10 @@ export default function ProgressReportPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {Object.entries(reportData.revenueHeadBreakdown)
-                                        .filter(([_, data]: any) => data.total > 0)
-                                        .sort((a, b) => (b[1] as any).total - (a[1] as any).total)
-                                        .map(([purpose, data]: any) => (
+                                    {Object.entries(reportData.revenueHeadBreakdown as Record<string, any>)
+                                        .filter(([_, data]) => data.total > 0)
+                                        .sort((a, b) => b[1].total - a[1].total)
+                                        .map(([purpose, data]) => (
                                             <TableRow key={purpose}>
                                                 <TableCell className="font-medium pl-6">{purpose}</TableCell>
                                                 <TableCell className="text-right pr-6">

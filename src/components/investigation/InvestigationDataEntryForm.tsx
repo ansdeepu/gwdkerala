@@ -750,7 +750,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
                     const newPayment: Partial<PaymentDetailFormData> = {
                         id: `auto-payment-${remittance.id}`,
                         remittanceId: remittance.id,
-                        dateOfPayment: remittance.dateOfRemittance,
+                        dateOfPayment: remittance.dateOfPayment,
                         paymentAccount: 'Bank',
                         revenueHead: amount,
                         paymentRemarks: "Auto-entry from remittance to Revenue Head.",
@@ -930,9 +930,9 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
   const isDeferredFunding = workTypeContext === 'planFund' || workTypeContext === 'collector';
   const remittanceTitle = isDeferredFunding ? "2. Administrative Sanction" : "2. Remittance Details";
   const totalRemittanceWatched = watch('totalRemittance');
-  const totalReappropriationWatched = watch('totalReappropriation');
   const totalReappropriationCreditWatched = watch('totalReappropriationCredit');
   const totalPaymentWatched = watch('totalPaymentAllEntries');
+  const totalReappropriationWatched = watch('totalReappropriation');
 
   return (
     <FormProvider {...form}>

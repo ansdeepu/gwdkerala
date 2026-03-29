@@ -155,6 +155,7 @@ export const StaffMemberFormDataSchema = z.object({
   nameMalayalam: optionalStringSchema,
   designation: z.enum(designationOptions),
   designationMalayalam: z.enum(designationMalayalamOptions).optional().nullable(),
+  parentsName: optionalStringSchema,
   pen: optionalStringSchema,
   email: z.string().email().optional().or(z.literal('')),
   dateOfBirth: optionalDateSchema,
@@ -309,8 +310,27 @@ export type SiteWorkStatus = typeof siteWorkStatusOptions[number];
 export const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
 export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
 
-export const fileStatusOptions = ["File Under Process", "Rig Accessibility Inspection", "Technical Sanction", "Tender Process", "Work Initiated", "Fully Completed", "Partially Completed", "Completed Except Disputed", "Partially Completed Except Disputed", "Fully Disputed", "To be Refunded", "Bill Preparation", "Payments", "Utilization Certificate", "File Closed"] as const;
-export type FileStatus = typeof fileStatusOptions[number];
+export const allFileStatusOptions = [
+  "File Under Process",
+  "Rig Accessibility Inspection",
+  "Technical Sanction",
+  "Tender Process",
+  "Work Initiated",
+  "Fully Completed",
+  "Partially Completed",
+  "Completed Except Disputed",
+  "Partially Completed Except Disputed",
+  "Fully Disputed",
+  "To be Refunded",
+  "Bill Preparation",
+  "Payments",
+  "Utilization Certificate",
+  "File Closed",
+  "Pending",
+  "VES Pending",
+  "Completed",
+  "Under Process"
+] as const;
 
 export const INVESTIGATION_FILE_STATUS_OPTIONS = ["File Under Process", "Pending", "VES Pending", "Completed", "File Closed"] as const;
 export const LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS = ["Under Process", "Completed"] as const;
@@ -526,12 +546,27 @@ export const SiteDetailSchema = z.object({
 });
 export type SiteDetailFormData = z.infer<typeof SiteDetailSchema>;
 
-// Fix for non-empty literal array requirement
-const enumOptions = fileStatusOptions.length > 0 ? fileStatusOptions : ["File Under Process" as const];
-const investigationEnumOptions = INVESTIGATION_FILE_STATUS_OPTIONS.length > 0 ? INVESTIGATION_FILE_STATUS_OPTIONS : ["File Under Process" as const];
-const loggingEnumOptions = LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS.length > 0 ? LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS : ["Under Process" as const];
-
-const allFileStatusOptions = [...new Set([...enumOptions, ...investigationEnumOptions, ...loggingEnumOptions])] as [string, ...string[]];
+export const allFileStatusOptions = [
+  "File Under Process",
+  "Rig Accessibility Inspection",
+  "Technical Sanction",
+  "Tender Process",
+  "Work Initiated",
+  "Fully Completed",
+  "Partially Completed",
+  "Completed Except Disputed",
+  "Partially Completed Except Disputed",
+  "Fully Disputed",
+  "To be Refunded",
+  "Bill Preparation",
+  "Payments",
+  "Utilization Certificate",
+  "File Closed",
+  "Pending",
+  "VES Pending",
+  "Completed",
+  "Under Process"
+] as const;
 
 export const DataEntrySchema = z.object({
   id: z.string().optional(),
@@ -554,7 +589,7 @@ export const DataEntrySchema = z.object({
   paymentDetails: z.array(PaymentDetailSchema).optional(),
   totalPaymentAllEntries: z.coerce.number().optional(),
   overallBalance: z.coerce.number().optional(),
-  fileStatus: z.enum(allFileStatusOptions, {
+  fileStatus: z.enum([...allFileStatusOptions] as [string, ...string[]], {
     required_error: "File Status is required.",
     invalid_type_error: "Please select a valid file status."
   }),

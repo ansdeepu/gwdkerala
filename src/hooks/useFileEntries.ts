@@ -2,7 +2,7 @@
 // src/hooks/useFileEntries.ts
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   getFirestore,
   collection,
@@ -23,11 +23,10 @@ import type { DataEntryFormData, SiteWorkStatus } from '@/lib/schemas';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { usePendingUpdates } from './usePendingUpdates';
-import { useDataStore } from './use-data-store'; // Import the new central store hook
+import { useDataStore } from './use-data-store'; 
 
 const db = getFirestore(app);
 const FILE_ENTRIES_COLLECTION = 'fileEntries';
-const PENDING_UPDATES_COLLECTION = 'pendingUpdates';
 
 // Helper function to recursively remove `undefined` values, replacing them with `null`.
 const sanitizeDataForFirestore = (data: any): any => {
@@ -42,7 +41,6 @@ const sanitizeDataForFirestore = (data: any): any => {
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
                 const value = data[key];
-                // Firestore does not support 'undefined'. Convert to 'null'.
                 if (value === undefined) {
                     sanitized[key] = null;
                 } else {
@@ -58,7 +56,7 @@ const sanitizeDataForFirestore = (data: any): any => {
 
 export function useFileEntries() {
   const { user } = useAuth();
-  const { allFileEntries, isLoading: dataStoreLoading } = useDataStore(); // Use the central store
+  const { allFileEntries, isLoading: dataStoreLoading } = useDataStore(); 
   const { toast } = useToast();
   const [fileEntries, setFileEntries] = useState<DataEntryFormData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -91,7 +89,7 @@ export function useFileEntries() {
       const isFieldStaff = user.role === 'supervisor' || user.role === 'investigator';
 
       if (isFieldStaff && user.uid) {
-        const filteredEntries = allFileEntries
+        const filteredEntries = (allFileEntries as DataEntryFormData[])
           .map(entry => {
             if (!entry.siteDetails || entry.siteDetails.length === 0) {
               return null;
@@ -127,7 +125,7 @@ export function useFileEntries() {
             });
             
             if (visibleSites.length > 0) {
-              return { ...entry, siteDetails: visibleSites };
+              return { ...entry, siteDetails: visibleSites } as DataEntryFormData;
             }
             
             return null;
@@ -136,7 +134,7 @@ export function useFileEntries() {
           
         setFileEntries(filteredEntries);
       } else {
-        setFileEntries(allFileEntries);
+        setFileEntries(allFileEntries as DataEntryFormData[]);
       }
 
       setIsLoading(false);
@@ -218,7 +216,7 @@ export function useFileEntries() {
         return;
     }
     try {
-        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/${FILE_ENTRIES_COLLECTION}`;
+        const collectionPath = `offices/${user.officeLocation.toLowerCase()}/fileEntries`;
         await deleteDoc(doc(db, collectionPath, docId));
         toast({ title: "Entry Deleted", description: "The file entry has been removed." });
     } catch (error: any) {
@@ -250,7 +248,7 @@ export function useFileEntries() {
   }, [user, toast]);
 
   const getFileEntry = useCallback((fileNo: string): DataEntryFormData | undefined => {
-    return allFileEntries.find(entry => entry.fileNo === fileNo);
+    return (allFileEntries as DataEntryFormData[]).find(entry => entry.fileNo === fileNo);
   }, [allFileEntries]);
 
   const fetchEntryForEditing = useCallback(async (
