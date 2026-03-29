@@ -471,7 +471,7 @@ export default function ProgressReportPage() {
                 statsObj.completedData.push(siteWithFileContext); 
                 
                 // Track Feasibility for investigations
-                if (purpose === 'GW Investigation' || LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(purpose as any)) {
+                if (purpose === 'GW Investigation' || (LOGGING_PUMPING_TEST_PURPOSE_OPTIONS as readonly string[]).includes(purpose)) {
                     if (site.feasibility === 'Yes') {
                         statsObj.feasible++;
                         statsObj.feasibleData.push(siteWithFileContext);
@@ -493,7 +493,7 @@ export default function ProgressReportPage() {
              updateStats(progressSummaryData['Pumping test']);
         } else if (purpose && (REPORTING_PURPOSE_ORDER as readonly string[]).includes(purpose)) {
             if (progressSummaryData[purpose]) {
-                updateStats(purpose);
+                updateStats(progressSummaryData[purpose]);
             }
         }
 
@@ -616,7 +616,7 @@ export default function ProgressReportPage() {
                 if (completionDate && isValid(completionDate) && checkDateInRange(completionDate)) {
                     if (!summaryData[purpose]) summaryData[purpose] = { totalApplications: 0, totalRemittance: 0, totalCompleted: 0, totalPayment: 0, applicationData: [], completedData: [], paymentData: [] };
                     summaryData[purpose].totalCompleted++;
-                    summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: (entry.applicationType || UNASSIGNED_APP_TYPE) as ApplicationType });
+                    summaryData[purpose].completedData.push({ ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: (entry.applicationType || UNASSIGNED_APP_TYPE) as ApplicationType } as SiteDetailWithFileContext);
                 }
             });
         });
@@ -952,7 +952,7 @@ export default function ProgressReportPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {Object.entries(reportData.revenueHeadBreakdown as Record<string, any>)
+                                    {Object.entries(reportData.revenueHeadBreakdown as Record<string, { total: number; data: any[] }>)
                                         .filter(([_, data]) => data.total > 0)
                                         .sort((a, b) => b[1].total - a[1].total)
                                         .map(([purpose, data]) => (

@@ -332,6 +332,9 @@ export const allFileStatusOptions = [
   "Under Process"
 ] as const;
 
+export const fileStatusOptions = allFileStatusOptions;
+export type FileStatus = (typeof allFileStatusOptions)[number];
+
 export const INVESTIGATION_FILE_STATUS_OPTIONS = ["File Under Process", "Pending", "VES Pending", "Completed", "File Closed"] as const;
 export const LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS = ["Under Process", "Completed"] as const;
 
@@ -545,28 +548,6 @@ export const SiteDetailSchema = z.object({
     }
 });
 export type SiteDetailFormData = z.infer<typeof SiteDetailSchema>;
-
-export const allFileStatusOptions = [
-  "File Under Process",
-  "Rig Accessibility Inspection",
-  "Technical Sanction",
-  "Tender Process",
-  "Work Initiated",
-  "Fully Completed",
-  "Partially Completed",
-  "Completed Except Disputed",
-  "Partially Completed Except Disputed",
-  "Fully Disputed",
-  "To be Refunded",
-  "Bill Preparation",
-  "Payments",
-  "Utilization Certificate",
-  "File Closed",
-  "Pending",
-  "VES Pending",
-  "Completed",
-  "Under Process"
-] as const;
 
 export const DataEntrySchema = z.object({
   id: z.string().optional(),

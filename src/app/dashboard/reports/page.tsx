@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  fileStatusOptions, 
+  allFileStatusOptions,
+  type FileStatus,
   siteWorkStatusOptions, 
   sitePurposeOptions, 
   applicationTypeOptions, 
@@ -30,7 +31,6 @@ import {
   siteTypeOfRigOptions,
   type DataEntryFormData,
   type ApplicationType,
-  type FileStatus,
   type SiteWorkStatus,
   type SitePurpose,
   constituencyOptions,
@@ -122,8 +122,8 @@ const safeParseDate = (dateValue: any): Date | null => {
     if (isValid(parsed)) return parsed;
   }
   // Fallback for other potential date-like objects from Firestore
-  if (typeof dateValue === 'object' && dateValue.toDate) {
-    const parsed = dateValue.toDate();
+  if (typeof dateValue === 'object' && (dateValue as any).toDate) {
+    const parsed = (dateValue as any).toDate();
     if (isValid(parsed)) return parsed;
   }
   return null;
@@ -208,10 +208,10 @@ export default function ReportsPage() {
 
     if (reportType === "pendingDashboardTasks") {
       currentEntries = currentEntries.filter(entry => {
-        const isFileLevelPending = entry.fileStatus && fileStatusesForPendingReport.includes(entry.fileStatus as FileStatus);
+        const isFileLevelPending = entry.fileStatus && (fileStatusesForPendingReport as string[]).includes(entry.fileStatus);
         if (isFileLevelPending) return true;
         
-        const isAnySiteLevelPending = entry.siteDetails?.some(sd => sd.workStatus && siteWorkStatusesForPendingReport.includes(sd.workStatus as SiteWorkStatus)) ?? false;
+        const isAnySiteLevelPending = entry.siteDetails?.some(sd => sd.workStatus && (siteWorkStatusesForPendingReport as string[]).includes(sd.workStatus)) ?? false;
         return isAnySiteLevelPending;
       });
     }
@@ -317,7 +317,7 @@ export default function ReportsPage() {
         });
       } 
       else if (reportType === "pendingDashboardTasks") {
-        const isFileLevelPending = entry.fileStatus && fileStatusesForPendingReport.includes(entry.fileStatus as FileStatus);
+        const isFileLevelPending = entry.fileStatus && (fileStatusesForPendingReport as string[]).includes(entry.fileStatus);
 
         if (isFileLevelPending) {
           if (entry.siteDetails && entry.siteDetails.length > 0) {
@@ -336,7 +336,7 @@ export default function ReportsPage() {
           }
         } else {
           entry.siteDetails?.forEach(site => {
-            if (site.workStatus && siteWorkStatusesForPendingReport.includes(site.workStatus as SiteWorkStatus)) {
+            if (site.workStatus && (siteWorkStatusesForPendingReport as string[]).includes(site.workStatus)) {
               flattenedRows.push({
                 fileNo: entry.fileNo || "-", applicantName: entry.applicantName || "-", fileFirstRemittanceDate, fileStatus: entry.fileStatus || "-",
                 siteName: site.nameOfSite || "-", sitePurpose: site.purpose || "-", siteWorkStatus: site.workStatus || "-",
@@ -375,9 +375,9 @@ export default function ReportsPage() {
       const workCategoryFromQuery = searchParams?.get("workCategory");
       const serviceTypeFromQuery = searchParams?.get("serviceType");
 
-      setStatusFilter(statusFromQuery && fileStatusOptions.includes(statusFromQuery as any) ? statusFromQuery : "all");
-      setWorkCategoryFilter(workCategoryFromQuery && siteWorkStatusOptions.includes(workCategoryFromQuery as any) ? workCategoryFromQuery : "all");
-      setServiceTypeFilter(serviceTypeFromQuery && (sitePurposeOptions.includes(serviceTypeFromQuery as any) || serviceTypeFromQuery === 'all') ? serviceTypeFromQuery : "all");
+      setStatusFilter(statusFromQuery && (allFileStatusOptions as readonly string[]).includes(statusFromQuery) ? statusFromQuery : "all");
+      setWorkCategoryFilter(workCategoryFromQuery && (siteWorkStatusOptions as readonly string[]).includes(workCategoryFromQuery) ? workCategoryFromQuery : "all");
+      setServiceTypeFilter(serviceTypeFromQuery && ((sitePurposeOptions as readonly string[]).includes(serviceTypeFromQuery) || serviceTypeFromQuery === 'all') ? serviceTypeFromQuery : "all");
     }
   }, [searchParams, entriesLoading, authIsLoading]);
 
@@ -559,7 +559,7 @@ export default function ReportsPage() {
                     <SelectTrigger id="report-file-status-trigger"><SelectValue placeholder="Filter by File Status" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All File Statuses</SelectItem>
-                        {fileStatusOptions.map((status) => (<SelectItem key={status} value={status}>{status}</SelectItem>))}
+                        {allFileStatusOptions.map((status: string) => (<SelectItem key={status} value={status}>{status}</SelectItem>))}
                     </SelectContent>
                 </Select>
                 <Select value={typeOfRigFilter} onValueChange={setTypeOfRigFilter} name="rigTypeFilter">
@@ -590,7 +590,7 @@ export default function ReportsPage() {
                   </SelectContent>
                 </Select>
                 <div className="relative flex-grow w-full">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input id="report-search" name="reportSearch" placeholder="Global text search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                 </div>
                 <div className="flex items-center gap-2 w-full sm:w-auto">

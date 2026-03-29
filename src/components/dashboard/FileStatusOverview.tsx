@@ -5,7 +5,7 @@
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { format, isValid } from 'date-fns';
-import { type DataEntryFormData, fileStatusOptions, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
+import { type DataEntryFormData, allFileStatusOptions, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
@@ -199,7 +199,7 @@ export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: File
         };
 
         return {
-            depositWorksData: processEntriesForOverview(depositWorkEntries, fileStatusOptions),
+            depositWorksData: processEntriesForOverview(depositWorkEntries, allFileStatusOptions),
             gwInvestigationData: processEntriesForOverview(gwInvestigationEntries, investigationFileStatusOptions),
             loggingPumpingTestData: processEntriesForOverview(loggingPumpingTestEntries, loggingPumpingTestFileStatusOptions)
         };
