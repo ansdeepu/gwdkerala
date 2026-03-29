@@ -34,7 +34,7 @@ import {
   type SitePurpose,
   siteDiameterOptions,
   siteTypeOfRigOptions,
-  fileStatusOptions,
+  allFileStatusOptions,
   remittedAccountOptions,
   type RemittanceDetailFormData,
   RemittanceDetailSchema,

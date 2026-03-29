@@ -409,7 +409,6 @@ export const ArsEntrySchema = z.object({
   estimateAmount: optionalNumber(),
   arsAsTsDetails: optionalStringSchema,
   arsSanctionedDate: optionalDateSchema,
-  stats: optionalNumber(),
   tsAmount: optionalNumber(),
   arsTenderNo: optionalStringSchema,
   arsTenderedAmount: optionalNumber(),
@@ -571,7 +570,7 @@ export const DataEntrySchema = z.object({
   paymentDetails: z.array(PaymentDetailSchema).optional(),
   totalPaymentAllEntries: z.coerce.number().optional(),
   overallBalance: z.coerce.number().optional(),
-  fileStatus: z.enum([...allFileStatusOptions] as [string, ...string[]], {
+  fileStatus: z.enum(allFileStatusOptions as unknown as [string, ...string[]], {
     required_error: "File Status is required.",
     invalid_type_error: "Please select a valid file status."
   }),

@@ -239,9 +239,8 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
             rigCompressors: { setter: setAllRigCompressors, loaderKey: 'rigCompressors' },
             localSelfGovernments: { setter: setAllLsgConstituencyMaps, loaderKey: 'lsg' },
             bidders: { setter: setAllBidders, loaderKey: 'bidders' },
+            users: { setter: setAllUsers, loaderKey: 'users' },
         };
-        
-        if (!isSuperAdminUser) officeScopedCollections.users = { setter: setAllUsers, loaderKey: 'users' };
 
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
@@ -250,8 +249,11 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
                 const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = collectionName === 'bidders' ? query(collection(db, path), orderBy("order")) : query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) {
-                if (collectionName === 'users') { setLoadingStates(prev => ({...prev, [loaderKey]: false})); return () => {}; }
-                q = query(collectionGroup(db, collectionName));
+                if (collectionName === 'users') { 
+                    q = query(collection(db, 'users')); 
+                } else {
+                    q = query(collectionGroup(db, collectionName));
+                }
             } else {
                 setter([]); setLoadingStates(prev => ({...prev, [loaderKey]: false})); return () => {};
             }
