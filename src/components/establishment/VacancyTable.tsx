@@ -99,6 +99,12 @@ export default function VacancyTable({ canManage, user }: VacancyTableProps) {
             setIsConfigDialogOpen(false);
             setConfigData({ designation: '', count: 0 });
             toast({ title: "Configuration Saved", description: `Sanctioned strength for ${configData.designation} updated.` });
+        } catch (error: any) {
+            toast({
+                title: "Save Failed",
+                description: error.message || "Could not update the sanctioned strength. Check permissions.",
+                variant: "destructive",
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -415,7 +421,7 @@ export default function VacancyTable({ canManage, user }: VacancyTableProps) {
                             <Label>Designation</Label>
                             <Select 
                                 value={configData.designation} 
-                                onValueChange={(v) => setConfigData(prev => ({ ...prev, designation: v }))}
+                                onValueChange={(v) => setConfigData(prev => ({ ...prev, designation: v, count: vacancyData.find(d => d.designation === v)?.sanctioned || 0 }))}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select Designation" />
