@@ -19,9 +19,11 @@ import type { NewBidderFormData, Bidder as BidderType } from '@/lib/schemas/eTen
 import { useDataStore } from '@/hooks/use-data-store';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, UserPlus, Trash2, Move, Eye } from 'lucide-react';
+import { Loader2, UserPlus, Trash2, Move, Eye, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 const db = getFirestore(app);
+
+type SortKey = keyof BidderType;
 
 export default function BiddersListPage() {
     const { setHeader } = usePageHeader();
@@ -38,21 +40,47 @@ export default function BiddersListPage() {
     const [bidderToReorder, setBidderToReorder] = useState<BidderType | null>(null);
     
     const [displayedBidders, setDisplayedBidders] = useState<BidderType[]>([]);
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
 
     const canManage = useMemo(() => {
         if (!user) return false;
         return ['superAdmin', 'admin', 'engineer'].includes(user.role);
     }, [user]);
 
-    const validBidders = useMemo(() => {
-        return allBidders
-            .filter(bidder => bidder && bidder.id && bidder.name)
-            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    }, [allBidders]);
+    const requestSort = (key: SortKey) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (key: SortKey) => {
+        if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-3 w-3 opacity-30 group-hover:opacity-100" />;
+        return sortConfig.direction === 'asc' ? <ArrowUp className="ml-2 h-3 w-3" /> : <ArrowDown className="ml-2 h-3 w-3" />;
+    };
+
+    const sortedBidders = useMemo(() => {
+        let sortableItems = allBidders.filter(bidder => bidder && bidder.id && bidder.name);
+
+        if (sortConfig !== null) {
+            sortableItems.sort((a, b) => {
+                const aValue = a[sortConfig.key] || '';
+                const bValue = b[sortConfig.key] || '';
+
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        } else {
+             sortableItems.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        }
+        return sortableItems;
+    }, [allBidders, sortConfig]);
 
     useEffect(() => {
-        setDisplayedBidders(validBidders);
-    }, [validBidders]);
+        setDisplayedBidders(sortedBidders);
+    }, [sortedBidders]);
 
 
     useEffect(() => {
@@ -163,10 +191,10 @@ export default function BiddersListPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Sl. No.</TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Address</TableHead>
-                                        <TableHead>Contact</TableHead>
-                                        <TableHead>Email</TableHead>
+                                        <TableHead><Button variant="ghost" onClick={() => requestSort('name')} className="px-0 hover:bg-transparent">Name{getSortIcon('name')}</Button></TableHead>
+                                        <TableHead><Button variant="ghost" onClick={() => requestSort('address')} className="px-0 hover:bg-transparent">Address{getSortIcon('address')}</Button></TableHead>
+                                        <TableHead><Button variant="ghost" onClick={() => requestSort('phoneNo')} className="px-0 hover:bg-transparent">Contact{getSortIcon('phoneNo')}</Button></TableHead>
+                                        <TableHead><Button variant="ghost" onClick={() => requestSort('email')} className="px-0 hover:bg-transparent">Email{getSortIcon('email')}</Button></TableHead>
                                         <TableHead className="text-center">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>

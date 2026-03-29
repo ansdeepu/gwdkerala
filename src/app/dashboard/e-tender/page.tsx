@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { useDataStore } from '@/hooks/use-data-store';
-import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock, FolderOpen, Bell, Hammer, FileDown } from 'lucide-react';
+import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock, FolderOpen, Bell, Hammer, FileDown, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import ExcelJS from 'exceljs';
 
 const ITEMS_PER_PAGE = 50;
@@ -71,11 +71,41 @@ const StatCard = ({ title, count, onClick, colorClass, icon: Icon }: { title: st
     </button>
 );
 
+type WorkOrderRow = {
+    id: string;
+    slNo: number;
+    dateOfWorkOrder: string;
+    eTenderNo: string;
+    nameOfWork: string;
+    contractor: string;
+    supervisor: string;
+    quotedAmount?: number;
+    expectedDateOfCompletion: string;
+    isOverdue: boolean;
+};
+
+type WorkOrderSortKey = keyof WorkOrderRow;
+
+
 function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolean, onOpenChange: (open: boolean) => void, tenders: E_tender[] }) {
     const { allStaffMembers } = useDataStore();
     const { toast } = useToast();
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [sortConfig, setSortConfig] = useState<{ key: WorkOrderSortKey; direction: 'asc' | 'desc' } | null>(null);
+
+    const requestSort = (key: WorkOrderSortKey) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (key: WorkOrderSortKey) => {
+        if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-3 w-3 opacity-30 group-hover:opacity-100" />;
+        return sortConfig.direction === 'asc' ? <ArrowUp className="ml-2 h-3 w-3" /> : <ArrowDown className="ml-2 h-3 w-3" />;
+    };
 
     const workOrderData = useMemo(() => {
         let filteredTenders = tenders.filter(t => (t.presentStatus === 'Work Order Issued' || t.presentStatus === 'Supply Order Issued') && t.dateWorkOrder && t.periodOfCompletion);
@@ -104,7 +134,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             );
         };
 
-        return filteredTenders.map((tender, index) => {
+        let mappedData: WorkOrderRow[] = filteredTenders.map((tender, index) => {
                 const l1Bidder = getL1Bidder(tender);
                 const hasRejectedBids = tender.bidders?.some(b => b.status === 'Rejected');
                 const contractAmount = (hasRejectedBids && tender.agreedAmount) ? tender.agreedAmount : (l1Bidder ? l1Bidder.quotedAmount : undefined);
@@ -132,15 +162,32 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                     slNo: index + 1,
                     dateOfWorkOrder: tender.dateWorkOrder ? formatDateSafe(tender.dateWorkOrder) : 'N/A',
                     eTenderNo: tender.eTenderNo || 'N/A',
-                    nameOfWork: tender.nameOfWork,
-                    contractor: l1Bidder ? l1Bidder.name : 'N/A',
+                    nameOfWork: tender.nameOfWork || 'N/A',
+                    contractor: l1Bidder ? l1Bidder.name || 'N/A' : 'N/A',
                     supervisor: supervisorStaff || 'N/A',
                     quotedAmount: contractAmount,
                     expectedDateOfCompletion: expectedDateOfCompletion ? formatDateSafe(expectedDateOfCompletion) : 'N/A',
                     isOverdue,
                 };
             });
-    }, [tenders, allStaffMembers, startDate, endDate]);
+
+        if (sortConfig) {
+            mappedData.sort((a, b) => {
+                const aValue = a[sortConfig.key] || '';
+                const bValue = b[sortConfig.key] || '';
+
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+            
+        return mappedData;
+    }, [tenders, allStaffMembers, startDate, endDate, sortConfig]);
     
     const handleExportExcel = useCallback(async () => {
         if (workOrderData.length === 0) {
@@ -225,13 +272,13 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                             <TableHeader className="sticky top-0 bg-background z-10">
                                 <TableRow>
                                     <TableHead>Sl. No.</TableHead>
-                                    <TableHead>Date of Work Order</TableHead>
-                                    <TableHead>e-Tender No.</TableHead>
-                                    <TableHead>Name of Work</TableHead>
-                                    <TableHead>Contractor</TableHead>
-                                    <TableHead>Supervisor</TableHead>
-                                    <TableHead className="text-right">Quoted Amount</TableHead>
-                                    <TableHead>Expected Date of Completion</TableHead>
+                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateOfWorkOrder')}>Date of Work Order {getSortIcon('dateOfWorkOrder')}</Button></TableHead>
+                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>e-Tender No. {getSortIcon('eTenderNo')}</Button></TableHead>
+                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
+                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('contractor')}>Contractor {getSortIcon('contractor')}</Button></TableHead>
+                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('supervisor')}>Supervisor {getSortIcon('supervisor')}</Button></TableHead>
+                                    <TableHead className="text-right"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('quotedAmount')}>Quoted Amount {getSortIcon('quotedAmount')}</Button></TableHead>
+                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('expectedDateOfCompletion')}>Expected Date of Completion {getSortIcon('expectedDateOfCompletion')}</Button></TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -270,6 +317,8 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     );
 }
 
+type SortKey = keyof E_tender;
+
 
 export default function ETenderListPage() {
     const { setHeader } = usePageHeader();
@@ -291,6 +340,7 @@ export default function ETenderListPage() {
     const [dialogContent, setDialogContent] = useState<{ title: string; tenders: E_tender[] } | null>(null);
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
     const [isWorkOrderDialogOpen, setIsWorkOrderDialogOpen] = useState(false);
+    const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
 
 
     // State for L1 Leaderboard date filters
@@ -302,6 +352,19 @@ export default function ETenderListPage() {
     React.useEffect(() => {
         setHeader('e-Tenders', 'Manage all electronic tenders for the department.');
     }, [setHeader]);
+
+    const requestSort = (key: SortKey) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIcon = (key: SortKey) => {
+        if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-3 w-3 opacity-30 group-hover:opacity-100" />;
+        return sortConfig.direction === 'asc' ? <ArrowUp className="ml-2 h-3 w-3" /> : <ArrowDown className="ml-2 h-3 w-3" />;
+    };
     
     const categorizedTenders = useMemo(() => {
         const now = new Date();
@@ -421,23 +484,45 @@ export default function ETenderListPage() {
           filtered = filtered.filter(tender => tender._searchableContent.includes(lowercasedFilter));
         }
         
-        filtered.sort((a, b) => {
-            const dateA = toDateOrNull(a.tenderDate)?.getTime() ?? 0;
-            const dateB = toDateOrNull(b.tenderDate)?.getTime() ?? 0;
-            if (dateA !== dateB) return dateB - dateA;
-            
-            const getTenderNumber = (tenderNo: string | undefined | null): number => {
-                if (!tenderNo) return 0;
-                const match = tenderNo.match(/T-(\d+)/);
-                return match ? parseInt(match[1], 10) : 0;
-            };
-            const numA = getTenderNumber(a.eTenderNo);
-            const numB = getTenderNumber(b.eTenderNo);
-            return numB - numA;
-        });
+        if (sortConfig !== null) {
+            filtered.sort((a, b) => {
+                let aValue: any = a[sortConfig.key];
+                let bValue: any = b[sortConfig.key];
+                
+                if (sortConfig.key === 'tenderDate' || sortConfig.key === 'dateTimeOfReceipt' || sortConfig.key === 'dateTimeOfOpening') {
+                    aValue = toDateOrNull(aValue)?.getTime() ?? 0;
+                    bValue = toDateOrNull(bValue)?.getTime() ?? 0;
+                }
+        
+                if (aValue < bValue) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (aValue > bValue) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        } else {
+            // default sort
+            filtered.sort((a, b) => {
+                const dateA = toDateOrNull(a.tenderDate)?.getTime() ?? 0;
+                const dateB = toDateOrNull(b.tenderDate)?.getTime() ?? 0;
+                if (dateA !== dateB) return dateB - dateA;
+                
+                const getTenderNumber = (tenderNo: string | undefined | null): number => {
+                    if (!tenderNo) return 0;
+                    const match = tenderNo.match(/T-(\d+)/);
+                    return match ? parseInt(match[1], 10) : 0;
+                };
+                const numA = getTenderNumber(a.eTenderNo);
+                const numB = getTenderNumber(b.eTenderNo);
+                return numB - numA;
+            });
+        }
+
 
         return { filteredTenders: filtered, lastCreatedDate: lastCreated };
-    }, [allE_tenders, searchTerm, statusFilter, officeAddress]);
+    }, [allE_tenders, searchTerm, statusFilter, officeAddress, sortConfig]);
 
     const l1ContractorsData = useMemo(() => {
         const sDate = l1StartDate ? startOfDay(parse(l1StartDate, 'yyyy-MM-dd', new Date())) : null;
@@ -670,11 +755,11 @@ export default function ETenderListPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead className="w-[4%] px-2 py-3">Sl. No.</TableHead>
-                                        <TableHead className="w-[14%] px-2 py-3">eTender Ref. No.</TableHead>
-                                        <TableHead className="w-[42%] px-2 py-3">Name of Work</TableHead>
-                                        <TableHead className="w-[12%] px-2 py-3">Last Date of Receipt</TableHead>
-                                        <TableHead className="w-[12%] px-2 py-3">Date of Opening</TableHead>
-                                        <TableHead className="w-[8%] px-2 py-3">Status</TableHead>
+                                        <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>
+                                        <TableHead className="w-[42%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
+                                        <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
+                                        <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
+                                        <TableHead className="w-[8%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('presentStatus')}>Status {getSortIcon('presentStatus')}</Button></TableHead>
                                         <TableHead className="text-center w-[8%] px-2 py-3">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>

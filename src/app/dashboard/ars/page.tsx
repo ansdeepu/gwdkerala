@@ -25,12 +25,14 @@ import { usePageNavigation } from "@/hooks/usePageNavigation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDataStore } from '@/hooks/use-data-store';
-import { Loader2, Search, PlusCircle, Download, Eye, Trash2, XCircle, Clock, FileDown } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Download, Eye, Trash2, XCircle, Clock, FileDown, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 
 export const dynamic = 'force-dynamic';
 
 const ITEMS_PER_PAGE = 50;
+
+type SortKey = keyof ArsEntry;
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -135,6 +137,21 @@ export default function ArsPage() {
   
   const [isClearingAll, setIsClearingAll] = useState(false);
   const [isClearAllDialogOpen, setIsClearAllDialogOpen] = useState(false);
+
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
+
+  const requestSort = (key: SortKey) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: SortKey) => {
+    if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-3 w-3 opacity-30 group-hover:opacity-100" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp className="ml-2 h-3 w-3" /> : <ArrowDown className="ml-2 h-3 w-3" />;
+  };
   
   const handleAddNewClick = () => {
     setIsNavigating(true);
@@ -203,33 +220,47 @@ export default function ArsPage() {
       });
     }
     
-    sites.sort((a, b) => {
-        // Primary sort: Sanctioned Date (Descending)
-        const sanctionedA = a.arsSanctionedDate ? safeParseDate(a.arsSanctionedDate) : null;
-        const sanctionedB = b.arsSanctionedDate ? safeParseDate(b.arsSanctionedDate) : null;
-
-        if (sanctionedA && sanctionedB) {
-            if (sanctionedA.getTime() !== sanctionedB.getTime()) {
-                return sanctionedB.getTime() - sanctionedA.getTime();
-            }
-        } else if (sanctionedA) {
-            return -1;
-        } else if (sanctionedB) {
-            return 1;
+    if (sortConfig !== null) {
+      sites.sort((a, b) => {
+        let aValue: any = a[sortConfig.key];
+        let bValue: any = b[sortConfig.key];
+        
+        if (sortConfig.key === 'arsSanctionedDate' || sortConfig.key === 'dateOfCompletion' || sortConfig.key === 'createdAt') {
+            aValue = aValue ? safeParseDate(aValue)?.getTime() ?? 0 : 0;
+            bValue = bValue ? safeParseDate(bValue)?.getTime() ?? 0 : 0;
         }
 
-        // Secondary sort: Creation Date (Descending)
-        const dateA = a.createdAt ? safeParseDate(a.createdAt) : null;
-        const dateB = b.createdAt ? safeParseDate(b.createdAt) : null;
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    } else {
+        sites.sort((a, b) => {
+            const sanctionedA = a.arsSanctionedDate ? safeParseDate(a.arsSanctionedDate) : null;
+            const sanctionedB = b.arsSanctionedDate ? safeParseDate(b.arsSanctionedDate) : null;
 
-        if (!dateA && !dateB) return 0;
-        if (!dateA) return 1;
-        if (!dateB) return -1;
-        if (!isValid(dateA)) return 1;
-        if (!isValid(dateB)) return -1;
+            if (sanctionedA && sanctionedB) {
+                if (sanctionedA.getTime() !== sanctionedB.getTime()) {
+                    return sanctionedB.getTime() - sanctionedA.getTime();
+                }
+            } else if (sanctionedA) {
+                return -1;
+            } else if (sanctionedB) {
+                return 1;
+            }
 
-        return dateB.getTime() - dateA.getTime();
-    });
+            const dateA = a.createdAt ? safeParseDate(a.createdAt) : null;
+            const dateB = b.createdAt ? safeParseDate(b.createdAt) : null;
+
+            if (!dateA && !dateB) return 0;
+            if (!dateA) return 1;
+            if (!dateB) return -1;
+            if (!isValid(dateA)) return 1;
+            if (!isValid(dateB)) return -1;
+
+            return dateB.getTime() - dateA.getTime();
+        });
+    }
 
     const lastCreated = sites.reduce((latest, entry) => {
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
@@ -240,7 +271,7 @@ export default function ArsPage() {
     }, null as Date | null);
 
     return { filteredSites: sites, lastCreatedDate: lastCreated };
-  }, [arsEntries, searchTerm, startDate, endDate, schemeTypeFilter, constituencyFilter]);
+  }, [arsEntries, searchTerm, startDate, endDate, schemeTypeFilter, constituencyFilter, sortConfig]);
 
   useEffect(() => {
     const newTotalPages = Math.ceil(filteredSites.length / ITEMS_PER_PAGE);
@@ -640,12 +671,12 @@ export default function ArsPage() {
                         <TableHeader className="bg-secondary sticky top-0">
                             <TableRow>
                                 <TableHead>Sl. No.</TableHead>
-                                <TableHead>File No</TableHead>
-                                <TableHead>Name of Site</TableHead>
-                                <TableHead>Type of Scheme</TableHead>
-                                <TableHead>Local Self Govt.</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Completion Date</TableHead>
+                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('fileNo')}>File No {getSortIcon('fileNo')}</Button></TableHead>
+                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfSite')}>Name of Site {getSortIcon('nameOfSite')}</Button></TableHead>
+                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('arsTypeOfScheme')}>Type of Scheme {getSortIcon('arsTypeOfScheme')}</Button></TableHead>
+                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('localSelfGovt')}>Local Self Govt. {getSortIcon('localSelfGovt')}</Button></TableHead>
+                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('arsStatus')}>Status {getSortIcon('arsStatus')}</Button></TableHead>
+                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateOfCompletion')}>Completion Date {getSortIcon('dateOfCompletion')}</Button></TableHead>
                                 <TableHead className="text-center w-[120px]">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
