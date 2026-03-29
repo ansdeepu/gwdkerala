@@ -1,4 +1,3 @@
-
 // src/components/investigation/InvestigationDataEntryForm.tsx
 "use client";
 

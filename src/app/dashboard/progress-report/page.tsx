@@ -1,4 +1,3 @@
-
 // src/app/dashboard/progress-report/page.tsx
 "use client";
 
@@ -928,7 +927,6 @@ export default function ProgressReportPage() {
                 <Card>
                     <CardHeader><CardTitle>Financial Summary - Government & Other Applications</CardTitle><CardDescription>A summary of financial and application counts for each purpose within the selected period.</CardDescription></CardHeader>
                     <CardContent><FinancialSummaryTable data={reportData.governmentFinancialSummaryData} onCellClick={(dataType, purpose, data, title) => handleCountClick(data, title)} onTotalClick={(type) => handleFinancialTotalClick(type, reportData.governmentFinancialSummaryData, "Government")} category="Government" /></CardContent>
-                </Card>
 
                 <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="revenue-head" className="border rounded-lg bg-background/50 shadow-inner overflow-hidden">
@@ -986,6 +984,7 @@ export default function ProgressReportPage() {
                         </AccordionContent>
                     </AccordionItem>
                 </Accordion>
+                </Card>
             </>
             ) : (
                 <div className="flex items-center justify-center py-10 border-2 border-dashed rounded-lg"><p className="text-muted-foreground">Select a date range and click "Generate Report" to view progress.</p></div>

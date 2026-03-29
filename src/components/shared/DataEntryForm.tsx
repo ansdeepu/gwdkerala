@@ -1,4 +1,3 @@
-
 // src/components/shared/DataEntryForm.tsx
 "use client";
 
@@ -35,6 +34,7 @@ import {
   siteDiameterOptions,
   siteTypeOfRigOptions,
   allFileStatusOptions,
+  fileStatusOptions,
   remittedAccountOptions,
   paymentAccountOptions,
   type RemittanceDetailFormData,
