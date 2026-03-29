@@ -470,7 +470,7 @@ export default function ProgressReportPage() {
                 statsObj.completed++; 
                 statsObj.completedData.push(siteWithFileContext); 
                 
-                // Track Feasibility for completed investigations
+                // Track Feasibility for investigations
                 if (purpose === 'GW Investigation' || LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(purpose as any)) {
                     if (site.feasibility === 'Yes') {
                         statsObj.feasible++;
@@ -653,7 +653,20 @@ export default function ProgressReportPage() {
     setEndDate(endOfMonth(today));
   };
   
-  const handleExportExcel = async () => { /* Excel export logic stays as-is */ };
+  const handleExportExcel = async () => { 
+    if (!reportData) return;
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Summary');
+    worksheet.addRow(['Service Type', 'Prev Balance', 'Current App', 'Refunded', 'Total App', 'Completed', 'Balance']).font = { bold: true };
+    REPORTING_PURPOSE_ORDER.forEach(p => {
+        const s = reportData.progressSummaryData[p as SitePurpose];
+        if (s && (s.totalApplications > 0 || s.previousBalance > 0)) {
+            worksheet.addRow([p, s.previousBalance, s.currentApplications, s.toBeRefunded, s.totalApplications, s.completed, s.balance]);
+        }
+    });
+    const buffer = await workbook.xlsx.writeBuffer();
+    download(buffer, `Progress_Summary_${format(new Date(), 'yyyyMMdd')}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  };
   
     const handleGeneratePdfReport = async () => {
     if (!reportData) {

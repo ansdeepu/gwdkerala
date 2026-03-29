@@ -114,6 +114,59 @@ const toDateOrNull = (value: any): Date | null => {
     return null;
  };
 
+const processDataForForm = (data: any): any => {
+    const transform = (obj: any): any => {
+      if (obj === null || obj === undefined) return obj;
+  
+      if (obj instanceof Timestamp) {
+        return obj.toDate();
+      }
+  
+      if (Array.isArray(obj)) {
+        return obj.map(transform);
+      }
+  
+      if (typeof obj === 'object' && !(obj instanceof Date)) {
+        const newObj: { [key: string]: any } = {};
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            newObj[key] = transform(obj[key]);
+          }
+        }
+        return newObj;
+      }
+      
+      return obj;
+    };
+  
+    const fullyProcessed = transform(data);
+  
+    const formatForInput = (obj: any): any => {
+       if (obj === null || obj === undefined) return obj;
+       if (Array.isArray(obj)) return obj.map(formatForInput);
+  
+       if (typeof obj === 'object' && !(obj instanceof Date)) {
+          const newObj: { [key: string]: any } = {};
+          const dateInputKeys = ['dateOfRemittance', 'dateOfPayment', 'dateOfCompletion', 'dateOfInvestigation', 'vesDate', 'arsSanctionedDate', 'serviceStartDate', 'serviceEndDate', 'dateOfBirth', 'date'];
+  
+          for (const key in obj) {
+              if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                  const value = obj[key];
+                  if (dateInputKeys.includes(key) && value instanceof Date) {
+                      newObj[key] = format(value, 'yyyy-MM-dd');
+                  } else {
+                      newObj[key] = formatForInput(value);
+                  }
+              }
+          }
+          return newObj;
+       }
+       return obj;
+    };
+  
+    return formatForInput(fullyProcessed);
+  };
+
 const createDefaultRemittanceDetail = (): RemittanceDetailFormData => ({ id: uuidv4(), amountRemitted: undefined, dateOfRemittance: "", remittedAccount: "Bank", remittanceRemarks: "" });
 const createDefaultReappropriationDetail = (): ReappropriationDetailFormData => ({ type: "Outward", refFileNo: "", amount: undefined, date: "", remarks: "", pageType: "GW Investigation", fileDetails: "" });
 const createDefaultPaymentDetail = (): PaymentDetailFormData => ({
@@ -554,7 +607,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                 <Button type="submit">Save</Button>
             </DialogFooter>
         </form>
-      </Form>
+    </Form>
     );
 };
 
@@ -996,7 +1049,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
                 <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>
                 <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
                 <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor || isInvestigator}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{INVESTIGATION_FILE_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor || isInvestigator} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
+                <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor || isInvestigator}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{INVESTIGATION_FILE_STATUS_OPTIONS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor || isInvestigator} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
             <CardFooter className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}>
                     <X className="mr-2 h-4 w-4" /> Close
