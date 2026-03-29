@@ -330,6 +330,8 @@ export const allFileStatusOptions = [
   "Completed",
   "Under Process"
 ] as const;
+export type FileStatus = (typeof allFileStatusOptions)[number];
+export const fileStatusOptions = allFileStatusOptions;
 
 export const INVESTIGATION_FILE_STATUS_OPTIONS = ["File Under Process", "Pending", "VES Pending", "Completed", "File Closed"] as const;
 export const LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS = ["Under Process", "Completed"] as const;
@@ -572,13 +574,22 @@ export const DataEntrySchema = z.object({
   }),
   remarks: z.string().optional().nullable(),
 }).superRefine((data, ctx) => {
+  // This validation should only apply if there's a financial commitment via site estimates.
+  const hasSitesWithEstimates = data.siteDetails?.some(site => site.estimateAmount && site.estimateAmount > 0);
+
+  // If there are no sites with estimates, we don't need to enforce funding yet.
+  // This allows creating a file shell that can receive re-appropriations later.
+  if (!hasSitesWithEstimates) {
+      return;
+  }
+
   const hasRemittances = data.remittanceDetails && data.remittanceDetails.length > 0;
   const hasReappCredit = data.totalReappropriationCredit && data.totalReappropriationCredit > 0;
 
   if (!hasRemittances && !hasReappCredit) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "At least one Remittance or an inward Re-appropriation is required.",
+      message: "A file with site estimates must have funding from at least one Remittance or an inward Re-appropriation.",
       path: ["remittanceDetails"], 
     });
   }
@@ -706,6 +717,3 @@ export const GwdRateItemSchema = GwdRateItemFormDataSchema.extend({
   category: z.enum(gwdRateCategories).optional(),
 });
 export type GwdRateItem = z.infer<typeof GwdRateItemSchema>;
-
-export type FileStatus = typeof allFileStatusOptions[number];
-export const fileStatusOptions = allFileStatusOptions;
