@@ -331,9 +331,6 @@ export const allFileStatusOptions = [
   "Under Process"
 ] as const;
 
-export const fileStatusOptions = allFileStatusOptions;
-export type FileStatus = (typeof allFileStatusOptions)[number];
-
 export const INVESTIGATION_FILE_STATUS_OPTIONS = ["File Under Process", "Pending", "VES Pending", "Completed", "File Closed"] as const;
 export const LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS = ["Under Process", "Completed"] as const;
 
@@ -560,7 +557,7 @@ export const DataEntrySchema = z.object({
   estimateAmount: optionalNumber(),
   assignedSupervisorUids: z.array(z.string()).optional(),
   officeLocation: z.string().optional().nullable(),
-  remittanceDetails: z.array(RemittanceDetailSchema).min(1, "Remittance required."),
+  remittanceDetails: z.array(RemittanceDetailSchema),
   totalRemittance: z.coerce.number().optional(),
   reappropriationDetails: z.array(ReappropriationDetailSchema).optional().default([]),
   totalReappropriation: z.coerce.number().optional().default(0),
@@ -569,11 +566,22 @@ export const DataEntrySchema = z.object({
   paymentDetails: z.array(PaymentDetailSchema).optional(),
   totalPaymentAllEntries: z.coerce.number().optional(),
   overallBalance: z.coerce.number().optional(),
-  fileStatus: z.enum(allFileStatusOptions as unknown as [string, ...string[]], {
+  fileStatus: z.enum(allFileStatusOptions as [string, ...string[]], {
     required_error: "File Status is required.",
     invalid_type_error: "Please select a valid file status."
   }),
   remarks: z.string().optional().nullable(),
+}).superRefine((data, ctx) => {
+  const hasRemittances = data.remittanceDetails && data.remittanceDetails.length > 0;
+  const hasReappCredit = data.totalReappropriationCredit && data.totalReappropriationCredit > 0;
+
+  if (!hasRemittances && !hasReappCredit) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one Remittance or an inward Re-appropriation is required.",
+      path: ["remittanceDetails"], 
+    });
+  }
 });
 export type DataEntryFormData = z.infer<typeof DataEntrySchema>;
 
@@ -698,3 +706,6 @@ export const GwdRateItemSchema = GwdRateItemFormDataSchema.extend({
   category: z.enum(gwdRateCategories).optional(),
 });
 export type GwdRateItem = z.infer<typeof GwdRateItemSchema>;
+
+export type FileStatus = typeof allFileStatusOptions[number];
+export const fileStatusOptions = allFileStatusOptions;
