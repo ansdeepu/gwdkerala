@@ -954,7 +954,7 @@ export default function ProgressReportPage() {
                                 <TableBody>
                                     {Object.entries(reportData.revenueHeadBreakdown as Record<string, { total: number; data: any[] }>)
                                         .filter(([_, data]) => data.total > 0)
-                                        .sort((a, b) => b[1].total - a[1].total)
+                                        .sort((a: [string, any], b: [string, any]) => b[1].total - a[1].total)
                                         .map(([purpose, data]) => (
                                             <TableRow key={purpose}>
                                                 <TableCell className="font-medium pl-6">{purpose}</TableCell>

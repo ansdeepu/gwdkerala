@@ -409,6 +409,7 @@ export const ArsEntrySchema = z.object({
   estimateAmount: optionalNumber(),
   arsAsTsDetails: optionalStringSchema,
   arsSanctionedDate: optionalDateSchema,
+  stats: optionalNumber(),
   tsAmount: optionalNumber(),
   arsTenderNo: optionalStringSchema,
   arsTenderedAmount: optionalNumber(),
