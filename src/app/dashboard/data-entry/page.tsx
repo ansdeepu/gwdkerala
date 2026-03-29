@@ -60,7 +60,8 @@ const toDateOrNull = (value: any): Date | null => {
         const newObj: { [key: string]: any } = {};
         for (const key in obj) {
           if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            newObj[key] = transform(obj[key]);
+            const value = obj[key];
+            newObj[key] = transform(value);
           }
         }
         return newObj;
@@ -259,7 +260,7 @@ export default function DataEntryPage() {
                 }
             }
             
-            const { createdAt, updatedAt, ...restOfData } = dataForForm;
+            const { createdAt, updatedAt, ...restOfData } = dataForForm as any;
             setFileNoForHeader(dataForForm.fileNo);
             setPageData({ initialData: processDataForForm(restOfData) });
 

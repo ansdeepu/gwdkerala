@@ -1,3 +1,4 @@
+
 // src/lib/schemas/DataEntrySchema.ts
 import { z } from 'zod';
 import { format, parse, isValid } from 'date-fns';
@@ -525,7 +526,12 @@ export const SiteDetailSchema = z.object({
 });
 export type SiteDetailFormData = z.infer<typeof SiteDetailSchema>;
 
-const allFileStatusOptions = [...new Set([...fileStatusOptions, ...INVESTIGATION_FILE_STATUS_OPTIONS, ...LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS])];
+// Fix for non-empty literal array requirement
+const enumOptions = fileStatusOptions.length > 0 ? fileStatusOptions : ["File Under Process" as const];
+const investigationEnumOptions = INVESTIGATION_FILE_STATUS_OPTIONS.length > 0 ? INVESTIGATION_FILE_STATUS_OPTIONS : ["File Under Process" as const];
+const loggingEnumOptions = LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS.length > 0 ? LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS : ["Under Process" as const];
+
+const allFileStatusOptions = [...new Set([...enumOptions, ...investigationEnumOptions, ...loggingEnumOptions])] as [string, ...string[]];
 
 export const DataEntrySchema = z.object({
   id: z.string().optional(),

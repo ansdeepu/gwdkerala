@@ -270,11 +270,11 @@ export function useFileEntries() {
         return null;
       }
       
-      let entry = { id: docSnap.id, ...(docSnap.data()) } as DataEntryFormData;
+      let entry = { id: docSnap.id, ...(docSnap.data()) } as any;
 
       // Visibility check for Supervisors and Investigators on direct fetch
       if (user.role === 'supervisor' || user.role === 'investigator') {
-          const isAssigned = entry.siteDetails?.some(site => {
+          const isAssigned = entry.siteDetails?.some((site: any) => {
               if (user.role === 'supervisor') {
                   const isAssignedByUid = site.supervisorUid === user.uid;
                   const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
@@ -294,7 +294,7 @@ export function useFileEntries() {
           }
       }
 
-      return entry;
+      return entry as DataEntryFormData;
     } catch (error) {
       console.error(`[fetchEntryForEditing] Error fetching docId ${docId}:`, error);
       return null;

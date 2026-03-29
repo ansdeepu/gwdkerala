@@ -810,7 +810,7 @@ export default function ProgressReportPage() {
         bwc110Balance, bwc150Balance, twc150Balance, twc200Balance, fpwBalance
       } = useMemo(() => {
           if (!reportData) return {};
-          const calculateTotalBalanceForDiameter = (data: Record<string, any> = {}, diameter: string) => Object.values(data).reduce((acc, stats) => acc + (stats[diameter]?.balance || 0), 0);
+          const calculateTotalBalanceForDiameter = (data: Record<string, any> = {}, diameter: string) => Object.values(data).reduce((acc, stats) => acc + ((stats as any)[diameter]?.balance || 0), 0);
           
           return {
               gwInvestigationBalance: reportData.progressSummaryData['GW Investigation']?.balance || 0,
@@ -954,7 +954,7 @@ export default function ProgressReportPage() {
                                 <TableBody>
                                     {Object.entries(reportData.revenueHeadBreakdown)
                                         .filter(([_, data]: any) => data.total > 0)
-                                        .sort((a, b) => b[1].total - a[1].total)
+                                        .sort((a, b) => (b[1] as any).total - (a[1] as any).total)
                                         .map(([purpose, data]: any) => (
                                             <TableRow key={purpose}>
                                                 <TableCell className="font-medium pl-6">{purpose}</TableCell>

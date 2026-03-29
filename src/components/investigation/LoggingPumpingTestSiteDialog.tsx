@@ -1,3 +1,4 @@
+
 // src/components/investigation/LoggingPumpingTestSiteDialog.tsx
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -122,11 +123,11 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
     }, [watchedLsg, allLsgConstituencyMaps]);
 
     const isConstituencyDisabled = useMemo(() => {
-        if (isReadOnly || isInvestigator || isSupervisor) return true;
+        if (isFieldReadOnly('constituency')) return true;
         if (!watchedLsg) return true;
         if (constituencyOptionsForLsg.length <= 1) return true;
         return false;
-    }, [isReadOnly, isInvestigator, isSupervisor, watchedLsg, constituencyOptionsForLsg]);
+    }, [isFieldReadOnly, watchedLsg, constituencyOptionsForLsg]);
 
     const isCompletionDateRequired = watchedWorkStatus === 'Completed';
 
@@ -151,14 +152,14 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     <FormField name="nameOfSite" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Name of Site <span className="text-destructive">*</span></FormLabel>
-                                            <FormControl><Input {...field} value={field.value ?? ''} readOnly={isReadOnly || isInvestigator || isSupervisor} /></FormControl>
+                                            <FormControl><Input {...field} value={field.value ?? ''} readOnly={isFieldReadOnly('nameOfSite')} /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
                                     <FormField name="purpose" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Purpose <span className="text-destructive">*</span></FormLabel>
-                                            <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isReadOnly || isInvestigator || isSupervisor}>
+                                            <Select onValueChange={(val) => field.onChange(val === '_clear_' ? undefined : val)} value={field.value || ""} disabled={isFieldReadOnly('purpose')}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder="Select Purpose" /></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
                                                     <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -171,7 +172,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                     <FormField name="localSelfGovt" control={control} render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Local Self Govt. <span className="text-destructive">*</span></FormLabel>
-                                            <Select onValueChange={(value) => handleLsgChange(value, field.onChange)} value={field.value || ""} disabled={isReadOnly || isInvestigator || isSupervisor}>
+                                            <Select onValueChange={(value) => handleLsgChange(value, field.onChange)} value={field.value || ""} disabled={isFieldReadOnly('localSelfGovt')}>
                                                 <FormControl><SelectTrigger><SelectValue placeholder="Select LSG" /></SelectTrigger></FormControl>
                                                 <SelectContent className="max-h-80">
                                                     <SelectItem value="_clear_">-- Clear Selection --</SelectItem>
@@ -206,7 +207,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                         <FormField name="typeOfWell" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Type of Well <span className="text-destructive">*</span></FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isFieldReadOnly(false)}>
+                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isFieldReadOnly('typeOfWell')}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Well Type" /></SelectTrigger></FormControl>
                                                     <SelectContent>{typeOfWellOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
                                                 </Select>
@@ -216,7 +217,7 @@ export default function LoggingPumpingTestSiteDialog({ initialData, onConfirm, o
                                         <FormField name="nameOfInvestigator" control={control} render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Name of Staff</FormLabel>
-                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isFieldReadOnly(false)}>
+                                                <Select onValueChange={field.onChange} value={field.value || ''} disabled={isFieldReadOnly('nameOfInvestigator')}>
                                                     <FormControl><SelectTrigger><SelectValue placeholder="Select Staff Member" /></SelectTrigger></FormControl>
                                                     <SelectContent className="max-h-80">
                                                         {investigatorList.map(s => <SelectItem key={s.id} value={s.name}>{s.name} ({s.designation})</SelectItem>)}
