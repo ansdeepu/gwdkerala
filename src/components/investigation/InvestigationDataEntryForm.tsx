@@ -33,7 +33,7 @@ import {
   type SitePurpose,
   siteDiameterOptions,
   siteTypeOfRigOptions,
-  allFileStatusOptions,
+  fileStatusOptions,
   remittedAccountOptions,
   type RemittanceDetailFormData,
   RemittanceDetailSchema,
@@ -412,7 +412,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
                     <FormField name="amountRemitted" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹)</FormLabel><FormControl><Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
                     <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl>
-                        <SelectContent>{availableRemittanceAccounts.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
+                        <SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
                 </div>
                 <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{category === 'Complaints' ? 'Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
@@ -551,7 +551,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                 <Button type="submit">Save</Button>
             </DialogFooter>
         </form>
-    </Form>
+      </Form>
     );
 };
 
@@ -571,8 +571,6 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
 
     const isLinkedToRemittance = !!initialData?.remittanceId;
 
-    const availablePaymentAccounts = ["Bank", "STSB"];
-
     return (
         <Form {...form}>
              <form onSubmit={(e) => { e.preventDefault(); e.stopPropagation(); form.handleSubmit(handleConfirmSubmit)(e); }}>
@@ -584,9 +582,7 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                       <div className="space-y-4">
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <FormField name="dateOfPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Date of Payment <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} value={field.value ?? ''} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
-                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl>
-                                <SelectContent>{availablePaymentAccounts.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+                              <FormField name="paymentAccount" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Account <span className="text-destructive">*</span></FormLabel><FormControl><Input {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem>} />
                           </div>
                           <Separator/>
                             <FormField 
@@ -694,11 +690,14 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
                 if (hasInvestigation && !hasLoggingPumping) sourcePageType = "GW Investigation";
                 else if (hasLoggingPumping && !hasInvestigation) sourcePageType = "Logging & Pumping Test";
 
+                const parentRemittanceAccount = entry.remittanceDetails?.[0]?.remittedAccount || 'N/A';
+
                 credits.push({
                     ...reapp,
                     sourceFileNo: entry.fileNo,
                     sourceApplicantName: entry.applicantName,
-                    sourcePageType: sourcePageType
+                    sourcePageType: sourcePageType,
+                    parentRemittanceAccount: parentRemittanceAccount
                 });
             }
         });
@@ -947,7 +946,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
               </TableRow>)) : <TableRow><TableCell colSpan={5} className="text-center h-24">No remittance details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={isEditor && !isFormDisabled ? 4 : 3} className="text-right font-bold">Total Remittance</TableCell><TableCell className="font-bold text-right">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
 
               <Accordion type="single" collapsible className="w-full" value={reappAccordionValue} onValueChange={setReappAccordionValue}><AccordionItem value="reappropriation-details" className="border-b-0"><Card><AccordionTrigger className="w-full p-6 hover:no-underline [&[data-state=open]]:border-b"><div className="flex flex-1 items-center justify-between"><CardTitle className="text-xl">3. Re-appropriation Details</CardTitle>{isEditor && !isFormDisabled && (<Button type="button" variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); openDialog('reappropriation', createDefaultReappropriationDetail()); }} disabled={isSupervisor || isInvestigator || isViewer}><PlusCircle className="h-4 w-4 mr-2" />Add</Button>)}</div></AccordionTrigger><AccordionContent><CardContent className="pt-6"><div className="relative max-h-[400px] overflow-auto"><Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Type of Page</TableHead><TableHead>File No</TableHead><TableHead>File Details</TableHead><TableHead className="text-right">Credit</TableHead><TableHead className="text-right">Debit</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{sortedCombinedReappropriations.length > 0 ? sortedCombinedReappropriations.map((item, index) => {
-                  if (item._source === 'auto') return (<TableRow key={`credit-${index}`} className="bg-green-50/50"><TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell><TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell><TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell><TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-bold text-muted-foreground">-</TableCell><TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>{isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}</TableRow>);
+                  if (item._source === 'auto') return (<TableRow key={`credit-${index}`} className="bg-green-50/50"><TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell><TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell><TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}<br/><span className="font-semibold text-muted-foreground">({item.parentRemittanceAccount})</span></TableCell><TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell><TableCell className="text-right font-bold text-muted-foreground">-</TableCell><TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>{isEditor && !isFormDisabled && <TableCell className="text-center"><TooltipProvider><Tooltip><TooltipTrigger asChild><Info className="h-4 w-4 text-muted-foreground mx-auto" /></TooltipTrigger><TooltipContent><p>Inward transfer from another file. Non-editable.</p></TooltipContent></Tooltip></TooltipProvider></TableCell>}</TableRow>);
                   else return (<TableRow key={item.id}><TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell><TableCell className="text-xs">{item.pageType || 'N/A'}</TableCell><TableCell className="font-mono text-xs">{item.refFileNo}</TableCell><TableCell className="text-xs">{item.fileDetails || 'N/A'}</TableCell><TableCell className="text-right font-bold text-muted-foreground">-</TableCell><TableCell className="text-right font-bold text-red-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell><TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>{isEditor && !isFormDisabled && <TableCell><div className="flex gap-1"><Button type="button" variant="ghost" size="icon" onClick={() => openDialog('reappropriation', { index: item._originalIndex, ...item })} disabled={isSupervisor || isInvestigator || isViewer}><Eye className="h-4 w-4"/></Button><Button type="button" variant="ghost" size="icon" className="text-destructive" onClick={() => setItemToDelete({type: 'reappropriation', index: item._originalIndex})} disabled={isSupervisor || isInvestigator || isViewer}><Trash2 className="h-4 w-4"/></Button></div></TableCell>}</TableRow>);
                   }) : <TableRow><TableCell colSpan={8} className="text-center h-24">No re-appropriation details added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={4} className="text-right font-bold">Totals</TableCell><TableCell className="text-right text-green-600 font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell><TableCell className="text-right text-red-600 font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell><TableCell colSpan={isEditor && !isFormDisabled ? 2 : 1} className="text-right font-bold">Balance: <span className={cn((totalReappropriationCreditWatched - totalReappropriationWatched) >= 0 ? "text-green-600" : "text-red-600")}>₹{Math.abs(totalReappropriationCreditWatched - totalReappropriationWatched).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></TableCell></TableRow></TableFooterComponent></Table></div></CardContent></AccordionContent></Card></AccordionItem></Accordion>
             

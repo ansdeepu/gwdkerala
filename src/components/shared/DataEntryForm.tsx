@@ -34,7 +34,6 @@ import {
   siteDiameterOptions,
   siteTypeOfRigOptions,
   allFileStatusOptions,
-  fileStatusOptions,
   remittedAccountOptions,
   paymentAccountOptions,
   type RemittanceDetailFormData,
@@ -656,11 +655,14 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 if (hasInvestigation && !hasLoggingPumping) sourcePageType = "GW Investigation";
                 else if (hasLoggingPumping && !hasInvestigation) sourcePageType = "Logging & Pumping Test";
 
+                const parentRemittanceAccount = entry.remittanceDetails?.[0]?.remittedAccount || 'N/A';
+
                 credits.push({
                     ...reapp,
                     sourceFileNo: entry.fileNo,
                     sourceApplicantName: entry.applicantName,
-                    sourcePageType: sourcePageType
+                    sourcePageType: sourcePageType,
+                    parentRemittanceAccount: parentRemittanceAccount
                 });
             }
         });
@@ -949,7 +951,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                                                 <TableCell className="whitespace-nowrap">{item.date ? format(new Date(item.date), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                                                 <TableCell className="text-xs">{item.sourcePageType || 'N/A'}</TableCell>
                                                 <TableCell className="font-mono text-xs">{item.sourceFileNo}</TableCell>
-                                                <TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}</TableCell>
+                                                <TableCell className="text-xs">{item.sourceApplicantName || 'N/A'}<br/><span className="font-semibold text-muted-foreground">({item.parentRemittanceAccount})</span></TableCell>
                                                 <TableCell className="text-right font-bold text-green-600">{(Number(item.amount) || 0).toLocaleString('en-IN')}</TableCell>
                                                 <TableCell className="text-right font-bold text-muted-foreground">-</TableCell>
                                                 <TableCell className="text-xs italic max-w-[150px] truncate">{item.remarks}</TableCell>
@@ -1035,7 +1037,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>
                 <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
                 <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{allFileStatusOptions.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
+                <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{allFileStatusOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
             <CardFooter className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}>
                     <X className="mr-2 h-4 w-4" /> Close
