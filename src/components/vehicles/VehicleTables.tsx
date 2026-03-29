@@ -1,3 +1,4 @@
+
 // src/components/vehicles/VehicleTables.tsx
 "use client";
 
@@ -246,27 +247,13 @@ export function DepartmentVehicleTable({ data, onEdit, onDelete, canEdit, onView
                 <TableHeader>
                     <TableRow>
                         <TableHead className="p-2 text-sm">Sl. No</TableHead>
-                        <TableHead className="p-2 text-sm min-w-[250px]">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Vehicle Details <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Fuel Consumption <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Fitness <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Tax <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Insurance <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Pollution <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Fuel Test <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
+                        <TableHead className="p-2 text-sm min-w-[250px]">Vehicle Details</TableHead>
+                        <TableHead className="p-2 text-sm">Fuel Consumption</TableHead>
+                        <TableHead className="p-2 text-sm">Fitness</TableHead>
+                        <TableHead className="p-2 text-sm">Tax</TableHead>
+                        <TableHead className="p-2 text-sm">Insurance</TableHead>
+                        <TableHead className="p-2 text-sm">Pollution</TableHead>
+                        <TableHead className="p-2 text-sm">Fuel Test</TableHead>
                         {canEdit && <TableHead className="text-right p-2 text-sm">Actions</TableHead>}
                     </TableRow>
                 </TableHeader>
@@ -336,30 +323,14 @@ export function HiredVehicleTable({ data, onEdit, onDelete, canEdit, onView }: H
                 <TableHeader>
                     <TableRow>
                         <TableHead className="p-2 text-sm">Sl. No</TableHead>
-                        <TableHead className="p-2 text-sm min-w-[250px]">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Vehicle Details <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Agreement Validity <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Hire Charges <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Fitness <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Tax <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Insurance <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Pollution <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Permit <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
+                        <TableHead className="p-2 text-sm min-w-[250px]">Vehicle Details</TableHead>
+                        <TableHead className="p-2 text-sm">Agreement Validity</TableHead>
+                        <TableHead className="p-2 text-sm">Hire Charges</TableHead>
+                        <TableHead className="p-2 text-sm">Fitness</TableHead>
+                        <TableHead className="p-2 text-sm">Tax</TableHead>
+                        <TableHead className="p-2 text-sm">Insurance</TableHead>
+                        <TableHead className="p-2 text-sm">Pollution</TableHead>
+                        <TableHead className="p-2 text-sm">Permit</TableHead>
                         {canEdit && <TableHead className="text-right p-2 text-sm">Actions</TableHead>}
                     </TableRow>
                 </TableHeader>
@@ -429,18 +400,10 @@ export function RigCompressorTable({ data, onEdit, onDelete, canEdit, onView }: 
                 <TableHeader>
                     <TableRow>
                         <TableHead className="p-2 text-sm whitespace-normal">Sl. No</TableHead>
-                        <TableHead className="p-2 text-sm whitespace-normal">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Type of Rig Unit <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm whitespace-normal">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Rig Vehicle Reg. No <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm whitespace-normal">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Compressor Vehicle Reg. No <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm whitespace-normal">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Supporting Vehicle Reg. No <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
+                        <TableHead className="p-2 text-sm whitespace-normal">Type of Rig Unit</TableHead>
+                        <TableHead className="p-2 text-sm whitespace-normal">Rig Vehicle Reg. No</TableHead>
+                        <TableHead className="p-2 text-sm whitespace-normal">Compressor Vehicle Reg. No</TableHead>
+                        <TableHead className="p-2 text-sm whitespace-normal">Supporting Vehicle Reg. No</TableHead>
                         <TableHead className="p-2 text-sm whitespace-normal">Compressor Details</TableHead>
                         {canEdit && <TableHead className="text-right p-2 text-sm whitespace-normal">Actions</TableHead>}
                     </TableRow>
@@ -503,12 +466,8 @@ export function EngagedRigTable({ data, onEdit, onDelete, canEdit, onView }: Rig
                 <TableHeader>
                     <TableRow>
                         <TableHead className="p-2 text-sm w-[80px]">Sl. No</TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Office <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
-                        <TableHead className="p-2 text-sm">
-                          <Button variant="ghost" className="px-0 hover:bg-transparent">Type of Rig <ArrowUpDown className="ml-2 h-4 w-4" /></Button>
-                        </TableHead>
+                        <TableHead className="p-2 text-sm">Office</TableHead>
+                        <TableHead className="p-2 text-sm">Type of Rig</TableHead>
                         {canEdit && <TableHead className="text-right p-2 text-sm">Actions</TableHead>}
                     </TableRow>
                 </TableHeader>
