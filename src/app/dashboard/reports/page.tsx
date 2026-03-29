@@ -1,17 +1,26 @@
-
 // src/app/dashboard/reports/page.tsx
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { format, parseISO, startOfDay, endOfDay, isValid, parse } from "date-fns";
+import React, { useState, useMemo, useEffect } from "react";
 import ReportTable from "@/components/reports/ReportTable";
+import { Card, CardContent } from "@/components/ui/card";
+import { useFileEntries } from "@/hooks/useFileEntries";
+import { usePageHeader } from "@/hooks/usePageHeader";
+import { useSearchParams, useRouter } from "next/navigation";
 import PaginationControls from "@/components/shared/PaginationControls";
+import { useAuth } from "@/hooks/useAuth";
+import type { SiteWorkStatus, DataEntryFormData, ApplicationType } from '@/lib/schemas';
 import { 
+  applicationTypeDisplayMap,
+  fileStatusOptions, 
+  siteWorkStatusOptions, 
+  sitePurposeOptions, 
+  applicationTypeOptions, 
+  siteTypeOfRigOptions,
+  constituencyOptions,
+} from '@/lib/schemas';
+import { format, parseISO, startOfDay, endOfDay, isValid, parse } from "date-fns";
+import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
@@ -21,52 +30,14 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  allFileStatusOptions,
-  type FileStatus,
-  siteWorkStatusOptions, 
-  sitePurposeOptions, 
-  applicationTypeOptions, 
-  applicationTypeDisplayMap,
-  siteTypeOfRigOptions,
-  type DataEntryFormData,
-  type ApplicationType,
-  type SiteWorkStatus,
-  type SitePurpose,
-  constituencyOptions,
-} from "@/lib/schemas";
-import { cn } from "@/lib/utils";
-import { useFileEntries } from "@/hooks/useFileEntries";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
 import ExcelJS from 'exceljs';
-import { usePageHeader } from "@/hooks/usePageHeader";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useDataStore } from "@/hooks/use-data-store";
-
-export const dynamic = 'force-dynamic';
-
-const FileText = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-);
-const Filter = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-);
-const RotateCcw = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-);
-const Loader2 = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-);
-const FileDown = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m15 15-3 3-3-3"/></svg>
-);
-const Eye = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-);
-const Search = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-);
+import { useDataStore } from '@/hooks/use-data-store';
+import { FileText, Filter, RotateCcw, Loader2, FileDown, Eye, Search } from 'lucide-react';
 
 
 export interface FlattenedReportRow {
@@ -75,7 +46,6 @@ export interface FlattenedReportRow {
   fileFirstRemittanceDate: string;
   sitePurpose: string;
   fileStatus: string; 
-  
   siteName: string; 
   siteWorkStatus: string; 
   siteTotalExpenditure: string; 
@@ -375,7 +345,7 @@ export default function ReportsPage() {
       const workCategoryFromQuery = searchParams?.get("workCategory");
       const serviceTypeFromQuery = searchParams?.get("serviceType");
 
-      setStatusFilter(statusFromQuery && (allFileStatusOptions as readonly string[]).includes(statusFromQuery) ? statusFromQuery : "all");
+      setStatusFilter(statusFromQuery && (fileStatusOptions as readonly string[]).includes(statusFromQuery) ? statusFromQuery : "all");
       setWorkCategoryFilter(workCategoryFromQuery && (siteWorkStatusOptions as readonly string[]).includes(workCategoryFromQuery) ? workCategoryFromQuery : "all");
       setServiceTypeFilter(serviceTypeFromQuery && ((sitePurposeOptions as readonly string[]).includes(serviceTypeFromQuery) || serviceTypeFromQuery === 'all') ? serviceTypeFromQuery : "all");
     }
@@ -454,7 +424,6 @@ export default function ReportsPage() {
     
     worksheet.mergeCells('A1:H1');
     worksheet.mergeCells('A2:H2');
-    worksheet.mergeCells('A3:H3');
     worksheet.getCell('A1').alignment = { horizontal: 'center' };
     worksheet.getCell('A2').alignment = { horizontal: 'center' };
     
@@ -528,7 +497,7 @@ export default function ReportsPage() {
       <Card className="shadow-lg no-print">
         <CardContent className="p-4 space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Select value={applicationTypeFilter} onValueChange={setApplicationTypeFilter} name="appTypeFilter">
+                <Select value={applicationTypeFilter} onValueChange={setSelectedAppType} name="appTypeFilter">
                     <SelectTrigger id="report-app-type-trigger"><SelectValue placeholder="Filter by Application Type" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Application Types</SelectItem>
@@ -559,7 +528,7 @@ export default function ReportsPage() {
                     <SelectTrigger id="report-file-status-trigger"><SelectValue placeholder="Filter by File Status" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All File Statuses</SelectItem>
-                        {allFileStatusOptions.map((status: string) => (<SelectItem key={status} value={status}>{status}</SelectItem>))}
+                        {fileStatusOptions.map((status: string) => (<SelectItem key={status} value={status}>{status}</SelectItem>))}
                     </SelectContent>
                 </Select>
                 <Select value={typeOfRigFilter} onValueChange={setTypeOfRigFilter} name="rigTypeFilter">
@@ -608,26 +577,12 @@ export default function ReportsPage() {
       
        <Card className="card-for-print shadow-lg">
          <div className="relative max-h-[70vh] overflow-auto">
-            <Table>
-                <TableHeader className="sticky top-0 bg-secondary">
-                    <TableRow>
-                        <TableHead className="w-[6%]">Sl. No.</TableHead>
-                        <TableHead className="w-[12%]">File No</TableHead>
-                        <TableHead className="w-[20%]">Applicant Name</TableHead>
-                        <TableHead className="w-[20%]">Site Name</TableHead>
-                        <TableHead className="w-[10%]">Date of Remittance</TableHead>
-                        <TableHead className="w-[12%]">File Status</TableHead>
-                        <TableHead className="w-[12%]">Site Work Status</TableHead>
-                        <TableHead className="text-center w-[8%]">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <ReportTable
-                    data={paginatedReportRows}
-                    onViewDetailsClick={handleOpenViewDialog}
-                    currentPage={currentPage}
-                    itemsPerPage={ITEMS_PER_PAGE}
-                />
-            </Table>
+            <ReportTable
+                data={paginatedReportRows}
+                onViewDetailsClick={handleOpenViewDialog}
+                currentPage={currentPage}
+                itemsPerPage={ITEMS_PER_PAGE}
+            />
           </div>
           <CardFooter className="p-4 border-t flex items-center justify-center">
               {totalPages > 1 && (

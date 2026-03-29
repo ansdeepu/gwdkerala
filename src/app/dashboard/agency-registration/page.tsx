@@ -35,7 +35,7 @@ import ExcelJS from "exceljs";
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAgencyApplications } from '@/hooks/useAgencyApplications';
 import { useDataStore } from '@/hooks/use-data-store';
-import { Loader2, Search, PlusCircle, Save, X, Trash2, ShieldAlert, UserPlus, FilePlus, ChevronsUpDown, RotateCcw, RefreshCw, CheckCircle, Info, Ban, FileUp, MoreVertical, ArrowLeft, Eye, FileDown, Clock } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Save, X, Trash2, ShieldAlert, UserPlus, FilePlus, ChevronsUpDown, RotateCcw, RefreshCw, CheckCircle, Info, Ban, FileUp, MoreVertical, ArrowLeft, Eye, FileDown, Clock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { app } from '@/lib/firebase';
@@ -166,6 +166,8 @@ const processDataForSaving = (data: any): any => {
   return data;
 };
 
+type SortKey = keyof AgencyApplication | 'activeRigs';
+
 const RegistrationTable = ({ 
   applications, 
   onView,
@@ -184,61 +186,97 @@ const RegistrationTable = ({
   currentPage: number,
   itemsPerPage: number,
   isPendingTable?: boolean,
-}) => (
+}) => {
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
+
+  const requestSort = (key: SortKey) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: SortKey) => {
+    if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-3 w-3 opacity-30 group-hover:opacity-100" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp className="ml-2 h-3 w-3" /> : <ArrowDown className="ml-2 h-3 w-3" />;
+  };
+  
+  const sortedApplications = useMemo(() => {
+    let sortableItems = [...applications];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue: any = a[sortConfig.key];
+        let bValue: any = b[sortConfig.key];
+        
+        if (sortConfig.key === 'owner') {
+          aValue = a.owner.name;
+          bValue = b.owner.name;
+        } else if (sortConfig.key === 'activeRigs') {
+          aValue = (a.rigs || []).filter(r => r.status === 'Active').length;
+          bValue = (b.rigs || []).filter(r => r.status === 'Active').length;
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [applications, sortConfig]);
+
+  return (
     <div className="max-h-[70vh] overflow-auto no-scrollbar">
       <Table>
-          <TableHeader className="bg-secondary sticky top-0">
-              <TableRow>
-                  <TableHead className="w-[80px]">Sl. No.</TableHead>
-                  <TableHead>File No.</TableHead>
-                  <TableHead>Agency Name</TableHead>
-                  <TableHead>Owner</TableHead>
-                  {!isPendingTable && <TableHead>Active Rigs</TableHead>}
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
+        <TableHeader className="bg-secondary sticky top-0">
+          <TableRow>
+            <TableHead className="w-[80px]">Sl. No.</TableHead>
+            <TableHead><Button variant="ghost" onClick={() => requestSort('fileNo')} className="px-0 hover:bg-transparent">File No {getSortIcon('fileNo')}</Button></TableHead>
+            <TableHead><Button variant="ghost" onClick={() => requestSort('agencyName')} className="px-0 hover:bg-transparent">Agency Name {getSortIcon('agencyName')}</Button></TableHead>
+            <TableHead><Button variant="ghost" onClick={() => requestSort('owner')} className="px-0 hover:bg-transparent">Owner {getSortIcon('owner')}</Button></TableHead>
+            {!isPendingTable && <TableHead><Button variant="ghost" onClick={() => requestSort('activeRigs')} className="px-0 hover:bg-transparent">Active Rigs {getSortIcon('activeRigs')}</Button></TableHead>}
+            <TableHead><Button variant="ghost" onClick={() => requestSort('status')} className="px-0 hover:bg-transparent">Status {getSortIcon('status')}</Button></TableHead>
+            <TableHead className="text-center">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sortedApplications.length > 0 ? (
+            sortedApplications.map((app, index) => (
+              <TableRow key={app.id}>
+                <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
+                <TableCell>{app.fileNo || 'N/A'}</TableCell>
+                <TableCell className="font-medium">{app.agencyName}</TableCell>
+                <TableCell>{app.owner.name}</TableCell>
+                 {!isPendingTable && <TableCell>{(app.rigs || []).filter(r => r.status === 'Active').length} / {(app.rigs || []).length}</TableCell>}
+                <TableCell><Badge variant={app.status === 'Active' ? 'default' : 'secondary'}>{app.status}</Badge></TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center">
+                    <Tooltip>
+                      <TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => onView(app.id!)}><Eye className="h-4 w-4" /></Button></TooltipTrigger>
+                      <TooltipContent><p>View / Edit Details</p></TooltipContent>
+                    </Tooltip>
+                    {canDelete && (
+                      <Tooltip>
+                        <TooltipTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => onDelete(app.id!)}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger>
+                        <TooltipContent><p>Delete Application</p></TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
-          </TableHeader>
-          <TableBody>
-              {applications.length > 0 ? (
-                  applications.map((app, index) => (
-                      <TableRow key={app.id}>
-                          <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
-                          <TableCell>{app.fileNo || 'N/A'}</TableCell>
-                          <TableCell className="font-medium">{app.agencyName}</TableCell>
-                          <TableCell>{app.owner.name}</TableCell>
-                           {!isPendingTable && <TableCell>{(app.rigs || []).filter(r => r.status === 'Active').length} / {(app.rigs || []).length}</TableCell>}
-                          <TableCell><Badge variant={app.status === 'Active' ? 'default' : 'secondary'}>{app.status}</Badge></TableCell>
-                          <TableCell className="text-center">
-                              <div className="flex items-center justify-center">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" onClick={() => onView(app.id!)}><Eye className="h-4 w-4" /></Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>View / Edit Details</p></TooltipContent>
-                                </Tooltip>
-                                  {canDelete && (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => onDelete(app.id!)}><Trash2 className="h-4 w-4" /></Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Delete Application</p></TooltipContent>
-                                    </Tooltip>
-                                  )}
-                              </div>
-                          </TableCell>
-                      </TableRow>
-                  ))
-              ) : (
-                  <TableRow>
-                      <TableCell colSpan={isPendingTable ? 6 : 7} className="h-24 text-center">
-                          No registrations found {searchTerm ? "matching your search" : ""}.
-                      </TableCell>
-                  </TableRow>
-              )}
-          </TableBody>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={isPendingTable ? 6 : 7} className="h-24 text-center">
+                No registrations found {searchTerm ? "matching your search" : ""}.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
       </Table>
     </div>
-);
+  );
+};
 
 const getOrdinalSuffix = (n: number) => {
   const s = ["th", "st", "nd", "rd"];
@@ -867,7 +905,7 @@ export default function AgencyRegistrationPage() {
             })
             : sortedApps;
             
-        // Sorting logic
+        // Default sorting logic when no column is selected
         filtered.sort((a, b) => {
             const dateA = toDateOrNull(a.agencyRegistrationDate);
             const dateB = toDateOrNull(b.agencyRegistrationDate);

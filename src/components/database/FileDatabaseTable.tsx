@@ -1,7 +1,7 @@
 // src/components/database/FileDatabaseTable.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Table,
@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash2, Loader2, Copy } from "lucide-react";
+import { Eye, Trash2, Loader2, Copy, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { DataEntryFormData, SiteWorkStatus, SiteDetailFormData, ApplicationType, UserRole } from "@/lib/schemas";
 import { 
     LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
@@ -81,6 +81,9 @@ interface FileDatabaseTableProps {
   userRole?: UserRole;
 }
 
+type SortKey = keyof DataEntryFormData | 'firstRemittanceDate';
+
+
 export default function FileDatabaseTable({ 
   fileEntries, 
   isLoading, 
@@ -101,6 +104,7 @@ export default function FileDatabaseTable({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [pendingUpdatesMap, setPendingUpdatesMap] = useState<Record<string, boolean>>({});
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
 
   const canEdit = !isReadOnly && (user?.role === 'admin' || user?.role === 'supervisor');
   const canDelete = !isReadOnly && user?.role === 'admin';
@@ -120,6 +124,41 @@ export default function FileDatabaseTable({
     }
   }, [user, fileEntries, getPendingUpdates]);
 
+  const requestSort = (key: SortKey) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: SortKey) => {
+    if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-3 w-3 opacity-30 group-hover:opacity-100" />;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
+  };
+
+  const sortedFileEntries = useMemo(() => {
+    let sortableItems = [...fileEntries];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue: any = a[sortConfig.key];
+        let bValue: any = b[sortConfig.key];
+        
+        if (sortConfig.key === 'firstRemittanceDate') {
+          aValue = a.remittanceDetails?.[0]?.dateOfRemittance ? safeParseDate(a.remittanceDetails[0].dateOfRemittance)?.getTime() : 0;
+          bValue = b.remittanceDetails?.[0]?.dateOfRemittance ? safeParseDate(b.remittanceDetails[0].dateOfRemittance)?.getTime() : 0;
+        }
+        
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [fileEntries, sortConfig]);
+
+  // ... rest of component logic (handleViewClick, confirmDelete, etc.)
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
     const hasInvestigationPurpose = item.siteDetails?.some(site => site.purpose === 'GW Investigation');
@@ -192,7 +231,7 @@ export default function FileDatabaseTable({
     return <div className="flex items-center justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2 text-muted-foreground">Loading data...</p></div>;
   }
 
-  if (fileEntries.length === 0) {
+  if (sortedFileEntries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10 text-center">
           <Image src="https://placehold.co/128x128/F0F2F5/3F51B5.png?text=No+Files" width={100} height={100} alt="No files" className="mb-4 opacity-70 rounded-lg" data-ai-hint="empty box document"/>
@@ -212,21 +251,21 @@ export default function FileDatabaseTable({
           <TableHeader className="sticky top-0 bg-secondary z-10">
             <TableRow>
               <TableHead className="w-[5%] px-2 py-3 text-sm">Sl. No.</TableHead>
-              <TableHead className="w-[10%] px-2 py-3 text-sm">File No.</TableHead>
-              <TableHead className="w-[15%] px-2 py-3 text-sm">Applicant Name</TableHead>
+              <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('fileNo')}>File No. {getSortIcon('fileNo')}</Button></TableHead>
+              <TableHead className="w-[15%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('applicantName')}>Applicant Name {getSortIcon('applicantName')}</Button></TableHead>
               <TableHead className="w-[25%] px-2 py-3 text-sm">Site Name(s)</TableHead>
               <TableHead className="w-[10%] px-2 py-3 text-sm">Purpose(s)</TableHead>
-              <TableHead className="w-[10%] px-2 py-3 text-sm">Remittance</TableHead>
+              <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('firstRemittanceDate')}>Remittance {getSortIcon('firstRemittanceDate')}</Button></TableHead>
               {userRole === 'supervisor' ? (
                 <TableHead className="w-[10%] px-2 py-3 text-sm">Work Status</TableHead>
               ) : (
-                <TableHead className="w-[10%] px-2 py-3 text-sm">File Status</TableHead>
+                <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('fileStatus')}>File Status {getSortIcon('fileStatus')}</Button></TableHead>
               )}
               <TableHead className="text-center w-[15%] px-2 py-3 text-sm">Actions</TableHead>
             </TableRow>
           </TableHeader>
             <TableBody>
-              {fileEntries.map((entry, index) => {
+              {sortedFileEntries.map((entry, index) => {
                 let sitesToDisplay: SiteDetailFormData[] = entry.siteDetails || [];
                 if (user?.role === 'supervisor') {
                     sitesToDisplay = sitesToDisplay.filter(site => {
