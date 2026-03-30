@@ -26,7 +26,9 @@ interface StaffTableProps {
   isViewer: boolean;
   onImageClick?: (imageUrl: string | null) => void;
   isLoading?: boolean; 
-  searchActive?: boolean; 
+  searchActive?: boolean;
+  currentPage: number;
+  onPageChange: (page: number) => void;
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -50,14 +52,11 @@ export default function StaffTable({
     isViewer, 
     onImageClick,
     isLoading = false,
-    searchActive = false
+    searchActive = false,
+    currentPage,
+    onPageChange
 }: StaffTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
   const [staffToDelete, setStaffToDelete] = useState<{ id: string; name: string } | null>(null);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [staffData, searchActive]); 
 
   const paginatedStaff = staffData.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -177,7 +176,7 @@ export default function StaffTable({
                         {!isViewer && onDelete && !isPendingTransfer && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/90" onClick={() => handleDeleteClick(staff.id, staff.name)}>
+                              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => handleDeleteClick(staff.id, staff.name)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
@@ -202,7 +201,7 @@ export default function StaffTable({
                       <PaginationControls
                       currentPage={currentPage}
                       totalPages={totalPages}
-                      onPageChange={setCurrentPage}
+                      onPageChange={onPageChange}
                       />
                   </div>
               </TableCaption>

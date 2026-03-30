@@ -22,6 +22,8 @@ interface RetiredStaffTableProps {
   onImageClick?: (imageUrl: string | null) => void;
   isLoading?: boolean;
   searchActive?: boolean;
+  currentPage: number;
+  onPageChange: (page: number) => void;
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -55,13 +57,10 @@ export default function RetiredStaffTable({
     isViewer, 
     onImageClick,
     isLoading = false,
-    searchActive = false
+    searchActive = false,
+    currentPage,
+    onPageChange
 }: RetiredStaffTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [staffData, searchActive]);
 
   const paginatedStaff = staffData.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -179,7 +178,7 @@ export default function RetiredStaffTable({
                     <PaginationControls
                     currentPage={currentPage}
                     totalPages={totalPages}
-                    onPageChange={setCurrentPage}
+                    onPageChange={onPageChange}
                     />
                 </div>
             </TableCaption>

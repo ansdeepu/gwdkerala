@@ -16,6 +16,7 @@ import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
 import type { StaffMember, StaffMemberFormData, StaffStatusType } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,9 @@ const formatDateSafe = (dateInput: Date | string | null | undefined): string => 
 export default function EstablishmentPage() {
   const { setHeader } = usePageHeader();
   const { officeAddress, allOfficeAddresses, allUsers } = useDataStore();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     setHeader('Establishment', `Manage all staff members of the Ground Water Department, ${officeAddress?.officeLocation || ''}.`);
@@ -74,6 +78,31 @@ export default function EstablishmentPage() {
 
   const [imageForModal, setImageForModal] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageFromUrl = searchParams?.get('page');
+
+  useEffect(() => {
+    const pageNum = pageFromUrl ? parseInt(pageFromUrl, 10) : 1;
+    if (!isNaN(pageNum)) {
+      setCurrentPage(pageNum);
+    } else {
+      setCurrentPage(1);
+    }
+  }, [pageFromUrl]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', String(page));
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', '1');
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
   
   const isAdmin = user?.role === 'admin';
   const isEngineer = user?.role === 'engineer';
@@ -251,7 +280,7 @@ export default function EstablishmentPage() {
               </Button>
             </div>
           </div>
-          <Tabs defaultValue="activeStaff" className="w-full pt-4 border-t">
+          <Tabs defaultValue="activeStaff" onValueChange={handleTabChange} className="w-full pt-4 border-t">
             <TabsList className="grid w-full grid-cols-4 sm:w-[800px]">
               <TabsTrigger value="activeStaff">Active ({activeStaffList.length})</TabsTrigger>
               <TabsTrigger value="transferredStaff">Transferred ({transferredStaffList.length})</TabsTrigger>
@@ -269,6 +298,8 @@ export default function EstablishmentPage() {
                   onImageClick={handleOpenImageModal}
                   isLoading={isFiltering}
                   searchActive={!!debouncedSearchTerm}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
                 />
               </div>
             </TabsContent>
@@ -282,6 +313,8 @@ export default function EstablishmentPage() {
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}
                     searchActive={!!debouncedSearchTerm}
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
                 />
               </div>
             </TabsContent>
@@ -295,6 +328,8 @@ export default function EstablishmentPage() {
                     onImageClick={handleOpenImageModal}
                     isLoading={isFiltering}
                     searchActive={!!debouncedSearchTerm}
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
                 />
               </div>
             </TabsContent>
