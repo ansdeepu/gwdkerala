@@ -146,8 +146,13 @@ export default function FileDatabaseTable({
         let bValue: any = b[sortConfig.key];
         
         if (sortConfig.key === 'firstRemittanceDate') {
-          aValue = a.remittanceDetails?.[0]?.dateOfRemittance ? safeParseDate(a.remittanceDetails[0].dateOfRemittance)?.getTime() : 0;
-          bValue = b.remittanceDetails?.[0]?.dateOfRemittance ? safeParseDate(b.remittanceDetails[0].dateOfRemittance)?.getTime() : 0;
+          const getVal = (e: DataEntryFormData) => {
+            const dateStr = e.remittanceDetails?.[0]?.dateOfRemittance || e.reappropriationDetails?.[0]?.date;
+            if (!dateStr) return 0;
+            return safeParseDate(dateStr)?.getTime() || 0;
+          };
+          aValue = getVal(a);
+          bValue = getVal(b);
         }
         
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -158,7 +163,6 @@ export default function FileDatabaseTable({
     return sortableItems;
   }, [fileEntries, sortConfig]);
 
-  // ... rest of component logic (handleViewClick, confirmDelete, etc.)
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
     const hasInvestigationPurpose = item.siteDetails?.some(site => site.purpose === 'GW Investigation');
@@ -180,7 +184,6 @@ export default function FileDatabaseTable({
     } else if (appType && (PLAN_FUND_APPLICATION_TYPES as any).includes(appType)) {
         workType = 'planFund';
     } else {
-        // Default fallback for deposit works
         workType = 'public';
     }
 
@@ -242,7 +245,6 @@ export default function FileDatabaseTable({
   }
 
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-  const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
 
   return (
     <>
@@ -294,7 +296,11 @@ export default function FileDatabaseTable({
                     ))}
                   </TableCell>
                   <TableCell className="w-[10%] px-2 py-2 text-sm">
-                    {entry.remittanceDetails?.[0]?.dateOfRemittance ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), "dd/MM/yyyy") : "N/A"}
+                    {(() => {
+                      const dateStr = entry.remittanceDetails?.[0]?.dateOfRemittance || entry.reappropriationDetails?.[0]?.date;
+                      const date = safeParseDate(dateStr);
+                      return date ? format(date, "dd/MM/yyyy") : "N/A";
+                    })()}
                   </TableCell>
                   {userRole === 'supervisor' ? (
                     <TableCell className="w-[10%] px-2 py-2 text-sm">

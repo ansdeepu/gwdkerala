@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash2, Loader2, Clock, Copy } from "lucide-react";
+import { Eye, Trash2, Loader2, Clock, Copy, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { DataEntryFormData, SiteWorkStatus, SiteDetailFormData } from "@/lib/schemas";
 import { format, isValid, parseISO } from "date-fns";
 import Image from "next/image";
@@ -25,6 +25,20 @@ import { useAuth } from "@/hooks/useAuth";
 import PaginationControls from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from 'uuid';
+
+const safeParseDate = (dateValue: any): Date | null => {
+  if (!dateValue) return null;
+  if (dateValue instanceof Date && isValid(dateValue)) return dateValue;
+  if (typeof dateValue === 'string') {
+    const parsed = parseISO(dateValue);
+    if (isValid(parsed)) return parsed;
+  }
+  if (typeof dateValue === 'object' && dateValue.toDate) {
+    const parsed = dateValue.toDate();
+    if (isValid(parsed)) return parsed;
+  }
+  return null;
+};
 
 const getStatusColorClass = (status: SiteWorkStatus | undefined): string => {
     if (!status) return 'text-muted-foreground';
@@ -43,9 +57,10 @@ interface InvestigationTableProps {
   currentPage?: number;
 }
 
+type SortKey = keyof DataEntryFormData | 'firstRemittanceDate';
+
 export default function InvestigationTable({ fileEntries, isLoading, searchActive, totalEntries, activeTab, currentPage }: InvestigationTableProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { deleteFileEntry, addFileEntry } = useFileEntries(); 
   const { user, isLoading: authIsLoading } = useAuth();
@@ -54,9 +69,49 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
   const [isDeleting, setIsDeleting] = useState(false);
   const [itemToCopy, setItemToCopy] = useState<DataEntryFormData | null>(null);
   const [isCopying, setIsCopying] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
 
   const canDelete = user?.role === 'admin';
   const canCopy = user?.role === 'admin';
+
+  const requestSort = (key: SortKey) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: SortKey) => {
+    if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-3 w-3 opacity-30 group-hover:opacity-100" />;
+    if (sortConfig.direction === 'asc') return <ArrowUp className="ml-2 h-3 w-3" />;
+    return <ArrowDown className="ml-2 h-3 w-3" />;
+  };
+
+  const sortedFileEntries = useMemo(() => {
+    let sortableItems = [...fileEntries];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        let aValue: any = a[sortConfig.key];
+        let bValue: any = b[sortConfig.key];
+        
+        if (sortConfig.key === 'firstRemittanceDate') {
+          const getVal = (e: DataEntryFormData) => {
+            const dateStr = e.remittanceDetails?.[0]?.dateOfRemittance || e.reappropriationDetails?.[0]?.date;
+            if (!dateStr) return 0;
+            return safeParseDate(dateStr)?.getTime() || 0;
+          };
+          aValue = getVal(a);
+          bValue = getVal(b);
+        }
+        
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [fileEntries, sortConfig]);
 
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
@@ -90,8 +145,8 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
       setIsCopying(true);
       try {
           const newFileEntry: DataEntryFormData = {
-              ...JSON.parse(JSON.stringify(itemToCopy)), // Deep copy
-              id: uuidv4(), // Give it a temporary client-side ID
+              ...JSON.parse(JSON.stringify(itemToCopy)),
+              id: uuidv4(),
               fileNo: `${itemToCopy.fileNo}-COPY`,
           };
           
@@ -120,7 +175,7 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
     return <div className="flex items-center justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /><p className="ml-2 text-muted-foreground">Loading data...</p></div>;
   }
 
-  if (fileEntries.length === 0) {
+  if (sortedFileEntries.length === 0) {
     return (
         <div className="flex flex-col items-center justify-center py-10 text-center">
             <Image src="https://placehold.co/128x128/F0F2F5/3F51B5.png?text=No+Files" width={100} height={100} alt="No files" className="mb-4 opacity-70 rounded-lg" data-ai-hint="empty box document"/>
@@ -137,22 +192,28 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
           <TableHeader className="sticky top-0 bg-secondary z-10">
             <TableRow>
               <TableHead className="w-[50px]">#</TableHead>
-              <TableHead>File No.</TableHead>
-              <TableHead>Applicant</TableHead>
+              <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('fileNo')}>File No. {getSortIcon('fileNo')}</Button></TableHead>
+              <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('applicantName')}>Applicant {getSortIcon('applicantName')}</Button></TableHead>
               <TableHead>Site Name(s)</TableHead>
-              <TableHead>Remittance</TableHead>
-              <TableHead>File Status</TableHead>
+              <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('firstRemittanceDate')}>Remittance {getSortIcon('firstRemittanceDate')}</Button></TableHead>
+              <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('fileStatus')}>File Status {getSortIcon('fileStatus')}</Button></TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {fileEntries.map((entry, index) => (
+            {sortedFileEntries.map((entry, index) => (
               <TableRow key={entry.id}>
                 <TableCell className="text-center">{(currentPage ? (currentPage - 1) * 50 : 0) + index + 1}</TableCell>
                 <TableCell className="font-medium">{entry.fileNo}</TableCell>
                 <TableCell>{entry.applicantName}</TableCell>
                 <TableCell>{entry.siteDetails?.map((site, idx) => (<span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>{site.nameOfSite}{idx < entry.siteDetails!.length - 1 ? ', ' : ''}</span>))}</TableCell>
-                <TableCell>{entry.remittanceDetails?.[0]?.dateOfRemittance ? format(new Date(entry.remittanceDetails[0].dateOfRemittance), "dd/MM/yyyy") : "N/A"}</TableCell>
+                <TableCell>
+                  {(() => {
+                    const dateStr = entry.remittanceDetails?.[0]?.dateOfRemittance || entry.reappropriationDetails?.[0]?.date;
+                    const date = safeParseDate(dateStr);
+                    return date ? format(date, "dd/MM/yyyy") : "N/A";
+                  })()}
+                </TableCell>
                 <TableCell className="font-semibold">{entry.fileStatus}</TableCell>
                 <TableCell className="text-right">
                   <Tooltip>
