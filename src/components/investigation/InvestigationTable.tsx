@@ -215,7 +215,15 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
                 <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('applicantName')}>Applicant {getSortIcon('applicantName')}</Button></TableHead>
                 <TableHead>Site Name(s)</TableHead>
                 <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('firstRemittanceDate')}>Remittance {getSortIcon('firstRemittanceDate')}</Button></TableHead>
-                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('fileStatus')}>File Status {getSortIcon('fileStatus')}</Button></TableHead>
+                <TableHead>
+                  {user?.role === 'investigator' ? (
+                    "Work Status"
+                  ) : (
+                    <Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('fileStatus')}>
+                      File Status {getSortIcon('fileStatus')}
+                    </Button>
+                  )}
+                </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -231,7 +239,19 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
                   <TableCell>
                     {displayDate ? format(displayDate, "dd/MM/yyyy") : "N/A"}
                   </TableCell>
-                  <TableCell className="font-semibold">{entry.fileStatus}</TableCell>
+                  <TableCell className="font-semibold">
+                    {user?.role === 'investigator' ? (
+                      <div className="flex flex-col gap-0.5">
+                        {(entry.siteDetails || []).map((site, idx) => (
+                          <span key={idx} className={cn("text-xs font-bold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>
+                            {site.workStatus || 'N/A'}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      entry.fileStatus
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Tooltip>
                         <TooltipTrigger asChild>
