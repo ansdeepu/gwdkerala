@@ -843,7 +843,7 @@ export default function AgencyRegistrationPage() {
   };
 
 
-  const handleAddNew() => {
+  const handleAddNew = () => {
     setIsNavigating(true);
     router.push(`${pathname}?id=new`);
   };
@@ -1460,6 +1460,7 @@ export default function AgencyRegistrationPage() {
                                     </div>
                                     <dl className="grid md:grid-cols-3 gap-4 border-t pt-2">
                                     <DetailRow label="Type of Application" value={field.applicationFeeType} />
+                                    <DetailRow label="Fees Amount" value={field.applicationFeeAmount} />
                                     <DetailRow label="Fees Amount" value={field.applicationFeeAmount} />
                                     <DetailRow label="Payment Date" value={field.applicationFeePaymentDate} />
                                     <div className="md:col-span-3"><DetailRow label="Challan No." value={field.applicationFeeChallanNo} /></div>

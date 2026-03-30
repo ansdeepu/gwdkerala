@@ -16,7 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { E_tenderStatus, Bidder } from '@/lib/schemas/eTenderSchema';
-import { eTenderStatusOptions } from '@/lib/schemas/eTenderStatusOptions';
+import { eTenderStatusOptions } from '@/lib/schemas';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter, addDays, isValid } from 'date-fns';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
