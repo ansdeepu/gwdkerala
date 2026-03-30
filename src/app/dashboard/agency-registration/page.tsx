@@ -206,8 +206,8 @@ const RegistrationTable = ({
     let sortableItems = [...applications];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
-        let aValue: any = a[sortConfig.key];
-        let bValue: any = b[sortConfig.key];
+        let aValue: any;
+        let bValue: any;
         
         if (sortConfig.key === 'owner') {
           aValue = a.owner.name;
@@ -215,6 +215,9 @@ const RegistrationTable = ({
         } else if (sortConfig.key === 'activeRigs') {
           aValue = (a.rigs || []).filter(r => r.status === 'Active').length;
           bValue = (b.rigs || []).filter(r => r.status === 'Active').length;
+        } else {
+          aValue = a[sortConfig.key as keyof AgencyApplication];
+          bValue = b[sortConfig.key as keyof AgencyApplication];
         }
 
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;

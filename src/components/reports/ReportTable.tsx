@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo } from 'react';
 import type { FlattenedReportRow } from '@/app/dashboard/reports/page';
-import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Eye, ArrowUpDown } from 'lucide-react';
 import PaginationControls from '@/components/shared/PaginationControls';

@@ -160,12 +160,12 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 return {
                     id: tender.id,
                     slNo: index + 1,
-                    dateOfWorkOrder: tender.dateOfWorkOrder ? formatDateSafe(tender.dateOfWorkOrder) : 'N/A',
+                    dateOfWorkOrder: tender.dateWorkOrder ? formatDateSafe(tender.dateWorkOrder) : 'N/A',
                     eTenderNo: tender.eTenderNo || 'N/A',
                     nameOfWork: tender.nameOfWork || 'N/A',
                     contractor: l1Bidder ? l1Bidder.name || 'N/A' : 'N/A',
                     supervisor: supervisorStaff || 'N/A',
-                    quotedAmount: contractAmount,
+                    quotedAmount: contractAmount ?? undefined,
                     expectedDateOfCompletion: expectedDateOfCompletion ? formatDateSafe(expectedDateOfCompletion) : 'N/A',
                     isOverdue,
                 };

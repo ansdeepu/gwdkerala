@@ -1,15 +1,15 @@
 // src/app/dashboard/reports/page.tsx
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import ReportTable from "@/components/reports/ReportTable";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useFileEntries } from "@/hooks/useFileEntries";
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { useSearchParams, useRouter } from "next/navigation";
 import PaginationControls from "@/components/shared/PaginationControls";
 import { useAuth } from "@/hooks/useAuth";
-import type { SiteWorkStatus, DataEntryFormData, ApplicationType } from '@/lib/schemas';
+import type { SiteWorkStatus, DataEntryFormData, ApplicationType, SitePurpose, FileStatus } from '@/lib/schemas';
 import { 
   applicationTypeDisplayMap,
   fileStatusOptions, 
@@ -69,7 +69,7 @@ function renderDetail(label: string, value: any) {
         displayValue = `₹ ${displayValue}`;
     }
   } else {
-    displayValue = String(value);
+    displayValue = String(displayValue);
   }
   
   return (
@@ -336,7 +336,7 @@ export default function ReportsPage() {
   }, [
     fileEntries, searchTerm, statusFilter, serviceTypeFilter, workCategoryFilter, 
     startDate, endDate, dateFilterType,
-    applicationTypeFilter, typeOfRigFilter, constituencyFilter, searchParams
+    applicationTypeFilter, typeOfRigFilter, constituencyFilter, searchParams, officeAddress
   ]);
 
   useEffect(() => {
@@ -497,7 +497,7 @@ export default function ReportsPage() {
       <Card className="shadow-lg no-print">
         <CardContent className="p-4 space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <Select value={applicationTypeFilter} onValueChange={setSelectedAppType} name="appTypeFilter">
+                <Select value={applicationTypeFilter} onValueChange={setApplicationTypeFilter} name="appTypeFilter">
                     <SelectTrigger id="report-app-type-trigger"><SelectValue placeholder="Filter by Application Type" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All Application Types</SelectItem>
@@ -678,7 +678,6 @@ export default function ReportsPage() {
                                 {renderDetail("Yield (LPH)", site.yieldDischarge)}
                                 {renderDetail("Zone Details (m)", site.zoneDetails)}
                                 {renderDetail("Static Water Level (m)", site.waterLevel)}
-                                {renderDetail("Type of Rig Used", site.typeOfRig)}
                                 {renderDetail("Type of Rig Used", site.typeOfRig)}
                                 {renderDetail("Drilling Remarks", site.drillingRemarks)}
                               </>}
