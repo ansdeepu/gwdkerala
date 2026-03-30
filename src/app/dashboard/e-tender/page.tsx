@@ -16,7 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { E_tenderStatus, Bidder } from '@/lib/schemas/eTenderSchema';
-import { eTenderStatusOptions } from '@/lib/schemas/eTenderSchema';
+import { eTenderStatusOptions } from '@/lib/schemas/eTenderStatusOptions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter, addDays, isValid } from 'date-fns';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -74,7 +74,7 @@ const StatCard = ({ title, count, onClick, colorClass, icon: Icon }: { title: st
 type WorkOrderRow = {
     id: string;
     slNo: number;
-    dateOfWorkOrder: string;
+    dateWorkOrder: string;
     eTenderNo: string;
     nameOfWork: string;
     contractor: string;
@@ -160,7 +160,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 return {
                     id: tender.id,
                     slNo: index + 1,
-                    dateOfWorkOrder: tender.dateWorkOrder ? formatDateSafe(tender.dateWorkOrder) : 'N/A',
+                    dateWorkOrder: tender.dateWorkOrder ? formatDateSafe(tender.dateWorkOrder) : 'N/A',
                     eTenderNo: tender.eTenderNo || 'N/A',
                     nameOfWork: tender.nameOfWork || 'N/A',
                     contractor: l1Bidder ? l1Bidder.name || 'N/A' : 'N/A',
@@ -209,7 +209,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
         workOrderData.forEach(row => {
             const newRow = worksheet.addRow([
                 row.slNo,
-                row.dateOfWorkOrder,
+                row.dateWorkOrder,
                 row.eTenderNo,
                 row.nameOfWork,
                 row.contractor,
@@ -272,7 +272,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                             <TableHeader className="sticky top-0 bg-background z-10">
                                 <TableRow>
                                     <TableHead>Sl. No.</TableHead>
-                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateOfWorkOrder')}>Date of Work Order {getSortIcon('dateOfWorkOrder')}</Button></TableHead>
+                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateWorkOrder')}>Date of Work Order {getSortIcon('dateWorkOrder')}</Button></TableHead>
                                     <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>e-Tender No. {getSortIcon('eTenderNo')}</Button></TableHead>
                                     <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
                                     <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('contractor')}>Contractor {getSortIcon('contractor')}</Button></TableHead>
@@ -286,7 +286,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                     workOrderData.map(row => (
                                         <TableRow key={row.id} className={cn(row.isOverdue && "text-destructive")}>
                                             <TableCell>{row.slNo}</TableCell>
-                                            <TableCell>{row.dateOfWorkOrder}</TableCell>
+                                            <TableCell>{row.dateWorkOrder}</TableCell>
                                             <TableCell>{row.eTenderNo}</TableCell>
                                             <TableCell className="font-medium">{row.nameOfWork}</TableCell>
                                             <TableCell>{row.contractor}</TableCell>
@@ -754,7 +754,7 @@ export default function ETenderListPage() {
                             <Table>
                                 <TableHeader className="sticky top-0 bg-secondary z-10">
                                     <TableRow>
-                                        <TableHead className="w-[4%] px-2 py-3">Sl. No.</TableHead>
+                                        <TableHead className="w-[4%] px-2 py-3 text-sm">Sl. No.</TableHead>
                                         <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>
                                         <TableHead className="w-[42%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
                                         <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>

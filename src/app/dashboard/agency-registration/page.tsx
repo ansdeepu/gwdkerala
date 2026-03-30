@@ -843,7 +843,7 @@ export default function AgencyRegistrationPage() {
   };
 
 
-  const handleAddNew = () => {
+  const handleAddNew() => {
     setIsNavigating(true);
     router.push(`${pathname}?id=new`);
   };

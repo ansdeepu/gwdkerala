@@ -16,7 +16,6 @@ import {
   siteWorkStatusOptions, 
   sitePurposeOptions, 
   applicationTypeOptions, 
-  siteTypeOfRigOptions,
   constituencyOptions,
 } from '@/lib/schemas';
 import { format, parseISO, startOfDay, endOfDay, isValid, parse } from "date-fns";
@@ -35,7 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDataStore } from '@/hooks/use-data-store';
 import { FileText, Filter, RotateCcw, Loader2, FileDown, Eye, Search } from 'lucide-react';
 
@@ -280,7 +279,7 @@ export default function ReportsPage() {
           if (workCategoryMatch && serviceTypeMatch && rigTypeMatch && appTypeMatch) {
             flattenedRows.push({
               fileNo: entry.fileNo || "-", applicantName: entry.applicantName || "-", fileFirstRemittanceDate, fileStatus: entry.fileStatus || "-",
-              siteName: site.nameOfSite || "-", sitePurpose: site.purpose || "-", siteWorkStatus: site.workStatus || "-",
+              siteName: site.nameOfSite || "-", sitePurpose: (site.purpose as string) || "-", siteWorkStatus: site.workStatus || "-",
               siteTotalExpenditure: site.totalExpenditure?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "0.00",
             });
           }
@@ -294,7 +293,7 @@ export default function ReportsPage() {
             entry.siteDetails.forEach(site => {
               flattenedRows.push({
                 fileNo: entry.fileNo || "-", applicantName: entry.applicantName || "-", fileFirstRemittanceDate, fileStatus: entry.fileStatus || "-",
-                siteName: site.nameOfSite || "-", sitePurpose: site.purpose || "-", siteWorkStatus: site.workStatus || "-",
+                siteName: site.nameOfSite || "-", sitePurpose: (site.purpose as string) || "-", siteWorkStatus: site.workStatus || "-",
                 siteTotalExpenditure: site.totalExpenditure?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "0.00",
               });
             });
@@ -309,7 +308,7 @@ export default function ReportsPage() {
             if (site.workStatus && (siteWorkStatusesForPendingReport as string[]).includes(site.workStatus)) {
               flattenedRows.push({
                 fileNo: entry.fileNo || "-", applicantName: entry.applicantName || "-", fileFirstRemittanceDate, fileStatus: entry.fileStatus || "-",
-                siteName: site.nameOfSite || "-", sitePurpose: site.purpose || "-", siteWorkStatus: site.workStatus || "-",
+                siteName: site.nameOfSite || "-", sitePurpose: (site.purpose as string) || "-", siteWorkStatus: site.workStatus || "-",
                 siteTotalExpenditure: site.totalExpenditure?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "0.00",
               });
             }
@@ -318,7 +317,7 @@ export default function ReportsPage() {
       }
       else { 
         const siteNames = entry.siteDetails?.map(sd => sd.nameOfSite || 'N/A').filter(Boolean).join(', ') || '-';
-        const sitePurposes = entry.siteDetails?.map(sd => sd.purpose || 'N/A').filter(Boolean).join(', ') || '-';
+        const sitePurposes = entry.siteDetails?.map(sd => (sd.purpose as string) || 'N/A').filter(Boolean).join(', ') || '-';
         const siteWorkStatuses = entry.siteDetails?.map(sd => sd.workStatus || 'N/A').filter(Boolean).join(', ') || '-';
         const siteTotalExpenditure = entry.siteDetails?.reduce((acc, site) => acc + (Number(site.totalExpenditure) || 0), 0) ?? 0;
 
@@ -347,7 +346,7 @@ export default function ReportsPage() {
 
       setStatusFilter(statusFromQuery && (fileStatusOptions as readonly string[]).includes(statusFromQuery) ? statusFromQuery : "all");
       setWorkCategoryFilter(workCategoryFromQuery && (siteWorkStatusOptions as readonly string[]).includes(workCategoryFromQuery) ? workCategoryFromQuery : "all");
-      setServiceTypeFilter(serviceTypeFromQuery && ((sitePurposeOptions as readonly string[]).includes(serviceTypeFromQuery) || serviceTypeFromQuery === 'all') ? serviceTypeFromQuery : "all");
+      setServiceTypeFilter(serviceTypeFromQuery && ((sitePurposeOptions as readonly string[]).includes(serviceTypeFromQuery as any) || serviceTypeFromQuery === 'all') ? serviceTypeFromQuery : "all");
     }
   }, [searchParams, entriesLoading, authIsLoading]);
 
