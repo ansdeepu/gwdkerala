@@ -40,6 +40,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from 'uuid';
 import { usePendingUpdates } from "@/hooks/usePendingUpdates";
+import { useDataStore } from "@/hooks/use-data-store";
 import {
   Tooltip,
   TooltipProvider,
@@ -98,13 +99,14 @@ export default function FileDatabaseTable({
   const { deleteFileEntry, addFileEntry } = useFileEntries(); 
   const { user, isLoading: authIsLoading } = useAuth();
   const { getPendingUpdates } = usePendingUpdates();
+  const { allFileEntries } = useDataStore();
 
   const [deleteItem, setDeleteItem] = useState<DataEntryFormData | null>(null);
   const [itemToCopy, setItemToCopy] = useState<DataEntryFormData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const [pendingUpdatesMap, setPendingUpdatesMap] = useState<Record<string, boolean>>({});
-  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>({ key: 'firstRemittanceDate', direction: 'desc' });
 
   const canEdit = !isReadOnly && (user?.role === 'admin' || user?.role === 'supervisor');
   const canDelete = !isReadOnly && user?.role === 'admin';
@@ -124,6 +126,29 @@ export default function FileDatabaseTable({
     }
   }, [user, fileEntries, getPendingUpdates]);
 
+  // Helper to find the first available date (Remittance or Re-appropriation Credit)
+  const getDisplayDate = (entry: DataEntryFormData): Date | null => {
+    // 1. Direct Remittance
+    const directRemittance = entry.remittanceDetails?.[0]?.dateOfRemittance;
+    if (directRemittance) return safeParseDate(directRemittance);
+
+    // 2. Direct Reappropriation (Outward)
+    const directReapp = entry.reappropriationDetails?.[0]?.date;
+    if (directReapp) return safeParseDate(directReapp);
+
+    // 3. Inward Reappropriation (Credit) - Search other files
+    const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
+    if (normalizedFileNo && allFileEntries) {
+        for (const otherEntry of allFileEntries) {
+            if (otherEntry.fileNo?.toLowerCase().trim() === normalizedFileNo) continue;
+            const credit = otherEntry.reappropriationDetails?.find(r => r.refFileNo?.toLowerCase().trim() === normalizedFileNo);
+            if (credit && credit.date) return safeParseDate(credit.date);
+        }
+    }
+
+    return null;
+  };
+
   const requestSort = (key: SortKey) => {
     let direction: 'asc' | 'desc' = 'asc';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -142,17 +167,14 @@ export default function FileDatabaseTable({
     let sortableItems = [...fileEntries];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
-        let aValue: any = a[sortConfig.key];
-        let bValue: any = b[sortConfig.key];
+        let aValue: any = a[sortConfig.key as keyof DataEntryFormData];
+        let bValue: any = b[sortConfig.key as keyof DataEntryFormData];
         
         if (sortConfig.key === 'firstRemittanceDate') {
-          const getVal = (e: DataEntryFormData) => {
-            const dateStr = e.remittanceDetails?.[0]?.dateOfRemittance || e.reappropriationDetails?.[0]?.date;
-            if (!dateStr) return 0;
-            return safeParseDate(dateStr)?.getTime() || 0;
-          };
-          aValue = getVal(a);
-          bValue = getVal(b);
+          const dateA = getDisplayDate(a);
+          const dateB = getDisplayDate(b);
+          aValue = dateA?.getTime() || 0;
+          bValue = dateB?.getTime() || 0;
         }
         
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -161,7 +183,7 @@ export default function FileDatabaseTable({
       });
     }
     return sortableItems;
-  }, [fileEntries, sortConfig]);
+  }, [fileEntries, sortConfig, allFileEntries]);
 
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
@@ -253,15 +275,15 @@ export default function FileDatabaseTable({
           <TableHeader className="sticky top-0 bg-secondary z-10">
             <TableRow>
               <TableHead className="w-[5%] px-2 py-3 text-sm">Sl. No.</TableHead>
-              <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('fileNo')}>File No. {getSortIcon('fileNo')}</Button></TableHead>
-              <TableHead className="w-[15%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('applicantName')}>Applicant Name {getSortIcon('applicantName')}</Button></TableHead>
+              <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('fileNo')}>File No. {getSortIcon('fileNo')}</Button></TableHead>
+              <TableHead className="w-[15%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('applicantName')}>Applicant Name {getSortIcon('applicantName')}</Button></TableHead>
               <TableHead className="w-[25%] px-2 py-3 text-sm">Site Name(s)</TableHead>
               <TableHead className="w-[10%] px-2 py-3 text-sm">Purpose(s)</TableHead>
-              <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('firstRemittanceDate')}>Remittance {getSortIcon('firstRemittanceDate')}</Button></TableHead>
+              <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('firstRemittanceDate')}>Remittance {getSortIcon('firstRemittanceDate')}</Button></TableHead>
               {userRole === 'supervisor' ? (
                 <TableHead className="w-[10%] px-2 py-3 text-sm">Work Status</TableHead>
               ) : (
-                <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('fileStatus')}>File Status {getSortIcon('fileStatus')}</Button></TableHead>
+                <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('fileStatus')}>File Status {getSortIcon('fileStatus')}</Button></TableHead>
               )}
               <TableHead className="text-center w-[15%] px-2 py-3 text-sm">Actions</TableHead>
             </TableRow>
@@ -276,9 +298,11 @@ export default function FileDatabaseTable({
                         return isAssignedByUid || isAssignedByName;
                     });
                 }
+                const displayDate = getDisplayDate(entry);
+
                 return (
                 <TableRow key={entry.id}>
-                  <TableCell className="w-[5%] px-2 py-2 text-sm text-center font-mono">{offset + index + 1}</TableCell>
+                  <TableCell className="w-[5%] px-2 py-2 text-sm text-center font-mono">{(currentPage - 1) * 50 + index + 1}</TableCell>
                   <TableCell className="font-medium w-[10%] px-2 py-2 text-sm">{entry.fileNo}</TableCell>
                   <TableCell className="w-[15%] px-2 py-2 text-sm">{entry.applicantName}</TableCell>
                   <TableCell className="w-[25%] px-2 py-2 text-sm">
@@ -296,11 +320,7 @@ export default function FileDatabaseTable({
                     ))}
                   </TableCell>
                   <TableCell className="w-[10%] px-2 py-2 text-sm">
-                    {(() => {
-                      const dateStr = entry.remittanceDetails?.[0]?.dateOfRemittance || entry.reappropriationDetails?.[0]?.date;
-                      const date = safeParseDate(dateStr);
-                      return date ? format(date, "dd/MM/yyyy") : "N/A";
-                    })()}
+                    {displayDate ? format(displayDate, "dd/MM/yyyy") : "N/A"}
                   </TableCell>
                   {userRole === 'supervisor' ? (
                     <TableCell className="w-[10%] px-2 py-2 text-sm">

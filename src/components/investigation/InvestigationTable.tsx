@@ -22,6 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from "@/hooks/use-toast";
 import { useFileEntries } from "@/hooks/useFileEntries";
 import { useAuth } from "@/hooks/useAuth";
+import { useDataStore } from "@/hooks/use-data-store";
 import PaginationControls from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from 'uuid';
@@ -42,7 +43,7 @@ const safeParseDate = (dateValue: any): Date | null => {
 
 const getStatusColorClass = (status: SiteWorkStatus | undefined): string => {
     if (!status) return 'text-muted-foreground';
-    if (status === 'Work Completed') return 'text-green-600';
+    if (status === 'Work Completed' || status === 'Completed') return 'text-green-600';
     if (status === 'VES Pending') return 'text-orange-600';
     if (status === 'Pending') return 'text-yellow-600';
     return 'text-muted-foreground';
@@ -64,15 +65,35 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
   const { toast } = useToast();
   const { deleteFileEntry, addFileEntry } = useFileEntries(); 
   const { user, isLoading: authIsLoading } = useAuth();
+  const { allFileEntries } = useDataStore();
 
   const [deleteItem, setDeleteItem] = useState<DataEntryFormData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [itemToCopy, setItemToCopy] = useState<DataEntryFormData | null>(null);
   const [isCopying, setIsCopying] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>({ key: 'firstRemittanceDate', direction: 'desc' });
 
   const canDelete = user?.role === 'admin';
   const canCopy = user?.role === 'admin';
+
+  // Helper to find the first available date (Remittance or Inward Re-appropriation Credit)
+  const getDisplayDate = (entry: DataEntryFormData): Date | null => {
+    const directRemittance = entry.remittanceDetails?.[0]?.dateOfRemittance;
+    if (directRemittance) return safeParseDate(directRemittance);
+
+    const directReapp = entry.reappropriationDetails?.[0]?.date;
+    if (directReapp) return safeParseDate(directReapp);
+
+    const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
+    if (normalizedFileNo && allFileEntries) {
+        for (const otherEntry of allFileEntries) {
+            if (otherEntry.fileNo?.toLowerCase().trim() === normalizedFileNo) continue;
+            const credit = otherEntry.reappropriationDetails?.find(r => r.refFileNo?.toLowerCase().trim() === normalizedFileNo);
+            if (credit && credit.date) return safeParseDate(credit.date);
+        }
+    }
+    return null;
+  };
 
   const requestSort = (key: SortKey) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -92,17 +113,14 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
     let sortableItems = [...fileEntries];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
-        let aValue: any = a[sortConfig.key];
-        let bValue: any = b[sortConfig.key];
+        let aValue: any = a[sortConfig.key as keyof DataEntryFormData];
+        let bValue: any = b[sortConfig.key as keyof DataEntryFormData];
         
         if (sortConfig.key === 'firstRemittanceDate') {
-          const getVal = (e: DataEntryFormData) => {
-            const dateStr = e.remittanceDetails?.[0]?.dateOfRemittance || e.reappropriationDetails?.[0]?.date;
-            if (!dateStr) return 0;
-            return safeParseDate(dateStr)?.getTime() || 0;
-          };
-          aValue = getVal(a);
-          bValue = getVal(b);
+          const dateA = getDisplayDate(a);
+          const dateB = getDisplayDate(b);
+          aValue = dateA?.getTime() || 0;
+          bValue = dateB?.getTime() || 0;
         }
         
         if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -111,7 +129,7 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
       });
     }
     return sortableItems;
-  }, [fileEntries, sortConfig]);
+  }, [fileEntries, sortConfig, allFileEntries]);
 
   const handleViewClick = (item: DataEntryFormData) => {
     if (!item.id) return;
@@ -188,67 +206,67 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
   return (
     <>
       <TooltipProvider>
-        <Table>
-          <TableHeader className="sticky top-0 bg-secondary z-10">
-            <TableRow>
-              <TableHead className="w-[50px]">#</TableHead>
-              <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('fileNo')}>File No. {getSortIcon('fileNo')}</Button></TableHead>
-              <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('applicantName')}>Applicant {getSortIcon('applicantName')}</Button></TableHead>
-              <TableHead>Site Name(s)</TableHead>
-              <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('firstRemittanceDate')}>Remittance {getSortIcon('firstRemittanceDate')}</Button></TableHead>
-              <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('fileStatus')}>File Status {getSortIcon('fileStatus')}</Button></TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedFileEntries.map((entry, index) => (
-              <TableRow key={entry.id}>
-                <TableCell className="text-center">{(currentPage ? (currentPage - 1) * 50 : 0) + index + 1}</TableCell>
-                <TableCell className="font-medium">{entry.fileNo}</TableCell>
-                <TableCell>{entry.applicantName}</TableCell>
-                <TableCell>{entry.siteDetails?.map((site, idx) => (<span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>{site.nameOfSite}{idx < entry.siteDetails!.length - 1 ? ', ' : ''}</span>))}</TableCell>
-                <TableCell>
-                  {(() => {
-                    const dateStr = entry.remittanceDetails?.[0]?.dateOfRemittance || entry.reappropriationDetails?.[0]?.date;
-                    const date = safeParseDate(dateStr);
-                    return date ? format(date, "dd/MM/yyyy") : "N/A";
-                  })()}
-                </TableCell>
-                <TableCell className="font-semibold">{entry.fileStatus}</TableCell>
-                <TableCell className="text-right">
-                  <Tooltip>
-                      <TooltipTrigger asChild>
-                          <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}>
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                      </TooltipTrigger>
-                      <TooltipContent><p>View Details</p></TooltipContent>
-                  </Tooltip>
-                   {canCopy && (
-                      <Tooltip>
-                          <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => handleCopyClick(entry)} disabled={isCopying}>
-                                  <Copy className="h-4 w-4" />
-                              </Button>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Make a Copy</p></TooltipContent>
-                      </Tooltip>
-                  )}
-                  {canDelete && 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteItem(entry)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent><p>Delete File</p></TooltipContent>
-                    </Tooltip>
-                  }
-                </TableCell>
+        <div className="max-h-[70vh] overflow-auto">
+          <Table>
+            <TableHeader className="sticky top-0 bg-secondary z-10">
+              <TableRow>
+                <TableHead className="w-[50px]">#</TableHead>
+                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('fileNo')}>File No. {getSortIcon('fileNo')}</Button></TableHead>
+                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('applicantName')}>Applicant {getSortIcon('applicantName')}</Button></TableHead>
+                <TableHead>Site Name(s)</TableHead>
+                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('firstRemittanceDate')}>Remittance {getSortIcon('firstRemittanceDate')}</Button></TableHead>
+                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('fileStatus')}>File Status {getSortIcon('fileStatus')}</Button></TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {sortedFileEntries.map((entry, index) => {
+                const displayDate = getDisplayDate(entry);
+                return (
+                <TableRow key={entry.id}>
+                  <TableCell className="text-center font-mono">{(currentPage ? (currentPage - 1) * 50 : 0) + index + 1}</TableCell>
+                  <TableCell className="font-medium">{entry.fileNo}</TableCell>
+                  <TableCell>{entry.applicantName}</TableCell>
+                  <TableCell>{entry.siteDetails?.map((site, idx) => (<span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>{site.nameOfSite}{idx < entry.siteDetails!.length - 1 ? ', ' : ''}</span>))}</TableCell>
+                  <TableCell>
+                    {displayDate ? format(displayDate, "dd/MM/yyyy") : "N/A"}
+                  </TableCell>
+                  <TableCell className="font-semibold">{entry.fileStatus}</TableCell>
+                  <TableCell className="text-right">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => handleViewClick(entry)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>View Details</p></TooltipContent>
+                    </Tooltip>
+                    {canCopy && (
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={() => handleCopyClick(entry)} disabled={isCopying}>
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Make a Copy</p></TooltipContent>
+                        </Tooltip>
+                    )}
+                    {canDelete && 
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteItem(entry)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Delete File</p></TooltipContent>
+                      </Tooltip>
+                    }
+                  </TableCell>
+                </TableRow>
+              )})}
+            </TableBody>
+          </Table>
+        </div>
       </TooltipProvider>
       <AlertDialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete this investigation file?</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={confirmDelete} className="bg-destructive">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
        <AlertDialog open={!!itemToCopy} onOpenChange={() => setItemToCopy(null)}>
