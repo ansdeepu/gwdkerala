@@ -1,4 +1,3 @@
-
 // src/components/investigation/InvestigationTable.tsx
 "use client";
 
@@ -135,7 +134,7 @@ export default function InvestigationTable({ fileEntries, isLoading, searchActiv
     <>
       <TooltipProvider>
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 bg-secondary z-10">
             <TableRow>
               <TableHead className="w-[50px]">#</TableHead>
               <TableHead>File No.</TableHead>

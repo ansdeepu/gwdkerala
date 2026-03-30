@@ -160,7 +160,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 return {
                     id: tender.id,
                     slNo: index + 1,
-                    dateOfWorkOrder: tender.dateWorkOrder ? formatDateSafe(tender.dateWorkOrder) : 'N/A',
+                    dateOfWorkOrder: tender.dateOfWorkOrder ? formatDateSafe(tender.dateOfWorkOrder) : 'N/A',
                     eTenderNo: tender.eTenderNo || 'N/A',
                     nameOfWork: tender.nameOfWork || 'N/A',
                     contractor: l1Bidder ? l1Bidder.name || 'N/A' : 'N/A',
@@ -749,10 +749,10 @@ export default function ETenderListPage() {
 
             <Card>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
+                    <div className="max-h-[70vh] overflow-auto">
                         <TooltipProvider>
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="sticky top-0 bg-secondary z-10">
                                     <TableRow>
                                         <TableHead className="w-[4%] px-2 py-3">Sl. No.</TableHead>
                                         <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>

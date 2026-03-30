@@ -1,4 +1,3 @@
-
 // src/components/investigation/LoggingPumpingTestTable.tsx
 "use client";
 
@@ -137,7 +136,7 @@ export default function LoggingPumpingTestTable({ fileEntries, isLoading, search
     <>
       <TooltipProvider>
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 bg-secondary z-10">
             <TableRow>
               <TableHead className="w-[50px]">#</TableHead>
               <TableHead>File No.</TableHead>
