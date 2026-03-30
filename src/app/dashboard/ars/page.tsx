@@ -666,41 +666,41 @@ export default function ArsPage() {
 
         <Card className="shadow-lg">
             <CardContent className="p-0">
-                <div className="max-h-[70vh] overflow-auto">
-                    <Table>
-                        <TableHeader className="bg-secondary sticky top-0">
+                <div className="max-h-[70vh] overflow-y-auto overflow-x-hidden">
+                    <Table className="w-full">
+                        <TableHeader className="bg-secondary sticky top-0 z-10">
                             <TableRow>
-                                <TableHead>Sl. No.</TableHead>
-                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('fileNo')}>File No {getSortIcon('fileNo')}</Button></TableHead>
-                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfSite')}>Name of Site {getSortIcon('nameOfSite')}</Button></TableHead>
-                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('arsTypeOfScheme')}>Type of Scheme {getSortIcon('arsTypeOfScheme')}</Button></TableHead>
-                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('localSelfGovt')}>Local Self Govt. {getSortIcon('localSelfGovt')}</Button></TableHead>
-                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('arsStatus')}>Status {getSortIcon('arsStatus')}</Button></TableHead>
-                                <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateOfCompletion')}>Completion Date {getSortIcon('dateOfCompletion')}</Button></TableHead>
-                                <TableHead className="text-center w-[120px]">Actions</TableHead>
+                                <TableHead className="w-[5%] text-xs px-1">Sl.</TableHead>
+                                <TableHead className="w-[12%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('fileNo')}>File No {getSortIcon('fileNo')}</Button></TableHead>
+                                <TableHead className="w-[25%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('nameOfSite')}>Site Name {getSortIcon('nameOfSite')}</Button></TableHead>
+                                <TableHead className="w-[15%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('arsTypeOfScheme')}>Scheme {getSortIcon('arsTypeOfScheme')}</Button></TableHead>
+                                <TableHead className="w-[15%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('localSelfGovt')}>LSG {getSortIcon('localSelfGovt')}</Button></TableHead>
+                                <TableHead className="w-[13%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('arsStatus')}>Status {getSortIcon('arsStatus')}</Button></TableHead>
+                                <TableHead className="w-[10%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('dateOfCompletion')}>Date {getSortIcon('dateOfCompletion')}</Button></TableHead>
+                                <TableHead className="text-center w-[5%] text-xs px-1">Act</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {paginatedSites.length > 0 ? (
                                 paginatedSites.map((site, index) => {
                                     return (
-                                        <TableRow key={site.id} className={getStatusRowClass(site.arsStatus as SiteWorkStatus)}>
-                                            <TableCell className="w-[80px]">{offset + index + 1}</TableCell>
-                                            <TableCell className="w-[150px] font-medium">{site.fileNo}</TableCell>
-                                            <TableCell className="font-semibold whitespace-normal break-words">
+                                        <TableRow key={site.id} className={cn(getStatusRowClass(site.arsStatus as SiteWorkStatus), "text-xs")}>
+                                            <TableCell className="px-1 text-center font-mono">{offset + index + 1}</TableCell>
+                                            <TableCell className="px-1 font-medium break-all">{site.fileNo}</TableCell>
+                                            <TableCell className="px-1 font-semibold break-words whitespace-normal">
                                               {site.nameOfSite}
                                             </TableCell>
-                                            <TableCell className="whitespace-normal break-words">
+                                            <TableCell className="px-1 break-words whitespace-normal">
                                               {site.arsTypeOfScheme || 'N/A'}
                                             </TableCell>
-                                            <TableCell className="whitespace-normal break-words">{site.localSelfGovt || 'N/A'}</TableCell>
-                                            <TableCell>{site.arsStatus ?? 'N/A'}</TableCell>
-                                            <TableCell>{formatDateSafe(site.dateOfCompletion)}</TableCell>
-                                            <TableCell className="text-center">
-                                                <div className="flex items-center justify-center space-x-1">
+                                            <TableCell className="px-1 break-words whitespace-normal">{site.localSelfGovt || 'N/A'}</TableCell>
+                                            <TableCell className="px-1">{site.arsStatus ?? 'N/A'}</TableCell>
+                                            <TableCell className="px-1">{formatDateSafe(site.dateOfCompletion)}</TableCell>
+                                            <TableCell className="px-1 text-center">
+                                                <div className="flex items-center justify-center">
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <Button variant="ghost" size="icon" onClick={() => handleViewClick(site.id!)}>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleViewClick(site.id!)}>
                                                                 <Eye className="h-4 w-4" />
                                                             </Button>
                                                         </TooltipTrigger>
@@ -709,7 +709,7 @@ export default function ArsPage() {
                                                     {canEdit && (
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive/90" onClick={() => setDeletingSite(site)}>
+                                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive/90" onClick={() => setDeletingSite(site)}>
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </Button>
                                                             </TooltipTrigger>
