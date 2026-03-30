@@ -20,6 +20,7 @@ import { parseISO, isValid, format } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries'; 
+import { useDataStore } from '@/hooks/use-data-store';
 import PaginationControls from '@/components/shared/PaginationControls';
 
 export const dynamic = 'force-dynamic';
@@ -33,8 +34,6 @@ const FilePlus2 = (props: React.SVGProps<SVGSVGElement>) => (
 const Clock = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
 );
-
-const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -54,6 +53,7 @@ export default function FileManagerPage() {
   const { setHeader } = usePageHeader();
   const { user } = useAuth();
   const { fileEntries, isLoading } = useFileEntries(); 
+  const { allFileEntries } = useDataStore();
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -62,6 +62,16 @@ export default function FileManagerPage() {
   useEffect(() => {
     setHeader('Deposit Works', 'List of all public and government deposit works.');
   }, [setHeader]);
+
+  // Persistent Search Keyword Logic
+  useEffect(() => {
+    const saved = localStorage.getItem('deposit_works_search');
+    if (saved) setSearchTerm(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('deposit_works_search', searchTerm);
+  }, [searchTerm]);
 
   const ITEMS_PER_PAGE = 50;
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,15 +87,31 @@ export default function FileManagerPage() {
 
   const canCreate = user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist';
   
+  // Helper to find the first available date (Remittance or Re-appropriation Credit)
+  const getDisplayDate = (entry: DataEntryFormData): Date | null => {
+    const directRemittance = entry.remittanceDetails?.[0]?.dateOfRemittance;
+    if (directRemittance) return safeParseDate(directRemittance);
+
+    const directReapp = entry.reappropriationDetails?.[0]?.date;
+    if (directReapp) return safeParseDate(directReapp);
+
+    const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
+    if (normalizedFileNo && allFileEntries) {
+        for (const otherEntry of allFileEntries) {
+            if (otherEntry.fileNo?.toLowerCase().trim() === normalizedFileNo) continue;
+            const credit = otherEntry.reappropriationDetails?.find(r => r.refFileNo?.toLowerCase().trim() === normalizedFileNo);
+            if (credit && credit.date) return safeParseDate(credit.date);
+        }
+    }
+    return null;
+  };
+
   const { depositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => {
-        // Exclude files that definitively belong to other specialized modules based on site purpose.
         const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes((entry as any).category);
         const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
         const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
         
-        // A file is an investigation file if it has the right category OR the right site purpose.
-        // And it must NOT have a logging/pumping purpose, as that belongs to another page.
         if ((isInvestigationCategory || hasInvestigationPurpose) && !hasLoggingPumpingPurpose) {
             return false;
         }
@@ -93,27 +119,22 @@ export default function FileManagerPage() {
             return false;
         }
 
-
-        // Exclude files based on their specific application types for other modules.
         if (entry.applicationType) {
             if (PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)) return false;
             if (COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)) return false;
             if (PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)) return false;
         }
 
-        // Exclude files that are for Investigation or Logging, identifiable by the 'category' field,
-        // even if they don't have sites yet. This is a key differentiator.
         if ((entry as any).category) {
             return false;
         }
 
-        // If it passes all exclusions, it's a public/general deposit work.
         return true;
     });
     
     entries.sort((a, b) => {
-      const dateA = safeParseDate(a.remittanceDetails?.[0]?.dateOfRemittance);
-      const dateB = safeParseDate(b.remittanceDetails?.[0]?.dateOfRemittance);
+      const dateA = getDisplayDate(a);
+      const dateB = getDisplayDate(b);
       if (dateA && dateB) return dateB.getTime() - dateA.getTime();
       const createdAtA = safeParseDate((a as any).createdAt);
       const createdAtB = safeParseDate((b as any).createdAt);
@@ -142,7 +163,7 @@ export default function FileManagerPage() {
     }, null as Date | null);
     
     return { depositWorkEntries: entries, totalSites: totalSiteCount, lastCreatedDate: lastCreated };
-  }, [fileEntries, user]);
+  }, [fileEntries, user, allFileEntries]);
   
   const filteredEntries = useMemo(() => {
     if (!searchTerm) return depositWorkEntries;

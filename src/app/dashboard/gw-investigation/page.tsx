@@ -1,4 +1,3 @@
-
 // src/app/dashboard/gw-investigation/page.tsx
 "use client";
 
@@ -13,6 +12,7 @@ import { parseISO, isValid, format } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
+import { useDataStore } from '@/hooks/use-data-store';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { INVESTIGATION_GOVT_TYPES, INVESTIGATION_PRIVATE_TYPES, INVESTIGATION_COMPLAINT_TYPES, GW_INVESTIGATION_TYPES, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS, DataEntryFormData } from '@/lib/schemas';
@@ -39,6 +39,7 @@ export default function GWInvestigationPage() {
   const { setHeader } = usePageHeader();
   const { user } = useAuth();
   const { fileEntries, isLoading } = useFileEntries();
+  const { allFileEntries } = useDataStore();
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -50,6 +51,16 @@ export default function GWInvestigationPage() {
   const [activeTab, setActiveTab] = useState(tabFromUrl || "Govt");
   
   useEffect(() => { setHeader('GW Investigation', 'List of all Ground Water Investigation files.'); }, [setHeader]);
+
+  // Persistent Search Keyword Logic
+  useEffect(() => {
+    const saved = localStorage.getItem('gw_investigation_search');
+    if (saved) setSearchTerm(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('gw_investigation_search', searchTerm);
+  }, [searchTerm]);
 
   const canCreate = user?.role === 'admin' || user?.role === 'scientist';
 
@@ -76,38 +87,51 @@ export default function GWInvestigationPage() {
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
+  // Helper to find the first available date (Remittance or Re-appropriation Credit)
+  const getDisplayDate = (entry: DataEntryFormData): Date | null => {
+    const directRemittance = entry.remittanceDetails?.[0]?.dateOfRemittance;
+    if (directRemittance) return safeParseDate(directRemittance);
+
+    const directReapp = entry.reappropriationDetails?.[0]?.date;
+    if (directReapp) return safeParseDate(directReapp);
+
+    const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
+    if (normalizedFileNo && allFileEntries) {
+        for (const otherEntry of allFileEntries) {
+            if (otherEntry.fileNo?.toLowerCase().trim() === normalizedFileNo) continue;
+            const credit = otherEntry.reappropriationDetails?.find(r => r.refFileNo?.toLowerCase().trim() === normalizedFileNo);
+            if (credit && credit.date) return safeParseDate(credit.date);
+        }
+    }
+    return null;
+  };
+
   const allInvestigationEntries = useMemo(() => {
     let entries = fileEntries.filter(entry => {
         const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes((entry as any).category);
         const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
         const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
         
-        // A file is an investigation file if it has the right category OR the right site purpose.
-        // And it must NOT have a logging/pumping purpose, as that belongs to another page.
         return (isInvestigationCategory || hasInvestigationPurpose) && !hasLoggingPumpingPurpose;
     });
 
     entries.sort((a, b) => {
-        const getSortDate = (entry: DataEntryFormData): Date | null => {
-            const remittanceDate = entry.remittanceDetails?.[0]?.dateOfRemittance;
-            if (remittanceDate) {
-              const parsed = safeParseDate(remittanceDate);
-              if (parsed) return parsed;
-            }
-            return safeParseDate((entry as any).createdAt);
-          };
-    
-          const dateA = getSortDate(a);
-          const dateB = getSortDate(b);
-    
-          if (!dateA) return 1;
-          if (!dateB) return -1;
-          return dateB.getTime() - dateA.getTime();
+        const dateA = getDisplayDate(a);
+        const dateB = getDisplayDate(b);
+        if (dateA && dateB) return dateB.getTime() - dateA.getTime();
+        if (!dateA && !dateB) {
+            const caA = safeParseDate((a as any).createdAt);
+            const caB = safeParseDate((b as any).createdAt);
+            if (caA && caB) return caB.getTime() - caA.getTime();
+            return 0;
+        }
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return 0;
     });
     return entries;
-  }, [fileEntries]);
+  }, [fileEntries, allFileEntries]);
 
-  // Global search filtering applied BEFORE splitting into tab categories
   const searchFilteredEntries = useMemo(() => {
     if (!searchTerm) return allInvestigationEntries;
     const lowerSearchTerm = searchTerm.toLowerCase();
@@ -182,17 +206,11 @@ export default function GWInvestigationPage() {
                 />
               </div>
                <div className="flex items-center gap-4 w-full sm:w-auto">
-                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                    Tab Total: <span className="font-bold text-primary">{investigationEntries.length}</span>
-                </div>
-                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                    Total Sites: <span className="font-bold text-primary">{totalSites}</span>
-                </div>
+                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Tab Total: <span className="font-bold text-primary">{investigationEntries.length}</span></div>
+                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Total Sites: <span className="font-bold text-primary">{totalSites}</span></div>
                 
                 {canCreate && (
-                    <Button onClick={handleAddNewClick} size="sm" className="w-full sm:w-auto shrink-0">
-                        <FilePlus2 className="mr-2 h-4 w-4" /> New File
-                    </Button>
+                    <Button onClick={handleAddNewClick} size="sm" className="w-full sm:w-auto shrink-0"><FilePlus2 className="mr-2 h-4 w-4" /> New File</Button>
                 )}
                </div>
             </div>

@@ -15,26 +15,20 @@ import { parseISO, isValid, format } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries';
+import { useDataStore } from '@/hooks/use-data-store';
 import PaginationControls from '@/components/shared/PaginationControls';
 import { SUPER_ADMIN_EMAIL } from '@/lib/config';
-import { Search, FilePlus2, Clock } from 'lucide-react';
+import { Search, PlusCircle, Clock } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-const SUPERVISOR_ONGOING_STATUSES: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated"];
-
-
-// Helper function to safely parse dates, whether they are strings or Date objects
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
-  if (dateValue instanceof Date && isValid(dateValue)) {
-    return dateValue;
-  }
+  if (dateValue instanceof Date && isValid(dateValue)) return dateValue;
   if (typeof dateValue === 'string') {
     const parsed = parseISO(dateValue);
     if (isValid(parsed)) return parsed;
   }
-  // Fallback for other potential date-like objects from Firestore
   if (typeof dateValue === 'object' && dateValue.toDate) {
     const parsed = dateValue.toDate();
     if (isValid(parsed)) return parsed;
@@ -42,11 +36,11 @@ const safeParseDate = (dateValue: any): Date | null => {
   return null;
 };
 
-
 export default function PlanFundWorksPage() {
   const { setHeader } = usePageHeader();
   const { user } = useAuth();
   const { fileEntries, isLoading } = useFileEntries();
+  const { allFileEntries } = useDataStore();
   const searchParams = useSearchParams();
   const codeFilter = searchParams.get('code');
   const isSuperAdmin = user?.email === SUPER_ADMIN_EMAIL;
@@ -55,13 +49,9 @@ export default function PlanFundWorksPage() {
     const description = 'List of all deposit works funded by the Plan Fund (GWBDWS).';
     let title = 'Plan Fund Works';
     if (codeFilter) {
-      if (codeFilter.includes('4702')) {
-        title = 'GWBDWS (4702)';
-      } else if (codeFilter.includes('2702')) {
-        title = 'GWBDWS (2702)';
-      } else {
-        title = `GWBDWS (${codeFilter})`;
-      }
+      if (codeFilter.includes('4702')) title = 'GWBDWS (4702)';
+      else if (codeFilter.includes('2702')) title = 'GWBDWS (2702)';
+      else title = `GWBDWS (${codeFilter})`;
     }
     setHeader(title, description);
   }, [setHeader, codeFilter]);
@@ -70,6 +60,15 @@ export default function PlanFundWorksPage() {
   const router = useRouter();
   const { setIsNavigating } = usePageNavigation();
   
+  useEffect(() => {
+    const saved = localStorage.getItem('plan_fund_works_search');
+    if (saved) setSearchTerm(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('plan_fund_works_search', searchTerm);
+  }, [searchTerm]);
+
   const canCreate = (user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist') && !isSuperAdmin;
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,6 +83,25 @@ export default function PlanFundWorksPage() {
     }
   }, [searchParams]);
 
+  // Helper to find the first available date (Remittance or Re-appropriation Credit)
+  const getDisplayDate = (entry: DataEntryFormData): Date | null => {
+    const directRemittance = entry.remittanceDetails?.[0]?.dateOfRemittance;
+    if (directRemittance) return safeParseDate(directRemittance);
+
+    const directReapp = entry.reappropriationDetails?.[0]?.date;
+    if (directReapp) return safeParseDate(directReapp);
+
+    const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
+    if (normalizedFileNo && allFileEntries) {
+        for (const otherEntry of allFileEntries) {
+            if (otherEntry.fileNo?.toLowerCase().trim() === normalizedFileNo) continue;
+            const credit = otherEntry.reappropriationDetails?.find(r => r.refFileNo?.toLowerCase().trim() === normalizedFileNo);
+            if (credit && credit.date) return safeParseDate(credit.date);
+        }
+    }
+    return null;
+  };
+
   const { filteredEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => 
         !!entry.applicationType && PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)
@@ -95,78 +113,28 @@ export default function PlanFundWorksPage() {
 
         entries = entries.flatMap(entry => {
             if (!entry.siteDetails || entry.siteDetails.length === 0) return [];
-
             const filteredSites = entry.siteDetails.filter(site => {
                 const purpose = site.purpose as SitePurpose;
                 return is2702Report ? purposesFor2702.includes(purpose) : !purposesFor2702.includes(purpose);
             });
-
-            if (filteredSites.length > 0) {
-                return [{ ...entry, siteDetails: filteredSites }];
-            }
-            
+            if (filteredSites.length > 0) return [{ ...entry, siteDetails: filteredSites }];
             return [];
         });
     }
     
-    if (searchTerm) {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      entries = entries.filter(entry => {
-          const appTypeDisplay = entry.applicationType ? applicationTypeDisplayMap[entry.applicationType as ApplicationType] : "";
-          const searchableContent = [
-              entry.fileNo, entry.applicantName, entry.phoneNo, entry.secondaryMobileNo, appTypeDisplay, entry.fileStatus, entry.remarks, entry.constituency,
-              entry.estimateAmount, entry.totalRemittance, entry.totalPaymentAllEntries, entry.overallBalance,
-              ...(entry.siteDetails || []).flatMap(site => [
-                  site.nameOfSite, site.purpose, site.workStatus, site.contractorName,
-                  site.supervisorName, site.tenderNo, site.drillingRemarks,
-                  site.workRemarks, site.surveyRemarks, site.surveyLocation,
-                  site.pumpDetails, site.latitude, site.longitude, site.estimateAmount,
-                  site.remittedAmount, site.siteConditions, site.accessibleRig,
-                  site.tsAmount, site.diameter, site.totalDepth, site.casingPipeUsed,
-                  site.outerCasingPipe, site.innerCasingPipe, site.yieldDischarge,
-                  site.zoneDetails, site.waterLevel, site.waterTankCapacity,
-                  site.noOfTapConnections, site.noOfBeneficiary, site.typeOfRig,
-                  site.totalExpenditure, site.surveyOB, site.surveyPlainPipe,
-                  site.surveySlottedPipe, site.surveyRecommendedDiameter,
-                  site.surveyRecommendedTD, site.surveyRecommendedOB,
-                  site.surveyRecommendedCasingPipe, site.surveyRecommendedPlainPipe,
-                  site.surveyRecommendedSlottedPipe, site.surveyRecommendedMsCasingPipe,
-                  site.arsNumberOfStructures, site.arsStorageCapacity, site.arsNumberOfFillings,
-                  site.constituency, site.localSelfGovt, site.pumpingLineLength, site.deliveryLineLength,
-                  site.pilotDrillingDepth,
-              ]),
-              ...(entry.remittanceDetails || []).flatMap(rd => [ rd.amountRemitted, rd.remittedAccount, rd.remittanceRemarks, rd.dateOfRemittance ? format(new Date(rd.dateOfRemittance), "dd/MM/yyyy") : '']),
-              ...(entry.paymentDetails || []).flatMap(pd => [ pd.paymentAccount, pd.revenueHead, pd.contractorsPayment, pd.gst, pd.incomeTax, pd.kbcwb, pd.refundToParty, pd.totalPaymentPerEntry, pd.paymentRemarks, pd.dateOfPayment ? format(new Date(pd.dateOfPayment), "dd/MM/yyyy") : '' ]),
-          ]
-          .filter(val => val !== null && val !== undefined)
-          .map(val => String(val).toLowerCase())
-          .join(' || '); 
-  
-          return searchableContent.includes(lowerSearchTerm);
-      });
-    }
-
     entries.sort((a, b) => {
-      const dateAValue = a.remittanceDetails?.[0]?.dateOfRemittance;
-      const dateBValue = b.remittanceDetails?.[0]?.dateOfRemittance;
-
-      const dateA = safeParseDate(dateAValue);
-      const dateB = safeParseDate(dateBValue);
+      const dateA = getDisplayDate(a);
+      const dateB = getDisplayDate(b);
       
-      if (dateA && dateB) {
-        return dateB.getTime() - dateA.getTime();
-      }
+      if (dateA && dateB) return dateB.getTime() - dateA.getTime();
       if (!dateA && !dateB) {
         const createdAtA = safeParseDate((a as any).createdAt);
         const createdAtB = safeParseDate((b as any).createdAt);
-        if (createdAtA && createdAtB) {
-          return createdAtB.getTime() - createdAtA.getTime();
-        }
+        if (createdAtA && createdAtB) return createdAtB.getTime() - createdAtA.getTime();
         return 0;
       }
       if (!dateA) return 1;
       if (!dateB) return -1;
-      
       return 0;
     });
 
@@ -174,30 +142,34 @@ export default function PlanFundWorksPage() {
 
     const lastCreated = entries.reduce((latest, entry) => {
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
-        if (createdAt && (!latest || createdAt > latest)) {
-            return createdAt;
-        }
+        if (createdAt && (!latest || createdAt > latest)) return createdAt;
         return latest;
     }, null as Date | null);
     
     return { filteredEntries: entries, totalSites: totalSiteCount, lastCreatedDate: lastCreated };
-  }, [fileEntries, user, codeFilter, searchTerm]);
-
-  const filteredTotalSites = useMemo(() => {
-    return filteredEntries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
-  }, [filteredEntries]);
+  }, [fileEntries, user, codeFilter, allFileEntries]);
   
-  const handleAddNewClick = () => {
-    setIsNavigating(true);
-    router.push('/dashboard/data-entry?workType=planFund');
-  };
-  
-  const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
+  const searchFilteredEntries = useMemo(() => {
+    if (!searchTerm) return filteredEntries;
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return filteredEntries.filter(entry => {
+        const searchableContent = [
+            entry.fileNo, entry.applicantName, entry.phoneNo, entry.fileStatus,
+            ...(entry.siteDetails || []).map(s => s.nameOfSite),
+        ].filter(Boolean).map(val => String(val).toLowerCase()).join(' '); 
+        return searchableContent.includes(lowerSearchTerm);
+    });
+  }, [filteredEntries, searchTerm]);
 
+  const filteredTotalSitesCount = useMemo(() => {
+    return searchFilteredEntries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
+  }, [searchFilteredEntries]);
+  
+  const totalPages = Math.ceil(searchFilteredEntries.length / ITEMS_PER_PAGE);
   const paginatedEntries = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredEntries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredEntries, currentPage]);
+    return searchFilteredEntries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [searchFilteredEntries, currentPage]);
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -225,12 +197,8 @@ export default function PlanFundWorksPage() {
                 />
               </div>
                <div className="flex items-center gap-4 w-full sm:w-auto">
-                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                    Total Files: <span className="font-bold text-primary">{filteredEntries.length}</span>
-                </div>
-                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                    Total Sites: <span className="font-bold text-primary">{totalSites}</span>
-                </div>
+                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Total Files: <span className="font-bold text-primary">{searchFilteredEntries.length}</span></div>
+                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Total Sites: <span className="font-bold text-primary">{totalSites}</span></div>
                 {lastCreatedDate && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                         <Clock className="h-3.5 w-3.5" />
@@ -238,9 +206,7 @@ export default function PlanFundWorksPage() {
                     </div>
                 )}
                 {canCreate && (
-                    <Button onClick={handleAddNewClick} className="w-full sm:w-auto shrink-0">
-                        <FilePlus2 className="mr-2 h-5 w-5" /> New File
-                    </Button>
+                    <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=planFund'); }} className="w-full sm:w-auto shrink-0"><PlusCircle className="mr-2 h-4 w-4" /> New File</Button>
                 )}
                </div>
             </div>
@@ -251,13 +217,7 @@ export default function PlanFundWorksPage() {
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-yellow-600"></div><span>To be Refunded</span></div>
                     <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full bg-red-600"></div><span>Completed / Failed</span></div>
                 </div>
-                {totalPages > 1 && (
-                    <PaginationControls
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                    />
-                )}
+                {totalPages > 1 && <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />}
             </div>
         </CardContent>
       </Card>
@@ -268,7 +228,7 @@ export default function PlanFundWorksPage() {
                 fileEntries={paginatedEntries} 
                 isLoading={isLoading}
                 searchActive={!!searchTerm}
-                totalEntries={filteredEntries.length}
+                totalEntries={searchFilteredEntries.length}
                 isReadOnly={isSuperAdmin}
                 currentPage={currentPage}
                 userRole={user?.role}
@@ -277,7 +237,7 @@ export default function PlanFundWorksPage() {
          {totalPages > 1 && (
             <CardFooter className="p-4 border-t flex flex-wrap items-center justify-between gap-4">
                 <p className="text-sm text-muted-foreground">
-                    Showing <strong>{filteredEntries.length > 0 ? startEntryNum : 0}</strong>-<strong>{endEntryNum}</strong> of <strong>{filteredTotalSites}</strong> sites.
+                    Showing <strong>{searchFilteredEntries.length > 0 ? startEntryNum : 0}</strong>-<strong>{endEntryNum}</strong> of <strong>{filteredTotalSitesCount}</strong> sites.
                 </p>
                 <PaginationControls
                     currentPage={currentPage}

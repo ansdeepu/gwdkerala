@@ -1,4 +1,3 @@
-
 // src/app/dashboard/logging-pumping-test/page.tsx
 "use client";
 
@@ -41,7 +40,7 @@ export default function LoggingPumpingTestPage() {
   const { setHeader } = usePageHeader();
   const { user } = useAuth();
   const { fileEntries, isLoading } = useFileEntries();
-  const { allStaffMembers } = useDataStore();
+  const { allFileEntries, allStaffMembers } = useDataStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
@@ -54,6 +53,16 @@ export default function LoggingPumpingTestPage() {
   const [activeTab, setActiveTab] = useState(tabFromUrl || "Geological");
   
   useEffect(() => { setHeader('Logging & Pumping Test', 'List of all Logging & Pumping Test files.'); }, [setHeader]);
+
+  // Persistent Search Keyword Logic
+  useEffect(() => {
+    const saved = localStorage.getItem('logging_pumping_search');
+    if (saved) setSearchTerm(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('logging_pumping_search', searchTerm);
+  }, [searchTerm]);
 
   const canCreate = user?.role === 'admin' || user?.role === 'scientist';
 
@@ -107,6 +116,25 @@ export default function LoggingPumpingTestPage() {
     }
   }, [visibleTabs, activeTab]);
 
+  // Helper to find the first available date (Remittance or Re-appropriation Credit)
+  const getDisplayDate = (entry: DataEntryFormData): Date | null => {
+    const directRemittance = entry.remittanceDetails?.[0]?.dateOfRemittance;
+    if (directRemittance) return safeParseDate(directRemittance);
+
+    const directReapp = entry.reappropriationDetails?.[0]?.date;
+    if (directReapp) return safeParseDate(directReapp);
+
+    const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
+    if (normalizedFileNo && allFileEntries) {
+        for (const otherEntry of allFileEntries) {
+            if (otherEntry.fileNo?.toLowerCase().trim() === normalizedFileNo) continue;
+            const credit = otherEntry.reappropriationDetails?.find(r => r.refFileNo?.toLowerCase().trim() === normalizedFileNo);
+            if (credit && credit.date) return safeParseDate(credit.date);
+        }
+    }
+    return null;
+  };
+
   const allRelevantEntries = useMemo(() => {
     const entries = fileEntries.filter(entry => {
         const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
@@ -115,26 +143,22 @@ export default function LoggingPumpingTestPage() {
     });
 
     entries.sort((a, b) => {
-        const getSortDate = (entry: DataEntryFormData): Date | null => {
-            const remittanceDate = entry.remittanceDetails?.[0]?.dateOfRemittance;
-            if (remittanceDate) {
-              const parsed = safeParseDate(remittanceDate);
-              if (parsed) return parsed;
-            }
-            return safeParseDate((entry as any).createdAt);
-          };
-    
-          const dateA = getSortDate(a);
-          const dateB = getSortDate(b);
-    
-          if (!dateA) return 1;
-          if (!dateB) return -1;
-          return dateB.getTime() - dateA.getTime();
+        const dateA = getDisplayDate(a);
+        const dateB = getDisplayDate(b);
+        if (dateA && dateB) return dateB.getTime() - dateA.getTime();
+        if (!dateA && !dateB) {
+            const caA = safeParseDate((a as any).createdAt);
+            const caB = safeParseDate((b as any).createdAt);
+            if (caA && caB) return caB.getTime() - caA.getTime();
+            return 0;
+        }
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return 0;
     });
     return entries;
-  }, [fileEntries]);
+  }, [fileEntries, allFileEntries]);
 
-  // Global search filtering
   const searchFilteredEntries = useMemo(() => {
     if (!searchTerm) return allRelevantEntries;
     const lowerSearchTerm = searchTerm.toLowerCase();
@@ -213,17 +237,11 @@ export default function LoggingPumpingTestPage() {
                 />
               </div>
                <div className="flex items-center gap-4 w-full sm:w-auto">
-                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                    Tab Total: <span className="font-bold text-primary">{investigationEntries.length}</span>
-                </div>
-                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                    Total Sites: <span className="font-bold text-primary">{totalSites}</span>
-                </div>
+                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Tab Total: <span className="font-bold text-primary">{investigationEntries.length}</span></div>
+                 <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Total Sites: <span className="font-bold text-primary">{totalSites}</span></div>
                 
                 {canCreate && (
-                    <Button onClick={handleAddNewClick} size="sm" className="w-full sm:w-auto shrink-0">
-                        <FilePlus2 className="mr-2 h-4 w-4" /> New File
-                    </Button>
+                    <Button onClick={handleAddNewClick} size="sm" className="w-full sm:w-auto shrink-0"><FilePlus2 className="mr-2 h-4 w-4" /> New File</Button>
                 )}
                </div>
             </div>
