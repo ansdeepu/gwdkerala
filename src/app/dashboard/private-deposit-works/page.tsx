@@ -1,15 +1,16 @@
+
 // src/app/dashboard/private-deposit-works/page.tsx
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
 import FileDatabaseTable from "@/components/database/FileDatabaseTable";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import type { SiteWorkStatus, DataEntryFormData, ApplicationType } from '@/lib/schemas';
-import { applicationTypeDisplayMap, PRIVATE_APPLICATION_TYPES } from '@/lib/schemas';
+import type { DataEntryFormData } from '@/lib/schemas';
+import { PRIVATE_APPLICATION_TYPES } from '@/lib/schemas';
 import { parseISO, isValid, format } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { usePageNavigation } from '@/hooks/usePageNavigation';

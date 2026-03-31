@@ -1,3 +1,4 @@
+
 // src/components/database/FileDatabaseTable.tsx
 "use client";
 
@@ -23,7 +24,6 @@ import {
 } from "@/lib/schemas";
 import { format, isValid, parseISO } from "date-fns";
 import Image from "next/image";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,38 +105,20 @@ export default function FileDatabaseTable({
   const [itemToCopy, setItemToCopy] = useState<DataEntryFormData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
-  const [pendingUpdatesMap, setPendingUpdatesMap] = useState<Record<string, boolean>>({});
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>({ key: 'firstRemittanceDate', direction: 'desc' });
 
   const canEdit = !isReadOnly && (user?.role === 'admin' || user?.role === 'supervisor');
   const canDelete = !isReadOnly && user?.role === 'admin';
   const canCopy = !isReadOnly && user?.role === 'admin';
 
-  useEffect(() => {
-    if (user?.role === 'supervisor' && user.uid) {
-        getPendingUpdates(null, user.uid).then(updates => {
-            const map: Record<string, boolean> = {};
-            updates.forEach(u => {
-                if(u.fileNo && u.status === 'pending') {
-                    map[u.fileNo] = true;
-                }
-            });
-            setPendingUpdatesMap(map);
-        });
-    }
-  }, [user, fileEntries, getPendingUpdates]);
-
   // Helper to find the first available date (Remittance or Re-appropriation Credit)
   const getDisplayDate = (entry: DataEntryFormData): Date | null => {
-    // 1. Direct Remittance
     const directRemittance = entry.remittanceDetails?.[0]?.dateOfRemittance;
     if (directRemittance) return safeParseDate(directRemittance);
 
-    // 2. Direct Reappropriation (Outward)
     const directReapp = entry.reappropriationDetails?.[0]?.date;
     if (directReapp) return safeParseDate(directReapp);
 
-    // 3. Inward Reappropriation (Credit) - Search other files
     const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
     if (normalizedFileNo && allFileEntries) {
         for (const otherEntry of allFileEntries) {
@@ -266,8 +248,6 @@ export default function FileDatabaseTable({
     );
   }
 
-  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
   return (
     <>
       <div className="max-h-[70vh] overflow-auto">
@@ -280,7 +260,7 @@ export default function FileDatabaseTable({
               <TableHead className="w-[25%] px-2 py-3 text-sm">Site Name(s)</TableHead>
               <TableHead className="w-[10%] px-2 py-3 text-sm">Purpose(s)</TableHead>
               <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('firstRemittanceDate')}>Remittance {getSortIcon('firstRemittanceDate')}</Button></TableHead>
-              {userRole === 'supervisor' ? (
+              {userRole === 'supervisor' || userRole === 'investigator' ? (
                 <TableHead className="w-[10%] px-2 py-3 text-sm">Work Status</TableHead>
               ) : (
                 <TableHead className="w-[10%] px-2 py-3 text-sm"><Button variant="ghost" className="p-0 hover:bg-transparent font-bold" onClick={() => requestSort('fileStatus')}>File Status {getSortIcon('fileStatus')}</Button></TableHead>
@@ -291,11 +271,12 @@ export default function FileDatabaseTable({
             <TableBody>
               {sortedFileEntries.map((entry, index) => {
                 let sitesToDisplay: SiteDetailFormData[] = entry.siteDetails || [];
-                if (user?.role === 'supervisor') {
+                if (user?.role === 'supervisor' || user?.role === 'investigator') {
                     sitesToDisplay = sitesToDisplay.filter(site => {
                         const isAssignedByUid = site.supervisorUid === user.uid;
                         const isAssignedByName = user.name && site.supervisorName?.includes(user.name);
-                        return isAssignedByUid || isAssignedByName;
+                        const isAssignedInvestigator = site.nameOfInvestigator === user.name || site.vesInvestigator === user.name;
+                        return isAssignedByUid || isAssignedByName || isAssignedInvestigator;
                     });
                 }
                 const displayDate = getDisplayDate(entry);
@@ -322,7 +303,7 @@ export default function FileDatabaseTable({
                   <TableCell className="w-[10%] px-2 py-2 text-sm">
                     {displayDate ? format(displayDate, "dd/MM/yyyy") : "N/A"}
                   </TableCell>
-                  {userRole === 'supervisor' ? (
+                  {userRole === 'supervisor' || userRole === 'investigator' ? (
                     <TableCell className="w-[10%] px-2 py-2 text-sm">
                         {sitesToDisplay.map((site, idx) => (
                             <span key={idx} className={cn("font-semibold", getStatusColorClass(site.workStatus as SiteWorkStatus))}>

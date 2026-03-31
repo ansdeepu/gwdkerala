@@ -1,3 +1,4 @@
+
 // src/app/dashboard/file-room/page.tsx
 "use client";
 
@@ -8,15 +9,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import type { SiteWorkStatus, DataEntryFormData, ApplicationType } from '@/lib/schemas';
+import type { DataEntryFormData, ApplicationType } from '@/lib/schemas';
 import { 
-    applicationTypeDisplayMap, 
     PRIVATE_APPLICATION_TYPES, 
     COLLECTOR_APPLICATION_TYPES, 
     PLAN_FUND_APPLICATION_TYPES,
     LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
 } from '@/lib/schemas';
-import { parseISO, isValid, format } from 'date-fns';
+import { parseISO, isValid, format, startOfDay } from 'date-fns';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { usePageNavigation } from '@/hooks/usePageNavigation';
 import { useFileEntries } from '@/hooks/useFileEntries'; 
@@ -42,7 +42,7 @@ const safeParseDate = (dateValue: any): Date | null => {
     const parsed = parseISO(dateValue);
     if (isValid(parsed)) return parsed;
   }
-  if (typeof dateValue === 'object' && dateValue.toDate) { // For Firestore Timestamps
+  if (typeof dateValue === 'object' && dateValue.toDate) {
     const parsed = dateValue.toDate();
     if (isValid(parsed)) return parsed;
   }
@@ -89,15 +89,12 @@ export default function FileManagerPage() {
   
   // Helper to find the first available date (Remittance or Re-appropriation Credit)
   const getDisplayDate = (entry: DataEntryFormData): Date | null => {
-    // 1. Direct Remittance
     const directRemittance = entry.remittanceDetails?.[0]?.dateOfRemittance;
     if (directRemittance) return safeParseDate(directRemittance);
 
-    // 2. Direct Reappropriation (Outward)
     const directReapp = entry.reappropriationDetails?.[0]?.date;
     if (directReapp) return safeParseDate(directReapp);
 
-    // 3. Inward Reappropriation (Credit) - Search other files
     const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
     if (normalizedFileNo && allFileEntries) {
         for (const otherEntry of allFileEntries) {

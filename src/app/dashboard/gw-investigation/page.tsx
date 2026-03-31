@@ -1,3 +1,4 @@
+
 // src/app/dashboard/gw-investigation/page.tsx
 "use client";
 
@@ -15,7 +16,7 @@ import { useFileEntries } from '@/hooks/useFileEntries';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { INVESTIGATION_GOVT_TYPES, INVESTIGATION_PRIVATE_TYPES, INVESTIGATION_COMPLAINT_TYPES, GW_INVESTIGATION_TYPES, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS, DataEntryFormData } from '@/lib/schemas';
+import { LOGGING_PUMPING_TEST_PURPOSE_OPTIONS, DataEntryFormData } from '@/lib/schemas';
 import PaginationControls from '@/components/shared/PaginationControls';
 import { Search, FilePlus2, Clock } from 'lucide-react';
 

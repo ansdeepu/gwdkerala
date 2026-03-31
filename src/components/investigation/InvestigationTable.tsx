@@ -1,3 +1,4 @@
+
 // src/components/investigation/InvestigationTable.tsx
 "use client";
 
@@ -12,18 +13,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, Trash2, Loader2, Clock, Copy, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import type { DataEntryFormData, SiteWorkStatus, SiteDetailFormData } from "@/lib/schemas";
+import { Eye, Trash2, Loader2, Copy, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import type { DataEntryFormData, SiteWorkStatus } from "@/lib/schemas";
 import { format, isValid, parseISO } from "date-fns";
 import Image from "next/image";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useFileEntries } from "@/hooks/useFileEntries";
 import { useAuth } from "@/hooks/useAuth";
 import { useDataStore } from "@/hooks/use-data-store";
-import PaginationControls from "@/components/shared/PaginationControls";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from 'uuid';
 

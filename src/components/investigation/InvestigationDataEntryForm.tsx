@@ -1,3 +1,4 @@
+
 // src/components/investigation/InvestigationDataEntryForm.tsx
 "use client";
 
@@ -416,8 +417,8 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
                                 <Input 
                                     type="number" 
                                     {...field} 
-                                    value={field.value === undefined || field.value === null ? "" : field.value} 
-                                    onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} 
+                                    value={field.value ?? ""} 
+                                    onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} 
                                 />
                             </FormControl>
                             <FormMessage />
@@ -547,7 +548,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                                 <FormMessage />
                             </FormItem> 
                         )}/>
-                        <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} value={field.value === undefined || field.value === null ? "" : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} /></FormControl><FormMessage /></FormItem> )}/>
+                        <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} /></FormControl><FormMessage /></FormItem> )}/>
                     </div>
                 </div>
                 <FormField name="fileDetails" control={form.control} render={({ field }) => ( 
@@ -608,8 +609,8 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                                             <Input 
                                                 type="number" 
                                                 {...field} 
-                                                value={field.value === undefined || field.value === null ? "" : field.value}
-                                                onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} 
+                                                value={field.value ?? ""}
+                                                onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} 
                                                 readOnly={isLinkedToRemittance}
                                                 className={isLinkedToRemittance ? 'bg-muted/50' : ''}
                                             />
