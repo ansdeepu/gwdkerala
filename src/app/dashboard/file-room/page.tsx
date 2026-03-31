@@ -89,12 +89,15 @@ export default function FileManagerPage() {
   
   // Helper to find the first available date (Remittance or Re-appropriation Credit)
   const getDisplayDate = (entry: DataEntryFormData): Date | null => {
+    // 1. Direct Remittance
     const directRemittance = entry.remittanceDetails?.[0]?.dateOfRemittance;
     if (directRemittance) return safeParseDate(directRemittance);
 
+    // 2. Direct Reappropriation (Outward)
     const directReapp = entry.reappropriationDetails?.[0]?.date;
     if (directReapp) return safeParseDate(directReapp);
 
+    // 3. Inward Reappropriation (Credit) - Search other files
     const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
     if (normalizedFileNo && allFileEntries) {
         for (const otherEntry of allFileEntries) {
