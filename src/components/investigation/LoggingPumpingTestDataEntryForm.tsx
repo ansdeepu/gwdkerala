@@ -425,8 +425,8 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
                                 <Input 
                                     type="number" 
                                     {...field} 
-                                    value={field.value ?? ''} 
-                                    onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} 
+                                    value={field.value === undefined || field.value === null ? "" : field.value} 
+                                    onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} 
                                 />
                             </FormControl>
                             <FormMessage />
@@ -556,7 +556,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                                 <FormMessage />
                             </FormItem> 
                         )}/>
-                        <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
+                        <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} value={field.value === undefined || field.value === null ? "" : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} /></FormControl><FormMessage /></FormItem> )}/>
                     </div>
                 </div>
                 <FormField name="fileDetails" control={form.control} render={({ field }) => ( 
@@ -617,8 +617,8 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                                             <Input 
                                                 type="number" 
                                                 {...field} 
-                                                value={field.value ?? ''}
-                                                onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} 
+                                                value={field.value === undefined || field.value === null ? "" : field.value}
+                                                onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} 
                                                 readOnly={isLinkedToRemittance}
                                                 className={isLinkedToRemittance ? 'bg-muted/50' : ''}
                                             />
@@ -629,11 +629,11 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                                 )}
                             />
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <FormField name="contractorsPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Contractor&apos;s Payment (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
-                                <FormField name="gst" control={form.control} render={({ field }) => <FormItem><FormLabel>GST (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
-                                <FormField name="incomeTax" control={form.control} render={({ field }) => <FormItem><FormLabel>Income Tax (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
-                                <FormField name="kbcwb" control={form.control} render={({ field }) => <FormItem><FormLabel>KBCWB (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
-                                <FormField name="refundToParty" control={form.control} render={({ field }) => <FormItem><FormLabel>Refund to Party (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="contractorsPayment" control={form.control} render={({ field }) => <FormItem><FormLabel>Contractor&apos;s Payment (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value === undefined || field.value === null ? "" : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="gst" control={form.control} render={({ field }) => <FormItem><FormLabel>GST (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value === undefined || field.value === null ? "" : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="incomeTax" control={form.control} render={({ field }) => <FormItem><FormLabel>Income Tax (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value === undefined || field.value === null ? "" : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="kbcwb" control={form.control} render={({ field }) => <FormItem><FormLabel>KBCWB (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value === undefined || field.value === null ? "" : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
+                                <FormField name="refundToParty" control={form.control} render={({ field }) => <FormItem><FormLabel>Refund to Party (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value === undefined || field.value === null ? "" : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} readOnly={isLinkedToRemittance} className={isLinkedToRemittance ? 'bg-muted/50' : ''}/></FormControl><FormMessage /></FormItem>} />
                             </div>
                           <Separator/>
                           <FormField name="paymentRemarks" control={form.control} render={({ field }) => <FormItem><FormLabel>Payment Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this payment entry..." /></FormControl><FormMessage /></FormItem>} />
@@ -1030,7 +1030,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                 )}
             </CardFooter>
         </form>
-        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} formOptions={formOptions} isEditing={isEditing} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><SiteDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={!!dialogState.isView || !!isFormDisabled} isSupervisor={isSupervisor} supervisorList={supervisorList} allLsgConstituencyMaps={allLsgConstituencyMaps} allE_tenders={allE_tenders} allStaffMembers={allStaffMembers} allBidders={allBidders} allRigCompressors={allRigCompressors} workTypeContext={workTypeContext} /></DialogContent></Dialog>

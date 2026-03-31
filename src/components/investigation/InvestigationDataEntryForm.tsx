@@ -409,7 +409,20 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
             <div className="p-6 pt-4 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField name="dateOfRemittance" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Date <span className="text-destructive">*</span></FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                    <FormField name="amountRemitted" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹)</FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField name="amountRemitted" control={form.control} render={({ field }) => ( 
+                        <FormItem>
+                            <FormLabel>Amount (₹)</FormLabel>
+                            <FormControl>
+                                <Input 
+                                    type="number" 
+                                    {...field} 
+                                    value={field.value === undefined || field.value === null ? "" : field.value} 
+                                    onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} 
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem> 
+                    )}/>
                     <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl>
                         <SelectContent>{availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
@@ -534,7 +547,7 @@ const ReappropriationDialogContent = ({ initialData, onConfirm, onCancel }: { in
                                 <FormMessage />
                             </FormItem> 
                         )}/>
-                        <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} /></FormControl><FormMessage /></FormItem> )}/>
+                        <FormField name="amount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Amount (₹) <span className="text-destructive">*</span></FormLabel><FormControl><Input type="number" {...field} value={field.value === undefined || field.value === null ? "" : field.value} onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} /></FormControl><FormMessage /></FormItem> )}/>
                     </div>
                 </div>
                 <FormField name="fileDetails" control={form.control} render={({ field }) => ( 
@@ -595,8 +608,8 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
                                             <Input 
                                                 type="number" 
                                                 {...field} 
-                                                value={field.value ?? ''}
-                                                onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} 
+                                                value={field.value === undefined || field.value === null ? "" : field.value}
+                                                onChange={e => field.onChange(e.target.value === '' ? undefined : Number(e.target.value))} 
                                                 readOnly={isLinkedToRemittance}
                                                 className={isLinkedToRemittance ? 'bg-muted/50' : ''}
                                             />
@@ -1010,7 +1023,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><InvestigationSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={!!dialogState.isView || isFormDisabled} isSupervisor={isSupervisor} isInvestigator={isInvestigator} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} userDesignation={userDesignation} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reorderSite'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl flex flex-col p-0"><ReorderSitesDialog initialData={dialogState.data || []} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
-        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
+        <AlertDialog open={itemToDelete !== null} onOpenChange={() => setItemToDelete(null)}><AlertDialogContent><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>Delete this entry?</AlertDialogDescription><AlertDialogFooter><AlertDialogAction onClick={handleDeleteItem} className="bg-destructive">Delete</AlertDialogAction><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogFooter></AlertDialogContent></AlertDialog>
       </div>
     </FormProvider>
   );
