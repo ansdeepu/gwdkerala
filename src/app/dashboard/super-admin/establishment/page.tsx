@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/establishment/page.tsx
 "use client";
 
@@ -16,6 +15,7 @@ import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
 import type { StaffMember, StaffMemberFormData, StaffStatusType, Designation } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { designationOptions } from "@/lib/schemas";
+import PaginationControls from "@/components/shared/PaginationControls";
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,9 @@ const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).to
 export default function SuperAdminEstablishmentPage() {
   const { setHeader } = usePageHeader();
   const { officeAddress, allOfficeAddresses, allUsers } = useDataStore();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     setHeader('All Establishment', 'Manage all staff members across all offices.');
@@ -70,6 +74,25 @@ export default function SuperAdminEstablishmentPage() {
   const [isFiltering, setIsFiltering] = useState(false);
   const [filteredStaff, setFilteredStaff] = useState<StaffMember[]>([]);
   const [designationFilter, setDesignationFilter] = useState('all');
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageFromUrl = searchParams?.get('page');
+
+  useEffect(() => {
+    const pageNum = pageFromUrl ? parseInt(pageFromUrl, 10) : 1;
+    if (!isNaN(pageNum)) {
+      setCurrentPage(pageNum);
+    } else {
+      setCurrentPage(1);
+    }
+  }, [pageFromUrl]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', String(page));
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   const [imageForModal, setImageForModal] = useState<string | null>(null);
   
@@ -246,6 +269,8 @@ export default function SuperAdminEstablishmentPage() {
                   onImageClick={setImageForModal}
                   isLoading={isFiltering}
                   searchActive={!!debouncedSearchTerm}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
                 />
               </div>
             </TabsContent>
@@ -260,6 +285,8 @@ export default function SuperAdminEstablishmentPage() {
                   onImageClick={setImageForModal}
                   isLoading={isFiltering}
                   searchActive={!!debouncedSearchTerm}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
                 />
               </div>
             </TabsContent>
@@ -335,6 +362,8 @@ export default function SuperAdminEstablishmentPage() {
                     onImageClick={setImageForModal}
                     isLoading={isFiltering}
                     searchActive={!!debouncedSearchTerm}
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
                 />
               </div>
             </TabsContent>
