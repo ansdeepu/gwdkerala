@@ -94,7 +94,7 @@ export default function CollectorsDepositWorksPage() {
 
   const { collectorDepositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => 
-        !!entry.applicationType && COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType as any)
+        !!entry.applicationType && (COLLECTOR_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as string)
     );
     
     entries.sort((a, b) => {

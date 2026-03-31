@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import FileDatabaseTable from "@/components/database/FileDatabaseTable";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
-import { <Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import type { DataEntryFormData } from '@/lib/schemas';
@@ -94,7 +94,7 @@ export default function PrivateDepositWorksPage() {
 
   const { privateDepositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     const entries = fileEntries.filter(entry => 
-        !!entry.applicationType && PRIVATE_APPLICATION_TYPES.includes(entry.applicationType as any)
+        !!entry.applicationType && (PRIVATE_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as string)
     );
     
     entries.sort((a, b) => {
