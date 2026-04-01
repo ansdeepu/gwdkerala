@@ -245,15 +245,17 @@ export function DataStoreProvider({ children, user }: { children: ReactNode, use
         const unsubscribes = Object.entries(officeScopedCollections).map(([collectionName, { setter, loaderKey, needsSpecialSort }]) => {
             setLoadingStates(prev => ({...prev, [loaderKey]: true}));
             let q;
-            if (officeToQuery) {
+            
+            // SPECIAL CASE: For Super Admin, always listen to the global users collection
+            // to populate the OfficeSwitcher and allow global user management across all screens.
+            if (isSuperAdminUser && collectionName === 'users') {
+                q = query(collection(db, 'users'));
+            } else if (officeToQuery) {
                 const path = `offices/${officeToQuery.toLowerCase()}/${collectionName}`;
                 q = collectionName === 'bidders' ? query(collection(db, path), orderBy("order")) : query(collection(db, path));
             } else if (isSuperAdminUser && !officeToQuery) {
-                if (collectionName === 'users') { 
-                    q = query(collection(db, 'users')); 
-                } else {
-                    q = query(collectionGroup(db, collectionName));
-                }
+                // This branch is for "All Offices" view for non-users collections
+                q = query(collectionGroup(db, collectionName));
             } else {
                 setter([]); setLoadingStates(prev => ({...prev, [loaderKey]: false})); return () => {};
             }
