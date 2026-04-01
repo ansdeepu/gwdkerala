@@ -4,12 +4,12 @@
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { StaffMember, Designation } from '@/lib/schemas';
 import { isValid, format } from 'date-fns';
-import { Megaphone, Cake, Gift, PartyPopper } from 'lucide-react';
+import { Megaphone, Cake, Gift, PartyPopper, ChevronRight } from 'lucide-react';
 
 
 const hashCode = (str: string): number => {
@@ -52,11 +52,13 @@ interface NoticeBoardProps {
 }
 
 export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
-  const [selectedBirthday, setSelectedBirthday] = useState<(typeof noticeData.todaysBirthdays)[0] | null>(null);
+  const [selectedBirthday, setSelectedBirthday] = useState<{ name: string, designation?: Designation, photoUrl?: string | null } | null>(null);
+  const [isMonthListOpen, setIsMonthListOpen] = useState(false);
   
   const noticeData = useMemo(() => {
     const todaysBirthdays: { name: string, designation?: Designation, photoUrl?: string | null }[] = [];
     const upcomingBirthdaysInMonth: { name: string; designation?: Designation; photoUrl?: string | null; dateOfBirth: Date }[] = [];
+    const monthlyBirthdays: { name: string; designation?: Designation; photoUrl?: string | null; dateOfBirth: Date }[] = [];
 
     const today = new Date();
     const todayMonth = today.getMonth();
@@ -71,6 +73,8 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
         const dobMonth = dob.getMonth();
         const dobDate = dob.getDate();
         if (dobMonth === todayMonth) {
+            monthlyBirthdays.push({ name: staff.name, designation: staff.designation as Designation, photoUrl: staff.photoUrl, dateOfBirth: dob });
+            
             if (dobDate === todayDate) {
                 todaysBirthdays.push({ name: staff.name, designation: staff.designation as Designation, photoUrl: staff.photoUrl });
             } else if (dobDate > todayDate) {
@@ -81,10 +85,12 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
     }
 
     upcomingBirthdaysInMonth.sort((a, b) => a.dateOfBirth.getDate() - b.dateOfBirth.getDate());
+    monthlyBirthdays.sort((a, b) => a.dateOfBirth.getDate() - b.dateOfBirth.getDate());
 
     return {
       todaysBirthdays,
       upcomingBirthdays: upcomingBirthdaysInMonth,
+      monthlyBirthdays,
     };
   }, [staffMembers]);
   
@@ -100,6 +106,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
         <CardTitle className="flex items-center gap-2"><Megaphone className="h-5 w-5 text-primary" />Birthday Updates</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 pt-0 min-h-0">
+        {/* Today's Birthdays Dialog */}
         <Dialog open={!!selectedBirthday} onOpenChange={(isOpen) => !isOpen && setSelectedBirthday(null)}>
           <div className={cn("border rounded-lg p-3 bg-background flex flex-col")}>
             <h3 className="text-sm font-semibold mb-2 flex items-center gap-2"><Cake className="h-4 w-4 text-pink-500" />Today's Birthdays ({noticeData.todaysBirthdays.length})</h3>
@@ -146,37 +153,99 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
           </DialogContent>
         </Dialog>
         
-        <div className={cn("border rounded-lg p-3 bg-background flex flex-col flex-1 min-h-0")}>
-          <h3 className="text-sm font-semibold mb-2 flex items-center gap-2"><Gift className="h-4 w-4 text-indigo-500" />Upcoming Birthdays ({noticeData.upcomingBirthdays.length})</h3>
-           <ScrollArea className="flex-1 pr-3 -mr-3">
-             <div className={cn("space-y-2", enableUpcomingScrolling && "marquee-container-birthdays")}>
-               <div className={cn("space-y-2", enableUpcomingScrolling && "marquee-content-birthdays")}>
-                  {upcomingBirthdayList.length > 0 ? (
-                      upcomingBirthdayList.map((staff, index) => (
-                        <div key={index} className="w-full p-2 rounded-md bg-indigo-500/10 flex items-center gap-3 text-left">
-                          <Avatar className="h-10 w-10 border-2 border-indigo-200">
-                            <AvatarImage src={staff.photoUrl || undefined} alt={staff.name} />
-                            <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">{getInitials(staff.name)}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <p className="font-bold text-sm text-indigo-800">{staff.name}</p>
-                            <p className="text-xs text-indigo-700">{staff.designation}</p>
+        {/* Upcoming Birthdays Section with Monthly List Dialog */}
+        <Dialog open={isMonthListOpen} onOpenChange={setIsMonthListOpen}>
+          <div className={cn("border rounded-lg p-3 bg-background flex flex-col flex-1 min-h-0")}>
+            <DialogTrigger asChild>
+              <button 
+                className="text-sm font-semibold mb-2 flex items-center justify-between group hover:text-primary transition-colors w-full text-left"
+                onClick={() => setIsMonthListOpen(true)}
+              >
+                <span className="flex items-center gap-2">
+                  <Gift className="h-4 w-4 text-indigo-500" />
+                  Upcoming Birthdays ({noticeData.upcomingBirthdays.length})
+                </span>
+                <span className="text-[10px] font-normal text-muted-foreground group-hover:underline flex items-center gap-0.5">
+                  View All <ChevronRight className="h-3 w-3" />
+                </span>
+              </button>
+            </DialogTrigger>
+            <ScrollArea className="flex-1 pr-3 -mr-3">
+              <div className={cn("space-y-2", enableUpcomingScrolling && "marquee-container-birthdays")}>
+                <div className={cn("space-y-2", enableUpcomingScrolling && "marquee-content-birthdays")}>
+                    {upcomingBirthdayList.length > 0 ? (
+                        upcomingBirthdayList.map((staff, index) => (
+                          <div key={index} className="w-full p-2 rounded-md bg-indigo-500/10 flex items-center gap-3 text-left">
+                            <Avatar className="h-10 w-10 border-2 border-indigo-200">
+                              <AvatarImage src={staff.photoUrl || undefined} alt={staff.name} />
+                              <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">{getInitials(staff.name)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <p className="font-bold text-sm text-indigo-800">{staff.name}</p>
+                              <p className="text-xs text-indigo-700">{staff.designation}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-lg text-indigo-800">{format(staff.dateOfBirth, 'dd')}</p>
+                              <p className="text-xs text-indigo-700 -mt-1">{format(staff.dateOfBirth, 'MMM')}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-bold text-lg text-indigo-800">{format(staff.dateOfBirth, 'dd')}</p>
-                            <p className="text-xs text-indigo-700 -mt-1">{format(staff.dateOfBirth, 'MMM')}</p>
-                          </div>
+                        ))
+                    ) : (
+                        <div className="h-full flex items-center justify-center">
+                            <p className="text-sm text-muted-foreground italic text-center py-10">No other birthdays this month.</p>
                         </div>
-                      ))
+                    )}
+                  </div>
+                </div>
+            </ScrollArea>
+          </div>
+
+          <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0">
+            <DialogHeader className="p-6 pb-4 border-b">
+              <DialogTitle className="flex items-center gap-2 text-xl">
+                <Cake className="h-6 w-6 text-primary" />
+                Birthdays in {format(new Date(), 'MMMM yyyy')}
+              </DialogTitle>
+              <DialogDescription>
+                Full list of staff members celebrating birthdays this month.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="p-6">
+                  {noticeData.monthlyBirthdays.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {noticeData.monthlyBirthdays.map((staff, index) => {
+                        const avatarColorClass = getColorClass(staff.name);
+                        return (
+                          <div key={index} className="flex items-center gap-4 p-3 rounded-lg border bg-secondary/10 hover:bg-secondary/20 transition-colors">
+                            <div className="relative">
+                              <Avatar className="h-12 w-12 border-2 border-primary/20">
+                                <AvatarImage src={staff.photoUrl || undefined} alt={staff.name} />
+                                <AvatarFallback className={cn("font-bold", avatarColorClass)}>{getInitials(staff.name)}</AvatarFallback>
+                              </Avatar>
+                              <div className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold px-1.5 rounded-full border-2 border-white">
+                                {format(staff.dateOfBirth, 'dd')}
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm text-foreground truncate">{staff.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">{staff.designation || 'Staff Member'}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : (
-                      <div className="h-full flex items-center justify-center">
-                          <p className="text-sm text-muted-foreground italic">No other birthdays this month.</p>
-                      </div>
+                    <div className="text-center py-20">
+                      <p className="text-muted-foreground italic">No birthdays recorded for this month.</p>
+                    </div>
                   )}
                 </div>
-              </div>
-           </ScrollArea>
-        </div>
+              </ScrollArea>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
