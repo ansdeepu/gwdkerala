@@ -11,7 +11,6 @@ const nextConfig = {
   },
   experimental: {
     serverComponentsExternalPackages: ['exceljs', 'pdf-lib'],
-    serverMinification: true,
   },
   images: {
     remotePatterns: [
