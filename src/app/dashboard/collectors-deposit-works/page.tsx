@@ -1,4 +1,3 @@
-
 // src/app/dashboard/collectors-deposit-works/page.tsx
 "use client";
 
@@ -28,8 +27,8 @@ const safeParseDate = (dateValue: any): Date | null => {
     const parsed = parseISO(dateValue);
     if (isValid(parsed)) return parsed;
   }
-  if (typeof dateValue === 'object' && dateValue.toDate) {
-    const parsed = dateValue.toDate();
+  if (typeof dateValue === 'object' && (dateValue as any).toDate) {
+    const parsed = (dateValue as any).toDate();
     if (isValid(parsed)) return parsed;
   }
   return null;
@@ -95,7 +94,7 @@ export default function CollectorsDepositWorksPage() {
 
   const { collectorDepositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => 
-        !!entry.applicationType && COLLECTOR_APPLICATION_TYPES.includes(entry.applicationType)
+        !!entry.applicationType && (COLLECTOR_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType)
     );
     
     entries.sort((a, b) => {

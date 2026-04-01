@@ -1,4 +1,3 @@
-
 // src/app/dashboard/super-admin/establishment/page.tsx
 "use client";
 
@@ -17,6 +16,7 @@ import { useStaffMembers } from "@/hooks/useStaffMembers";
 import type { StaffMember, StaffMemberFormData, StaffStatusType, Designation } from "@/lib/schemas";
 import { designationOptions } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -24,14 +24,14 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { cn, formatCase } from "@/lib/utils";
 import { format, isValid } from "date-fns";
 import ExcelJS from "exceljs";
 import { usePageHeader } from "@/hooks/usePageHeader";
 import { useDataStore } from "@/hooks/use-data-store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Search, FileDown, UserPlus, Loader2, Expand, Edit, XCircle, Clock } from "lucide-react";
+import { CheckCircle, Search, FileDown, UserPlus, Loader2, Expand, Edit, XCircle, Clock } from "react-hook-form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -42,7 +42,10 @@ const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).to
 
 export default function SuperAdminEstablishmentPage() {
   const { setHeader } = usePageHeader();
-  const { officeAddress, allOfficeAddresses, allUsers, allSanctionedStrength } = useDataStore();
+  const { allOfficeAddresses, allUsers, allSanctionedStrength } = useDataStore();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     setHeader('All Establishment', 'Manage all staff members across all offices.');
@@ -72,6 +75,31 @@ export default function SuperAdminEstablishmentPage() {
   const [designationFilter, setDesignationFilter] = useState('all');
 
   const [imageForModal, setImageForModal] = useState<string | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageFromUrl = searchParams?.get('page');
+
+  useEffect(() => {
+    const pageNum = pageFromUrl ? parseInt(pageFromUrl, 10) : 1;
+    if (!isNaN(pageNum)) {
+      setCurrentPage(pageNum);
+    } else {
+      setCurrentPage(1);
+    }
+  }, [pageFromUrl]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', String(page));
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+
+  const handleTabChange = (value: string) => {
+    const params = new URLSearchParams(searchParams?.toString());
+    params.set('page', '1');
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
   
   const canManage = user?.role === 'superAdmin' && user.isApproved;
   const isViewer = user?.role === 'viewer';
@@ -239,7 +267,7 @@ export default function SuperAdminEstablishmentPage() {
               </Button>
             </div>
           </div>
-          <Tabs defaultValue="directorateStaff" className="w-full pt-4 border-t">
+          <Tabs defaultValue="directorateStaff" onValueChange={handleTabChange} className="w-full pt-4 border-t">
             <TabsList className="grid w-full grid-cols-5 sm:w-[900px]">
               <TabsTrigger value="directorateStaff">Directorate Staff ({directorateStaffList.length})</TabsTrigger>
               <TabsTrigger value="allStaff">All Staff ({otherOfficesStaffList.length})</TabsTrigger>
@@ -258,6 +286,8 @@ export default function SuperAdminEstablishmentPage() {
                   onImageClick={setImageForModal}
                   isLoading={isFiltering}
                   searchActive={!!debouncedSearchTerm}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
                 />
               </div>
             </TabsContent>
@@ -272,6 +302,8 @@ export default function SuperAdminEstablishmentPage() {
                   onImageClick={setImageForModal}
                   isLoading={isFiltering}
                   searchActive={!!debouncedSearchTerm}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
                 />
               </div>
             </TabsContent>
@@ -347,6 +379,8 @@ export default function SuperAdminEstablishmentPage() {
                     onImageClick={setImageForModal}
                     isLoading={isFiltering}
                     searchActive={!!debouncedSearchTerm}
+                    currentPage={currentPage}
+                    onPageChange={handlePageChange}
                 />
               </div>
             </TabsContent>
