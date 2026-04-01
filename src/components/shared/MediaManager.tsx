@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -108,7 +109,9 @@ const MediaManager = ({
                     {getYouTubeThumbnail(field.url) ? (
                       <Image src={getYouTubeThumbnail(field.url)!} alt={field.description || ''} className="object-cover" fill sizes="20vw"/>
                     ) : (
-                      <video src={field.url} className="w-full h-full object-cover" preload="metadata" />
+                      <div className="w-full h-full flex items-center justify-center bg-secondary">
+                        <Video className="h-10 w-10 text-muted-foreground" />
+                      </div>
                     )}
                   </div>
                 )}
