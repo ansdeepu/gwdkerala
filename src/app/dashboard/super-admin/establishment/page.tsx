@@ -1,3 +1,4 @@
+
 // src/app/dashboard/super-admin/establishment/page.tsx
 "use client";
 
@@ -31,10 +32,10 @@ import { usePageHeader } from "@/hooks/usePageHeader";
 import { useDataStore } from "@/hooks/use-data-store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Search, FileDown, UserPlus, Loader2, Expand, Edit, XCircle, Clock } from "react-hook-form";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { CheckCircle, Search, FileDown, UserPlus, Loader2, Expand, Edit, XCircle, Clock } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
@@ -259,7 +260,7 @@ export default function SuperAdminEstablishmentPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Designations</SelectItem>
-                  {designationOptions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  {designationOptions.map(d => <SelectItem key(d) value={d}>{d}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Button onClick={handleAddNewStaff} size="sm" className="w-full sm:w-auto">
@@ -385,7 +386,7 @@ export default function SuperAdminEstablishmentPage() {
               </div>
             </TabsContent>
             <TabsContent value="vacancy" className="mt-4">
-              <VacancyTable canManage={canManage} />
+              <VacancyTable canManage={canManage} user={user} />
             </TabsContent>
           </Tabs>
         </CardContent>
