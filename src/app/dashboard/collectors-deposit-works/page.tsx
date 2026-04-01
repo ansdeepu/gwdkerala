@@ -1,3 +1,4 @@
+
 // src/app/dashboard/collectors-deposit-works/page.tsx
 "use client";
 
@@ -94,7 +95,7 @@ export default function CollectorsDepositWorksPage() {
 
   const { collectorDepositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => 
-        !!entry.applicationType && (COLLECTOR_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType)
+        !!entry.applicationType && (COLLECTOR_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as string)
     );
     
     entries.sort((a, b) => {

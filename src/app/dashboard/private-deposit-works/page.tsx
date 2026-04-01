@@ -1,3 +1,4 @@
+
 // src/app/dashboard/private-deposit-works/page.tsx
 "use client";
 
@@ -94,7 +95,7 @@ export default function PrivateDepositWorksPage() {
 
   const { privateDepositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
     const entries = fileEntries.filter(entry => 
-        !!entry.applicationType && (PRIVATE_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType)
+        !!entry.applicationType && (PRIVATE_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as string)
     );
     
     entries.sort((a, b) => {
