@@ -106,7 +106,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
         <CardTitle className="flex items-center gap-2"><Megaphone className="h-5 w-5 text-primary" />Birthday Updates</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 pt-0 min-h-0">
-        {/* Today's Birthdays Dialog */}
+        {/* Today's Birthdays Section */}
         <Dialog open={!!selectedBirthday} onOpenChange={(isOpen) => !isOpen && setSelectedBirthday(null)}>
           <div className={cn("border rounded-lg p-3 bg-background flex flex-col")}>
             <h3 className="text-sm font-semibold mb-2 flex items-center gap-2"><Cake className="h-4 w-4 text-pink-500" />Today's Birthdays ({noticeData.todaysBirthdays.length})</h3>
@@ -219,18 +219,17 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
                         const avatarColorClass = getColorClass(staff.name);
                         return (
                           <div key={index} className="flex items-center gap-4 p-3 rounded-lg border bg-secondary/10 hover:bg-secondary/20 transition-colors">
-                            <div className="relative">
-                              <Avatar className="h-12 w-12 border-2 border-primary/20">
-                                <AvatarImage src={staff.photoUrl || undefined} alt={staff.name} />
-                                <AvatarFallback className={cn("font-bold", avatarColorClass)}>{getInitials(staff.name)}</AvatarFallback>
-                              </Avatar>
-                              <div className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold px-1.5 rounded-full border-2 border-white">
-                                {format(staff.dateOfBirth, 'dd')}
-                              </div>
-                            </div>
+                            <Avatar className="h-12 w-12 border-2 border-primary/20 shrink-0">
+                              <AvatarImage src={staff.photoUrl || undefined} alt={staff.name} />
+                              <AvatarFallback className={cn("font-bold", avatarColorClass)}>{getInitials(staff.name)}</AvatarFallback>
+                            </Avatar>
                             <div className="flex-1 min-w-0">
                               <p className="font-bold text-sm text-foreground truncate">{staff.name}</p>
                               <p className="text-xs text-muted-foreground truncate">{staff.designation || 'Staff Member'}</p>
+                            </div>
+                            <div className="text-right shrink-0 border-l pl-3 border-primary/10">
+                              <p className="font-bold text-lg text-primary leading-tight">{format(staff.dateOfBirth, 'dd')}</p>
+                              <p className="text-[10px] uppercase font-semibold text-muted-foreground -mt-1">{format(staff.dateOfBirth, 'MMM')}</p>
                             </div>
                           </div>
                         );
