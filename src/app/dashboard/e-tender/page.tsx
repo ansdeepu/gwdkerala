@@ -75,12 +75,14 @@ type WorkOrderRow = {
     id: string;
     slNo: number;
     dateWorkOrder: string;
+    dateWorkOrderRaw: Date | null;
     eTenderNo: string;
     nameOfWork: string;
     contractor: string;
     supervisor: string;
     quotedAmount?: number;
     expectedDateOfCompletion: string;
+    expectedDateOfCompletionRaw: Date | null;
     isOverdue: boolean;
 };
 
@@ -161,27 +163,36 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                     id: tender.id,
                     slNo: index + 1,
                     dateWorkOrder: tender.dateWorkOrder ? formatDateSafe(tender.dateWorkOrder) : 'N/A',
+                    dateWorkOrderRaw: workOrderDate,
                     eTenderNo: tender.eTenderNo || 'N/A',
                     nameOfWork: tender.nameOfWork || 'N/A',
                     contractor: l1Bidder ? l1Bidder.name || 'N/A' : 'N/A',
                     supervisor: supervisorStaff || 'N/A',
                     quotedAmount: contractAmount ?? undefined,
                     expectedDateOfCompletion: expectedDateOfCompletion ? formatDateSafe(expectedDateOfCompletion) : 'N/A',
+                    expectedDateOfCompletionRaw: expectedDateOfCompletion,
                     isOverdue,
                 };
             });
 
         if (sortConfig) {
             mappedData.sort((a, b) => {
-                const aValue = a[sortConfig.key] || '';
-                const bValue = b[sortConfig.key] || '';
+                let aValue: any;
+                let bValue: any;
 
-                if (aValue < bValue) {
-                    return sortConfig.direction === 'asc' ? -1 : 1;
+                if (sortConfig.key === 'dateWorkOrder') {
+                    aValue = a.dateWorkOrderRaw?.getTime() ?? 0;
+                    bValue = b.dateWorkOrderRaw?.getTime() ?? 0;
+                } else if (sortConfig.key === 'expectedDateOfCompletion') {
+                    aValue = a.expectedDateOfCompletionRaw?.getTime() ?? 0;
+                    bValue = b.expectedDateOfCompletionRaw?.getTime() ?? 0;
+                } else {
+                    aValue = a[sortConfig.key] ?? '';
+                    bValue = b[sortConfig.key] ?? '';
                 }
-                if (aValue > bValue) {
-                    return sortConfig.direction === 'asc' ? 1 : -1;
-                }
+
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             });
         }
@@ -411,17 +422,17 @@ export default function ETenderListPage() {
           const hasSelectionDetails = !!(t.selectionNoticeDate || t.performanceGuaranteeAmount);
           const hasWorkOrderDetails = !!(t.agreementDate || t.dateWorkOrder);
         
-          if (t.presentStatus === 'Tender Process' && receipt && isBefore(now, receipt)) {
+          if (t.presentStatus === 'Tender Process' && receipt && isValid(receipt) && isBefore(now, receipt)) {
               tenderProcess.push(t);
               return;
           }
           
-          if (receipt && opening && isAfter(now, receipt) && isBefore(now, opening)) {
+          if (receipt && opening && isValid(receipt) && isValid(opening) && isAfter(now, receipt) && isBefore(now, opening)) {
             bidsSubmitted.push(t);
             return; 
           }
           
-          if (opening && isAfter(now, opening) && !hasOpeningDetails) {
+          if (opening && isValid(opening) && isAfter(now, opening) && !hasOpeningDetails) {
             toBeOpened.push(t);
           } 
           else if (hasOpeningDetails && !hasSelectionDetails && t.presentStatus === 'Bid Opened') {
