@@ -1,4 +1,3 @@
-
 // src/components/investigation/LoggingPumpingTestDataEntryForm.tsx
 "use client";
 
@@ -101,8 +100,8 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string 
 
 
 const toDateOrNull = (value: any): Date | null => {
-    if (value === null || value === undefined || value === '') return null;
-    if (value instanceof Date && isValid(value)) return value;
+    if (!value) return null;
+    if (value instanceof Date && !isNaN(value.getTime())) return value;
     if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
         return new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
     }
@@ -760,7 +759,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                     const newPayment: Partial<PaymentDetailFormData> = {
                         id: `auto-payment-${remittance.id}`,
                         remittanceId: remittance.id,
-                        dateOfRemittance: remittance.dateOfRemittance,
+                        dateOfPayment: remittance.dateOfRemittance,
                         paymentAccount: 'Bank',
                         revenueHead: amount,
                         paymentRemarks: "Auto-entry from remittance to Revenue Head.",

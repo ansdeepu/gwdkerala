@@ -1,4 +1,3 @@
-
 // src/components/shared/DataEntryForm.tsx
 "use client";
 
@@ -74,7 +73,7 @@ import { format, isValid, parseISO } from "date-fns";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as TableFooterComponent } from "@/components/ui/table";
 import { v4 as uuidv4 } from 'uuid';
-import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/tooltip';
 import { Badge } from "@/components/ui/badge";
 import SiteDialogContent from "./SiteDialogContent";
 
@@ -91,9 +90,9 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string 
 
 const toDateOrNull = (value: any): Date | null => {
     if (!value) return null;
-    if (value instanceof Date) return value;
-    if (typeof value === 'object' && value !== null && typeof (value as any).seconds === 'number') {
-        return new Date((value as any).seconds * 1000);
+    if (value instanceof Date && !isNaN(value.getTime())) return value;
+    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
+        return new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
     }
     if (typeof value === 'string') {
         const parsed = new Date(value);
