@@ -78,7 +78,7 @@ import { usePendingUpdates } from "@/hooks/usePendingUpdates";
 import { z } from "zod";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { getFirestore, doc, query, collection, where, getDocs, Timestamp, serverTimestamp, updateDoc, writeBatch, addDoc } from "firebase/firestore";
+import { getFirestore, doc, query, collection, where, getDocs, Timestamp, serverTimestamp, writeBatch, updateDoc, addDoc } from "firebase/firestore";
 import { app } from "@/lib/firebase";
 import { useDataStore } from "@/hooks/use-data-store";
 import { ScrollArea } from "../ui/scroll-area";
@@ -102,9 +102,9 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string 
 
 const toDateOrNull = (value: any): Date | null => {
     if (!value) return null;
-    if (value instanceof Date) return value;
-    if (typeof value === 'object' && value !== null && typeof (value as any).seconds === 'number') {
-        return new Date((value as any).seconds * 1000);
+    if (value instanceof Date && !isNaN(value.getTime())) return value;
+    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
+        return new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
     }
     if (typeof value === 'string') {
         const parsed = new Date(value);
@@ -359,7 +359,7 @@ const ApplicationDialogContent = ({ initialData, onConfirm, onCancel, workTypeCo
     );
 };
 
-const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category, isDeferredFunding }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void, category?: string | null, isDeferredFunding: boolean }) => {
+const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }: { initialData?: any, onConfirm: (data: any) => void, onCancel: () => void, category?: string | null }) => {
     const form = useForm<RemittanceDetailFormData>({
       resolver: zodResolver(RemittanceDetailSchema),
       defaultValues: {
@@ -372,7 +372,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category, i
     const handleConfirmSubmit = (data: RemittanceDetailFormData) => {
         onConfirm(data);
     };
-    
+
     const availableRemittanceAccounts = ["Bank", "STSB", "Revenue Head"];
 
     return (
@@ -410,11 +410,18 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category, i
                             <FormMessage />
                         </FormItem> 
                     )}/>
-                    <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                            {availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                        </SelectContent></Select><FormMessage /></FormItem> )}/>
+                    <FormField name="remittedAccount" control={form.control} render={({ field }) => ( 
+                        <FormItem>
+                            <FormLabel>Account <span className="text-destructive">*</span></FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem> 
+                    )}/>
                 </div>
                 <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{category === 'Complaints' ? 'Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
@@ -960,7 +967,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
                 ))}
             <TableHead className="text-right">Total (₹)</TableHead><TableHead>Remarks</TableHead>{isEditor && !isFormDisabled && <TableHead>Actions</TableHead>}</TableRow></TableHeader><TableBody>{paymentFields.length > 0 ? paymentFields.map((item, index) => (
                 <TableRow key={item.id} className={item.remittanceId ? 'bg-muted/50' : ''}>
-                    <TableCell>{item.dateOfRemittance ? format(new Date(item.dateOfRemittance as any), 'dd/MM/yyyy') : 'N/A'}</TableCell>
+                    <TableCell>{item.dateOfPayment ? format(new Date(item.dateOfPayment), 'dd/MM/yy') : 'N/A'}</TableCell>
                     <TableCell>{item.remittanceId ? 'Revenue Head' : item.paymentAccount}</TableCell>
                     {paymentFieldsToDisplay.map(field => (
                         <TableCell key={field.key} className="text-right">{(Number((item as any)[field.key]) || 0).toLocaleString('en-IN')}</TableCell>
@@ -1007,7 +1014,7 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
             </CardFooter>
         </form>
         <Dialog open={dialogState.type === 'application'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl"><ApplicationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} workTypeContext={workTypeContext} isEditing={isEditing} /></DialogContent></Dialog>
-        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={getValues('category')} isDeferredFunding={isDeferredFunding} /></DialogContent></Dialog>
+        <Dialog open={dialogState.type === 'remittance'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><RemittanceDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} category={getValues('category')} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'reappropriation'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-3xl"><ReappropriationDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'site'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[90vh] flex flex-col p-0"><LoggingPumpingTestSiteDialog initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isReadOnly={!!dialogState.isView || !!isFormDisabled} isSupervisor={isSupervisor} isInvestigator={isInvestigator} allLsgConstituencyMaps={allLsgConstituencyMaps} allStaffMembers={allStaffMembers} workTypeContext={workTypeContext} userDesignation={userDesignation} /></DialogContent></Dialog>
         <Dialog open={dialogState.type === 'payment'} onOpenChange={closeDialog}><DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl flex flex-col p-0"><PaymentDialogContent initialData={dialogState.data} onConfirm={handleDialogConfirm} onCancel={closeDialog} isDeferredFunding={false} /></DialogContent></Dialog>

@@ -33,9 +33,3 @@ export const numberToWords = (num: number): string => {
 
     return word.trim();
 };
-
-export const getAttachedFilesString = (tender: E_tender): string => {
-    // This function is being temporarily cleared to resolve a build error.
-    // The related file number feature will be re-implemented correctly.
-    return '';
-};
