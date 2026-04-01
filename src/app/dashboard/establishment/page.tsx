@@ -15,6 +15,7 @@ import VacancyTable from "@/components/establishment/VacancyTable";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
 import type { StaffMember, StaffMemberFormData, StaffStatusType } from "@/lib/schemas";
+import { designationOptions } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
@@ -46,7 +47,7 @@ const formatDateSafe = (dateInput: Date | string | null | undefined): string => 
 
 export default function EstablishmentPage() {
   const { setHeader } = usePageHeader();
-  const { officeAddress, allOfficeAddresses, allUsers } = useDataStore();
+  const { officeAddress, allOfficeAddresses, allUsers, allSanctionedStrength } = useDataStore();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -245,6 +246,28 @@ export default function EstablishmentPage() {
   const transferredStaffList = useMemo(() => filteredStaff.filter(s => s.status === 'Transferred'), [filteredStaff]);
   const retiredStaffList = useMemo(() => filteredStaff.filter(s => s.status === 'Retired'), [filteredStaff]);
 
+  const vacancyCount = useMemo(() => {
+    const activeStaff = staffMembers.filter(s => s.status === 'Active');
+    const sanctionedStrength = allSanctionedStrength || {};
+    
+    const allDesignations = Array.from(designationOptions);
+    let targetDesignations = allDesignations;
+    
+    if (user?.role !== 'superAdmin') {
+        const subOfficeStartIndex = allDesignations.indexOf("Executive Engineer");
+        if (subOfficeStartIndex !== -1) {
+            targetDesignations = allDesignations.slice(subOfficeStartIndex);
+        }
+    }
+
+    return targetDesignations.reduce((acc, designation) => {
+        const sanctioned = sanctionedStrength[designation] || 0;
+        const current = activeStaff.filter(s => s.designation === designation).length;
+        const vacancy = Math.max(0, sanctioned - current);
+        return acc + vacancy;
+    }, 0);
+  }, [staffMembers, allSanctionedStrength, user]);
+
   if (authLoading || staffLoadingHook) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
@@ -285,7 +308,7 @@ export default function EstablishmentPage() {
               <TabsTrigger value="activeStaff">Active ({activeStaffList.length})</TabsTrigger>
               <TabsTrigger value="transferredStaff">Transferred ({transferredStaffList.length})</TabsTrigger>
               <TabsTrigger value="retiredStaff">Retired ({retiredStaffList.length})</TabsTrigger>
-              <TabsTrigger value="vacancy">Vacancy</TabsTrigger>
+              <TabsTrigger value="vacancy">Vacancy ({vacancyCount})</TabsTrigger>
             </TabsList>
             <TabsContent value="activeStaff" className="mt-4">
               <div className="max-h-[70vh] overflow-auto">

@@ -15,6 +15,7 @@ import VacancyTable from "@/components/establishment/VacancyTable";
 import { useAuth, type UserProfile } from "@/hooks/useAuth";
 import { useStaffMembers } from "@/hooks/useStaffMembers";
 import type { StaffMember, StaffMemberFormData, StaffStatusType, Designation } from "@/lib/schemas";
+import { designationOptions } from "@/lib/schemas";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -34,7 +35,6 @@ import { CheckCircle, Search, FileDown, UserPlus, Loader2, Expand, Edit, XCircle
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { designationOptions } from "@/lib/schemas";
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +42,7 @@ const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).to
 
 export default function SuperAdminEstablishmentPage() {
   const { setHeader } = usePageHeader();
-  const { officeAddress, allOfficeAddresses, allUsers } = useDataStore();
+  const { officeAddress, allOfficeAddresses, allUsers, allSanctionedStrength } = useDataStore();
 
   useEffect(() => {
     setHeader('All Establishment', 'Manage all staff members across all offices.');
@@ -194,6 +194,18 @@ export default function SuperAdminEstablishmentPage() {
   const transferredStaffList = useMemo(() => filteredStaff.filter(s => s.status === 'Transferred'), [filteredStaff]);
   const retiredStaffList = useMemo(() => filteredStaff.filter(s => s.status === 'Retired'), [filteredStaff]);
 
+  const vacancyCount = useMemo(() => {
+    const activeStaff = staffMembers.filter(s => s.status === 'Active');
+    const sanctionedStrength = allSanctionedStrength || {};
+    const allDesignations = Array.from(designationOptions);
+
+    return allDesignations.reduce((acc, designation) => {
+        const sanctioned = sanctionedStrength[designation] || 0;
+        const current = activeStaff.filter(s => s.designation === designation).length;
+        return acc + Math.max(0, sanctioned - current);
+    }, 0);
+  }, [staffMembers, allSanctionedStrength]);
+
   if (authLoading || staffLoadingHook) {
     return <div className="flex h-64 items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   }
@@ -233,7 +245,7 @@ export default function SuperAdminEstablishmentPage() {
               <TabsTrigger value="allStaff">All Staff ({otherOfficesStaffList.length})</TabsTrigger>
               <TabsTrigger value="transfers" className="text-amber-700 data-[state=active]:bg-amber-50">Transfers ({transfersList.length})</TabsTrigger>
               <TabsTrigger value="retiredStaff">Retired ({retiredStaffList.length})</TabsTrigger>
-              <TabsTrigger value="vacancy">Vacancy</TabsTrigger>
+              <TabsTrigger value="vacancy">Vacancy ({vacancyCount})</TabsTrigger>
             </TabsList>
             
             <TabsContent value="directorateStaff" className="mt-4">
