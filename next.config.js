@@ -9,9 +9,6 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
-  experimental: {
-    serverComponentsExternalPackages: ['exceljs', 'pdf-lib'],
-  },
   images: {
     remotePatterns: [
       {
