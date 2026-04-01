@@ -424,12 +424,18 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, category }:
                             <FormMessage />
                         </FormItem> 
                     )}/>
-                    <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                            {availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                        </SelectContent>
-                    </Select><FormMessage /></FormItem> )}/>
+                    <FormField name="remittedAccount" control={form.control} render={({ field }) => ( 
+                        <FormItem>
+                            <FormLabel>Account <span className="text-destructive">*</span></FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {availableRemittanceAccounts.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem> 
+                    )}/>
                 </div>
                 <FormField name="remittanceRemarks" control={form.control} render={({ field }) => ( <FormItem><FormLabel>{category === 'Complaints' ? 'Remarks' : 'Remittance Remarks'}</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Add any remarks for this entry..." /></FormControl><FormMessage /></FormItem> )}/>
             </div>
