@@ -73,7 +73,7 @@ import { format, isValid, parseISO } from "date-fns";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter as TableFooterComponent } from "@/components/ui/table";
 import { v4 as uuidv4 } from 'uuid';
-import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/tooltip';
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from "@/components/ui/badge";
 import SiteDialogContent from "./SiteDialogContent";
 

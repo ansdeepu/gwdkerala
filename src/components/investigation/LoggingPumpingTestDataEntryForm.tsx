@@ -100,10 +100,11 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string 
 
 
 const toDateOrNull = (value: any): Date | null => {
-    if (!value) return null;
-    if (value instanceof Date && !isNaN(value.getTime())) return value;
+    if (value === null || value === undefined || value === '') return null;
+    if (value instanceof Date && isValid(value)) return value;
     if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
-        return new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+        const d = new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+        if (isValid(d)) return d;
     }
     if (typeof value === 'string') {
         let d = parseISO(value); 
