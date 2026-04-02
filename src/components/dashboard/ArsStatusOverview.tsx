@@ -127,8 +127,14 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
 
   const handleWorkStatusCellClick = (data: ArsEntry[], title: string) => {
     const dialogData = data.map((site, index) => ({
-      slNo: index + 1, fileNo: site.fileNo, siteName: site.nameOfSite, purpose: site.arsTypeOfScheme,
-      workStatus: site.arsStatus, supervisorName: site.supervisorName || 'N/A'
+      slNo: index + 1,
+      id: site.id,
+      fileNo: site.fileNo,
+      applicantName: 'ARS Scheme',
+      siteName: site.nameOfSite,
+      purpose: site.arsTypeOfScheme,
+      workStatus: site.arsStatus,
+      supervisorName: site.supervisorName || 'N/A'
     }));
     const columns = [
       { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' },
@@ -141,53 +147,48 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
   return (
      <Card className="flex flex-col h-full">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-          <div>
-            <CardTitle className="flex items-center gap-2"><Waves className="h-5 w-5 text-primary" />ARS Status Overview</CardTitle>
-            <CardDescription>Current count of ARS sites by their work status.</CardDescription>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 pt-4 border-t mt-4">
-            <Select value={schemeTypeFilter} onValueChange={setSchemeTypeFilter} name="arsSchemeFilter">
-              <SelectTrigger className="w-[240px]">
-                <SelectValue placeholder="Filter by Type of Scheme" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Scheme Types</SelectItem>
-                {arsTypeOfSchemeOptions.map((scheme) => (
-                  <SelectItem key={scheme} value={scheme}>{scheme}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-                type="date"
-                id="ars-overview-start-date"
-                name="arsOverviewStartDate"
-                className="w-[240px]"
-                value={dates.start ? format(dates.start, 'yyyy-MM-dd') : ''}
-                onChange={(e) => onSetDates({ ...dates, start: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined })}
-            />
-            <Input
-                type="date"
-                id="ars-overview-end-date"
-                name="arsOverviewEndDate"
-                className="w-[240px]"
-                value={dates.end ? format(dates.end, 'yyyy-MM-dd') : ''}
-                onChange={(e) => onSetDates({ ...dates, end: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined })}
-            />
-          <Button onClick={() => { onSetDates({ start: undefined, end: undefined }); setSchemeTypeFilter('all'); }} variant="ghost" className="h-9 px-3"><XCircle className="mr-2 h-4 w-4" />Clear Filters</Button>
-          <p className="text-xs text-muted-foreground flex-grow text-center sm:text-left">Filter by scheme and/or completion date</p>
-        </div>
+        <CardTitle className="flex items-center gap-2"><Waves className="h-5 w-5 text-primary" />ARS Status Overview</CardTitle>
+        <CardDescription>Current count of ARS sites by their work status.</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 p-0">
           <ScrollArea className="h-full">
               <div className="p-6 pt-0">
+                <div className="flex flex-wrap items-center gap-2 pt-4 border-t mb-6">
+                    <Select value={schemeTypeFilter} onValueChange={setSchemeTypeFilter} name="arsSchemeFilter">
+                      <SelectTrigger className="w-[240px]">
+                        <SelectValue placeholder="Filter by Type of Scheme" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Scheme Types</SelectItem>
+                        {arsTypeOfSchemeOptions.map((scheme) => (
+                          <SelectItem key={scheme} value={scheme}>{scheme}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                        type="date"
+                        id="ars-overview-start-date"
+                        name="arsOverviewStartDate"
+                        className="w-[240px]"
+                        value={dates.start ? format(dates.start, 'yyyy-MM-dd') : ''}
+                        onChange={(e) => onSetDates({ ...dates, start: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined })}
+                    />
+                    <Input
+                        type="date"
+                        id="ars-overview-end-date"
+                        name="arsOverviewEndDate"
+                        className="w-[240px]"
+                        value={dates.end ? format(dates.end, 'yyyy-MM-dd') : ''}
+                        onChange={(e) => onSetDates({ ...dates, end: e.target.value ? parse(e.target.value, 'yyyy-MM-dd', new Date()) : undefined })}
+                    />
+                  <Button onClick={() => { onSetDates({ start: undefined, end: undefined }); setSchemeTypeFilter('all'); }} variant="ghost" className="h-9 px-3"><XCircle className="mr-2 h-4 w-4" />Clear Filters</Button>
+                </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <button onClick={() => handleWorkStatusCellClick(arsDashboardData?.allArsSites ?? [], 'All ARS Sites')} disabled={(arsDashboardData?.totalArsSites ?? 0) === 0} className="p-4 border rounded-lg bg-blue-500/10 text-center hover:bg-blue-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button onClick={() => handleWorkStatusCellClick(arsDashboardData?.allArsSites ?? [], 'All ARS Sites')} disabled={(arsDashboardData?.totalArsSites ?? 0) === 0} className="p-4 border rounded-lg bg-blue-50/10 text-center hover:bg-blue-50/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         <p className="text-sm font-medium text-blue-600">Total ARS Sites</p>
                         <p className="text-4xl font-bold text-blue-700">{arsDashboardData?.totalArsSites ?? 0}</p>
                     </button>
-                    <button disabled className="p-4 border rounded-lg bg-green-500/10 text-center disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button disabled className="p-4 border rounded-lg bg-green-50/10 text-center disabled:opacity-50 disabled:cursor-not-allowed">
                         <p className="text-sm font-medium text-green-600">Total Expenditure</p>
                         <p className="text-3xl font-bold text-green-700 font-mono">₹{(arsDashboardData?.totalArsExpenditure ?? 0).toLocaleString('en-IN')}</p>
                     </button>

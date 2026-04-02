@@ -137,13 +137,13 @@ const WorkProgressCategoryView = ({
                     if (completionDate && isValid(completionDate) && isWithinInterval(completionDate, { start: startOfMonthDate, end: endOfMonthDate })) {
                         const siteKey = `${entry.fileNo}-${site.nameOfSite}-${site.purpose}`;
                         if (!uniqueCompletedSites.has(siteKey)) {
-                            uniqueCompletedSites.set(siteKey, { ...site, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType as ApplicationType });
+                            uniqueCompletedSites.set(siteKey, { ...site, id: site.id, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType as ApplicationType });
                         }
                     }
                 }
                 
                 if (site.workStatus && ongoingWorkStatuses.includes(site.workStatus as SiteWorkStatus)) {
-                    ongoingSites.push({ ...site, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType as ApplicationType });
+                    ongoingSites.push({ ...site, id: site.id, fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A', applicationType: entry.applicationType as ApplicationType });
                 }
             }
         }
@@ -154,7 +154,6 @@ const WorkProgressCategoryView = ({
 
         for (const arsEntry of arsEntries) {
             if (isSupervisor && arsEntry.supervisorUid !== currentUser.uid) continue;
-            // Investigators don't typically have specific fields in ARS module like regular files, but checking UID for now.
             if (isInvestigator && arsEntry.supervisorUid !== currentUser.uid) continue;
 
             if (arsEntry.arsStatus && arsCompletedStatuses.includes(arsEntry.arsStatus) && arsEntry.dateOfCompletion) {
@@ -164,6 +163,7 @@ const WorkProgressCategoryView = ({
                     if (!uniqueCompletedSites.has(siteKey)) {
                         uniqueCompletedSites.set(siteKey, { 
                             ...arsEntry, 
+                            id: arsEntry.id,
                             fileNo: arsEntry.fileNo || 'N/A', 
                             applicantName: 'ARS Scheme', 
                             purpose: 'ARS Scheme',
@@ -176,6 +176,7 @@ const WorkProgressCategoryView = ({
             if (arsEntry.arsStatus && arsOngoingStatuses.includes(arsEntry.arsStatus)) {
                 ongoingSites.push({ 
                     ...arsEntry, 
+                    id: arsEntry.id,
                     fileNo: arsEntry.fileNo || 'N/A', 
                     applicantName: 'ARS Scheme', 
                     purpose: 'ARS Scheme',
@@ -262,7 +263,7 @@ export default function WorkProgress({ allFileEntries, allArsEntries, onOpenDial
     ];
 
     const dialogData = summary.data.map((site, index) => ({
-      slNo: index + 1, fileNo: site.fileNo, applicantName: site.applicantName, siteName: site.nameOfSite,
+      slNo: index + 1, id: site.id, fileNo: site.fileNo, applicantName: site.applicantName, siteName: site.nameOfSite,
       purpose: site.purpose, workStatus: site.workStatus, supervisorName: site.supervisorName || 'N/A',
     }));
 
@@ -275,14 +276,14 @@ export default function WorkProgress({ allFileEntries, allArsEntries, onOpenDial
     if (filteredData.length === 0) return;
 
     const dialogData = filteredData.map((site, index) => ({
-      slNo: index + 1, fileNo: site.fileNo, applicantName: site.applicantName, siteName: site.nameOfSite,
-      workStatus: site.workStatus, supervisorName: site.supervisorName || 'N/A',
+      slNo: index + 1, id: site.id, fileNo: site.fileNo, applicantName: site.applicantName, siteName: site.nameOfSite,
+      purpose: site.purpose, workStatus: site.workStatus, supervisorName: site.supervisorName || 'N/A',
     }));
 
     const columns = [
       { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' },
       { key: 'applicantName', label: 'Applicant Name' }, { key: 'siteName', label: 'Site Name' },
-      { key: 'workStatus', label: 'Work Status' }, { key: 'supervisorName', label: 'Supervisor' },
+      { key: 'purpose', label: 'Purpose' }, { key: 'workStatus', label: 'Work Status' }, { key: 'supervisorName', label: 'Supervisor' },
     ];
     onOpenDialog(dialogData, `${type} '${purpose}' Works`, columns, 'month');
   };

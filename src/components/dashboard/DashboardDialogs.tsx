@@ -48,13 +48,14 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
   const { toast } = useToast();
   const { isOpen, title, data, columns, type } = dialogState;
   
-  const handleFileNoClick = (fileNo: string) => {
+  const handleFileNoClick = (row: any) => {
+    const fileNo = row.fileNo;
     if (!fileNo || fileNo === 'N/A' || fileNo === '-') return;
 
     // 1. Check if it's an ARS Scheme (from module)
-    const arsEntry = allArsEntries.find(e => e.fileNo === fileNo);
-    if (arsEntry && arsEntry.id) {
-      const url = `/dashboard/ars/entry?id=${arsEntry.id}`;
+    // For ARS module entries, the id passed in the row is the document ID.
+    if (row.id && (row.applicantName === 'ARS Scheme' || row.purpose === 'ARS Scheme')) {
+      const url = `/dashboard/ars/entry?id=${row.id}`;
       window.open(url, '_blank');
       return;
     }
@@ -192,7 +193,7 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
                               <Button 
                                 variant="link" 
                                 className="p-0 h-auto font-mono text-xs text-primary font-bold hover:underline" 
-                                onClick={() => handleFileNoClick(row[col.key])}
+                                onClick={() => handleFileNoClick(row)}
                               >
                                 {row[col.key]}
                               </Button>

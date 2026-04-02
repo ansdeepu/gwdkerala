@@ -62,30 +62,29 @@ export default function ArsEntryPage() {
     const searchParams = useSearchParams();
     const { user, isLoading: authLoading } = useAuth();
     const { toast } = useToast();
-    const { getArsEntryById, addArsEntry, updateArsEntry } = useArsEntries();
+    const { getArsEntryById, addArsEntry, updateArsEntry, isLoading: arsLoading } = useArsEntries();
     const { createArsPendingUpdate } = usePendingUpdates();
-    const { allStaffMembers, allUsers, allLsgConstituencyMaps, allE_tenders, allBidders } = useDataStore();
+    const { allStaffMembers, allUsers, allLsgConstituencyMaps, allE_tenders, allBidders, isLoading: dataStoreLoading } = useDataStore();
     
-    const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [arsEntry, setArsEntry] = useState<ArsEntry | null>(null);
+    const [fetchInitiated, setFetchInitiated] = useState(false);
 
     const id = searchParams.get('id');
     const readOnlyParam = searchParams.get('readOnly');
     const approveUpdateId = searchParams.get('approveUpdateId');
 
     const isReadOnly = readOnlyParam === 'true' || user?.role === 'viewer' || !!(user?.role === 'supervisor' && arsEntry && user.uid !== arsEntry.supervisorUid);
-    const canEdit = user?.role === 'admin' || user?.role === 'engineer';
     
     useEffect(() => {
+        if (arsLoading || dataStoreLoading || authLoading) return;
+
         if (!id || id === 'new') {
             setHeader('New ARS Entry', 'Create a new Artificial Recharge Scheme entry.');
-            setIsLoading(false);
             return;
         }
 
         const fetchEntry = async () => {
-            setIsLoading(true);
             const entry = await getArsEntryById(id);
             if (entry) {
                 setArsEntry(entry);
@@ -94,10 +93,10 @@ export default function ArsEntryPage() {
                 toast({ title: 'Error', description: 'ARS entry not found.', variant: 'destructive' });
                 router.replace('/dashboard/ars');
             }
-            setIsLoading(false);
+            setFetchInitiated(true);
         };
         fetchEntry();
-    }, [id, getArsEntryById, setHeader, toast, router]);
+    }, [id, getArsEntryById, setHeader, toast, router, arsLoading, dataStoreLoading, authLoading]);
 
     const form = useForm<ArsEntryFormData>({
         resolver: zodResolver(ArsEntrySchema),
@@ -247,7 +246,7 @@ export default function ArsEntryPage() {
         }
     };
     
-    if (isLoading || authLoading) {
+    if (arsLoading || dataStoreLoading || authLoading || (id && id !== 'new' && !arsEntry && !fetchInitiated)) {
         return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 

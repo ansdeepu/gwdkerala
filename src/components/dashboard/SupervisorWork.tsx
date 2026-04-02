@@ -56,7 +56,7 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
     const selectedStaffName = selectedStaff?.name;
     
     const ongoingWorkStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated", "Pending", "VES Pending"];
-    let works: Array<{ fileNo: string; applicantName: string; siteName: string; workStatus: string; purpose?: string; supervisorName?: string | null }> = [];
+    let works: Array<{ id?: string; fileNo: string; applicantName: string; siteName: string; workStatus: string; purpose?: string; supervisorName?: string | null }> = [];
 
     // Process file entries
     for (const entry of allFileEntries) {
@@ -81,13 +81,14 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
     }
 
     // Process ARS entries
-    const arsOngoingWorkStatuses: ArsStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated"];
+    const arsOngoingWorkStatuses: ArsStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated", "Proposal Submitted", "AS & TS Issued", "Tendered", "Selection Notice Issued"];
     for (const arsEntry of allArsEntries) {
-        const isAssigned = arsEntry.supervisorUid === selectedSupervisorId || (selectedStaffName && arsEntry.supervisorName === selectedStaffName);
+        const isAssigned = arsEntry.supervisorUid === selectedSupervisorId || (selectedStaffName && arsEntry.supervisorName?.includes(selectedStaffName));
         const isOngoing = arsEntry.arsStatus && (arsOngoingWorkStatuses as string[]).includes(arsEntry.arsStatus);
 
         if (isAssigned && isOngoing) {
             works.push({
+                id: arsEntry.id,
                 fileNo: arsEntry.fileNo || 'N/A',
                 applicantName: 'ARS Scheme',
                 siteName: arsEntry.nameOfSite || 'Unnamed ARS Site',
