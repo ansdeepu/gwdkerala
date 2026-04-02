@@ -74,23 +74,31 @@ export default function LoggingPumpingTestTable({ fileEntries, isLoading, search
   const canDelete = user?.role === 'admin';
   const canCopy = user?.role === 'admin';
 
-  // Helper to find the first available date (Remittance or Inward Re-appropriation Credit)
+  // Helper to find the latest available date (Remittance or Inward Re-appropriation Credit)
   const getDisplayDate = (entry: DataEntryFormData): Date | null => {
-    const directRemittance = entry.remittanceDetails?.[0]?.dateOfRemittance;
-    if (directRemittance) return safeParseDate(directRemittance);
+    let latestDate: Date | null = null;
 
-    const directReapp = entry.reappropriationDetails?.[0]?.date;
-    if (directReapp) return safeParseDate(directReapp);
+    // 1. Check all remittance dates
+    entry.remittanceDetails?.forEach(rd => {
+      const d = safeParseDate(rd.dateOfRemittance);
+      if (d && (!latestDate || d > latestDate)) latestDate = d;
+    });
 
+    // 2. Check all inward re-appropriation dates (credits)
     const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
     if (normalizedFileNo && allFileEntries) {
-        for (const otherEntry of allFileEntries) {
-            if (otherEntry.fileNo?.toLowerCase().trim() === normalizedFileNo) continue;
-            const credit = otherEntry.reappropriationDetails?.find(r => r.refFileNo?.toLowerCase().trim() === normalizedFileNo);
-            if (credit && credit.date) return safeParseDate(credit.date);
-        }
+      allFileEntries.forEach(otherEntry => {
+        if (otherEntry.fileNo?.toLowerCase().trim() === normalizedFileNo) return;
+        otherEntry.reappropriationDetails?.forEach(reapp => {
+          if (reapp.refFileNo?.toLowerCase().trim() === normalizedFileNo) {
+            const d = safeParseDate(reapp.date);
+            if (d && (!latestDate || d > latestDate)) latestDate = d;
+          }
+        });
+      });
     }
-    return null;
+
+    return latestDate;
   };
 
   const requestSort = (key: SortKey) => {
