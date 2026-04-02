@@ -1,4 +1,3 @@
-
 // src/app/dashboard/page.tsx
 "use client"; 
 
@@ -49,7 +48,7 @@ const navLinks = [
     { id: 'rig-registration', label: 'Rig Registration' },
     { id: 'rig-financials', label: 'Rig Financials' },
     { id: 'work-progress', label: 'Work Progress' },
-    { id: 'supervisor-work', label: 'Supervisor' },
+    { id: 'supervisor-work', label: 'Field Staff' },
 ];
 
 const scrollTo = (id: string) => {

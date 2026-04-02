@@ -113,15 +113,15 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
     ];
     const dataWithSlNo = filteredWorks.map((work, index) => ({ slNo: index + 1, ...work }));
   
-    const selectedSupervisorName = supervisorList.find(s => s.uid === selectedSupervisorId)?.name || "Selected Supervisor";
+    const selectedSupervisorName = supervisorList.find(s => s.uid === selectedSupervisorId)?.name || "Selected Staff";
     onOpenDialog(dataWithSlNo, `Ongoing '${purpose}' Works for ${selectedSupervisorName}`, columns, 'month');
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" />Supervisor&apos;s Ongoing Work</CardTitle>
-        <CardDescription>Select a staff member to view their assigned ongoing projects by category.</CardDescription>
+        <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" />Field Staff Ongoing Work</CardTitle>
+        <CardDescription>Select an Investigator or Supervisor to view their assigned ongoing projects by category.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col md:flex-row gap-6">
         <div className="w-full md:w-1/3">
