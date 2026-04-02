@@ -3,10 +3,11 @@
 
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { format, isValid } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { type DataEntryFormData, allFileStatusOptions, type SiteWorkStatus, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { useDataStore } from '@/hooks/use-data-store';
 
 const ClipboardList = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
@@ -24,6 +25,20 @@ const loggingPumpingTestFileStatusOptions = [
     "Under Process",
     "Completed",
 ] as const;
+
+const safeParseDate = (dateValue: any): Date | null => {
+  if (!dateValue) return null;
+  if (dateValue instanceof Date && isValid(dateValue)) return dateValue;
+  if (typeof dateValue === 'string') {
+    const parsed = parseISO(dateValue);
+    if (isValid(parsed)) return parsed;
+  }
+  if (typeof dateValue === 'object' && dateValue.toDate) {
+    const parsed = dateValue.toDate();
+    if (isValid(parsed)) return parsed;
+  }
+  return null;
+};
 
 const AgeStatCard = ({ title, total, closed, balance, onClick, onClosedClick, onBalanceClick }: { title: string; total: number; closed: number; balance: number; onClick: () => void; onClosedClick: () => void; onBalanceClick: () => void; }) => (
   <div
@@ -61,7 +76,7 @@ const OverviewSection = ({ data, onFileStatusClick, onAgeCardClick, categoryTitl
         <div className="space-y-6">
             <div className="mt-2"><div className="inline-flex items-baseline gap-2 p-3 rounded-lg shadow-sm bg-primary/10 border border-primary/20"><h4 className="text-sm font-medium text-primary">Total Visible Files</h4><p className="text-2xl font-bold text-primary">{data.totalFiles}</p></div></div>
             <div className="mt-6 pt-6 border-t border-border/60">
-                <div className="flex items-center justify-between mb-3"><h4 className="text-sm font-medium text-primary">Files by Age</h4><p className="text-xs text-muted-foreground">Based on last remittance or creation date</p></div>
+                <div className="flex items-center justify-between mb-3"><h4 className="text-sm font-medium text-primary">Files by Age</h4><p className="text-xs text-muted-foreground">Based on latest financial transaction</p></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     <AgeStatCard title="< 1 Year" {...data.filesByAgeStats.lessThan1} 
                       onClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.total, `${categoryTitle} Files Aged < 1 Year (Total)`)} 
@@ -112,6 +127,7 @@ const OverviewSection = ({ data, onFileStatusClick, onAgeCardClick, categoryTitl
 
 export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: FileStatusOverviewProps) {
     const [activeTab, setActiveTab] = useState("deposit");
+    const { allFileEntries } = useDataStore();
 
     const { 
         depositWorksData, 
@@ -148,6 +164,27 @@ export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: File
                 lessThan1: [], between1And2: [], between2And3: [], between3And4: [], between4And5: [], above5: [],
             };
 
+            const getDisplayDate = (entry: DataEntryFormData): Date | null => {
+                let latestDate: Date | null = null;
+                entry.remittanceDetails?.forEach(rd => {
+                    const d = safeParseDate(rd.dateOfRemittance);
+                    if (d && (!latestDate || d > latestDate)) latestDate = d;
+                });
+                const normalizedFileNo = entry.fileNo?.toLowerCase().trim();
+                if (normalizedFileNo && allFileEntries) {
+                    allFileEntries.forEach(otherEntry => {
+                        if (otherEntry.fileNo?.toLowerCase().trim() === normalizedFileNo) return;
+                        otherEntry.reappropriationDetails?.forEach(reapp => {
+                            if (reapp.refFileNo?.toLowerCase().trim() === normalizedFileNo) {
+                                const d = safeParseDate(reapp.date);
+                                if (d && (!latestDate || d > latestDate)) latestDate = d;
+                            }
+                        });
+                    });
+                }
+                return latestDate;
+            };
+
             const now = new Date();
 
             for (const entry of entries) {
@@ -155,12 +192,7 @@ export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: File
                     fileStatusCounts.set(entry.fileStatus, (fileStatusCounts.get(entry.fileStatus) || 0) + 1);
                 }
 
-                const latestRemittanceDate = entry.remittanceDetails
-                    ?.map(rd => rd.dateOfRemittance ? new Date(rd.dateOfRemittance) : null)
-                    .filter((d): d is Date => d !== null && isValid(d))
-                    .sort((a, b) => b.getTime() - a.getTime())[0];
-                
-                const basisDate = latestRemittanceDate || ((entry as any).createdAt ? new Date((entry as any).createdAt) : null);
+                const basisDate = getDisplayDate(entry) || ((entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null);
 
                 if (basisDate && isValid(basisDate)) {
                     const ageInMs = now.getTime() - basisDate.getTime();
@@ -206,7 +238,7 @@ export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: File
             gwInvestigationData: processEntriesForOverview(gwInvestigationEntries, investigationFileStatusOptions),
             loggingPumpingTestData: processEntriesForOverview(loggingPumpingTestEntries, loggingPumpingTestFileStatusOptions)
         };
-    }, [nonArsEntries]);
+    }, [nonArsEntries, allFileEntries]);
 
   const handleFileStatusCardClick = (category: string, status: string, dataForDialog: DataEntryFormData[]) => {
     const columns = [
