@@ -47,14 +47,16 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
   }, [allUsers, staffMembers]);
 
   const supervisorOngoingWorks = useMemo(() => {
-    const byPurpose = sitePurposeOptions.reduce((acc, p) => ({ ...acc, [p]: 0 }), {} as Record<SitePurpose, number>);
+    const byPurpose = sitePurposeOptions.reduce((acc, p) => ({ ...acc, [p]: 0 }), {} as Record<string, number>);
+    byPurpose["ARS Scheme"] = 0; // Add ARS Scheme category
+
     if (!selectedSupervisorId) return { works: [], byPurpose, totalCount: 0 };
 
     const selectedStaff = supervisorList.find(s => s.uid === selectedSupervisorId);
     const selectedStaffName = selectedStaff?.name;
     
     const ongoingWorkStatuses: SiteWorkStatus[] = ["Work Order Issued", "Work in Progress", "Awaiting Dept. Rig", "Work Initiated", "Pending", "VES Pending"];
-    let works: Array<{ fileNo: string; applicantName: string; siteName: string; workStatus: string; purpose?: SitePurpose; supervisorName?: string | null }> = [];
+    let works: Array<{ fileNo: string; applicantName: string; siteName: string; workStatus: string; purpose?: string; supervisorName?: string | null }> = [];
 
     // Process file entries
     for (const entry of allFileEntries) {
@@ -69,10 +71,10 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
                 works.push({
                     fileNo: entry.fileNo || 'N/A', applicantName: entry.applicantName || 'N/A',
                     siteName: site.nameOfSite || 'Unnamed Site', workStatus: site.workStatus!,
-                    purpose: site.purpose as SitePurpose, supervisorName: site.supervisorName || site.nameOfInvestigator || site.vesInvestigator,
+                    purpose: site.purpose as string, supervisorName: site.supervisorName || site.nameOfInvestigator || site.vesInvestigator,
                 });
-                if(site.purpose && (sitePurposeOptions as any).includes(site.purpose)) {
-                    byPurpose[site.purpose as SitePurpose]++;
+                if(site.purpose) {
+                    byPurpose[site.purpose] = (byPurpose[site.purpose] || 0) + 1;
                 }
             }
         });
@@ -82,7 +84,7 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
     const arsOngoingWorkStatuses: ArsStatus[] = ["Work Order Issued", "Work in Progress", "Work Initiated"];
     for (const arsEntry of allArsEntries) {
         const isAssigned = arsEntry.supervisorUid === selectedSupervisorId || (selectedStaffName && arsEntry.supervisorName === selectedStaffName);
-        const isOngoing = arsEntry.arsStatus && arsOngoingWorkStatuses.includes(arsEntry.arsStatus);
+        const isOngoing = arsEntry.arsStatus && (arsOngoingWorkStatuses as string[]).includes(arsEntry.arsStatus);
 
         if (isAssigned && isOngoing) {
             works.push({
@@ -90,12 +92,10 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
                 applicantName: 'ARS Scheme',
                 siteName: arsEntry.nameOfSite || 'Unnamed ARS Site',
                 workStatus: arsEntry.arsStatus!,
-                purpose: 'ARS',
+                purpose: 'ARS Scheme',
                 supervisorName: arsEntry.supervisorName,
             });
-            if(byPurpose['ARS'] !== undefined) {
-                byPurpose['ARS']++;
-            }
+            byPurpose["ARS Scheme"]++;
         }
     }
     
@@ -116,6 +116,11 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
     const selectedSupervisorName = supervisorList.find(s => s.uid === selectedSupervisorId)?.name || "Selected Staff";
     onOpenDialog(dataWithSlNo, `Ongoing '${purpose}' Works for ${selectedSupervisorName}`, columns, 'month');
   };
+
+  const displayedPurposes = useMemo(() => {
+      const purposes = [...sitePurposeOptions, "ARS Scheme"];
+      return purposes.filter(p => supervisorOngoingWorks.byPurpose[p] > 0);
+  }, [supervisorOngoingWorks.byPurpose]);
 
   return (
     <Card>
@@ -144,7 +149,7 @@ export default function SupervisorWork({ allFileEntries, allArsEntries, allUsers
               <Table>
                 <TableHeader><TableRow><TableHead>Category</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
                 <TableBody>
-                  {sitePurposeOptions.filter(p => supervisorOngoingWorks.byPurpose[p] > 0).map(p => (
+                  {displayedPurposes.map(p => (
                     <TableRow key={p}>
                       <TableCell className="font-medium">{p}</TableCell>
                       <TableCell className="text-right"><Button variant="link" className="p-0 h-auto" onClick={() => handleSupervisorWorkClick(p)}>{supervisorOngoingWorks.byPurpose[p]}</Button></TableCell>

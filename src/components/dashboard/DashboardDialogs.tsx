@@ -1,4 +1,3 @@
-
 // src/components/dashboard/DashboardDialogs.tsx
 "use client";
 
@@ -52,10 +51,17 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
   const handleFileNoClick = (fileNo: string) => {
     if (!fileNo || fileNo === 'N/A' || fileNo === '-') return;
 
-    // Try finding in regular files first
+    // 1. Check if it's an ARS Scheme (from module)
+    const arsEntry = allArsEntries.find(e => e.fileNo === fileNo);
+    if (arsEntry && arsEntry.id) {
+      const url = `/dashboard/ars/entry?id=${arsEntry.id}`;
+      window.open(url, '_blank');
+      return;
+    }
+
+    // 2. Check if it's a regular file (including ARS purpose in Deposit Works)
     const entry = allFileEntries.find(e => e.fileNo === fileNo);
     if (entry && entry.id) {
-      // Determine work type for investigation/logging if applicable to ensure correct form layout
       const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
       const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
 
@@ -75,7 +81,6 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
       } else if (appType && (PLAN_FUND_APPLICATION_TYPES as any).includes(appType)) {
           workType = 'planFund';
       } else {
-          // Default fallback for deposit works
           workType = 'public';
       }
 
@@ -87,15 +92,7 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
       return;
     }
 
-    // Try finding in ARS entries
-    const arsEntry = allArsEntries.find(e => e.fileNo === fileNo);
-    if (arsEntry && arsEntry.id) {
-      const url = `/dashboard/ars/entry?id=${arsEntry.id}`;
-      window.open(url, '_blank');
-      return;
-    }
-
-    toast({ title: "File Not Found", description: "The source record for this File No could not be identified.", variant: "destructive" });
+    toast({ title: "Record Not Found", description: "The source record for this File No could not be identified in the current session data.", variant: "destructive" });
   };
 
   const exportDialogDataToExcel = async () => {
@@ -110,11 +107,10 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(title.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30));
 
-    // Add Header Rows
-    worksheet.addRow(["Ground Water Department, Kollam"]).commit();
+    worksheet.addRow(["Ground Water Department"]).commit();
     worksheet.addRow([reportTitle]).commit();
     worksheet.addRow([`Report generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`]).commit();
-    worksheet.addRow([]).commit(); // Spacer
+    worksheet.addRow([]).commit();
 
     const numCols = columnLabels.length;
     worksheet.mergeCells(1, 1, 1, numCols);
@@ -127,7 +123,6 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
     worksheet.getRow(1).font = { bold: true, size: 16 };
     worksheet.getRow(2).font = { bold: true, size: 14 };
     
-    // Add Table Header
     const headerRow = worksheet.addRow(columnLabels);
     headerRow.font = { bold: true };
     headerRow.eachCell(cell => {
@@ -135,7 +130,6 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
       cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
     });
 
-    // Add Data Rows
     data.forEach(rowData => {
       const values = columns.map(col => rowData[col.key] ?? '');
       const newRow = worksheet.addRow(values);
@@ -147,7 +141,6 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
       });
     });
 
-    // Auto-fit columns
      worksheet.columns.forEach((column, i) => {
         let maxLength = 0;
         column.eachCell!({ includeEmpty: true }, (cell) => {
@@ -159,7 +152,6 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
         column.width = maxLength < 10 ? 10 : maxLength + 2;
     });
     
-    // Save the file
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const url = URL.createObjectURL(blob);
@@ -168,13 +160,9 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
     a.download = `gwd_report_${title.replace(/[^a-zA-Z0-9]/g, '_')}_${format(new Date(), 'yyyyMMdd_HHmmss')}.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
-    toast({ title: "Excel Exported", description: `Report downloaded.` });
+    toast({ title: "Excel Exported" });
   };
   
-    const getColumnsForType = (type: DialogState['type'], title: string) => {
-        return columns; // Always use the columns passed in the dialog state
-    };
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => setDialogState({ ...dialogState, isOpen: open })}>
       <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl p-0 flex flex-col h-[90vh]">
@@ -190,7 +178,7 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
                 <Table>
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
-                      {getColumnsForType(type, title).map(col => 
+                      {columns.map(col => 
                         <TableHead key={col.key} className={cn(col.isNumeric && 'text-right')}>{col.label}</TableHead>
                       )}
                     </TableRow>
@@ -198,7 +186,7 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
                   <TableBody>
                     {data.map((row, rowIndex) => (
                       <TableRow key={rowIndex}>
-                        {getColumnsForType(type, title).map(col => (
+                        {columns.map(col => (
                           <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>
                             {col.key === 'fileNo' ? (
                               <Button 

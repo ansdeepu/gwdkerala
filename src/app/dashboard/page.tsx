@@ -381,6 +381,7 @@ export default function DashboardPage() {
         <div id="work-progress">
           <WorkProgress
             allFileEntries={dashboardData.allFileEntries}
+            allArsEntries={arsEntries}
             onOpenDialog={handleOpenDialog}
             currentUser={currentUser}
           />

@@ -1,4 +1,3 @@
-
 // src/components/dashboard/WorkProgress.tsx
 "use client";
 
@@ -21,21 +20,19 @@ import type { UserProfile } from '@/hooks/useAuth';
 import { CalendarCheck, Hourglass, TrendingUp } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import type { ArsEntry } from '@/hooks/useArsEntries';
 
 interface WorkProgressProps {
   allFileEntries: DataEntryFormData[];
+  allArsEntries: ArsEntry[];
   onOpenDialog: (data: any[], title: string, columns: any[], type: 'month') => void;
   currentUser?: UserProfile | null;
 }
 
 interface DetailedWorkSummary {
     totalCount: number;
-    byPurpose: Record<SitePurpose, number>;
-    data: Array<SiteDetailFormData & { fileNo: string; applicantName: string; }>;
-    byPurposePrivate: Record<SitePurpose, number>;
-    byPurposeDeposit: Record<SitePurpose, number>;
-    privateData: Array<SiteDetailFormData & { fileNo: string; applicantName: string; }>;
-    depositData: Array<SiteDetailFormData & { fileNo: string; applicantName: string; }>;
+    byPurpose: Record<string, number>;
+    data: Array<any & { fileNo: string; applicantName: string; }>;
 }
 
 const safeParseDate = (dateValue: any): Date | null => {
@@ -60,11 +57,16 @@ const ProgressCategory = ({
   title: string;
   summary: DetailedWorkSummary;
   onTotalClick: () => void;
-  onPurposeClick: (purpose: SitePurpose) => void;
+  onPurposeClick: (purpose: string) => void;
 }) => {
   const isCompleted = title.includes('Completed');
   const Icon = isCompleted ? TrendingUp : Hourglass;
   const colorClass = isCompleted ? "text-green-600" : "text-orange-600";
+
+  const sortedPurposes = useMemo(() => {
+      const purposes = Object.keys(summary.byPurpose).filter(p => summary.byPurpose[p] > 0);
+      return purposes.sort((a, b) => a.localeCompare(b));
+  }, [summary.byPurpose]);
 
   return (
     <div className="space-y-3 p-4 border rounded-lg bg-secondary/20">
@@ -80,7 +82,7 @@ const ProgressCategory = ({
       <div className="space-y-2">
         {summary.totalCount > 0 ? (
           <div className="grid grid-cols-2 gap-2">
-            {sitePurposeOptions.filter(p => summary.byPurpose[p] > 0).map(p => (
+            {sortedPurposes.map(p => (
               <button key={`${p}-${title}`} className="flex justify-between items-center text-sm p-2 rounded-md hover:bg-orange-100/50" onClick={() => onPurposeClick(p)}>
                 <span className="font-medium">{p}</span>
                 <span className={`font-bold ${colorClass}`}>{summary.byPurpose[p]}</span>
@@ -97,16 +99,18 @@ const ProgressCategory = ({
 
 const WorkProgressCategoryView = ({
     entries,
+    arsEntries,
     workReportMonth,
     currentUser,
     handleMonthStatClick,
     handleMonthPurposeClick
 }: {
     entries: DataEntryFormData[];
+    arsEntries: ArsEntry[];
     workReportMonth: Date;
     currentUser?: UserProfile | null;
     handleMonthStatClick: (type: 'ongoing' | 'completed', dataSource: DetailedWorkSummary) => void;
-    handleMonthPurposeClick: (dataSource: DetailedWorkSummary, purpose: SitePurpose, type: 'Ongoing' | 'Completed') => void;
+    handleMonthPurposeClick: (dataSource: DetailedWorkSummary, purpose: string, type: 'Ongoing' | 'Completed') => void;
 }) => {
     const categoryStats = useMemo(() => {
         const startOfMonthDate = startOfMonth(workReportMonth);
@@ -118,9 +122,10 @@ const WorkProgressCategoryView = ({
         const isSupervisor = currentUser?.role === 'supervisor';
         const isInvestigator = currentUser?.role === 'investigator';
         
-        const uniqueCompletedSites = new Map<string, SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; }>();
-        const ongoingSites: Array<SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; }> = [];
+        const uniqueCompletedSites = new Map<string, any>();
+        const ongoingSites: Array<any> = [];
 
+        // 1. Process regular file entries
         for (const entry of entries) {
             if (!entry.siteDetails) continue;
             for (const site of entry.siteDetails) {
@@ -142,37 +147,55 @@ const WorkProgressCategoryView = ({
                 }
             }
         }
-        
-        const createDetailedSummary = (sites: (SiteDetailFormData & { fileNo: string; applicantName: string; applicationType?: ApplicationType; })[]): DetailedWorkSummary => {
-            const byPurpose = sitePurposeOptions.reduce((acc, p) => ({ ...acc, [p]: 0 }), {} as Record<SitePurpose, number>);
-            const byPurposePrivate = { ...byPurpose };
-            const byPurposeDeposit = { ...byPurpose };
-            
-            const privateData: typeof sites = [];
-            const depositData: typeof sites = [];
 
-            sites.forEach(site => {
-                if (site.purpose && sitePurposeOptions.includes(site.purpose as SitePurpose)) {
-                    const purpose = site.purpose as SitePurpose;
-                    byPurpose[purpose]++;
-                    
-                    if(site.applicationType && (PRIVATE_APPLICATION_TYPES as readonly string[]).includes(site.applicationType as any)) {
-                        byPurposePrivate[purpose]++;
-                        privateData.push(site);
-                    } else {
-                        byPurposeDeposit[purpose]++;
-                        depositData.push(site);
+        // 2. Process ARS module entries
+        const arsOngoingStatuses = ["Work Order Issued", "Work in Progress", "Work Initiated", "Tendered", "Selection Notice Issued", "AS & TS Issued", "Proposal Submitted"];
+        const arsCompletedStatuses = ["Work Completed", "Work Failed", "Bill Prepared", "Payment Completed"];
+
+        for (const arsEntry of arsEntries) {
+            if (isSupervisor && arsEntry.supervisorUid !== currentUser.uid) continue;
+            // Investigators don't typically have specific fields in ARS module like regular files, but checking UID for now.
+            if (isInvestigator && arsEntry.supervisorUid !== currentUser.uid) continue;
+
+            if (arsEntry.arsStatus && arsCompletedStatuses.includes(arsEntry.arsStatus) && arsEntry.dateOfCompletion) {
+                const completionDate = safeParseDate(arsEntry.dateOfCompletion);
+                if (completionDate && isValid(completionDate) && isWithinInterval(completionDate, { start: startOfMonthDate, end: endOfMonthDate })) {
+                    const siteKey = `ARS-MODULE-${arsEntry.fileNo}-${arsEntry.nameOfSite}`;
+                    if (!uniqueCompletedSites.has(siteKey)) {
+                        uniqueCompletedSites.set(siteKey, { 
+                            ...arsEntry, 
+                            fileNo: arsEntry.fileNo || 'N/A', 
+                            applicantName: 'ARS Scheme', 
+                            purpose: 'ARS Scheme',
+                            workStatus: arsEntry.arsStatus 
+                        });
                     }
                 }
+            }
+
+            if (arsEntry.arsStatus && arsOngoingStatuses.includes(arsEntry.arsStatus)) {
+                ongoingSites.push({ 
+                    ...arsEntry, 
+                    fileNo: arsEntry.fileNo || 'N/A', 
+                    applicantName: 'ARS Scheme', 
+                    purpose: 'ARS Scheme',
+                    workStatus: arsEntry.arsStatus 
+                });
+            }
+        }
+        
+        const createDetailedSummary = (sites: any[]): DetailedWorkSummary => {
+            const byPurpose: Record<string, number> = {};
+            
+            sites.forEach(site => {
+                const purpose = site.purpose || 'N/A';
+                byPurpose[purpose] = (byPurpose[purpose] || 0) + 1;
             });
+
             return { 
                 totalCount: sites.length, 
                 byPurpose, 
                 data: sites,
-                byPurposePrivate,
-                byPurposeDeposit,
-                privateData,
-                depositData,
             };
         };
 
@@ -180,7 +203,7 @@ const WorkProgressCategoryView = ({
             completedSummary: createDetailedSummary(Array.from(uniqueCompletedSites.values())),
             ongoingSummary: createDetailedSummary(ongoingSites),
         };
-    }, [entries, workReportMonth, currentUser]);
+    }, [entries, arsEntries, workReportMonth, currentUser]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -201,7 +224,7 @@ const WorkProgressCategoryView = ({
 };
 
 
-export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser }: WorkProgressProps) {
+export default function WorkProgress({ allFileEntries, allArsEntries, onOpenDialog, currentUser }: WorkProgressProps) {
   const [workReportMonth, setWorkReportMonth] = useState<Date>(new Date());
   
   const { 
@@ -247,7 +270,7 @@ export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser
     onOpenDialog(dialogData, title, columns, 'month');
   };
 
-  const handleMonthPurposeClick = (dataSource: DetailedWorkSummary, purpose: SitePurpose, type: 'Ongoing' | 'Completed') => {
+  const handleMonthPurposeClick = (dataSource: DetailedWorkSummary, purpose: string, type: 'Ongoing' | 'Completed') => {
     const filteredData = dataSource.data.filter(d => d.purpose === purpose);
     if (filteredData.length === 0) return;
 
@@ -303,6 +326,7 @@ export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser
           <TabsContent value="deposit" className="mt-4">
             <WorkProgressCategoryView 
                 entries={depositWorkEntries}
+                arsEntries={allArsEntries}
                 workReportMonth={workReportMonth}
                 currentUser={currentUser}
                 handleMonthStatClick={handleMonthStatClick}
@@ -312,6 +336,7 @@ export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser
           <TabsContent value="gwInvestigation" className="mt-4">
              <WorkProgressCategoryView 
                 entries={gwInvestigationEntries}
+                arsEntries={[]}
                 workReportMonth={workReportMonth}
                 currentUser={currentUser}
                 handleMonthStatClick={handleMonthStatClick}
@@ -321,6 +346,7 @@ export default function WorkProgress({ allFileEntries, onOpenDialog, currentUser
           <TabsContent value="loggingPumpingTest" className="mt-4">
              <WorkProgressCategoryView 
                 entries={loggingPumpingTestEntries}
+                arsEntries={[]}
                 workReportMonth={workReportMonth}
                 currentUser={currentUser}
                 handleMonthStatClick={handleMonthStatClick}
