@@ -90,9 +90,9 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string 
 
 const toDateOrNull = (value: any): Date | null => {
     if (!value) return null;
-    if (value instanceof Date && !isNaN(value.getTime())) return value;
-    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
-        return new Date(value.seconds * 1000 + (value.nanoseconds || 0) / 1e6);
+    if (value instanceof Date) return value;
+    if (typeof value === 'object' && value !== null && typeof (dateValue as any).seconds === 'number') {
+        return new Date((dateValue as any).seconds * 1000);
     }
     if (typeof value === 'string') {
         const parsed = new Date(value);
@@ -801,6 +801,22 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         };
         if (!user) throw new Error("Authentication error.");
 
+        // Sort sites: Ongoing (0) -> Completed (1) -> Refund (2)
+        if (sanitizedData.siteDetails && sanitizedData.siteDetails.length > 1) {
+            const COMPLETED_GROUP = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed", "Completed"];
+            const REFUND_GROUP = ["To be Refunded"];
+            
+            sanitizedData.siteDetails.sort((a, b) => {
+                const getPriority = (status?: string | null) => {
+                    if (!status) return 0;
+                    if (REFUND_GROUP.includes(status)) return 2;
+                    if (COMPLETED_GROUP.includes(status)) return 1;
+                    return 0; // Everything else is "Ongoing"
+                };
+                return getPriority(a.workStatus) - getPriority(b.workStatus);
+            });
+        }
+
         const fileLevelUpdates = {
             fileStatus: sanitizedData.fileStatus,
             remarks: sanitizedData.remarks
@@ -809,9 +825,11 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
         if (isSupervisor) {
             await createPendingUpdate(sanitizedData.fileNo, sanitizedData.siteDetails!, user, fileLevelUpdates);
             toast({ title: "Update Submitted" });
+            reset(sanitizedData);
         } else if (fileIdToEdit) {
             await updateFileEntry(fileIdToEdit, sanitizedData, approveUpdateId || undefined);
             toast({ title: "File Updated" });
+            reset(sanitizedData);
         } else {
             const newDocId = await addFileEntry(sanitizedData);
             toast({ title: "File Created" });
