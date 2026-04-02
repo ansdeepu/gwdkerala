@@ -91,8 +91,8 @@ const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string 
 const toDateOrNull = (value: any): Date | null => {
     if (!value) return null;
     if (value instanceof Date) return value;
-    if (typeof value === 'object' && value !== null && typeof (dateValue as any).seconds === 'number') {
-        return new Date((dateValue as any).seconds * 1000);
+    if (typeof value === 'object' && value !== null && typeof (value as any).seconds === 'number') {
+        return new Date((value as any).seconds * 1000);
     }
     if (typeof value === 'string') {
         const parsed = new Date(value);
@@ -969,7 +969,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                           }}
                           disabled={isSupervisor || isViewer}
                         >
-                          <PlusCircle className="h-4 w-4 mr-2" />
+                          <PlusCircle className="mr-2 h-4 w-4 mr-2" />
                           Add
                         </Button>
                       )}

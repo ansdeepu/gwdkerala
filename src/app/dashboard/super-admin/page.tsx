@@ -306,6 +306,7 @@ export default function SuperAdminDashboardPage() {
         <div id="work-progress">
           <WorkProgress
             allFileEntries={allFileEntries}
+            allArsEntries={allArsEntries}
             onOpenDialog={handleOpenDialog}
             currentUser={currentUser}
           />
