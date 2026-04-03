@@ -1,3 +1,4 @@
+
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
@@ -177,7 +178,6 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 };
             });
 
-        // Determine "Completed" status based on linking to a file entry or ARS entry with "Work Completed" status
         const completedTenderNos = new Set<string>();
         
         allFileEntries.forEach(file => {
@@ -287,87 +287,89 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     }, [workOrderData, activeTab, toast]);
 
     const renderTable = (data: WorkOrderRow[]) => (
-        <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
-                <TableRow>
-                    <TableHead>Sl. No.</TableHead>
-                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateWorkOrder')}>Date of Work Order {getSortIcon('dateWorkOrder')}</Button></TableHead>
-                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>e-Tender No. {getSortIcon('eTenderNo')}</Button></TableHead>
-                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
-                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('contractor')}>Contractor {getSortIcon('contractor')}</Button></TableHead>
-                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('supervisor')}>Supervisor {getSortIcon('supervisor')}</Button></TableHead>
-                    <TableHead className="text-right"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('quotedAmount')}>Quoted Amount {getSortIcon('quotedAmount')}</Button></TableHead>
-                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('expectedDateOfCompletion')}>Expected Date of Completion {getSortIcon('expectedDateOfCompletion')}</Button></TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {data.length > 0 ? (
-                    data.map(row => (
-                        <TableRow key={row.id} className={cn(row.isOverdue && activeTab === 'active' && "text-destructive")}>
-                            <TableCell>{row.slNo}</TableCell>
-                            <TableCell>{row.dateWorkOrder}</TableCell>
-                            <TableCell>{row.eTenderNo}</TableCell>
-                            <TableCell className="font-medium">{row.nameOfWork}</TableCell>
-                            <TableCell>{row.contractor}</TableCell>
-                            <TableCell className="text-xs max-w-[200px] break-words">{row.supervisor}</TableCell>
-                            <TableCell className="text-right font-mono">{row.quotedAmount?.toLocaleString('en-IN')}</TableCell>
-                            <TableCell>{row.expectedDateOfCompletion}</TableCell>
-                        </TableRow>
-                    ))
-                ) : (
+        <div className="overflow-x-auto min-w-full">
+            <Table className="min-w-[1000px]">
+                <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
-                            No tenders found in this category.
-                        </TableCell>
+                        <TableHead className="w-[50px] text-center">Sl.</TableHead>
+                        <TableHead className="w-[100px]"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs" onClick={() => requestSort('dateWorkOrder')}>Order Date {getSortIcon('dateWorkOrder')}</Button></TableHead>
+                        <TableHead className="w-[120px]"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs" onClick={() => requestSort('eTenderNo')}>Tender No. {getSortIcon('eTenderNo')}</Button></TableHead>
+                        <TableHead className="min-w-[200px]"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
+                        <TableHead className="w-[150px]"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs" onClick={() => requestSort('contractor')}>Contractor {getSortIcon('contractor')}</Button></TableHead>
+                        <TableHead className="w-[150px]"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs" onClick={() => requestSort('supervisor')}>Supervisor {getSortIcon('supervisor')}</Button></TableHead>
+                        <TableHead className="text-right w-[100px]"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs" onClick={() => requestSort('quotedAmount')}>Amount {getSortIcon('quotedAmount')}</Button></TableHead>
+                        <TableHead className="w-[100px]"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs" onClick={() => requestSort('expectedDateOfCompletion')}>Completion {getSortIcon('expectedDateOfCompletion')}</Button></TableHead>
                     </TableRow>
-                )}
-            </TableBody>
-        </Table>
+                </TableHeader>
+                <TableBody>
+                    {data.length > 0 ? (
+                        data.map(row => (
+                            <TableRow key={row.id} className={cn(row.isOverdue && activeTab === 'active' && "text-destructive", "text-[11px]")}>
+                                <TableCell className="text-center py-2">{row.slNo}</TableCell>
+                                <TableCell className="py-2">{row.dateWorkOrder}</TableCell>
+                                <TableCell className="py-2 font-mono">{row.eTenderNo}</TableCell>
+                                <TableCell className="py-2 font-medium max-w-[250px] whitespace-normal break-words leading-tight">{row.nameOfWork}</TableCell>
+                                <TableCell className="py-2 max-w-[150px] whitespace-normal break-words leading-tight">{row.contractor}</TableCell>
+                                <TableCell className="py-2 text-[10px] max-w-[150px] whitespace-normal break-words leading-tight">{row.supervisor}</TableCell>
+                                <TableCell className="py-2 text-right font-mono">{row.quotedAmount?.toLocaleString('en-IN')}</TableCell>
+                                <TableCell className="py-2">{row.expectedDateOfCompletion}</TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={8} className="h-24 text-center">
+                                No tenders found in this category.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+        </div>
     );
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0">
-                <DialogHeader className="p-6 pb-4 border-b">
+            <DialogContent className="max-w-[95vw] lg:max-w-6xl h-[85vh] flex flex-col p-0 overflow-hidden">
+                <DialogHeader className="p-6 pb-4 border-b shrink-0">
                     <DialogTitle>Work Order Data</DialogTitle>
                     <DialogDescription>List of all tenders with work orders issued. Overdue projects are marked in red.</DialogDescription>
-                    <div className="flex flex-wrap items-end gap-4 pt-4">
-                        <div className="grid gap-1.5">
-                            <Label htmlFor="wo-start-date">From</Label>
-                            <Input id="wo-start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-[180px]" />
+                    <div className="flex flex-wrap items-end gap-2 pt-4">
+                        <div className="grid gap-1">
+                            <Label htmlFor="wo-start-date" className="text-xs">From</Label>
+                            <Input id="wo-start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-[150px] h-8 text-xs" />
                         </div>
-                        <div className="grid gap-1.5">
-                            <Label htmlFor="wo-end-date">To</Label>
-                            <Input id="wo-end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-[180px]" />
+                        <div className="grid gap-1">
+                            <Label htmlFor="wo-end-date" className="text-xs">To</Label>
+                            <Input id="wo-end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-[150px] h-8 text-xs" />
                         </div>
-                        <Button variant="ghost" onClick={() => { setStartDate(''); setEndDate(''); }}><XCircle className="h-4 w-4 mr-2" />Clear</Button>
+                        <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => { setStartDate(''); setEndDate(''); }}><XCircle className="h-3 w-3 mr-1" />Clear</Button>
                     </div>
                 </DialogHeader>
-                <div className="flex-1 min-h-0 flex flex-col">
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-                        <div className="px-6 border-b">
-                            <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
-                                <TabsTrigger value="active">Active ({workOrderData.active.length})</TabsTrigger>
-                                <TabsTrigger value="completed">Completed ({workOrderData.completed.length})</TabsTrigger>
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+                        <div className="px-6 border-b shrink-0 bg-background/50">
+                            <TabsList className="grid w-full grid-cols-2 max-w-[300px] h-8">
+                                <TabsTrigger value="active" className="text-xs h-7">Active ({workOrderData.active.length})</TabsTrigger>
+                                <TabsTrigger value="completed" className="text-xs h-7">Completed ({workOrderData.completed.length})</TabsTrigger>
                             </TabsList>
                         </div>
-                        <div className="flex-1 min-h-0">
+                        <div className="flex-1 min-h-0 overflow-hidden">
                             <ScrollArea className="h-full">
-                                <TabsContent value="active" className="m-0 border-0 p-0">
+                                <TabsContent value="active" className="m-0 border-0 p-0 outline-none">
                                     {renderTable(workOrderData.active)}
                                 </TabsContent>
-                                <TabsContent value="completed" className="m-0 border-0 p-0">
+                                <TabsContent value="completed" className="m-0 border-0 p-0 outline-none">
                                     {renderTable(workOrderData.completed)}
                                 </TabsContent>
                             </ScrollArea>
                         </div>
                     </Tabs>
                 </div>
-                <DialogFooter className="p-6 pt-4 border-t">
-                    <Button variant="outline" onClick={handleExportExcel}>
-                        <FileDown className="mr-2 h-4 w-4" /> Export to Excel
+                <DialogFooter className="p-4 border-t shrink-0 flex-row justify-end items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-8">
+                        <FileDown className="mr-2 h-4 w-4" /> Export Excel
                     </Button>
-                    <DialogClose asChild><Button>Close</Button></DialogClose>
+                    <DialogClose asChild><Button size="sm" className="h-8">Close</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -796,7 +798,7 @@ export default function ETenderListPage() {
                         </div>
                         {lastCreatedDate && (
                             <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
-                                <Clock className="h-3 w-3"/>
+                                <Clock className="h-3.5 w-3.5"/>
                                 Last created: <span className="font-mono font-bold">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
                             </div>
                         )}
