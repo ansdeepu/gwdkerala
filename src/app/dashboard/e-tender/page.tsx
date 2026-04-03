@@ -27,6 +27,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { useDataStore } from '@/hooks/use-data-store';
 import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock, FolderOpen, Bell, Hammer, FileDown, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import ExcelJS from 'exceljs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -90,11 +91,12 @@ type WorkOrderSortKey = keyof WorkOrderRow;
 
 
 function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolean, onOpenChange: (open: boolean) => void, tenders: E_tender[] }) {
-    const { allStaffMembers } = useDataStore();
+    const { allStaffMembers, allFileEntries, allArsEntries } = useDataStore();
     const { toast } = useToast();
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [sortConfig, setSortConfig] = useState<{ key: WorkOrderSortKey; direction: 'asc' | 'desc' } | null>(null);
+    const [activeTab, setActiveTab] = useState('active');
 
     const requestSort = (key: WorkOrderSortKey) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -136,7 +138,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             );
         };
 
-        let mappedData: WorkOrderRow[] = filteredTenders.map((tender, index) => {
+        const mappedData: WorkOrderRow[] = filteredTenders.map((tender, index) => {
                 const l1Bidder = getL1Bidder(tender);
                 const hasRejectedBids = tender.bidders?.some(b => b.status === 'Rejected');
                 const contractAmount = (hasRejectedBids && tender.agreedAmount) ? tender.agreedAmount : (l1Bidder ? l1Bidder.quotedAmount : undefined);
@@ -175,8 +177,29 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 };
             });
 
-        if (sortConfig) {
-            mappedData.sort((a, b) => {
+        // Determine "Completed" status based on linking to a file entry or ARS entry with "Work Completed" status
+        const completedTenderNos = new Set<string>();
+        
+        allFileEntries.forEach(file => {
+            file.siteDetails?.forEach(site => {
+                if (site.tenderNo && site.workStatus === 'Work Completed') {
+                    completedTenderNos.add(site.tenderNo);
+                }
+            });
+        });
+
+        allArsEntries.forEach(ars => {
+            if (ars.arsTenderNo && ars.arsStatus === 'Work Completed') {
+                completedTenderNos.add(ars.arsTenderNo);
+            }
+        });
+
+        const activeList = mappedData.filter(row => !completedTenderNos.has(row.eTenderNo));
+        const completedList = mappedData.filter(row => completedTenderNos.has(row.eTenderNo));
+
+        const sortList = (list: WorkOrderRow[]) => {
+            if (!sortConfig) return list;
+            return [...list].sort((a, b) => {
                 let aValue: any;
                 let bValue: any;
 
@@ -195,19 +218,23 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
             });
-        }
-            
-        return mappedData;
-    }, [tenders, allStaffMembers, startDate, endDate, sortConfig]);
+        };
+
+        return { 
+            active: sortList(activeList).map((row, i) => ({ ...row, slNo: i + 1 })), 
+            completed: sortList(completedList).map((row, i) => ({ ...row, slNo: i + 1 })) 
+        };
+    }, [tenders, allStaffMembers, startDate, endDate, sortConfig, allFileEntries, allArsEntries]);
     
     const handleExportExcel = useCallback(async () => {
-        if (workOrderData.length === 0) {
-            toast({ title: "No Data", description: "There is no work order data to export." });
+        const dataToExport = activeTab === 'active' ? workOrderData.active : workOrderData.completed;
+        if (dataToExport.length === 0) {
+            toast({ title: "No Data", description: "There is no work order data to export from this tab.", variant: "default" });
             return;
         }
 
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("WorkOrderData");
+        const worksheet = workbook.addWorksheet(`WorkOrderData_${activeTab}`);
         
         const headers = ["Sl. No.", "Date of Work Order", "e-Tender No.", "Name of Work", "Contractor", "Supervisor", "Quoted Amount (Rs.)", "Expected Date of Completion"];
         const headerRow = worksheet.addRow(headers);
@@ -217,7 +244,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
         });
 
-        workOrderData.forEach(row => {
+        dataToExport.forEach(row => {
             const newRow = worksheet.addRow([
                 row.slNo,
                 row.dateWorkOrder,
@@ -228,7 +255,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 row.quotedAmount,
                 row.expectedDateOfCompletion,
             ]);
-            if (row.isOverdue) {
+            if (row.isOverdue && activeTab === 'active') {
                 newRow.eachCell(cell => {
                     cell.font = { ...cell.font, color: { argb: 'FF0000' } };
                 });
@@ -254,10 +281,49 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `GWD_WorkOrderData_${format(new Date(), 'yyyyMMdd')}.xlsx`;
+        a.download = `GWD_WorkOrderData_${activeTab}_${format(new Date(), 'yyyyMMdd')}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
-    }, [workOrderData, toast]);
+    }, [workOrderData, activeTab, toast]);
+
+    const renderTable = (data: WorkOrderRow[]) => (
+        <Table>
+            <TableHeader className="sticky top-0 bg-background z-10">
+                <TableRow>
+                    <TableHead>Sl. No.</TableHead>
+                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateWorkOrder')}>Date of Work Order {getSortIcon('dateWorkOrder')}</Button></TableHead>
+                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>e-Tender No. {getSortIcon('eTenderNo')}</Button></TableHead>
+                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
+                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('contractor')}>Contractor {getSortIcon('contractor')}</Button></TableHead>
+                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('supervisor')}>Supervisor {getSortIcon('supervisor')}</Button></TableHead>
+                    <TableHead className="text-right"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('quotedAmount')}>Quoted Amount {getSortIcon('quotedAmount')}</Button></TableHead>
+                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('expectedDateOfCompletion')}>Expected Date of Completion {getSortIcon('expectedDateOfCompletion')}</Button></TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {data.length > 0 ? (
+                    data.map(row => (
+                        <TableRow key={row.id} className={cn(row.isOverdue && activeTab === 'active' && "text-destructive")}>
+                            <TableCell>{row.slNo}</TableCell>
+                            <TableCell>{row.dateWorkOrder}</TableCell>
+                            <TableCell>{row.eTenderNo}</TableCell>
+                            <TableCell className="font-medium">{row.nameOfWork}</TableCell>
+                            <TableCell>{row.contractor}</TableCell>
+                            <TableCell className="text-xs max-w-[200px] break-words">{row.supervisor}</TableCell>
+                            <TableCell className="text-right font-mono">{row.quotedAmount?.toLocaleString('en-IN')}</TableCell>
+                            <TableCell>{row.expectedDateOfCompletion}</TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={8} className="h-24 text-center">
+                            No tenders found in this category.
+                        </TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
+        </Table>
+    );
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -277,48 +343,28 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                         <Button variant="ghost" onClick={() => { setStartDate(''); setEndDate(''); }}><XCircle className="h-4 w-4 mr-2" />Clear</Button>
                     </div>
                 </DialogHeader>
-                <div className="flex-1 min-h-0">
-                    <ScrollArea className="h-full">
-                        <Table>
-                            <TableHeader className="sticky top-0 bg-background z-10">
-                                <TableRow>
-                                    <TableHead>Sl. No.</TableHead>
-                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateWorkOrder')}>Date of Work Order {getSortIcon('dateWorkOrder')}</Button></TableHead>
-                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>e-Tender No. {getSortIcon('eTenderNo')}</Button></TableHead>
-                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
-                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('contractor')}>Contractor {getSortIcon('contractor')}</Button></TableHead>
-                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('supervisor')}>Supervisor {getSortIcon('supervisor')}</Button></TableHead>
-                                    <TableHead className="text-right"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('quotedAmount')}>Quoted Amount {getSortIcon('quotedAmount')}</Button></TableHead>
-                                    <TableHead><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('expectedDateOfCompletion')}>Expected Date of Completion {getSortIcon('expectedDateOfCompletion')}</Button></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {workOrderData.length > 0 ? (
-                                    workOrderData.map(row => (
-                                        <TableRow key={row.id} className={cn(row.isOverdue && "text-destructive")}>
-                                            <TableCell>{row.slNo}</TableCell>
-                                            <TableCell>{row.dateWorkOrder}</TableCell>
-                                            <TableCell>{row.eTenderNo}</TableCell>
-                                            <TableCell className="font-medium">{row.nameOfWork}</TableCell>
-                                            <TableCell>{row.contractor}</TableCell>
-                                            <TableCell className="text-xs max-w-[200px] break-words">{row.supervisor}</TableCell>
-                                            <TableCell className="text-right font-mono">{row.quotedAmount?.toLocaleString('en-IN')}</TableCell>
-                                            <TableCell>{row.expectedDateOfCompletion}</TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={8} className="h-24 text-center">
-                                            No tenders with active work orders found.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </ScrollArea>
+                <div className="flex-1 min-h-0 flex flex-col">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+                        <div className="px-6 border-b">
+                            <TabsList className="grid w-full grid-cols-2 max-w-[400px]">
+                                <TabsTrigger value="active">Active ({workOrderData.active.length})</TabsTrigger>
+                                <TabsTrigger value="completed">Completed ({workOrderData.completed.length})</TabsTrigger>
+                            </TabsList>
+                        </div>
+                        <div className="flex-1 min-h-0">
+                            <ScrollArea className="h-full">
+                                <TabsContent value="active" className="m-0 border-0 p-0">
+                                    {renderTable(workOrderData.active)}
+                                </TabsContent>
+                                <TabsContent value="completed" className="m-0 border-0 p-0">
+                                    {renderTable(workOrderData.completed)}
+                                </TabsContent>
+                            </ScrollArea>
+                        </div>
+                    </Tabs>
                 </div>
                 <DialogFooter className="p-6 pt-4 border-t">
-                    <Button variant="outline" onClick={handleExportExcel} disabled={workOrderData.length === 0}>
+                    <Button variant="outline" onClick={handleExportExcel}>
                         <FileDown className="mr-2 h-4 w-4" /> Export to Excel
                     </Button>
                     <DialogClose asChild><Button>Close</Button></DialogClose>
