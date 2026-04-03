@@ -1,4 +1,3 @@
-
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
@@ -94,8 +93,6 @@ type WorkOrderSortKey = keyof WorkOrderRow;
 function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolean, onOpenChange: (open: boolean) => void, tenders: E_tender[] }) {
     const { allStaffMembers, allFileEntries, allArsEntries } = useDataStore();
     const { toast } = useToast();
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
     const [sortConfig, setSortConfig] = useState<{ key: WorkOrderSortKey; direction: 'asc' | 'desc' } | null>(null);
     const [activeTab, setActiveTab] = useState('active');
 
@@ -114,21 +111,6 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
 
     const workOrderData = useMemo(() => {
         let filteredTenders = tenders.filter(t => (t.presentStatus === 'Work Order Issued' || t.presentStatus === 'Supply Order Issued') && t.dateWorkOrder && t.periodOfCompletion);
-
-        if (startDate || endDate) {
-            const sDate = startDate ? startOfDay(parse(startDate, 'yyyy-MM-dd', new Date())) : null;
-            const eDate = endDate ? endOfDay(parse(endDate, 'yyyy-MM-dd', new Date())) : null;
-            
-            filteredTenders = filteredTenders.filter(t => {
-                const workOrderDate = toDateOrNull(t.dateWorkOrder);
-                if (!workOrderDate || !isValid(workOrderDate)) return false;
-
-                if (sDate && eDate) return isWithinInterval(workOrderDate, { start: sDate, end: eDate });
-                if (sDate) return workOrderDate >= sDate;
-                if (eDate) return workOrderDate <= eDate;
-                return false;
-            });
-        }
 
         const getL1Bidder = (tender: E_tender) => {
             if (!tender.bidders || tender.bidders.length === 0) return null;
@@ -224,7 +206,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             active: sortList(activeList).map((row, i) => ({ ...row, slNo: i + 1 })), 
             completed: sortList(completedList).map((row, i) => ({ ...row, slNo: i + 1 })) 
         };
-    }, [tenders, allStaffMembers, startDate, endDate, sortConfig, allFileEntries, allArsEntries]);
+    }, [tenders, allStaffMembers, sortConfig, allFileEntries, allArsEntries]);
     
     const handleExportExcel = useCallback(async () => {
         const dataToExport = activeTab === 'active' ? workOrderData.active : workOrderData.completed;
@@ -333,17 +315,6 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 <DialogHeader className="p-6 pb-4 border-b shrink-0">
                     <DialogTitle>Work Order Data</DialogTitle>
                     <DialogDescription>List of all tenders with work orders issued. Overdue projects are marked in red.</DialogDescription>
-                    <div className="flex flex-wrap items-end gap-2 pt-4">
-                        <div className="grid gap-1">
-                            <Label htmlFor="wo-start-date" className="text-xs">From</Label>
-                            <Input id="wo-start-date" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-[150px] h-8 text-xs" />
-                        </div>
-                        <div className="grid gap-1">
-                            <Label htmlFor="wo-end-date" className="text-xs">To</Label>
-                            <Input id="wo-end-date" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-[150px] h-8 text-xs" />
-                        </div>
-                        <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => { setStartDate(''); setEndDate(''); }}><XCircle className="h-3 w-3 mr-1" />Clear</Button>
-                    </div>
                 </DialogHeader>
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
