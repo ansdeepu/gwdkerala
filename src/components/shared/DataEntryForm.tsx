@@ -873,7 +873,6 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 appendReappropriation(data);
             }
         } else if (type === 'payment') {
-            const paymentData = { ...data, totalPaymentPerEntry: totalAmount }; // Corrected from totalAmount which wasn't in scope correctly
             // Need to recalculate total before setting
             const paymentAmount = (Number(data.revenueHead) || 0) + (Number(data.contractorsPayment) || 0) + (Number(data.gst) || 0) + (Number(data.incomeTax) || 0) + (Number(data.kbcwb) || 0) + (Number(data.refundToParty) || 0);
             const finalPaymentData = { ...data, totalPaymentPerEntry: paymentAmount };
