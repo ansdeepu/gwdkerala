@@ -68,48 +68,47 @@ interface FileStatusOverviewProps {
 }
 
 const OverviewSection = ({ data, onFileStatusClick, onAgeCardClick, categoryTitle }: { data: any, onFileStatusClick: any, onAgeCardClick: any, categoryTitle: string }) => {
-    if (data.totalFiles === 0) {
-        return <div className="text-center py-8 text-muted-foreground">No {categoryTitle.toLowerCase()} files found.</div>;
-    }
-
     return (
         <div className="space-y-6">
             <div className="mt-2"><div className="inline-flex items-baseline gap-2 p-3 rounded-lg shadow-sm bg-primary/10 border border-primary/20"><h4 className="text-sm font-medium text-primary">Total Visible Files</h4><p className="text-2xl font-bold text-primary">{data.totalFiles}</p></div></div>
-            <div className="mt-6 pt-6 border-t border-border/60">
-                <div className="flex items-center justify-between mb-3"><h4 className="text-sm font-medium text-primary">Files by Age</h4><p className="text-xs text-muted-foreground">Based on latest financial transaction</p></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <AgeStatCard title="< 1 Year" {...data.filesByAgeStats.lessThan1} 
-                      onClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.total, `${categoryTitle} Files Aged < 1 Year (Total)`)} 
-                      onClosedClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.closed, `${categoryTitle} Files Aged < 1 Year (Closed)`)} 
-                      onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.balance, `${categoryTitle} Files Aged < 1 Year (Balance)`)} 
-                    />
-                    <AgeStatCard title="1-2 Years" {...data.filesByAgeStats.between1And2}
-                      onClick={() => onAgeCardClick(data.filesByAgeStats.between1And2.data.total, `${categoryTitle} Files Aged 1-2 Years (Total)`)}
-                      onClosedClick={() => onAgeCardClick(data.filesByAgeStats.between1And2.data.closed, `${categoryTitle} Files Aged 1-2 Years (Closed)`)}
-                      onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.between1And2.data.balance, `${categoryTitle} Files Aged 1-2 Years (Balance)`)}
-                    />
-                    <AgeStatCard title="2-3 Years" {...data.filesByAgeStats.between2And3}
-                      onClick={() => onAgeCardClick(data.filesByAgeStats.between2And3.data.total, `${categoryTitle} Files Aged 2-3 Years (Total)`)}
-                      onClosedClick={() => onAgeCardClick(data.filesByAgeStats.between2And3.data.closed, `${categoryTitle} Files Aged 2-3 Years (Closed)`)}
-                      onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.between2And3.data.balance, `${categoryTitle} Files Aged 2-3 Years (Balance)`)}
-                    />
-                    <AgeStatCard title="3-4 Years" {...data.filesByAgeStats.between3And4}
-                      onClick={() => onAgeCardClick(data.filesByAgeStats.between3And4.data.total, `${categoryTitle} Files Aged 3-4 Years (Total)`)}
-                      onClosedClick={() => onAgeCardClick(data.filesByAgeStats.between3And4.data.closed, `${categoryTitle} Files Aged 3-4 Years (Closed)`)}
-                      onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.between3And4.data.balance, `${categoryTitle} Files Aged 3-4 Years (Balance)`)}
-                    />
-                    <AgeStatCard title="4-5 Years" {...data.filesByAgeStats.between4And5}
-                      onClick={() => onAgeCardClick(data.filesByAgeStats.between4And5.data.total, `${categoryTitle} Files Aged 4-5 Years (Total)`)}
-                      onClosedClick={() => onAgeCardClick(data.filesByAgeStats.between4And5.data.closed, `${categoryTitle} Files Aged 4-5 Years (Closed)`)}
-                      onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.between4And5.data.balance, `${categoryTitle} Files Aged 4-5 Years (Balance)`)}
-                    />
-                    <AgeStatCard title="> 5 Years" {...data.filesByAgeStats.above5}
-                      onClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.total, `${categoryTitle} Files Aged > 5 Years (Total)`)}
-                      onClosedClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.closed, `${categoryTitle} Files Aged > 5 Years (Closed)`)}
-                      onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.balance, `${categoryTitle} Files Aged > 5 Years (Balance)`)}
-                    />
+            
+            {data.totalFiles > 0 ? (
+                <div className="mt-6 pt-6 border-t border-border/60">
+                    <div className="flex items-center justify-between mb-3"><h4 className="text-sm font-medium text-primary">Files by Age</h4><p className="text-xs text-muted-foreground">Based on latest financial transaction</p></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <AgeStatCard title="< 1 Year" {...data.filesByAgeStats.lessThan1} 
+                          onClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.total, `${categoryTitle} Files Aged < 1 Year (Total)`)} 
+                          onClosedClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.closed, `${categoryTitle} Files Aged < 1 Year (Closed)`)} 
+                          onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.lessThan1.data.balance, `${categoryTitle} Files Aged < 1 Year (Balance)`)} 
+                        />
+                        <AgeStatCard title="1-2 Years" {...data.filesByAgeStats.between1And2}
+                          onClick={() => onAgeCardClick(data.filesByAgeStats.between1And2.data.total, `${categoryTitle} Files Aged 1-2 Years (Total)`)}
+                          onClosedClick={() => onAgeCardClick(data.filesByAgeStats.between1And2.data.closed, `${categoryTitle} Files Aged 1-2 Years (Closed)`)}
+                          onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.between1And2.data.balance, `${categoryTitle} Files Aged 1-2 Years (Balance)`)}
+                        />
+                        <AgeStatCard title="2-3 Years" {...data.filesByAgeStats.between2And3}
+                          onClick={() => onAgeCardClick(data.filesByAgeStats.between2And3.data.total, `${categoryTitle} Files Aged 2-3 Years (Total)`)}
+                          onClosedClick={() => onAgeCardClick(data.filesByAgeStats.between2And3.data.closed, `${categoryTitle} Files Aged 2-3 Years (Closed)`)}
+                          onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.between2And3.data.balance, `${categoryTitle} Files Aged 2-3 Years (Balance)`)}
+                        />
+                        <AgeStatCard title="3-4 Years" {...data.filesByAgeStats.between3And4}
+                          onClick={() => onAgeCardClick(data.filesByAgeStats.between3And4.data.total, `${categoryTitle} Files Aged 3-4 Years (Total)`)}
+                          onClosedClick={() => onAgeCardClick(data.filesByAgeStats.between3And4.data.closed, `${categoryTitle} Files Aged 3-4 Years (Closed)`)}
+                          onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.between3And4.data.balance, `${categoryTitle} Files Aged 3-4 Years (Balance)`)}
+                        />
+                        <AgeStatCard title="4-5 Years" {...data.filesByAgeStats.between4And5}
+                          onClick={() => onAgeCardClick(data.filesByAgeStats.between4And5.data.total, `${categoryTitle} Files Aged 4-5 Years (Total)`)}
+                          onClosedClick={() => onAgeCardClick(data.filesByAgeStats.between4And5.data.closed, `${categoryTitle} Files Aged 4-5 Years (Closed)`)}
+                          onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.between4And5.data.balance, `${categoryTitle} Files Aged 4-5 Years (Balance)`)}
+                        />
+                        <AgeStatCard title="> 5 Years" {...data.filesByAgeStats.above5}
+                          onClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.total, `${categoryTitle} Files Aged > 5 Years (Total)`)}
+                          onClosedClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.closed, `${categoryTitle} Files Aged > 5 Years (Closed)`)}
+                          onBalanceClick={() => onAgeCardClick(data.filesByAgeStats.above5.data.balance, `${categoryTitle} Files Aged > 5 Years (Balance)`)}
+                        />
+                    </div>
                 </div>
-            </div>
+            ) : null}
             <div className="mt-auto space-y-2 pt-6 border-t">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                 {data.fileStatusCountsData.map((item: any) => (
