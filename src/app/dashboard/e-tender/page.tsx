@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { E_tenderStatus, Bidder } from '@/lib/schemas/eTenderSchema';
+import type { E_tenderStatus, Bidder, ArsEntryFormData } from '@/lib/schemas';
 import { eTenderStatusOptions } from '@/lib/schemas';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter, addDays, isValid } from 'date-fns';
@@ -28,6 +28,9 @@ import { useDataStore } from '@/hooks/use-data-store';
 import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock, FolderOpen, Bell, Hammer, FileDown, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { DataEntryFormData } from '@/lib/schemas';
+import type { ArsEntry } from '@/hooks/useArsEntries';
+
 
 const ITEMS_PER_PAGE = 50;
 
@@ -95,6 +98,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     const { toast } = useToast();
     const [sortConfig, setSortConfig] = useState<{ key: WorkOrderSortKey; direction: 'asc' | 'desc' } | null>(null);
     const [activeTab, setActiveTab] = useState('active');
+    const [sitesForTender, setSitesForTender] = useState<{ tenderNo: string; sites: any[] } | null>(null);
 
     const requestSort = (key: WorkOrderSortKey) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -107,6 +111,43 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     const getSortIcon = (key: WorkOrderSortKey) => {
         if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-3 w-3 opacity-30 group-hover:opacity-100" />;
         return sortConfig.direction === 'asc' ? <ArrowUp className="ml-2 h-3 w-3" /> : <ArrowDown className="ml-2 h-3 w-3" />;
+    };
+    
+    const handleTenderNoClick = (tenderNo: string) => {
+        const getSites = (dataSource: (DataEntryFormData[] | ArsEntry[]), isArs: boolean) => {
+            const sites: any[] = [];
+            dataSource.forEach((entry: any) => {
+                if (isArs) {
+                    if (entry.arsTenderNo === tenderNo) {
+                        sites.push({
+                            name: entry.nameOfSite,
+                            status: entry.arsStatus,
+                            source: 'ARS',
+                            fileNo: entry.fileNo
+                        });
+                    }
+                } else {
+                    entry.siteDetails?.forEach((site: any) => {
+                        if (site.tenderNo === tenderNo) {
+                            sites.push({
+                                name: site.nameOfSite,
+                                status: site.workStatus,
+                                source: 'Deposit Work',
+                                fileNo: entry.fileNo
+                            });
+                        }
+                    });
+                }
+            });
+            return sites;
+        };
+        
+        const linkedSites = [
+            ...getSites(allFileEntries, false),
+            ...getSites(allArsEntries, true)
+        ];
+    
+        setSitesForTender({ tenderNo, sites: linkedSites });
     };
 
     const workOrderData = useMemo(() => {
@@ -289,7 +330,11 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                             <TableRow key={row.id} className={cn(row.isOverdue && activeTab === 'active' && "text-destructive", "text-[11px]")}>
                                 <TableCell className="text-center py-2">{row.slNo}</TableCell>
                                 <TableCell className="py-2">{row.dateWorkOrder}</TableCell>
-                                <TableCell className="py-2 font-mono">{row.eTenderNo}</TableCell>
+                                <TableCell className="py-2 font-mono">
+                                    <Button variant="link" className="p-0 h-auto font-mono text-xs" onClick={() => handleTenderNoClick(row.eTenderNo)}>
+                                        {row.eTenderNo}
+                                    </Button>
+                                </TableCell>
                                 <TableCell className="py-2 font-medium max-w-[250px] whitespace-normal break-words leading-tight">{row.nameOfWork}</TableCell>
                                 <TableCell className="py-2 max-w-[150px] whitespace-normal break-words leading-tight">{row.contractor}</TableCell>
                                 <TableCell className="py-2 text-[10px] max-w-[150px] whitespace-normal break-words leading-tight">{row.supervisor}</TableCell>
@@ -310,40 +355,72 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     );
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[95vw] lg:max-w-6xl h-[85vh] flex flex-col p-0 overflow-hidden">
-                <DialogHeader className="p-6 pb-4 border-b shrink-0">
-                    <DialogTitle>Work Order Data</DialogTitle>
-                    <DialogDescription>List of all tenders with work orders issued. Overdue projects are marked in red.</DialogDescription>
-                </DialogHeader>
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-                        <div className="px-6 border-b shrink-0 bg-background/50">
-                            <TabsList className="grid w-full grid-cols-2 max-w-[300px] h-8">
-                                <TabsTrigger value="active" className="text-xs h-7">Active ({workOrderData.active.length})</TabsTrigger>
-                                <TabsTrigger value="completed" className="text-xs h-7">Completed ({workOrderData.completed.length})</TabsTrigger>
-                            </TabsList>
-                        </div>
-                        <div className="flex-1 min-h-0 overflow-hidden">
-                            <ScrollArea className="h-full">
-                                <TabsContent value="active" className="m-0 border-0 p-0 outline-none">
-                                    {renderTable(workOrderData.active)}
-                                </TabsContent>
-                                <TabsContent value="completed" className="m-0 border-0 p-0 outline-none">
-                                    {renderTable(workOrderData.completed)}
-                                </TabsContent>
-                            </ScrollArea>
-                        </div>
-                    </Tabs>
-                </div>
-                <DialogFooter className="p-4 border-t shrink-0 flex-row justify-end items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-8">
-                        <FileDown className="mr-2 h-4 w-4" /> Export Excel
-                    </Button>
-                    <DialogClose asChild><Button size="sm" className="h-8">Close</Button></DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <>
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
+                <DialogContent className="max-w-[95vw] lg:max-w-6xl h-[85vh] flex flex-col p-0 overflow-hidden">
+                    <DialogHeader className="p-6 pb-4 border-b shrink-0">
+                        <DialogTitle>Work Order Data</DialogTitle>
+                        <DialogDescription>List of all tenders with work orders issued. Overdue projects are marked in red.</DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+                            <div className="px-6 border-b shrink-0 bg-background/50">
+                                <TabsList className="grid w-full grid-cols-2 max-w-[300px] h-8">
+                                    <TabsTrigger value="active" className="text-xs h-7">Active ({workOrderData.active.length})</TabsTrigger>
+                                    <TabsTrigger value="completed" className="text-xs h-7">Completed ({workOrderData.completed.length})</TabsTrigger>
+                                </TabsList>
+                            </div>
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                                <ScrollArea className="h-full">
+                                    <TabsContent value="active" className="m-0 border-0 p-0 outline-none">
+                                        {renderTable(workOrderData.active)}
+                                    </TabsContent>
+                                    <TabsContent value="completed" className="m-0 border-0 p-0 outline-none">
+                                        {renderTable(workOrderData.completed)}
+                                    </TabsContent>
+                                </ScrollArea>
+                            </div>
+                        </Tabs>
+                    </div>
+                    <DialogFooter className="p-4 border-t shrink-0 flex-row justify-end items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={handleExportExcel} className="h-8">
+                            <FileDown className="mr-2 h-4 w-4" /> Export Excel
+                        </Button>
+                        <DialogClose asChild><Button size="sm" className="h-8">Close</Button></DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={!!sitesForTender} onOpenChange={() => setSitesForTender(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Sites for Tender: {sitesForTender?.tenderNo}</DialogTitle>
+                        <DialogDescription>List of all sites linked to this tender.</DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto p-1">
+                        <ul className="space-y-2">
+                            {sitesForTender?.sites.map((site, index) => {
+                                const getSiteStatusClass = (status: any) => {
+                                    if (!status) return "";
+                                    if (status === 'Work Cancelled') return 'line-through text-gray-500';
+                                    if (['Work Completed', 'Work Failed', 'Bill Prepared', 'Payment Completed', 'Utilization Certificate Issued'].includes(status)) return 'text-red-700';
+                                    return 'text-green-700';
+                                };
+                                return (
+                                    <li key={index} className="p-3 border rounded-md bg-secondary/50">
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-semibold">{site.name}</span>
+                                            <span className={cn('text-xs font-bold', getSiteStatusClass(site.status))}>{site.status}</span>
+                                        </div>
+                                        <span className="text-xs text-muted-foreground">({site.source} - {site.fileNo})</span>
+                                    </li>
+                                );
+                            })}
+                            {sitesForTender?.sites.length === 0 && <p className="text-muted-foreground text-center py-4">No sites found linked to this tender.</p>}
+                        </ul>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
 

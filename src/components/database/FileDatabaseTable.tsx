@@ -1,4 +1,3 @@
-
 // src/components/database/FileDatabaseTable.tsx
 "use client";
 
@@ -37,10 +36,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useFileEntries } from "@/hooks/useFileEntries";
 import { useAuth } from "@/hooks/useAuth";
+import { useDataStore } from "@/hooks/use-data-store";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from 'uuid';
 import { usePendingUpdates } from "@/hooks/usePendingUpdates";
-import { useDataStore } from "@/hooks/use-data-store";
 import {
   Tooltip,
   TooltipProvider,
@@ -66,6 +65,7 @@ const safeParseDate = (dateValue: any): Date | null => {
 
 const getStatusColorClass = (status: SiteWorkStatus | undefined): string => {
     if (!status) return 'text-muted-foreground';
+    if (status === 'Work Cancelled') return 'text-gray-500 line-through';
     const completedOrFailed: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed"];
     if (completedOrFailed.includes(status as SiteWorkStatus)) return 'text-red-600';
     if (status === 'To be Refunded') return 'text-yellow-600';
