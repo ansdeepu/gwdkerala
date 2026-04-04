@@ -88,7 +88,7 @@ type WorkOrderRow = {
     expectedDateOfCompletion: string;
     expectedDateOfCompletionRaw: Date | null;
     isOverdue: boolean;
-    tenderType?: 'Work' | 'Purchase';
+    tenderType?: 'Work' | 'Purchase' | null;
     purchaseStatus: 'Ongoing' | 'Completed';
 };
 
