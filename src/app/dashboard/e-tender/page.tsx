@@ -122,7 +122,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                         sites.push({
                             name: entry.nameOfSite,
                             status: entry.arsStatus,
-                            source: 'ARS',
+                            source: 'ARS Scheme',
                             fileNo: entry.fileNo,
                             supervisor: entry.supervisorName || 'N/A'
                         });
@@ -149,7 +149,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             ...getSites(allArsEntries, true)
         ];
     
-        setSitesForTender({ tenderNo, sites: linkedSites });
+        setSitesForTender({ tenderNo, sites: linkedSites.length > 0 ? linkedSites : [] });
     };
 
     const workOrderData = useMemo(() => {
@@ -393,12 +393,12 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 </DialogContent>
             </Dialog>
             <Dialog open={!!sitesForTender} onOpenChange={() => setSitesForTender(null)}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
                         <DialogTitle>Sites for Tender: {sitesForTender?.tenderNo}</DialogTitle>
                         <DialogDescription>List of all sites linked to this tender.</DialogDescription>
                     </DialogHeader>
-                    <div className="max-h-[60vh] overflow-y-auto p-4">
+                    <div className="max-h-[60vh] overflow-y-auto p-6 pt-0">
                         <ul className="space-y-3">
                             {sitesForTender?.sites.map((site, index) => {
                                 const getSiteStatusClass = (status: any) => {
@@ -408,16 +408,16 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                     return 'text-green-700';
                                 };
                                 return (
-                                    <li key={index} className="p-3 border rounded-md bg-secondary/50">
+                                    <li key={index} className="p-4 border rounded-md bg-secondary/50">
                                         <div className="flex justify-between items-start">
-                                            <span className="font-semibold pr-2">{site.name}</span>
-                                            <span className={cn('text-xs font-bold whitespace-nowrap', getSiteStatusClass(site.status))}>{site.status}</span>
+                                            <span className="font-semibold pr-2 text-base">{site.name}</span>
+                                            <span className={cn('text-sm font-bold whitespace-nowrap', getSiteStatusClass(site.status))}>{site.status}</span>
                                         </div>
                                         <div className="text-xs text-muted-foreground">
                                             ({site.source} - {site.fileNo})
                                         </div>
                                         {site.supervisor && site.supervisor !== 'N/A' && (
-                                            <div className="text-xs text-primary font-medium mt-1">
+                                            <div className="text-xs text-primary font-medium mt-1 pl-2">
                                                 Supervisor: {site.supervisor}
                                             </div>
                                         )}
