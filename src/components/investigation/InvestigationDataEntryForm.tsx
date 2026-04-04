@@ -943,6 +943,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
 
     const handleCopySite = (index: number) => {
         const siteToCopy = getValues(`siteDetails.${index}`);
+        if (!siteToCopy) return;
         const clonedSite = { 
             ...JSON.parse(JSON.stringify(siteToCopy)), 
             id: uuidv4(),
