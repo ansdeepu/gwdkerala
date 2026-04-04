@@ -1,10 +1,18 @@
+
 // src/components/dashboard/FileStatusOverview.tsx
 "use client";
 
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { format, isValid, parseISO } from 'date-fns';
-import { type DataEntryFormData, allFileStatusOptions, type SiteWorkStatus, LOGGING_PUMPING_TEST_PURPOSE_OPTIONS } from '@/lib/schemas';
+import { 
+    type DataEntryFormData, 
+    allFileStatusOptions, 
+    type SiteWorkStatus, 
+    LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
+    INVESTIGATION_FILE_STATUS_OPTIONS,
+    LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS
+} from '@/lib/schemas';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useDataStore } from '@/hooks/use-data-store';
@@ -12,19 +20,6 @@ import { useDataStore } from '@/hooks/use-data-store';
 const ClipboardList = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
 );
-
-const investigationFileStatusOptions = [
-    "File Under Process",
-    "Pending",
-    "VES Pending",
-    "Completed",
-    "File Closed",
-] as const;
-
-const loggingPumpingTestFileStatusOptions = [
-    "Under Process",
-    "Completed",
-] as const;
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -72,7 +67,7 @@ const OverviewSection = ({ data, onFileStatusClick, onAgeCardClick, categoryTitl
         <div className="space-y-6">
             <div className="mt-2"><div className="inline-flex items-baseline gap-2 p-3 rounded-lg shadow-sm bg-primary/10 border border-primary/20"><h4 className="text-sm font-medium text-primary">Total Visible Files</h4><p className="text-2xl font-bold text-primary">{data.totalFiles}</p></div></div>
             
-            {data.totalFiles > 0 ? (
+            {data.totalFiles > 0 && (
                 <div className="mt-6 pt-6 border-t border-border/60">
                     <div className="flex items-center justify-between mb-3"><h4 className="text-sm font-medium text-primary">Files by Age</h4><p className="text-xs text-muted-foreground">Based on latest financial transaction</p></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -108,7 +103,7 @@ const OverviewSection = ({ data, onFileStatusClick, onAgeCardClick, categoryTitl
                         />
                     </div>
                 </div>
-            ) : null}
+            )}
             <div className="mt-auto space-y-2 pt-6 border-t">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                 {data.fileStatusCountsData.map((item: any) => (
@@ -234,8 +229,8 @@ export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: File
 
         return {
             depositWorksData: processEntriesForOverview(depositWorkEntries, DEPOSIT_WORK_FILE_STATUS_OPTIONS),
-            gwInvestigationData: processEntriesForOverview(gwInvestigationEntries, investigationFileStatusOptions),
-            loggingPumpingTestData: processEntriesForOverview(loggingPumpingTestEntries, loggingPumpingTestFileStatusOptions)
+            gwInvestigationData: processEntriesForOverview(gwInvestigationEntries, INVESTIGATION_FILE_STATUS_OPTIONS),
+            loggingPumpingTestData: processEntriesForOverview(loggingPumpingTestEntries, LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS)
         };
     }, [nonArsEntries, allFileEntries]);
 
@@ -319,3 +314,5 @@ export default function FileStatusOverview({ onOpenDialog, nonArsEntries }: File
     </Card>
   );
 }
+
+    
