@@ -1,4 +1,3 @@
-
 // src/components/dashboard/WorkStatusByService.tsx
 "use client";
 
@@ -15,7 +14,7 @@ import {
     INVESTIGATION_WORK_STATUS_OPTIONS,
     LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS
 } from '@/lib/schemas';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 import { Activity } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +33,7 @@ const depositWorkHeaderLabels: Record<string, string> = {
 
 // New filtered status options for Deposit Works tab
 const DEPOSIT_WORK_STATUS_OPTIONS = siteWorkStatusOptions.filter(
-    (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending", "Completed"].includes(status)
+    (status) => !["Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "VES Pending", "Completed", "Work Cancelled"].includes(status)
 );
 
 interface WorkStatusRow {

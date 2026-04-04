@@ -82,6 +82,7 @@ const db = getFirestore(app);
 
 const getStatusColorClass = (status: SiteWorkStatus | undefined | null): string => {
     if (!status) return 'text-muted-foreground';
+    if (status === 'Work Cancelled') return 'text-gray-500 line-through';
     const completedOrFailed: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed"];
     if (completedOrFailed.includes(status as SiteWorkStatus)) return 'text-red-600';
     if (status === 'To be Refunded') return 'text-yellow-600';
@@ -361,7 +362,7 @@ const RemittanceDialogContent = ({ initialData, onConfirm, onCancel, isDeferredF
                     )}/>
                     {!isDeferredFunding && (
                         <FormField name="remittedAccount" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Account <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select Account" /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select Account"/></SelectTrigger></FormControl>
                             <SelectContent>
                                 {availableRemittanceAccounts.map((o: string) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
                             </SelectContent></Select><FormMessage /></FormItem> )}/>
@@ -803,14 +804,14 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
         // Sort sites: Ongoing (0) -> Completed (1) -> Refund (2)
         if (sanitizedData.siteDetails && sanitizedData.siteDetails.length > 1) {
-            const COMPLETED_GROUP = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed", "Completed"];
-            const REFUND_GROUP = ["To be Refunded"];
+            const COMPLETED_GROUP: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed", "Completed", "Work Cancelled"];
+            const REFUND_GROUP: SiteWorkStatus[] = ["To be Refunded"];
             
             sanitizedData.siteDetails.sort((a, b) => {
                 const getPriority = (status?: string | null) => {
                     if (!status) return 0;
-                    if (REFUND_GROUP.includes(status)) return 2;
-                    if (COMPLETED_GROUP.includes(status)) return 1;
+                    if (REFUND_GROUP.includes(status as any)) return 2;
+                    if (COMPLETED_GROUP.includes(status as any)) return 1;
                     return 0; // Everything else is "Ongoing"
                 };
                 return getPriority(a.workStatus) - getPriority(b.workStatus);

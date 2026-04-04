@@ -303,7 +303,7 @@ export const PaymentDetailSchema = z.object({
 });
 export type PaymentDetailFormData = z.infer<typeof PaymentDetailSchema>;
 
-export const siteWorkStatusOptions = ["Under Process", "Addl. AS Awaited", "To be Refunded", "Awaiting Dept. Rig", "To be Tendered", "TS Pending", "Tendered", "Selection Notice Issued", "Work Order Issued", "Work Initiated", "Work in Progress", "Work Failed", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "Completed", "VES Pending"] as const;
+export const siteWorkStatusOptions = ["Under Process", "Addl. AS Awaited", "To be Refunded", "Awaiting Dept. Rig", "To be Tendered", "TS Pending", "Tendered", "Selection Notice Issued", "Work Order Issued", "Work Initiated", "Work in Progress", "Work Failed", "Work Cancelled", "Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Pending", "Completed", "VES Pending"] as const;
 export type SiteWorkStatus = typeof siteWorkStatusOptions[number];
 
 export const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;

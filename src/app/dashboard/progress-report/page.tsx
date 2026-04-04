@@ -5,7 +5,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { format, startOfDay, endOfDay, isWithinInterval, isValid, isBefore, parseISO, startOfMonth, endOfMonth, parse } from 'date-fns';
+import { format, startOfDay, endOfDay, isWithinInterval, isValid, parseISO, parse } from 'date-fns';
 import { cn } from "@/lib/utils";
 import {
   applicationTypeOptions,
@@ -372,7 +372,7 @@ export default function ProgressReportPage() {
 
     const includedSites: SiteDetailWithFileContext[] = fileEntries.flatMap(entry => 
         (entry.siteDetails || [])
-        .filter(site => site.workStatus !== "Addl. AS Awaited")
+        .filter(site => site.workStatus !== "Addl. AS Awaited" && site.workStatus !== "Work Cancelled")
         .map(site => {
             const firstRemittanceDate = safeParseDate(entry.remittanceDetails?.[0]?.dateOfRemittance);
             return { ...site, fileNo: entry.fileNo!, applicantName: entry.applicantName!, applicationType: (entry.applicationType || UNASSIGNED_APP_TYPE) as ApplicationType, fileRemittanceDate: firstRemittanceDate, id: entry.id };

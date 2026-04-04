@@ -232,7 +232,9 @@ export default function DashboardPage() {
       });
 
       const allWorksFromFiles = relevantFileEntries.flatMap(entry => 
-          (entry.siteDetails || []).map(site => ({
+          (entry.siteDetails || [])
+          .filter(site => site.workStatus !== 'Work Cancelled')
+          .map(site => ({
               ...site,
               fileNo: entry.fileNo,
               applicantName: entry.applicantName,
@@ -245,7 +247,9 @@ export default function DashboardPage() {
           }))
       );
 
-      const arsWorks = (arsEntries || []).map(entry => ({
+      const arsWorks = (arsEntries || [])
+          .filter(entry => entry.arsStatus !== 'Work Cancelled')
+          .map(entry => ({
           nameOfSite: entry.nameOfSite,
           constituency: entry.constituency,
           purpose: entry.arsTypeOfScheme || 'ARS',
@@ -265,7 +269,7 @@ export default function DashboardPage() {
       let planFundWorksCount = 0;
 
       relevantFileEntries.forEach(entry => {
-          const siteCount = entry.siteDetails?.length || 0;
+          const siteCount = entry.siteDetails?.filter(s => s.workStatus !== 'Work Cancelled').length || 0;
           if (siteCount === 0) return;
 
           if (entry.applicationType) {
