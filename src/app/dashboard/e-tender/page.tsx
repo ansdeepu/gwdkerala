@@ -1,7 +1,7 @@
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useE_tenders, type E_tender } from '@/hooks/useE_tenders';
 import { usePageHeader } from '@/hooks/usePageHeader';
@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { E_tenderStatus, Bidder, ArsEntryFormData } from '@/lib/schemas';
+import type { E_tenderStatus, Bidder, ArsEntryFormData, SiteWorkStatus, ArsStatus } from "@/lib/schemas";
 import { eTenderStatusOptions } from '@/lib/schemas';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, startOfDay, endOfDay, isWithinInterval, parse, isBefore, isAfter, addDays, isValid } from 'date-fns';
@@ -203,19 +203,39 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 };
             });
 
-        const completedTenderNos = new Set<string>();
-        
+        const completedOrFinalStatuses: (SiteWorkStatus | ArsStatus)[] = ["Work Completed", "Work Failed", "Work Cancelled", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued"];
+        const tenderSitesMap = new Map<string, { status: (SiteWorkStatus | ArsStatus), isFinal: boolean }[]>();
+
         allFileEntries.forEach(file => {
             file.siteDetails?.forEach(site => {
-                if (site.tenderNo && site.workStatus === 'Work Completed') {
-                    completedTenderNos.add(site.tenderNo);
+                if (site.tenderNo && site.workStatus) {
+                    if (!tenderSitesMap.has(site.tenderNo)) {
+                        tenderSitesMap.set(site.tenderNo, []);
+                    }
+                    tenderSitesMap.get(site.tenderNo)!.push({
+                        status: site.workStatus,
+                        isFinal: completedOrFinalStatuses.includes(site.workStatus as any)
+                    });
                 }
             });
         });
 
         allArsEntries.forEach(ars => {
-            if (ars.arsTenderNo && ars.arsStatus === 'Work Completed') {
-                completedTenderNos.add(ars.arsTenderNo);
+            if (ars.arsTenderNo && ars.arsStatus) {
+                if (!tenderSitesMap.has(ars.arsTenderNo)) {
+                    tenderSitesMap.set(ars.arsTenderNo, []);
+                }
+                tenderSitesMap.get(ars.arsTenderNo)!.push({
+                    status: ars.arsStatus,
+                    isFinal: completedOrFinalStatuses.includes(ars.arsStatus as any)
+                });
+            }
+        });
+        
+        const completedTenderNos = new Set<string>();
+        tenderSitesMap.forEach((sites, tenderNo) => {
+            if (sites.length > 0 && sites.every(site => site.isFinal)) {
+                completedTenderNos.add(tenderNo);
             }
         });
 
@@ -359,7 +379,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     return (
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-[95vw] lg:max-w-6xl h-[85vh] flex flex-col p-0 overflow-hidden">
+                <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[85vh] flex flex-col p-0 overflow-hidden">
                     <DialogHeader className="p-6 pb-4 border-b shrink-0">
                         <DialogTitle>Work Order Data</DialogTitle>
                         <DialogDescription>List of all tenders with work orders issued. Overdue projects are marked in red.</DialogDescription>
@@ -393,7 +413,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 </DialogContent>
             </Dialog>
             <Dialog open={!!sitesForTender} onOpenChange={() => setSitesForTender(null)}>
-                <DialogContent className="sm:max-w-xl">
+                <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="sm:max-w-xl p-0">
                     <DialogHeader className="p-6 pb-4">
                         <DialogTitle>Sites for Tender: {sitesForTender?.tenderNo}</DialogTitle>
                         <DialogDescription>List of all sites linked to this tender.</DialogDescription>
@@ -417,7 +437,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                             ({site.source} - {site.fileNo})
                                         </div>
                                         {site.supervisor && site.supervisor !== 'N/A' && (
-                                            <div className="text-sm text-primary font-medium mt-1 pl-2">
+                                            <div className="text-sm text-primary font-medium mt-2 pl-2">
                                                 Supervisor: {site.supervisor}
                                             </div>
                                         )}
