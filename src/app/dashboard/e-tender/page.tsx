@@ -123,7 +123,8 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                             name: entry.nameOfSite,
                             status: entry.arsStatus,
                             source: 'ARS',
-                            fileNo: entry.fileNo
+                            fileNo: entry.fileNo,
+                            supervisor: entry.supervisorName || 'N/A'
                         });
                     }
                 } else {
@@ -133,7 +134,8 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                 name: site.nameOfSite,
                                 status: site.workStatus,
                                 source: 'Deposit Work',
-                                fileNo: entry.fileNo
+                                fileNo: entry.fileNo,
+                                supervisor: site.supervisorName || 'N/A'
                             });
                         }
                     });
@@ -391,13 +393,13 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 </DialogContent>
             </Dialog>
             <Dialog open={!!sitesForTender} onOpenChange={() => setSitesForTender(null)}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Sites for Tender: {sitesForTender?.tenderNo}</DialogTitle>
                         <DialogDescription>List of all sites linked to this tender.</DialogDescription>
                     </DialogHeader>
-                    <div className="max-h-[60vh] overflow-y-auto p-1">
-                        <ul className="space-y-2">
+                    <div className="max-h-[60vh] overflow-y-auto p-4">
+                        <ul className="space-y-3">
                             {sitesForTender?.sites.map((site, index) => {
                                 const getSiteStatusClass = (status: any) => {
                                     if (!status) return "";
@@ -407,11 +409,18 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                 };
                                 return (
                                     <li key={index} className="p-3 border rounded-md bg-secondary/50">
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-semibold">{site.name}</span>
-                                            <span className={cn('text-xs font-bold', getSiteStatusClass(site.status))}>{site.status}</span>
+                                        <div className="flex justify-between items-start">
+                                            <span className="font-semibold pr-2">{site.name}</span>
+                                            <span className={cn('text-xs font-bold whitespace-nowrap', getSiteStatusClass(site.status))}>{site.status}</span>
                                         </div>
-                                        <span className="text-xs text-muted-foreground">({site.source} - {site.fileNo})</span>
+                                        <div className="text-xs text-muted-foreground">
+                                            ({site.source} - {site.fileNo})
+                                        </div>
+                                        {site.supervisor && site.supervisor !== 'N/A' && (
+                                            <div className="text-xs text-primary font-medium mt-1">
+                                                Supervisor: {site.supervisor}
+                                            </div>
+                                        )}
                                     </li>
                                 );
                             })}
