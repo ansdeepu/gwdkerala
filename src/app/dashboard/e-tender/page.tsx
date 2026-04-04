@@ -1,4 +1,3 @@
-
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
@@ -90,6 +89,7 @@ type WorkOrderRow = {
     expectedDateOfCompletionRaw: Date | null;
     isOverdue: boolean;
     tenderType?: 'Work' | 'Purchase';
+    purchaseStatus: 'Ongoing' | 'Completed';
 };
 
 type WorkOrderSortKey = keyof WorkOrderRow;
@@ -97,14 +97,12 @@ type WorkOrderSortKey = keyof WorkOrderRow;
 
 function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolean, onOpenChange: (open: boolean) => void, tenders: E_tender[] }) {
     const { allStaffMembers, allFileEntries, allArsEntries } = useDataStore();
+    const { updateTender: updateTenderInDb } = useE_tenders();
     const { toast } = useToast();
     const [sortConfig, setSortConfig] = useState<{ key: WorkOrderSortKey; direction: 'asc' | 'desc' } | null>(null);
     const [activeTab, setActiveTab] = useState('active');
     const [sitesForTender, setSitesForTender] = useState<{ tenderNo: string; sites: any[] } | null>(null);
     
-    // Local state for purchase statuses (Ongoing/Completed)
-    const [purchaseStatuses, setPurchaseStatuses] = useState<Record<string, 'Ongoing' | 'Completed'>>({});
-
     const requestSort = (key: WorkOrderSortKey) => {
         let direction: 'asc' | 'desc' = 'asc';
         if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -209,6 +207,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                     expectedDateOfCompletionRaw: expectedDateOfCompletion,
                     isOverdue,
                     tenderType: tender.tenderType,
+                    purchaseStatus: (tender as any).purchaseStatus || 'Ongoing',
                 };
             });
 
@@ -320,13 +319,13 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 row.expectedDateOfCompletion,
             ];
             if (activeTab === 'purchase') {
-                values.push(purchaseStatuses[row.id] || 'Ongoing');
+                values.push(row.purchaseStatus);
             }
 
             const newRow = worksheet.addRow(values);
             
             // Check for styling (Overdue in active, Completed in purchase)
-            const isPurchaseCompleted = activeTab === 'purchase' && purchaseStatuses[row.id] === 'Completed';
+            const isPurchaseCompleted = activeTab === 'purchase' && row.purchaseStatus === 'Completed';
             if ((row.isOverdue && activeTab === 'active') || isPurchaseCompleted) {
                 newRow.eachCell(cell => {
                     cell.font = { ...cell.font, color: { argb: 'FF0000' } };
@@ -356,10 +355,15 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
         a.download = `GWD_WorkOrderData_${activeTab}_${format(new Date(), 'yyyyMMdd')}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
-    }, [workOrderData, activeTab, purchaseStatuses, toast]);
+    }, [workOrderData, activeTab, toast]);
 
-    const handlePurchaseStatusChange = (id: string, status: 'Ongoing' | 'Completed') => {
-        setPurchaseStatuses(prev => ({ ...prev, [id]: status }));
+    const handlePurchaseStatusChange = async (id: string, status: 'Ongoing' | 'Completed') => {
+        try {
+            await updateTenderInDb(id, { purchaseStatus: status });
+            toast({ title: "Status Updated", description: "Purchase status has been saved." });
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        }
     };
 
     const renderTable = (data: WorkOrderRow[], isPurchaseTab: boolean = false) => (
@@ -381,7 +385,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 <TableBody>
                     {data.length > 0 ? (
                         data.map(row => {
-                            const isPurchaseCompleted = isPurchaseTab && purchaseStatuses[row.id] === 'Completed';
+                            const isPurchaseCompleted = isPurchaseTab && row.purchaseStatus === 'Completed';
                             return (
                                 <TableRow key={row.id} className={cn(
                                     ((row.isOverdue && activeTab === 'active') || isPurchaseCompleted) && "text-destructive font-bold", 
@@ -402,7 +406,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                     {isPurchaseTab && (
                                         <TableCell className="py-2 text-center">
                                             <Select 
-                                                value={purchaseStatuses[row.id] || 'Ongoing'} 
+                                                value={row.purchaseStatus} 
                                                 onValueChange={(val) => handlePurchaseStatusChange(row.id, val as 'Ongoing' | 'Completed')}
                                             >
                                                 <SelectTrigger className="h-7 text-[10px] w-full">

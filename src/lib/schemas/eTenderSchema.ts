@@ -274,6 +274,7 @@ export const E_tenderSchema = z.object({
     supervisor3Phone: optionalStringSchema,
 
     presentStatus: z.enum(eTenderStatusOptions).optional().nullable(),
+    purchaseStatus: z.enum(['Ongoing', 'Completed']).optional().nullable(),
     remarks: optionalStringSchema,
     
     // Historical Descriptions
