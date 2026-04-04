@@ -1,9 +1,10 @@
+
 // src/app/dashboard/page.tsx
-"use client"; 
+"use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useFileEntries } from "@/hooks/useFileEntries";
-import { useStaffMembers } from "@/hooks/useStaffMembers"; 
+import { useStaffMembers } from "@/hooks/useStaffMembers";
 import { useAgencyApplications } from '@/hooks/useAgencyApplications';
 import { useAuth, type UserProfile } from '@/hooks/useAuth';
 import { useAllFileEntriesForReports } from '@/hooks/useAllFileEntriesForReports';
@@ -13,7 +14,7 @@ import { format, addYears, isValid, isWithinInterval, startOfMonth, endOfMonth }
 import FileStatusOverview from '@/components/dashboard/FileStatusOverview';
 import NoticeBoard from '@/components/dashboard/NoticeBoard';
 import ImportantUpdates from '@/components/dashboard/ImportantUpdates';
-import ETenderNoticeBoard from '@/components/dashboard/ETenderNoticeBoard'; 
+import ETenderNoticeBoard from '@/components/dashboard/ETenderNoticeBoard';
 import WorkStatusByService from '@/components/dashboard/WorkStatusByService';
 import ArsStatusOverview from '@/components/dashboard/ArsStatusOverview';
 import RigRegistrationOverview from '@/components/dashboard/RigRegistrationOverview';
@@ -57,7 +58,7 @@ const scrollTo = (id: string) => {
     const dashboardNav = document.querySelector('.dashboard-nav-sticky') as HTMLElement;
 
     if (scrollContainer && element && dashboardNav) {
-        const offset = dashboardNav.offsetHeight; 
+        const offset = dashboardNav.offsetHeight;
         const elementPosition = element.offsetTop;
         const offsetPosition = elementPosition - offset;
 
@@ -112,11 +113,11 @@ export default function DashboardPage() {
   const { user: currentUser, isLoading: authLoading, fetchAllUsers } = useAuth();
   const { applications: agencyApplications, isLoading: agenciesLoading } = useAgencyApplications();
   const { allArsEntries: arsEntries, isLoading: arsLoading } = useDataStore();
-  
+
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [usersLoading, setUsersLoading] = useState<boolean>(true);
   const { toast } = useToast();
-  
+
   const [dialogState, setDialogState] = useState({
     isOpen: false,
     title: "",
@@ -141,7 +142,7 @@ export default function DashboardPage() {
 
     const mainElement = document.querySelector('main.overflow-y-auto');
     mainElement?.addEventListener('scroll', handleScroll, { passive: true });
-    
+
     return () => mainElement?.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -174,7 +175,7 @@ export default function DashboardPage() {
         setUsersLoading(false);
         return;
     }
-    
+
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         const usersList: UserProfile[] = [];
         querySnapshot.forEach((docSnap) => {
@@ -207,7 +208,7 @@ export default function DashboardPage() {
     if (filteredEntriesLoading || isReportLoading || staffLoading || !currentUser) return null;
 
     return {
-        allFileEntriesForSupervisor: filteredFileEntries || [], 
+        allFileEntriesForSupervisor: filteredFileEntries || [],
         allFileEntries: allFileEntries || [],
         staffMembers: staffMembers || []
     };
@@ -225,13 +226,13 @@ export default function DashboardPage() {
           const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes((entry as any).category);
           const hasGwPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
           const hasLpPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
-          
+
           if (isInvestigationCategory || hasGwPurpose || hasLpPurpose) return false;
           if (entry.applicationType && (PRIVATE_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as any)) return false;
           return true;
       });
 
-      const allWorksFromFiles = relevantFileEntries.flatMap(entry => 
+      const allWorksFromFiles = relevantFileEntries.flatMap(entry =>
           (entry.siteDetails || [])
           .filter(site => site.workStatus !== 'Work Cancelled')
           .map(site => ({
@@ -259,11 +260,11 @@ export default function DashboardPage() {
           dateOfCompletion: entry.dateOfCompletion,
           totalExpenditure: entry.totalExpenditure || 0,
       }));
-      
+
       const allConstituencyWorks = [...allWorksFromFiles, ...arsWorks];
-      
+
       const completedCount = allConstituencyWorks.filter(w => w.workStatus && COMPLETED_WORK_STATUSES.includes(w.workStatus as SiteWorkStatus)).length;
-      
+
       let depositWorksCount = 0;
       let collectorWorksCount = 0;
       let planFundWorksCount = 0;
@@ -280,7 +281,7 @@ export default function DashboardPage() {
               depositWorksCount += siteCount;
           }
       });
-      
+
       return {
           constituencyWorks: allConstituencyWorks,
           depositWorksCount,
@@ -300,9 +301,9 @@ export default function DashboardPage() {
   ) => {
     setDialogState({ isOpen: true, data, title, columns, type });
   }, []);
-  
+
   const isPageLoading = authLoading || usersLoading || isReportLoading || agenciesLoading || filteredEntriesLoading || arsLoading || !dashboardData;
-  
+
   if (isPageLoading) {
     return (
       <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center">
@@ -311,7 +312,7 @@ export default function DashboardPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="-mt-6">
       <DashboardNav />
@@ -323,14 +324,14 @@ export default function DashboardPage() {
         </div>
 
         <div id="file-status">
-          <FileStatusOverview 
+          <FileStatusOverview
               nonArsEntries={dashboardData.allFileEntries.filter(e => !e.applicationType?.includes("ARS"))}
               onOpenDialog={handleOpenDialog}
           />
         </div>
-        
+
         <div id="work-status">
-          <WorkStatusByService 
+          <WorkStatusByService
             allFileEntries={dashboardData.allFileEntries}
             onOpenDialog={handleOpenDialog}
             currentUserRole={currentUser?.role}
@@ -350,38 +351,38 @@ export default function DashboardPage() {
             onSetDates={setConstituencyDates}
           />
         </div>
-        
+
         <div id="finance">
-          <FinanceOverview 
+          <FinanceOverview
             allFileEntries={dashboardData.allFileEntries}
             onOpenDialog={handleOpenDialog}
             dates={financeDates}
             onSetDates={setFinanceDates}
           />
         </div>
-        
+
         <div id="ars">
-          <ArsStatusOverview 
+          <ArsStatusOverview
             onOpenDialog={handleOpenDialog}
             dates={arsDates}
             onSetDates={setArsDates}
           />
         </div>
-        
+
         <div id="rig-registration">
-          <RigRegistrationOverview 
+          <RigRegistrationOverview
             agencyApplications={agencyApplications}
             onOpenDialog={handleOpenDialog}
           />
         </div>
-        
+
         <div id="rig-financials">
           <RigFinancialSummary
               applications={agencyApplications}
               onCellClick={handleOpenDialog}
             />
         </div>
-        
+
         <div id="work-progress">
           <WorkProgress
             allFileEntries={dashboardData.allFileEntries}
@@ -399,17 +400,17 @@ export default function DashboardPage() {
             staffMembers={staffMembers}
             onOpenDialog={handleOpenDialog}
           />
-          <UserActivity 
+          <UserActivity
             allUsers={allUsers}
             staffMembers={staffMembers}
           />
         </div>
 
-        <DashboardDialogs 
+        <DashboardDialogs
           dialogState={dialogState}
           setDialogState={setDialogState}
           allFileEntries={dashboardData.allFileEntries}
-          allArsEntries={allArsEntries}
+          allArsEntries={arsEntries}
           financeDates={financeDates}
         />
 
@@ -428,3 +429,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
