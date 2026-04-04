@@ -307,7 +307,7 @@ export const siteWorkStatusOptions = ["Under Process", "Addl. AS Awaited", "To b
 export type SiteWorkStatus = typeof siteWorkStatusOptions[number];
 
 export const INVESTIGATION_WORK_STATUS_OPTIONS = ["Pending", "VES Pending", "Completed"] as const;
-export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Pending", "Completed"] as const;
+export const LOGGING_PUMPING_TEST_WORK_STATUS_OPTIONS = ["Under Process", "Pending", "Completed", "File Closed"] as const;
 
 export const allFileStatusOptions = [
   "File Under Process",
@@ -334,7 +334,7 @@ export type FileStatus = (typeof allFileStatusOptions)[number];
 export const fileStatusOptions = allFileStatusOptions;
 
 export const INVESTIGATION_FILE_STATUS_OPTIONS = ["File Under Process", "Pending", "VES Pending", "Completed", "File Closed"] as const;
-export const LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS = ["Under Process", "Completed"] as const;
+export const LOGGING_PUMPING_TEST_FILE_STATUS_OPTIONS = ["Under Process", "Pending", "Completed", "File Closed"] as const;
 
 export const LOGGING_PUMPING_TEST_PURPOSE_OPTIONS = ["Geological logging", "Geophysical Logging", "Industry Pumping test", "MWSS Pumping test", "Pumping Test Others"] as const;
 
