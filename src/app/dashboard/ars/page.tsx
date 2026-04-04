@@ -159,7 +159,7 @@ export default function ArsPage() {
   };
   
   const handleViewClick = (siteId: string) => {
-    const pageParam = currentPage > 1 ? `&page=${currentPage}` : '';
+    const pageParam = currentPage > 1 ? `?page=${currentPage}` : '';
     router.push(`/dashboard/ars/entry?id=${siteId}${pageParam ? `&${pageParam.substring(1)}` : ''}`);
   };
 
@@ -670,33 +670,33 @@ export default function ArsPage() {
                     <Table className="w-full">
                         <TableHeader className="bg-secondary sticky top-0 z-10">
                             <TableRow>
-                                <TableHead className="w-[5%] text-xs px-1">Sl.</TableHead>
-                                <TableHead className="w-[12%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('fileNo')}>File No {getSortIcon('fileNo')}</Button></TableHead>
-                                <TableHead className="w-[25%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('nameOfSite')}>Site Name {getSortIcon('nameOfSite')}</Button></TableHead>
-                                <TableHead className="w-[15%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('arsTypeOfScheme')}>Scheme {getSortIcon('arsTypeOfScheme')}</Button></TableHead>
-                                <TableHead className="w-[15%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('localSelfGovt')}>LSG {getSortIcon('localSelfGovt')}</Button></TableHead>
-                                <TableHead className="w-[13%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('arsStatus')}>Status {getSortIcon('arsStatus')}</Button></TableHead>
-                                <TableHead className="w-[10%] text-xs px-1"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs w-full justify-start font-bold" onClick={() => requestSort('dateOfCompletion')}>Date {getSortIcon('dateOfCompletion')}</Button></TableHead>
-                                <TableHead className="text-center w-[5%] text-xs px-1">Act</TableHead>
+                                <TableHead className="w-[5%] text-sm px-2">Sl.</TableHead>
+                                <TableHead className="w-[12%] text-sm px-2"><Button variant="ghost" className="p-0 hover:bg-transparent text-sm w-full justify-start font-bold" onClick={() => requestSort('fileNo')}>File No {getSortIcon('fileNo')}</Button></TableHead>
+                                <TableHead className="w-[25%] text-sm px-2"><Button variant="ghost" className="p-0 hover:bg-transparent text-sm w-full justify-start font-bold" onClick={() => requestSort('nameOfSite')}>Site Name {getSortIcon('nameOfSite')}</Button></TableHead>
+                                <TableHead className="w-[15%] text-sm px-2"><Button variant="ghost" className="p-0 hover:bg-transparent text-sm w-full justify-start font-bold" onClick={() => requestSort('arsTypeOfScheme')}>Scheme {getSortIcon('arsTypeOfScheme')}</Button></TableHead>
+                                <TableHead className="w-[15%] text-sm px-2"><Button variant="ghost" className="p-0 hover:bg-transparent text-sm w-full justify-start font-bold" onClick={() => requestSort('localSelfGovt')}>LSG {getSortIcon('localSelfGovt')}</Button></TableHead>
+                                <TableHead className="w-[13%] text-sm px-2"><Button variant="ghost" className="p-0 hover:bg-transparent text-sm w-full justify-start font-bold" onClick={() => requestSort('arsStatus')}>Status {getSortIcon('arsStatus')}</Button></TableHead>
+                                <TableHead className="w-[10%] text-sm px-2"><Button variant="ghost" className="p-0 hover:bg-transparent text-sm w-full justify-start font-bold" onClick={() => requestSort('dateOfCompletion')}>Date {getSortIcon('dateOfCompletion')}</Button></TableHead>
+                                <TableHead className="text-center w-[5%] text-sm px-2">Act</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {paginatedSites.length > 0 ? (
                                 paginatedSites.map((site, index) => {
                                     return (
-                                        <TableRow key={site.id} className={cn(getStatusRowClass(site.arsStatus as SiteWorkStatus), "text-xs")}>
-                                            <TableCell className="px-1 text-center font-mono">{offset + index + 1}</TableCell>
-                                            <TableCell className="px-1 font-medium break-all">{site.fileNo}</TableCell>
-                                            <TableCell className="px-1 font-semibold break-words whitespace-normal">
+                                        <TableRow key={site.id} className={cn(getStatusRowClass(site.arsStatus as SiteWorkStatus), "text-sm")}>
+                                            <TableCell className="px-2 text-center font-mono">{offset + index + 1}</TableCell>
+                                            <TableCell className="px-2 font-medium break-all">{site.fileNo}</TableCell>
+                                            <TableCell className="px-2 font-semibold break-words whitespace-normal">
                                               {site.nameOfSite}
                                             </TableCell>
-                                            <TableCell className="px-1 break-words whitespace-normal">
+                                            <TableCell className="px-2 break-words whitespace-normal">
                                               {site.arsTypeOfScheme || 'N/A'}
                                             </TableCell>
-                                            <TableCell className="px-1 break-words whitespace-normal">{site.localSelfGovt || 'N/A'}</TableCell>
-                                            <TableCell className="px-1">{site.arsStatus ?? 'N/A'}</TableCell>
-                                            <TableCell className="px-1">{formatDateSafe(site.dateOfCompletion)}</TableCell>
-                                            <TableCell className="px-1 text-center">
+                                            <TableCell className="px-2 break-words whitespace-normal">{site.localSelfGovt || 'N/A'}</TableCell>
+                                            <TableCell className="px-2">{site.arsStatus ?? 'N/A'}</TableCell>
+                                            <TableCell className="px-2">{formatDateSafe(site.dateOfCompletion)}</TableCell>
+                                            <TableCell className="px-2 text-center">
                                                 <div className="flex items-center justify-center">
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
