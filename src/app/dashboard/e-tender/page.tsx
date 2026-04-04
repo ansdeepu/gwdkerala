@@ -1,3 +1,4 @@
+
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
@@ -88,6 +89,7 @@ type WorkOrderRow = {
     expectedDateOfCompletion: string;
     expectedDateOfCompletionRaw: Date | null;
     isOverdue: boolean;
+    tenderType?: 'Work' | 'Purchase';
 };
 
 type WorkOrderSortKey = keyof WorkOrderRow;
@@ -99,6 +101,9 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     const [sortConfig, setSortConfig] = useState<{ key: WorkOrderSortKey; direction: 'asc' | 'desc' } | null>(null);
     const [activeTab, setActiveTab] = useState('active');
     const [sitesForTender, setSitesForTender] = useState<{ tenderNo: string; sites: any[] } | null>(null);
+    
+    // Local state for purchase statuses (Ongoing/Completed)
+    const [purchaseStatuses, setPurchaseStatuses] = useState<Record<string, 'Ongoing' | 'Completed'>>({});
 
     const requestSort = (key: WorkOrderSortKey) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -156,7 +161,6 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     };
 
     const workOrderData = useMemo(() => {
-        // T-13/2025-26 fix: Remove periodOfCompletion requirement from the base filter
         let filteredTenders = tenders.filter(t => (t.presentStatus === 'Work Order Issued' || t.presentStatus === 'Supply Order Issued') && t.dateWorkOrder);
 
         const getL1Bidder = (tender: E_tender) => {
@@ -204,6 +208,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                     expectedDateOfCompletion: expectedDateOfCompletion ? formatDateSafe(expectedDateOfCompletion) : 'N/A',
                     expectedDateOfCompletionRaw: expectedDateOfCompletion,
                     isOverdue,
+                    tenderType: tender.tenderType,
                 };
             });
 
@@ -245,8 +250,9 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             }
         });
 
-        const activeList = mappedData.filter(row => !completedTenderNos.has(row.eTenderNo.trim().toUpperCase()));
-        const completedList = mappedData.filter(row => completedTenderNos.has(row.eTenderNo.trim().toUpperCase()));
+        const activeList = mappedData.filter(row => row.tenderType === 'Work' && !completedTenderNos.has(row.eTenderNo.trim().toUpperCase()));
+        const purchaseList = mappedData.filter(row => row.tenderType === 'Purchase');
+        const completedList = mappedData.filter(row => row.tenderType === 'Work' && completedTenderNos.has(row.eTenderNo.trim().toUpperCase()));
 
         const sortList = (list: WorkOrderRow[]) => {
             if (!sortConfig) return list;
@@ -273,14 +279,19 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
 
         return { 
             active: sortList(activeList).map((row, i) => ({ ...row, slNo: i + 1 })), 
+            purchase: sortList(purchaseList).map((row, i) => ({ ...row, slNo: i + 1 })),
             completed: sortList(completedList).map((row, i) => ({ ...row, slNo: i + 1 })) 
         };
     }, [tenders, allStaffMembers, sortConfig, allFileEntries, allArsEntries]);
     
     const handleExportExcel = useCallback(async () => {
-        const dataToExport = activeTab === 'active' ? workOrderData.active : workOrderData.completed;
+        let dataToExport: WorkOrderRow[] = [];
+        if (activeTab === 'active') dataToExport = workOrderData.active;
+        else if (activeTab === 'purchase') dataToExport = workOrderData.purchase;
+        else if (activeTab === 'completed') dataToExport = workOrderData.completed;
+
         if (dataToExport.length === 0) {
-            toast({ title: "No Data", description: "There is no work order data to export from this tab.", variant: "default" });
+            toast({ title: "No Data", description: "There is no data to export from this tab.", variant: "default" });
             return;
         }
 
@@ -288,6 +299,8 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
         const worksheet = workbook.addWorksheet(`WorkOrderData_${activeTab}`);
         
         const headers = ["Sl. No.", "Date of Work Order", "e-Tender No.", "Name of Work", "Contractor", "Supervisor", "Quoted Amount (Rs.)", "Expected Date of Completion"];
+        if (activeTab === 'purchase') headers.push("Status");
+
         const headerRow = worksheet.addRow(headers);
         headerRow.font = { bold: true };
         headerRow.eachCell(cell => {
@@ -296,7 +309,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
         });
 
         dataToExport.forEach(row => {
-            const newRow = worksheet.addRow([
+            const values = [
                 row.slNo,
                 row.dateWorkOrder,
                 row.eTenderNo,
@@ -305,8 +318,16 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 row.supervisor,
                 row.quotedAmount,
                 row.expectedDateOfCompletion,
-            ]);
-            if (row.isOverdue && activeTab === 'active') {
+            ];
+            if (activeTab === 'purchase') {
+                values.push(purchaseStatuses[row.id] || 'Ongoing');
+            }
+
+            const newRow = worksheet.addRow(values);
+            
+            // Check for styling (Overdue in active, Completed in purchase)
+            const isPurchaseCompleted = activeTab === 'purchase' && purchaseStatuses[row.id] === 'Completed';
+            if ((row.isOverdue && activeTab === 'active') || isPurchaseCompleted) {
                 newRow.eachCell(cell => {
                     cell.font = { ...cell.font, color: { argb: 'FF0000' } };
                 });
@@ -335,9 +356,13 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
         a.download = `GWD_WorkOrderData_${activeTab}_${format(new Date(), 'yyyyMMdd')}.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
-    }, [workOrderData, activeTab, toast]);
+    }, [workOrderData, activeTab, purchaseStatuses, toast]);
 
-    const renderTable = (data: WorkOrderRow[]) => (
+    const handlePurchaseStatusChange = (id: string, status: 'Ongoing' | 'Completed') => {
+        setPurchaseStatuses(prev => ({ ...prev, [id]: status }));
+    };
+
+    const renderTable = (data: WorkOrderRow[], isPurchaseTab: boolean = false) => (
         <div className="overflow-x-auto min-w-full">
             <Table className="min-w-[1000px]">
                 <TableHeader className="sticky top-0 bg-background z-10">
@@ -350,29 +375,52 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                         <TableHead className="w-[150px]"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs" onClick={() => requestSort('supervisor')}>Supervisor {getSortIcon('supervisor')}</Button></TableHead>
                         <TableHead className="text-right w-[100px]"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs" onClick={() => requestSort('quotedAmount')}>Amount {getSortIcon('quotedAmount')}</Button></TableHead>
                         <TableHead className="w-[100px]"><Button variant="ghost" className="p-0 hover:bg-transparent text-xs" onClick={() => requestSort('expectedDateOfCompletion')}>Completion {getSortIcon('expectedDateOfCompletion')}</Button></TableHead>
+                        {isPurchaseTab && <TableHead className="w-[120px] text-center">Status</TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {data.length > 0 ? (
-                        data.map(row => (
-                            <TableRow key={row.id} className={cn(row.isOverdue && activeTab === 'active' && "text-destructive", "text-[11px]")}>
-                                <TableCell className="text-center py-2">{row.slNo}</TableCell>
-                                <TableCell className="py-2">{row.dateWorkOrder}</TableCell>
-                                <TableCell className="py-2 font-mono">
-                                    <Button variant="link" className="p-0 h-auto font-mono text-xs" onClick={() => handleTenderNoClick(row.eTenderNo)}>
-                                        {row.eTenderNo}
-                                    </Button>
-                                </TableCell>
-                                <TableCell className="py-2 font-medium max-w-[250px] whitespace-normal break-words leading-tight">{row.nameOfWork}</TableCell>
-                                <TableCell className="py-2 max-w-[150px] whitespace-normal break-words leading-tight">{row.contractor}</TableCell>
-                                <TableCell className="py-2 text-[10px] max-w-[150px] whitespace-normal break-words leading-tight">{row.supervisor}</TableCell>
-                                <TableCell className="py-2 text-right font-mono">{row.quotedAmount?.toLocaleString('en-IN')}</TableCell>
-                                <TableCell className="py-2">{row.expectedDateOfCompletion}</TableCell>
-                            </TableRow>
-                        ))
+                        data.map(row => {
+                            const isPurchaseCompleted = isPurchaseTab && purchaseStatuses[row.id] === 'Completed';
+                            return (
+                                <TableRow key={row.id} className={cn(
+                                    ((row.isOverdue && activeTab === 'active') || isPurchaseCompleted) && "text-destructive font-bold", 
+                                    "text-[11px]"
+                                )}>
+                                    <TableCell className="text-center py-2">{row.slNo}</TableCell>
+                                    <TableCell className="py-2">{row.dateWorkOrder}</TableCell>
+                                    <TableCell className="py-2 font-mono">
+                                        <Button variant="link" className={cn("p-0 h-auto font-mono text-xs", isPurchaseCompleted && "text-destructive")} onClick={() => handleTenderNoClick(row.eTenderNo)}>
+                                            {row.eTenderNo}
+                                        </Button>
+                                    </TableCell>
+                                    <TableCell className="py-2 font-medium max-w-[250px] whitespace-normal break-words leading-tight">{row.nameOfWork}</TableCell>
+                                    <TableCell className="py-2 max-w-[150px] whitespace-normal break-words leading-tight">{row.contractor}</TableCell>
+                                    <TableCell className="py-2 text-[10px] max-w-[150px] whitespace-normal break-words leading-tight">{row.supervisor}</TableCell>
+                                    <TableCell className="py-2 text-right font-mono">{row.quotedAmount?.toLocaleString('en-IN')}</TableCell>
+                                    <TableCell className="py-2">{row.expectedDateOfCompletion}</TableCell>
+                                    {isPurchaseTab && (
+                                        <TableCell className="py-2 text-center">
+                                            <Select 
+                                                value={purchaseStatuses[row.id] || 'Ongoing'} 
+                                                onValueChange={(val) => handlePurchaseStatusChange(row.id, val as 'Ongoing' | 'Completed')}
+                                            >
+                                                <SelectTrigger className="h-7 text-[10px] w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Ongoing">Ongoing</SelectItem>
+                                                    <SelectItem value="Completed">Completed</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            );
+                        })
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={8} className="h-24 text-center">
+                            <TableCell colSpan={isPurchaseTab ? 9 : 8} className="h-24 text-center">
                                 No tenders found in this category.
                             </TableCell>
                         </TableRow>
@@ -388,13 +436,14 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-6xl h-[85vh] flex flex-col p-0 overflow-hidden">
                     <DialogHeader className="p-6 pb-4 border-b shrink-0">
                         <DialogTitle>Work Order Data</DialogTitle>
-                        <DialogDescription>List of all tenders with work orders issued. Overdue projects are marked in red.</DialogDescription>
+                        <DialogDescription>List of all tenders with work or supply orders issued.</DialogDescription>
                     </DialogHeader>
                     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
                             <div className="px-6 border-b shrink-0 bg-background/50">
-                                <TabsList className="grid w-full grid-cols-2 max-w-[300px] h-8">
-                                    <TabsTrigger value="active" className="text-xs h-7">Active ({workOrderData.active.length})</TabsTrigger>
+                                <TabsList className="grid w-full grid-cols-3 max-w-[450px] h-8">
+                                    <TabsTrigger value="active" className="text-xs h-7">Active (Work) ({workOrderData.active.length})</TabsTrigger>
+                                    <TabsTrigger value="purchase" className="text-xs h-7">Purchase ({workOrderData.purchase.length})</TabsTrigger>
                                     <TabsTrigger value="completed" className="text-xs h-7">Completed ({workOrderData.completed.length})</TabsTrigger>
                                 </TabsList>
                             </div>
@@ -402,6 +451,9 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                 <ScrollArea className="h-full">
                                     <TabsContent value="active" className="m-0 border-0 p-0 outline-none">
                                         {renderTable(workOrderData.active)}
+                                    </TabsContent>
+                                    <TabsContent value="purchase" className="m-0 border-0 p-0 outline-none">
+                                        {renderTable(workOrderData.purchase, true)}
                                     </TabsContent>
                                     <TabsContent value="completed" className="m-0 border-0 p-0 outline-none">
                                         {renderTable(workOrderData.completed)}
@@ -1095,3 +1147,4 @@ export default function ETenderListPage() {
         </div>
     );
 }
+
