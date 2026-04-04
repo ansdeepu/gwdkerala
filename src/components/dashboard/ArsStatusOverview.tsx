@@ -70,7 +70,7 @@ export default function ArsStatusOverview({ onOpenDialog, dates, onSetDates }: A
     const sDate = dates.start ? startOfDay(dates.start) : null;
     const eDate = dates.end ? endOfDay(dates.end) : null;
   
-    let filteredSites = arsEntries;
+    let filteredSites = arsEntries.filter(site => site.arsStatus !== 'Work Cancelled');
 
     // Filter by Scheme Type first
     if (schemeTypeFilter !== 'all') {

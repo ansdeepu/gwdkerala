@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePageHeader } from "@/hooks/usePageHeader";
-import type { ArsEntryFormData, SiteWorkStatus } from "@/lib/schemas";
+import type { ArsEntryFormData, SiteWorkStatus, ArsStatus } from "@/lib/schemas";
 import { arsTypeOfSchemeOptions, constituencyOptions } from "@/lib/schemas";
 import { usePageNavigation } from "@/hooks/usePageNavigation";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -57,11 +57,15 @@ const formatDateSafe = (dateInput: any): string => {
   return date ? format(date, 'dd/MM/yyyy') : '';
 };
 
-const getStatusRowClass = (status: SiteWorkStatus | undefined | null): string => {
+const getStatusRowClass = (status: SiteWorkStatus | ArsStatus | undefined | null): string => {
     if (!status) return "";
+
+    if (status === 'Work Cancelled') {
+        return 'bg-gray-500/5 hover:bg-gray-500/15 text-gray-500 line-through';
+    }
     
-    const completedOrFailed: SiteWorkStatus[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed"];
-    if (completedOrFailed.includes(status as SiteWorkStatus)) {
+    const completedOrFailed: (SiteWorkStatus | ArsStatus)[] = ["Work Completed", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Work Failed"];
+    if (completedOrFailed.includes(status as any)) {
         return 'bg-red-500/5 hover:bg-red-500/15 text-red-700';
     }
     

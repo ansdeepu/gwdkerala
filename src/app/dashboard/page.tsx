@@ -409,7 +409,7 @@ export default function DashboardPage() {
           dialogState={dialogState}
           setDialogState={setDialogState}
           allFileEntries={dashboardData.allFileEntries}
-          allArsEntries={arsEntries}
+          allArsEntries={allArsEntries}
           financeDates={financeDates}
         />
 
