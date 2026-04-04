@@ -114,11 +114,13 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     };
     
     const handleTenderNoClick = (tenderNo: string) => {
+        const normalizedInput = tenderNo.trim().toUpperCase();
         const getSites = (dataSource: (DataEntryFormData[] | ArsEntry[]), isArs: boolean) => {
             const sites: any[] = [];
             dataSource.forEach((entry: any) => {
                 if (isArs) {
-                    if (entry.arsTenderNo === tenderNo) {
+                    const entryTenderNo = entry.arsTenderNo?.trim().toUpperCase();
+                    if (entryTenderNo === normalizedInput) {
                         sites.push({
                             name: entry.nameOfSite,
                             status: entry.arsStatus,
@@ -129,7 +131,8 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                     }
                 } else {
                     entry.siteDetails?.forEach((site: any) => {
-                        if (site.tenderNo === tenderNo) {
+                        const siteTenderNo = site.tenderNo?.trim().toUpperCase();
+                        if (siteTenderNo === normalizedInput) {
                             sites.push({
                                 name: site.nameOfSite,
                                 status: site.workStatus,
@@ -153,7 +156,8 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     };
 
     const workOrderData = useMemo(() => {
-        let filteredTenders = tenders.filter(t => (t.presentStatus === 'Work Order Issued' || t.presentStatus === 'Supply Order Issued') && t.dateWorkOrder && t.periodOfCompletion);
+        // T-13/2025-26 fix: Remove periodOfCompletion requirement from the base filter
+        let filteredTenders = tenders.filter(t => (t.presentStatus === 'Work Order Issued' || t.presentStatus === 'Supply Order Issued') && t.dateWorkOrder);
 
         const getL1Bidder = (tender: E_tender) => {
             if (!tender.bidders || tender.bidders.length === 0) return null;
@@ -203,16 +207,17 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                 };
             });
 
-        const completedOrFinalStatuses: (SiteWorkStatus | ArsStatus)[] = ["Work Completed", "Work Failed", "Work Cancelled", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued"];
+        const completedOrFinalStatuses: (SiteWorkStatus | ArsStatus)[] = ["Work Completed", "Work Failed", "Work Cancelled", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Completed"];
         const tenderSitesMap = new Map<string, { status: (SiteWorkStatus | ArsStatus), isFinal: boolean }[]>();
 
         allFileEntries.forEach(file => {
             file.siteDetails?.forEach(site => {
                 if (site.tenderNo && site.workStatus) {
-                    if (!tenderSitesMap.has(site.tenderNo)) {
-                        tenderSitesMap.set(site.tenderNo, []);
+                    const normalizedTenderNo = site.tenderNo.trim().toUpperCase();
+                    if (!tenderSitesMap.has(normalizedTenderNo)) {
+                        tenderSitesMap.set(normalizedTenderNo, []);
                     }
-                    tenderSitesMap.get(site.tenderNo)!.push({
+                    tenderSitesMap.get(normalizedTenderNo)!.push({
                         status: site.workStatus,
                         isFinal: completedOrFinalStatuses.includes(site.workStatus as any)
                     });
@@ -222,10 +227,11 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
 
         allArsEntries.forEach(ars => {
             if (ars.arsTenderNo && ars.arsStatus) {
-                if (!tenderSitesMap.has(ars.arsTenderNo)) {
-                    tenderSitesMap.set(ars.arsTenderNo, []);
+                const normalizedTenderNo = ars.arsTenderNo.trim().toUpperCase();
+                if (!tenderSitesMap.has(normalizedTenderNo)) {
+                    tenderSitesMap.set(normalizedTenderNo, []);
                 }
-                tenderSitesMap.get(ars.arsTenderNo)!.push({
+                tenderSitesMap.get(normalizedTenderNo)!.push({
                     status: ars.arsStatus,
                     isFinal: completedOrFinalStatuses.includes(ars.arsStatus as any)
                 });
@@ -239,8 +245,8 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             }
         });
 
-        const activeList = mappedData.filter(row => !completedTenderNos.has(row.eTenderNo));
-        const completedList = mappedData.filter(row => completedTenderNos.has(row.eTenderNo));
+        const activeList = mappedData.filter(row => !completedTenderNos.has(row.eTenderNo.trim().toUpperCase()));
+        const completedList = mappedData.filter(row => completedTenderNos.has(row.eTenderNo.trim().toUpperCase()));
 
         const sortList = (list: WorkOrderRow[]) => {
             if (!sortConfig) return list;
