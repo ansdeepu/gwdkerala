@@ -442,9 +442,9 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
                             <div className="px-6 border-b shrink-0 bg-background/50">
                                 <TabsList className="grid w-full grid-cols-3 max-w-[450px] h-8">
-                                    <TabsTrigger value="active" className="text-xs h-7">Active (Work) ({workOrderData.active.length})</TabsTrigger>
+                                    <TabsTrigger value="active" className="text-xs h-7">Ongoing Works ({workOrderData.active.length})</TabsTrigger>
+                                    <TabsTrigger value="completed" className="text-xs h-7">Completed Works ({workOrderData.completed.length})</TabsTrigger>
                                     <TabsTrigger value="purchase" className="text-xs h-7">Purchase ({workOrderData.purchase.length})</TabsTrigger>
-                                    <TabsTrigger value="completed" className="text-xs h-7">Completed ({workOrderData.completed.length})</TabsTrigger>
                                 </TabsList>
                             </div>
                             <div className="flex-1 min-h-0 overflow-hidden">
@@ -452,11 +452,11 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                     <TabsContent value="active" className="m-0 border-0 p-0 outline-none">
                                         {renderTable(workOrderData.active)}
                                     </TabsContent>
-                                    <TabsContent value="purchase" className="m-0 border-0 p-0 outline-none">
-                                        {renderTable(workOrderData.purchase, true)}
-                                    </TabsContent>
                                     <TabsContent value="completed" className="m-0 border-0 p-0 outline-none">
                                         {renderTable(workOrderData.completed)}
+                                    </TabsContent>
+                                    <TabsContent value="purchase" className="m-0 border-0 p-0 outline-none">
+                                        {renderTable(workOrderData.purchase, true)}
                                     </TabsContent>
                                 </ScrollArea>
                             </div>
@@ -701,7 +701,7 @@ export default function ETenderListPage() {
             filtered.sort((a, b) => {
                 const dateA = toDateOrNull(a.tenderDate)?.getTime() ?? 0;
                 const dateB = toDateOrNull(b.tenderDate)?.getTime() ?? 0;
-                if (dateA !== dateB) return dateB - dateA;
+                if (dateA !== dateB) return dateB - a.tenderDate;
                 
                 const getTenderNumber = (tenderNo: string | undefined | null): number => {
                     if (!tenderNo) return 0;
@@ -1147,4 +1147,3 @@ export default function ETenderListPage() {
         </div>
     );
 }
-
