@@ -929,9 +929,13 @@ export default function LoggingPumpingTestDataEntryFormComponent({ fileNoToEdit,
 
     const handleCopySite = (index: number) => {
         const siteToCopy = getValues(`siteDetails.${index}`);
-        const clonedSite = { ...JSON.parse(JSON.stringify(siteToCopy)), id: uuidv4() };
+        const clonedSite = { 
+            ...JSON.parse(JSON.stringify(siteToCopy)), 
+            id: uuidv4(),
+            nameOfSite: `${siteToCopy.nameOfSite} - COPY`
+        };
         appendSite(clonedSite);
-        toast({ title: "Site Cloned", description: `Cloned Site #${index + 1}` });
+        toast({ title: "Site Cloned", description: `A copy of Site #${index + 1} has been created.` });
     };
 
   const isDeferredFunding = workTypeContext === 'planFund' || workTypeContext === 'collector';

@@ -1,3 +1,4 @@
+
 // src/components/investigation/InvestigationDataEntryForm.tsx
 "use client";
 
@@ -712,7 +713,7 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
                 let sourcePageType = "Deposit Work";
                 if (hasInvestigation && !hasLoggingPumping) sourcePageType = "GW Investigation";
                 else if (hasLoggingPumping && !hasInvestigation) sourcePageType = "Logging & Pumping Test";
-
+                
                 const parentRemittanceAccount = entry.remittanceDetails?.[0]?.remittedAccount || 'N/A';
 
                 credits.push({
@@ -942,9 +943,13 @@ export default function InvestigationDataEntryFormComponent({ fileNoToEdit, init
 
     const handleCopySite = (index: number) => {
         const siteToCopy = getValues(`siteDetails.${index}`);
-        const clonedSite = { ...JSON.parse(JSON.stringify(siteToCopy)), id: uuidv4() };
+        const clonedSite = { 
+            ...JSON.parse(JSON.stringify(siteToCopy)), 
+            id: uuidv4(),
+            nameOfSite: `${siteToCopy.nameOfSite} - COPY`
+        };
         appendSite(clonedSite);
-        toast({ title: "Site Cloned", description: `Cloned Site #${index + 1}` });
+        toast({ title: "Site Cloned", description: `A copy of Site #${index + 1} has been created.` });
     };
 
   const isDeferredFunding = workTypeContext === 'planFund' || workTypeContext === 'collector';
