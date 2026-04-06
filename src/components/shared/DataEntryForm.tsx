@@ -642,16 +642,11 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const isEditing = !!fileNoToEdit;
 
   const showReappropriation = useMemo(() => {
-    if (isEditing) return true;
-    if (
-        workTypeContext === 'collector' ||
-        workTypeContext === 'private' ||
-        workTypeContext === 'planFund'
-    ) {
+    if (workTypeContext === 'collector' || workTypeContext === 'private' || workTypeContext === 'planFund') {
         return false;
     }
     return true;
-  }, [isEditing, workTypeContext]);
+  }, [workTypeContext]);
 
   const siteDetailsSectionNumber = showReappropriation ? 4 : 3;
   const paymentDetailsSectionNumber = showReappropriation ? 5 : 4;
@@ -1034,9 +1029,13 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 </TableRow>)) : <TableRow><TableCell colSpan={4 + paymentFieldsToDisplay.length + (isEditor && !isFormDisabled ? 1 : 0)} className="text-center h-24">No payments added.</TableCell></TableRow>}</TableBody><TableFooterComponent><TableRow><TableCell colSpan={2 + paymentFieldsToDisplay.length} className="text-right font-bold">Total Payment</TableCell><TableCell className="font-bold text-right">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</TableCell><TableCell colSpan={isEditor && !isFormDisabled ? 2 : 1}></TableCell></TableRow></TableFooterComponent></Table></CardContent></Card>
             <Card><CardHeader><CardTitle className="text-xl">{finalDetailsSectionNumber}. Final Details</CardTitle></CardHeader><CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6"><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><h3 className="font-semibold text-lg text-primary">Financial Summary</h3><dl className="space-y-2">
                 <div className="flex justify-between items-baseline"><dt>Total Remittance</dt><dd className="font-mono">₹{totalRemittanceWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>
+                {showReappropriation && (
+                    <div className="flex justify-between items-baseline text-green-600 font-semibold"><dt>Total Re-appropriation credit</dt><dd className="font-mono font-bold">₹{(totalReappropriationCreditWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</dd></div>
+                )}
                 <div className="flex justify-between items-baseline"><dt>Total Payment</dt><dd className="font-mono">₹{totalPaymentWatched?.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
-                <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
+                {showReappropriation && (
+                    <div className="flex justify-between items-baseline text-red-600 font-semibold"><dt>Total Re-appropriation debit</dt><dd className="font-mono font-bold">₹{(totalReappropriationWatched || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div>
+                )}
                 <Separator /><div className="flex justify-between items-baseline font-bold"><dt>Overall Balance</dt><dd className="font-mono text-xl">₹{(watch('overallBalance') || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</dd></div></dl></div><div className="p-4 border rounded-lg space-y-4 bg-secondary/30"><FormField control={control} name="fileStatus" render={({ field }) => <FormItem><FormLabel>File Status <span className="text-destructive">*</span></FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={isViewer || isFormDisabled || isSupervisor}><FormControl><SelectTrigger><SelectValue placeholder="Select final file status" /></SelectTrigger></FormControl><SelectContent>{DEPOSIT_WORK_FILE_STATUS_OPTIONS.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} /><FormField control={control} name="remarks" render={({ field }) => <FormItem><FormLabel>Final Remarks</FormLabel><FormControl><Textarea {...field} value={field.value ?? ''} placeholder="Final remarks..." readOnly={isViewer || isFormDisabled || isSupervisor} /></FormControl><FormMessage /></FormItem>} /></div></CardContent></Card>
             <CardFooter className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => router.push(returnPath)} disabled={isSubmitting}>
@@ -1072,7 +1071,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             <DialogHeader className="p-6 pb-4 border-b">
               <DialogTitle>Re-appropriation Credit Planning</DialogTitle>
             </DialogHeader>
-            <div className="px-6 py-4 text-sm text-muted-foreground space-y-3">
+            <div className="p-6 text-sm text-muted-foreground space-y-3">
               <p>Entry of re-appropriation credits cannot be added manually.</p>
               <p>If this work depends on funds from another file, please first save this file without adding site details. Then, go to the source file and perform an “Outward” re-appropriation, specifying this file number as the target.</p>
               <p>Once the credit appears here, you may return to add the site details.</p>
