@@ -21,6 +21,9 @@ import {
   typeOfWellOptions,
   PRIVATE_APPLICATION_TYPES,
   LOGGING_PUMPING_TEST_PURPOSE_OPTIONS,
+  PUBLIC_DEPOSIT_APPLICATION_TYPES,
+  COLLECTOR_APPLICATION_TYPES,
+  PLAN_FUND_APPLICATION_TYPES,
 } from '@/lib/schemas';
 import ExcelJS from "exceljs";
 import { useToast } from '@/hooks/use-toast';
@@ -773,7 +776,7 @@ export default function ProgressReportPage() {
         ).map((item, index) => ({...item, slNo: index + 1}));
     } else {
          columns = [ { key: 'slNo', label: 'Sl. No.' }, { key: 'fileNo', label: 'File No.' }, { key: 'applicantName', label: 'Applicant' }, { key: 'nameOfSite', label: 'Site Name' }, { key: 'purpose', label: 'Purpose' }, { key: 'workStatus', label: 'Work Status' }, ];
-         dialogData = (data as SiteDetailWithFileContext[]).map((site, index) => ({ slNo: index + 1, fileNo: site.fileNo, applicantName: site.applicantName, nameOfSite: site.nameOfSite, purpose: site.purpose, workStatus: site.workStatus }));
+         dialogData = (data as SiteDetailWithFileContext[]).map((site, index) => ({ slNo: index + 1, fileNo: site.fileNo, applicantName: site.applicantName, nameOfSite: site.nameOfSite, purpose: site.purpose, workStatus: site.workStatus, id: (site as any).id }));
     }
     
     setDetailDialogColumns(columns);
@@ -824,6 +827,51 @@ export default function ProgressReportPage() {
               fpwBalance: calculateTotalBalanceForDiameter(reportData.fpwData, "110 mm (4.5”)"),
           };
       }, [reportData]);
+
+  const handleFileNoClick = (row: any) => {
+    const fileNo = row.fileNo;
+    if (!fileNo || fileNo === 'N/A' || fileNo === '-') return;
+
+    // Check if it's an ARS Scheme (from module)
+    if (row.applicantName === 'ARS Scheme' && row.id) {
+      window.open(`/dashboard/ars/entry?id=${row.id}`, '_blank');
+      return;
+    }
+
+    // Find the entry in the existing fileEntries
+    const entry = fileEntries.find(e => e.fileNo === fileNo);
+    if (entry && entry.id) {
+      const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
+      const hasLoggingPumpingPurpose = entry.siteDetails?.some(site => site.purpose && LOGGING_PUMPING_TEST_PURPOSE_OPTIONS.includes(site.purpose as any));
+
+      let workType = '';
+      const appType = entry.applicationType as ApplicationType;
+
+      if (hasInvestigationPurpose && !hasLoggingPumpingPurpose) {
+          workType = 'gwInvestigation';
+      } else if (hasLoggingPumpingPurpose && !hasInvestigationPurpose) {
+          workType = 'loggingPumpingTest';
+      } else if (appType && (PUBLIC_DEPOSIT_APPLICATION_TYPES as any).includes(appType)) {
+          workType = 'public';
+      } else if (appType && (PRIVATE_APPLICATION_TYPES as any).includes(appType)) {
+          workType = 'private';
+      } else if (appType && (COLLECTOR_APPLICATION_TYPES as any).includes(appType)) {
+          workType = 'collector';
+      } else if (appType && (PLAN_FUND_APPLICATION_TYPES as any).includes(appType)) {
+          workType = 'planFund';
+      } else {
+          workType = 'public';
+      }
+
+      const queryParams = new URLSearchParams({ id: entry.id });
+      if (workType) queryParams.set('workType', workType);
+      
+      window.open(`/dashboard/data-entry?${queryParams.toString()}`, '_blank');
+      return;
+    }
+
+    toast({ title: "Record Not Found", description: "The source record for this File No could not be identified.", variant: "destructive" });
+  };
 
   if (entriesLoading) {
     return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -1009,7 +1057,21 @@ export default function ProgressReportPage() {
                   <TableBody>
                     {detailDialogData.map((row, rowIndex) => (
                       <TableRow key={rowIndex}>
-                        {detailDialogColumns.map(col => <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>{(row as any)[col.key]}</TableCell>)}
+                        {detailDialogColumns.map(col => (
+                          <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>
+                            {col.key === 'fileNo' ? (
+                              <Button 
+                                variant="link" 
+                                className="p-0 h-auto font-mono text-xs text-primary font-bold hover:underline" 
+                                onClick={() => handleFileNoClick(row)}
+                              >
+                                {(row as any)[col.key]}
+                              </Button>
+                            ) : (
+                              (row as any)[col.key]
+                            )}
+                          </TableCell>
+                        ))}
                       </TableRow>
                     ))}
                   </TableBody>
