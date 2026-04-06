@@ -21,6 +21,7 @@ import {
 } from '@/lib/schemas';
 import type { ArsEntry } from '@/hooks/useArsEntries';
 import { FileDown } from 'lucide-react';
+import type { UserProfile } from '@/hooks/useAuth';
 
 interface DetailDialogColumn {
   key: string;
@@ -42,9 +43,10 @@ interface DashboardDialogsProps {
   allFileEntries: DataEntryFormData[];
   allArsEntries: ArsEntry[];
   financeDates?: { start?: Date, end?: Date };
+  currentUser?: UserProfile | null;
 }
 
-export default function DashboardDialogs({ dialogState, setDialogState, allFileEntries, allArsEntries, financeDates }: DashboardDialogsProps) {
+export default function DashboardDialogs({ dialogState, setDialogState, allFileEntries, allArsEntries, financeDates, currentUser }: DashboardDialogsProps) {
   const { toast } = useToast();
   const { isOpen, title, data, columns, type } = dialogState;
   
@@ -164,6 +166,9 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
     toast({ title: "Excel Exported" });
   };
   
+  const userRole = currentUser?.role;
+  const isFileNoClickable = userRole !== 'superAdmin' && userRole !== 'investigator' && userRole !== 'supervisor';
+  
   return (
     <Dialog open={isOpen} onOpenChange={(open) => setDialogState({ ...dialogState, isOpen: open })}>
       <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-4xl p-0 flex flex-col h-[90vh]">
@@ -190,13 +195,17 @@ export default function DashboardDialogs({ dialogState, setDialogState, allFileE
                         {columns.map(col => (
                           <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>
                             {col.key === 'fileNo' ? (
-                              <Button 
-                                variant="link" 
-                                className="p-0 h-auto font-mono text-xs text-primary font-bold hover:underline" 
-                                onClick={() => handleFileNoClick(row)}
-                              >
-                                {row[col.key]}
-                              </Button>
+                                <Button 
+                                    variant="link" 
+                                    className={cn(
+                                        "p-0 h-auto font-mono text-xs text-primary font-bold",
+                                        isFileNoClickable ? "hover:underline" : "cursor-default hover:no-underline text-primary/80"
+                                    )}
+                                    onClick={() => isFileNoClickable && handleFileNoClick(row)}
+                                    disabled={!isFileNoClickable}
+                                >
+                                    {row[col.key]}
+                                </Button>
                             ) : (
                               row[col.key]
                             )}

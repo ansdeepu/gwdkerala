@@ -332,6 +332,7 @@ export default function SuperAdminDashboardPage() {
           allFileEntries={allFileEntries}
           allArsEntries={allArsEntries}
           financeDates={financeDates}
+          currentUser={currentUser}
         />
 
         {showScrollTop && (

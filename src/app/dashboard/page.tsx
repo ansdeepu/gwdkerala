@@ -1,4 +1,3 @@
-
 // src/app/dashboard/page.tsx
 "use client";
 
@@ -412,6 +411,7 @@ export default function DashboardPage() {
           allFileEntries={dashboardData.allFileEntries}
           allArsEntries={arsEntries}
           financeDates={financeDates}
+          currentUser={currentUser}
         />
 
         {showScrollTop && (
@@ -429,5 +429,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

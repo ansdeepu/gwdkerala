@@ -1,6 +1,5 @@
 // src/app/dashboard/progress-report/page.tsx
 "use client";
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
@@ -38,6 +37,7 @@ import { generateProgressReportPdf } from '@/components/reports/pdf/progressRepo
 import download from 'downloadjs';
 import { useDataStore } from '@/hooks/use-data-store';
 import { Play, XCircle, FileDown, Loader2, Landmark, CheckCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 
 export const dynamic = 'force-dynamic';
@@ -328,6 +328,7 @@ const calculatePaymentEntryTotalGlobal = (payment: any): number => {
 
 export default function ProgressReportPage() {
   const { setHeader } = usePageHeader();
+  const { user } = useAuth();
   const { reportEntries: fileEntries, isReportLoading: entriesLoading } = useAllFileEntriesForReports();
   const { officeAddress } = useDataStore();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -829,6 +830,11 @@ export default function ProgressReportPage() {
       }, [reportData]);
 
   const handleFileNoClick = (row: any) => {
+    const userRole = user?.role;
+    if (userRole === 'superAdmin' || userRole === 'investigator' || userRole === 'supervisor') {
+        return;
+    }
+
     const fileNo = row.fileNo;
     if (!fileNo || fileNo === 'N/A' || fileNo === '-') return;
 
@@ -872,6 +878,9 @@ export default function ProgressReportPage() {
 
     toast({ title: "Record Not Found", description: "The source record for this File No could not be identified.", variant: "destructive" });
   };
+  
+  const userRole = user?.role;
+  const isFileNoClickable = userRole !== 'superAdmin' && userRole !== 'investigator' && userRole !== 'supervisor';
 
   if (entriesLoading) {
     return <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -1059,7 +1068,7 @@ export default function ProgressReportPage() {
                       <TableRow key={rowIndex}>
                         {detailDialogColumns.map(col => (
                           <TableCell key={col.key} className={cn('text-xs', col.isNumeric && 'text-right font-mono')}>
-                            {col.key === 'fileNo' ? (
+                            {col.key === 'fileNo' && isFileNoClickable ? (
                               <Button 
                                 variant="link" 
                                 className="p-0 h-auto font-mono text-xs text-primary font-bold hover:underline" 
@@ -1085,7 +1094,7 @@ export default function ProgressReportPage() {
               <DialogClose asChild>
                   <Button type="button" variant="secondary">Close</Button>
               </DialogClose>
-          </DialogFooter>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
