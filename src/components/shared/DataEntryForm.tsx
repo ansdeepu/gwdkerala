@@ -935,14 +935,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
 
     const handleCopySite = (index: number) => {
         const siteToCopy = getValues(`siteDetails.${index}`);
-        if (!siteToCopy) {
-            toast({
-                title: "Copy Failed",
-                description: "Could not find site data to copy.",
-                variant: "destructive"
-            });
-            return;
-        }
+        if (!siteToCopy) return;
         const clonedSite = { 
             ...JSON.parse(JSON.stringify(siteToCopy)), 
             id: uuidv4(),
@@ -1079,12 +1072,12 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
             <DialogHeader className="p-6 pb-4 border-b">
               <DialogTitle>Re-appropriation Credit Planning</DialogTitle>
             </DialogHeader>
-            <div className="p-6 pt-0 text-sm text-muted-foreground space-y-3">
+            <div className="px-6 py-4 text-sm text-muted-foreground space-y-3">
               <p>Entry of re-appropriation credits cannot be added manually.</p>
               <p>If this work depends on funds from another file, please first save this file without adding site details. Then, go to the source file and perform an “Outward” re-appropriation, specifying this file number as the target.</p>
               <p>Once the credit appears here, you may return to add the site details.</p>
             </div>
-            <DialogFooter className="p-6 pt-4 border-t">
+            <DialogFooter className="p-6 pt-4 border-t shrink-0">
               <DialogClose asChild>
                 <Button type="button">Close</Button>
               </DialogClose>
