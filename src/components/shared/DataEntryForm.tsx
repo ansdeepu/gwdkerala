@@ -536,7 +536,8 @@ const PaymentDialogContent = ({ initialData, onConfirm, onCancel, isDeferredFund
     }, [watchedValues]);
     
     const handleConfirmSubmit = (data: PaymentDetailFormData) => {
-        onConfirm({ ...data, totalPaymentPerEntry: totalAmount });
+        const paymentAmount = calculatePaymentEntryTotalGlobal(data);
+        onConfirm({ ...data, totalPaymentPerEntry: paymentAmount });
     };
 
     const isLinkedToRemittance = !!initialData?.remittanceId;
@@ -633,6 +634,7 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
   const [activeAccordionItem, setActiveAccordionItem] = useState<string | undefined>(undefined);
   const [reappAccordionValue, setReappAccordionValue] = useState<string | undefined>(undefined);
   const [dialogState, setDialogState] = useState<{ type: null | 'application' | 'remittance' | 'reappropriation' | 'payment' | 'site' | 'reorderSite' | 'viewSite'; data: any, isView?: boolean }>({ type: null, data: null, isView: false });
+  const [isReappInfoOpen, setIsReappInfoOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'remittance' | 'reappropriation' | 'payment' | 'site'; index: number } | null>(null);
 
   const isEditor = userRole === 'admin' || userRole === 'engineer';
@@ -873,14 +875,11 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 appendReappropriation(data);
             }
         } else if (type === 'payment') {
-            // Need to recalculate total before setting
-            const paymentAmount = (Number(data.revenueHead) || 0) + (Number(data.contractorsPayment) || 0) + (Number(data.gst) || 0) + (Number(data.incomeTax) || 0) + (Number(data.kbcwb) || 0) + (Number(data.refundToParty) || 0);
-            const finalPaymentData = { ...data, totalPaymentPerEntry: paymentAmount };
-
+            const paymentData = { ...data, totalPaymentPerEntry: calculatePaymentEntryTotalGlobal(data) };
             if (originalData.index !== undefined) {
-                updatePayment(originalData.index, finalPaymentData);
+                updatePayment(originalData.index, paymentData);
             } else {
-                appendPayment(finalPaymentData);
+                appendPayment(paymentData);
             }
         } else if (type === 'site') {
             if (originalData.index !== undefined) updateSite(originalData.index, data); else appendSite(data);
@@ -968,21 +967,24 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                   <AccordionTrigger className="w-full p-6 hover:no-underline [&[data-state=open]]:border-b">
                     <div className="flex flex-1 items-center justify-between">
                       <CardTitle className="text-xl">3. Re-appropriation Details</CardTitle>
-                      {isEditor && !isFormDisabled && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openDialog('reappropriation', createDefaultReappropriationDetail());
-                          }}
-                          disabled={isSupervisor || isViewer}
-                        >
-                          <PlusCircle className="mr-2 h-4 w-4 mr-2" />
-                          Add
-                        </Button>
-                      )}
+                        <div className="flex items-center gap-2">
+                           <Button type="button" variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setIsReappInfoOpen(true); }}><Info className="h-4 w-4 mr-2" />Info</Button>
+                          {isEditor && !isFormDisabled && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDialog('reappropriation', createDefaultReappropriationDetail());
+                              }}
+                              disabled={isSupervisor || isViewer}
+                            >
+                              <PlusCircle className="mr-2 h-4 w-4" />
+                              Add
+                            </Button>
+                          )}
+                        </div>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
@@ -1114,6 +1116,23 @@ export default function DataEntryFormComponent({ fileNoToEdit, initialData, supe
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+        <Dialog open={isReappInfoOpen} onOpenChange={setIsReappInfoOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="p-6 pb-4">
+              <DialogTitle>Re-appropriation Credit Planning</DialogTitle>
+            </DialogHeader>
+            <div className="p-6 pt-0 text-sm text-muted-foreground space-y-3">
+              <p>Entry of re-appropriation credits cannot be added manually.</p>
+              <p>If this work depends on funds from another file, please first save this file without adding site details. Then, go to the source file and perform an “Outward” re-appropriation, specifying this file number as the target.</p>
+              <p>Once the credit appears here, you may return to add the site details.</p>
+            </div>
+            <DialogFooter className="p-6 pt-4">
+              <DialogClose asChild>
+                <Button type="button">Close</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </FormProvider>
   );
