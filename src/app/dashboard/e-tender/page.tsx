@@ -577,7 +577,7 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl">
-                <DialogHeader>
+                <DialogHeader className="p-6 pb-4">
                     <DialogTitle>Tender Summary: {tenderRefNo}</DialogTitle>
                     <DialogDescription>
                         A quick overview of the key details for this tender.
@@ -610,7 +610,7 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
                         </div>
                     </div>
                 </div>
-                <DialogFooter>
+                <DialogFooter className="p-6 pt-4">
                     <DialogClose asChild><Button>Close</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
