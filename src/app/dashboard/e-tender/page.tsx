@@ -522,24 +522,45 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     );
 }
 
-const TenderDetailRow = ({ label, value, subValue, isLink }: { label: string; value: any; subValue?: string; isLink?: boolean }) => {
-    if (value === null || value === undefined || value === '') return null;
+const TenderDetailRow = ({ label, value, subValue, isCurrency = false, align = 'left', isLink = false, isReceiptFormat = false, isOpeningFormat = false }: { label: string; value: any; subValue?: string; isCurrency?: boolean, align?: 'left' | 'center' | 'right', isLink?: boolean, isReceiptFormat?: boolean, isOpeningFormat?: boolean }) => {
+    if (value === null || value === undefined || value === '' || (typeof value === 'number' && isNaN(value))) {
+        return null;
+    }
+  
     let displayValue: string;
-    if (label.toLowerCase().includes('date') || label.toLowerCase().includes('receipt') || label.toLowerCase().includes('opening')) {
-        displayValue = formatDateSafe(value, true);
+    if (label.toLowerCase().includes('date') || isReceiptFormat || isOpeningFormat) {
+        const isTimeIncluded = label.toLowerCase().includes('time') || isReceiptFormat || isOpeningFormat;
+        
+        // This combines all logic into one call
+        const formatted = formatDateSafe(value, isTimeIncluded, isReceiptFormat, isOpeningFormat);
+
+        if (formatted === 'N/A' && value) {
+            displayValue = String(value);
+        } else if (formatted !== 'N/A') {
+            displayValue = formatted;
+        } else {
+            return null;
+        }
     } else if (typeof value === 'number') {
-        displayValue = value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (isCurrency) {
+            displayValue = `Rs. ${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        } else {
+            displayValue = value.toLocaleString('en-IN');
+        }
     } else {
         displayValue = String(value);
     }
   
     return (
-      <div className="space-y-1">
+      <div className={cn(align === 'center' && 'text-center')}>
           <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-          <dd className="text-sm font-semibold">
+          <dd className={cn(
+              "text-sm font-semibold",
+              label.toLowerCase().includes('malayalam') && "text-xs",
+          )}>
               {isLink ? (
                   <a href={displayValue} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
-                      <LinkIcon className="h-4 w-4"/>
+                      <LinkIcon className="h-3 w-3"/>
                       <span>Open Link</span>
                   </a>
                 ) : (
@@ -591,44 +612,44 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl p-0">
-                 <DialogHeader className="p-6 pb-4 border-b">
+                 <DialogHeader className="p-4 border-b">
                     <DialogTitle className="text-xl">{tenderRefNo}</DialogTitle>
                 </DialogHeader>
-                <div className="p-6 space-y-6">
-                    <div className="py-2">
-                        <h4 className="font-semibold mb-3">Tender Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                <div className="p-4 space-y-3">
+                    <div>
+                        <h4 className="text-sm font-semibold mb-2 text-primary">Tender Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
                             <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
-                            <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
-                            <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} />
+                            <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} isCurrency />
+                            <TenderDetailRow label="EMD (Rs.)" value={tender.emd} isCurrency/>
+                            <TenderDetailRow label="Last Date & Time of Receipt" value={formatDateSafe(tender.dateTimeOfReceipt, true)} />
+                            <TenderDetailRow label="Date & Time of Opening" value={formatDateSafe(tender.dateTimeOfOpening, true)} />
                             <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} />
-                            <TenderDetailRow label="EMD (Rs.)" value={tender.emd} />
                         </div>
                     </div>
                      <Separator />
-                     <div className="py-2">
-                        <h4 className="font-semibold mb-3">Key Dates</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                            <TenderDetailRow label="Last Date & Time of Receipt" value={formatDateSafe(tender.dateTimeOfReceipt, true)} />
-                            <TenderDetailRow label="Date & Time of Opening" value={formatDateSafe(tender.dateTimeOfOpening, true)} />
+                     <div>
+                        <h4 className="text-sm font-semibold mb-2 text-primary">Work Details</h4>
+                         <div className="space-y-1">
+                            <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
                         </div>
                     </div>
                     <Separator />
-                    <div className="py-2">
-                        <h4 className="font-semibold mb-3">Financial & Order Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-                             <TenderDetailRow label="L1 Amount" value={l1Amount} />
+                    <div>
+                        <h4 className="text-sm font-semibold mb-2 text-primary">Financial & Order Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+                             <TenderDetailRow label="L1 Amount" value={l1Amount} isCurrency />
                             <TenderDetailRow label="Selection Notice Date" value={tender.selectionNoticeDate} />
-                            <TenderDetailRow label="Performance Guarantee Amount" value={tender.performanceGuaranteeAmount} />
-                            <TenderDetailRow label="Additional Performance Guarantee Amount" value={tender.additionalPerformanceGuaranteeAmount} />
-                            <TenderDetailRow label="Stamp Paper required" value={tender.stampPaperAmount} />
+                            <TenderDetailRow label="Performance Guarantee Amount" value={tender.performanceGuaranteeAmount} isCurrency />
+                            <TenderDetailRow label="Additional Performance Guarantee Amount" value={tender.additionalPerformanceGuaranteeAmount} isCurrency />
+                            <TenderDetailRow label="Stamp Paper required" value={tender.stampPaperAmount} isCurrency />
                             <TenderDetailRow label="Date - Work / Supply Order" value={tender.dateWorkOrder} />
                         </div>
                     </div>
                      <Separator />
-                     <div className="py-2">
-                        <h4 className="font-semibold mb-3">Assigned Staff</h4>
-                        <div className="grid grid-cols-1 gap-x-6 gap-y-4">
+                     <div>
+                        <h4 className="text-sm font-semibold mb-2 text-primary">Assigned Staff</h4>
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-2">
                             <TenderDetailRow label="Supervisors" value={supervisors} />
                         </div>
                     </div>
@@ -1094,9 +1115,9 @@ export default function ETenderListPage() {
                                     <TableRow>
                                         <TableHead className="w-[4%] px-2 py-3 text-sm">Sl. No.</TableHead>
                                         <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>
-                                        <TableHead className="w-[38%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
-                                        <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
-                                        <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
+                                        <TableHead className="w-[28%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
+                                        <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
+                                        <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
                                         <TableHead className="w-[10%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('presentStatus')}>Status {getSortIcon('presentStatus')}</Button></TableHead>
                                         <TableHead className="text-center w-[8%] px-2 py-3">Actions</TableHead>
                                     </TableRow>
@@ -1122,8 +1143,8 @@ export default function ETenderListPage() {
                                                             {hasRetenders && <Badge variant="secondary" className="mt-1 w-fit bg-yellow-200 text-yellow-800">Re-tender</Badge>}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3 w-[38%]">{tender.nameOfWork}</TableCell>
-                                                    <TableCell className="align-top py-2 px-3 w-[12%]">
+                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3 w-[28%]">{tender.nameOfWork}</TableCell>
+                                                    <TableCell className="align-top py-2 px-3 w-[14%] whitespace-nowrap">
                                                         {lastDateOfReceipt ? (
                                                             <div className="flex flex-col text-xs">
                                                                 <span>{format(toDateOrNull(lastDateOfReceipt)!, 'dd/MM/yyyy')}</span>
@@ -1131,7 +1152,7 @@ export default function ETenderListPage() {
                                                             </div>
                                                         ) : 'N/A'}
                                                     </TableCell>
-                                                    <TableCell className="align-top py-2 px-3 w-[12%]">
+                                                    <TableCell className="align-top py-2 px-3 w-[14%] whitespace-nowrap">
                                                         {dateOfOpening ? (
                                                             <div className="flex flex-col text-xs">
                                                                 <span>{format(toDateOrNull(dateOfOpening)!, 'dd/MM/yyyy')}</span>
