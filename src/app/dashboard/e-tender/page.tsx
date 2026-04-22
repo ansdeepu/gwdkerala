@@ -30,6 +30,7 @@ import ExcelJS from 'exceljs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { DataEntryFormData } from '@/lib/schemas';
 import type { ArsEntry } from '@/hooks/useArsEntries';
+import { Separator } from '@/components/ui/separator';
 
 
 const ITEMS_PER_PAGE = 50;
@@ -100,7 +101,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     const { updateTender: updateTenderInDb } = useE_tenders();
     const { toast } = useToast();
     const [sortConfig, setSortConfig] = useState<{ key: WorkOrderSortKey; direction: 'asc' | 'desc' } | null>(null);
-    const [activeTab, setActiveTab] = useState('active');
+    const [activeTab, setActiveTab] = useState('ongoingWorks');
     const [sitesForTender, setSitesForTender] = useState<{ tenderNo: string; sites: any[] } | null>(null);
     
     const requestSort = (key: WorkOrderSortKey) => {
@@ -575,33 +576,40 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-4xl">
                 <DialogHeader>
                     <DialogTitle>Tender Summary: {tenderRefNo}</DialogTitle>
                     <DialogDescription>
                         A quick overview of the key details for this tender.
                     </DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="max-h-[60vh] pr-6">
-                    <div className="space-y-2 py-4">
+                <div className="space-y-4 py-4 px-6">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                         <TenderDetailRow label="File No." value={tender.fileNo} />
                         <TenderDetailRow label="eTender No." value={tender.eTenderNo} />
                         <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
-                        <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
                         <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} isCurrency />
                         <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} isCurrency />
                         <TenderDetailRow label="EMD (Rs.)" value={tender.emd} isCurrency />
                         <TenderDetailRow label="Last Date & Time of Receipt" value={tender.dateTimeOfReceipt} isReceiptFormat />
                         <TenderDetailRow label="Date & Time of Opening" value={tender.dateTimeOfOpening} isOpeningFormat />
+                        <div className="md:col-span-2">
+                            <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
+                        </div>
+                        <div className="md:col-span-2">
+                            <Separator />
+                        </div>
                         <TenderDetailRow label="L1 Amount" value={l1Amount} isCurrency />
                         <TenderDetailRow label="Selection Notice Date" value={tender.selectionNoticeDate} />
                         <TenderDetailRow label="Performance Guarantee Amount" value={tender.performanceGuaranteeAmount} isCurrency />
                         <TenderDetailRow label="Additional Performance Guarantee Amount" value={tender.additionalPerformanceGuaranteeAmount} isCurrency />
                         <TenderDetailRow label="Stamp Paper required" value={tender.stampPaperAmount} isCurrency />
                         <TenderDetailRow label="Date - Work / Supply Order" value={tender.dateWorkOrder} />
-                        <TenderDetailRow label="Supervisors" value={supervisors} />
+                        <div className="md:col-span-2">
+                            <TenderDetailRow label="Supervisors" value={supervisors} />
+                        </div>
                     </div>
-                </ScrollArea>
+                </div>
                 <DialogFooter>
                     <DialogClose asChild><Button>Close</Button></DialogClose>
                 </DialogFooter>
@@ -653,9 +661,7 @@ export default function ETenderListPage() {
     const searchParams = useSearchParams();
 
     useEffect(() => {
-        if (searchParams.get('id')) {
-            // Don't clear search term if we are on a detail view
-        } else {
+        if (!searchParams.get('id')) {
             localStorage.setItem('eTenderSearchTerm', searchTerm);
         }
     }, [searchTerm, searchParams]);
