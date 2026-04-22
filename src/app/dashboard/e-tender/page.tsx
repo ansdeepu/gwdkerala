@@ -583,13 +583,13 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl">
-                <DialogHeader className="p-4 pb-2">
+            <DialogContent className="sm:max-w-4xl p-0">
+                <DialogHeader className="p-6 pb-2">
                     <DialogTitle>{tenderRefNo}</DialogTitle>
                 </DialogHeader>
                 <div className="py-2 px-6">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                        <DetailRow label="Tender Date" value={tender.tenderDate} />
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
+                        <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
                         <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} isCurrency />
                         <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} isCurrency />
                         <TenderDetailRow label="EMD (Rs.)" value={tender.emd} isCurrency />
@@ -612,7 +612,7 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
                         </div>
                     </div>
                 </div>
-                <DialogFooter className="p-6 pt-4">
+                <DialogFooter className="p-6 pt-4 mt-2 border-t">
                     <DialogClose asChild><Button>Close</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
@@ -663,10 +663,8 @@ export default function ETenderListPage() {
     const searchParams = useSearchParams();
 
     useEffect(() => {
-        if (!searchParams.get('id')) {
-            localStorage.setItem('eTenderSearchTerm', searchTerm);
-        }
-    }, [searchTerm, searchParams]);
+        localStorage.setItem('eTenderSearchTerm', searchTerm);
+    }, [searchTerm]);
 
     React.useEffect(() => {
         setHeader('e-Tenders', 'Manage all electronic tenders for the department.');
