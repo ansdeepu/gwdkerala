@@ -522,7 +522,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     );
 }
 
-const TenderDetailRow = ({ label, value, subValue, isCurrency = false, align = 'left', isLink = false, isReceiptFormat = false, isOpeningFormat = false }: { label: string; value: any; subValue?: string; isCurrency?: boolean, align?: 'left' | 'center' | 'right', isLink?: boolean, isReceiptFormat?: boolean, isOpeningFormat?: boolean }) => {
+const TenderDetailRow = ({ label, value, subValue, isCurrency = false, align = 'left', isLink = false, isReceiptFormat = false, isOpeningFormat = false, className }: { label: string; value: any; subValue?: string; isCurrency?: boolean, align?: 'left' | 'center' | 'right', isLink?: boolean, isReceiptFormat?: boolean, isOpeningFormat?: boolean, className?: string }) => {
     if (value === null || value === undefined || value === '' || (typeof value === 'number' && isNaN(value))) {
         return null;
     }
@@ -552,8 +552,8 @@ const TenderDetailRow = ({ label, value, subValue, isCurrency = false, align = '
     }
   
     return (
-      <div className={cn(align === 'center' && 'text-center')}>
-          <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <div className={cn(align === 'center' && 'text-center', className)}>
+          <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
           <dd className={cn(
               "text-sm font-semibold",
               label.toLowerCase().includes('malayalam') && "text-xs",
@@ -612,7 +612,7 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl p-0">
-                 <DialogHeader className="p-4 border-b">
+                 <DialogHeader className="p-4 pt-6 border-b">
                     <DialogTitle className="text-xl">{tenderRefNo}</DialogTitle>
                 </DialogHeader>
                 <div className="p-4 space-y-3">
@@ -638,7 +638,9 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
                     <div>
                         <h4 className="text-sm font-semibold mb-2 text-primary">Financial & Order Details</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
-                             <TenderDetailRow label="L1 Amount" value={l1Amount} isCurrency />
+                            <TenderDetailRow label="L1 Bidder" value={l1Bidder?.name} className="lg:col-span-1"/>
+                            <TenderDetailRow label="L1 Address" value={l1Bidder?.address} className="lg:col-span-2" />
+                            <TenderDetailRow label="L1 Amount" value={l1Amount} isCurrency />
                             <TenderDetailRow label="Selection Notice Date" value={tender.selectionNoticeDate} />
                             <TenderDetailRow label="Performance Guarantee Amount" value={tender.performanceGuaranteeAmount} isCurrency />
                             <TenderDetailRow label="Additional Performance Guarantee Amount" value={tender.additionalPerformanceGuaranteeAmount} isCurrency />
