@@ -579,8 +579,8 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl p-0">
-                 <DialogHeader className="p-6 pb-2 border-b">
+            <DialogContent className="sm:max-w-3xl p-0">
+                 <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle className="text-xl">{tenderRefNo}</DialogTitle>
                 </DialogHeader>
                 <div className="py-2 px-6 max-h-[70vh] overflow-y-auto">
@@ -1069,9 +1069,9 @@ export default function ETenderListPage() {
                                     <TableRow>
                                         <TableHead className="w-[4%] px-2 py-3 text-sm">Sl. No.</TableHead>
                                         <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>
-                                        <TableHead className="w-[38%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
-                                        <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
-                                        <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
+                                        <TableHead className="w-[30%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
+                                        <TableHead className="w-[16%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
+                                        <TableHead className="w-[16%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
                                         <TableHead className="w-[8%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('presentStatus')}>Status {getSortIcon('presentStatus')}</Button></TableHead>
                                         <TableHead className="text-center w-[8%] px-2 py-3">Actions</TableHead>
                                     </TableRow>
@@ -1097,10 +1097,24 @@ export default function ETenderListPage() {
                                                             {hasRetenders && <Badge variant="secondary" className="mt-1 w-fit bg-yellow-200 text-yellow-800">Re-tender</Badge>}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3">{tender.nameOfWork}</TableCell>
-                                                    <TableCell className="whitespace-nowrap align-top py-2 px-3">{formatDateSafe(lastDateOfReceipt, true)}</TableCell>
-                                                    <TableCell className="whitespace-nowrap align-top py-2 px-3">{formatDateSafe(dateOfOpening, true)}</TableCell>
-                                                    <TableCell className="align-top py-2 px-3">
+                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3 w-[30%]">{tender.nameOfWork}</TableCell>
+                                                    <TableCell className="align-top py-2 px-3 w-[16%]">
+                                                        {lastDateOfReceipt ? (
+                                                            <div className="flex flex-col text-xs">
+                                                                <span>{format(toDateOrNull(lastDateOfReceipt)!, 'dd/MM/yyyy')}</span>
+                                                                <span className="text-muted-foreground">{format(toDateOrNull(lastDateOfReceipt)!, 'hh:mm a')}</span>
+                                                            </div>
+                                                        ) : 'N/A'}
+                                                    </TableCell>
+                                                    <TableCell className="align-top py-2 px-3 w-[16%]">
+                                                        {dateOfOpening ? (
+                                                            <div className="flex flex-col text-xs">
+                                                                <span>{format(toDateOrNull(dateOfOpening)!, 'dd/MM/yyyy')}</span>
+                                                                <span className="text-muted-foreground">{format(toDateOrNull(dateOfOpening)!, 'hh:mm a')}</span>
+                                                            </div>
+                                                        ) : 'N/A'}
+                                                    </TableCell>
+                                                    <TableCell className="align-top py-2 px-3 w-[10%]">
                                                         {tender.presentStatus && <Badge className={cn(getStatusBadgeClass(tender.presentStatus))}>{tender.presentStatus}</Badge>}
                                                     </TableCell>
                                                     <TableCell className="text-center align-top py-2 px-3">
