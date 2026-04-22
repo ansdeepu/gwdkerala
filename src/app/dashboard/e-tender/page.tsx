@@ -25,7 +25,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from "@/components/ui/dialog";
 import { useDataStore } from '@/hooks/use-data-store';
-import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock, FolderOpen, Bell, Hammer, FileDown, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, XCircle, Loader2, PlusCircle, Search, Trash2, Eye, Users, Copy, Clock, FolderOpen, Bell, Hammer, FileDown, ArrowUpDown, ArrowUp, ArrowDown, Link as LinkIcon } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { DataEntryFormData } from '@/lib/schemas';
@@ -522,24 +522,35 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     );
 }
 
-const TenderDetailRow = ({ label, value }: { label: string; value: any }) => {
-  if (value === null || value === undefined || value === '') return null;
+const TenderDetailRow = ({ label, value, subValue, isLink }: { label: string; value: any; subValue?: string; isLink?: boolean }) => {
+    if (value === null || value === undefined || value === '') return null;
+    let displayValue: string;
+    if (label.toLowerCase().includes('date') || label.toLowerCase().includes('receipt') || label.toLowerCase().includes('opening')) {
+        displayValue = formatDateSafe(value, true);
+    } else if (typeof value === 'number') {
+        displayValue = value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else {
+        displayValue = String(value);
+    }
   
-  let displayValue: string;
-  if (label.toLowerCase().includes('date')) {
-    displayValue = formatDateSafe(value, true);
-  } else if (typeof value === 'number') {
-    displayValue = value.toLocaleString('en-IN');
-  } else {
-    displayValue = String(value);
-  }
-
-  return (
-    <div className="grid grid-cols-2 gap-2 py-1.5 border-b border-muted/50 last:border-b-0">
-      <p className="font-medium text-sm text-muted-foreground">{label}:</p>
-      <p className="text-sm text-foreground break-words">{displayValue}</p>
-    </div>
-  );
+    return (
+      <div>
+          <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+          <dd className="text-base font-semibold mt-0.5">
+              {isLink ? (
+                  <a href={displayValue} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                      <LinkIcon className="h-4 w-4"/>
+                      <span>Open Link</span>
+                  </a>
+                ) : (
+                  <>
+                      {displayValue}
+                      {subValue && <span className="text-xs text-muted-foreground ml-1">({subValue})</span>}
+                  </>
+                )}
+          </dd>
+      </div>
+    );
 };
 
 
@@ -579,36 +590,42 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-3xl p-0">
-                 <DialogHeader className="p-6 pb-4 border-b">
+            <DialogContent className="sm:max-w-4xl p-0">
+                <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle className="text-xl">{tenderRefNo}</DialogTitle>
                 </DialogHeader>
-                <div className="py-2 px-6 max-h-[70vh] overflow-y-auto">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                <div className="p-6 space-y-6">
+                    {/* Section 1: Basic Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
                         <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
                         <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} />
-                        <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} />
                         <TenderDetailRow label="EMD (Rs.)" value={tender.emd} />
                         <TenderDetailRow label="Last Date & Time of Receipt" value={formatDateSafe(tender.dateTimeOfReceipt, true)} />
                         <TenderDetailRow label="Date & Time of Opening" value={formatDateSafe(tender.dateTimeOfOpening, true)} />
-                        <div className="md:col-span-2">
-                            <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
-                        </div>
-                        <div className="md:col-span-2">
-                            <Separator className="my-2"/>
-                        </div>
+                        <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} />
+                    </div>
+
+                    {/* Section 2: Work Details */}
+                    <div className="pt-4 border-t">
+                        <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
+                    </div>
+
+                    {/* Section 3: Financial & Order Details */}
+                    <div className="pt-4 border-t grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                         <TenderDetailRow label="L1 Amount" value={l1Amount} />
                         <TenderDetailRow label="Selection Notice Date" value={tender.selectionNoticeDate} />
                         <TenderDetailRow label="Performance Guarantee Amount" value={tender.performanceGuaranteeAmount} />
                         <TenderDetailRow label="Additional Performance Guarantee Amount" value={tender.additionalPerformanceGuaranteeAmount} />
                         <TenderDetailRow label="Stamp Paper required" value={tender.stampPaperAmount} />
                         <TenderDetailRow label="Date - Work / Supply Order" value={tender.dateWorkOrder} />
-                        <div className="md:col-span-2">
-                            <TenderDetailRow label="Supervisors" value={supervisors} />
-                        </div>
+                    </div>
+                    
+                    {/* Section 4: Supervisors */}
+                    <div className="pt-4 border-t">
+                        <TenderDetailRow label="Supervisors" value={supervisors} />
                     </div>
                 </div>
-                <DialogFooter className="p-6 pt-4 mt-2 border-t">
+                <DialogFooter className="p-4 border-t">
                     <DialogClose asChild><Button>Close</Button></DialogClose>
                 </DialogFooter>
             </DialogContent>
@@ -1102,7 +1119,7 @@ export default function ETenderListPage() {
                                                         {lastDateOfReceipt ? (
                                                             <div className="flex flex-col text-xs">
                                                                 <span>{format(toDateOrNull(lastDateOfReceipt)!, 'dd/MM/yyyy')}</span>
-                                                                <span className="text-muted-foreground">{format(toDateOrNull(lastDateOfReceipt)!, 'hh:mm a')}</span>
+                                                                <span>{format(toDateOrNull(lastDateOfReceipt)!, 'hh:mm a')}</span>
                                                             </div>
                                                         ) : 'N/A'}
                                                     </TableCell>
@@ -1110,7 +1127,7 @@ export default function ETenderListPage() {
                                                         {dateOfOpening ? (
                                                             <div className="flex flex-col text-xs">
                                                                 <span>{format(toDateOrNull(dateOfOpening)!, 'dd/MM/yyyy')}</span>
-                                                                <span className="text-muted-foreground">{format(toDateOrNull(dateOfOpening)!, 'hh:mm a')}</span>
+                                                                <span>{format(toDateOrNull(dateOfOpening)!, 'hh:mm a')}</span>
                                                             </div>
                                                         ) : 'N/A'}
                                                     </TableCell>
@@ -1288,5 +1305,3 @@ export default function ETenderListPage() {
         </div>
     );
 }
-      
-    
