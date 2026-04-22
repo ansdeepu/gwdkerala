@@ -89,7 +89,7 @@ type WorkOrderRow = {
     expectedDateOfCompletion: string;
     expectedDateOfCompletionRaw: Date | null;
     isOverdue: boolean;
-    tenderType?: 'Work' | 'Purchase' | null;
+    tenderType?: 'Work' | 'Purchase';
     purchaseStatus: 'Ongoing' | 'Completed';
 };
 
@@ -207,7 +207,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                     expectedDateOfCompletion: expectedDateOfCompletion ? formatDateSafe(expectedDateOfCompletion) : 'N/A',
                     expectedDateOfCompletionRaw: expectedDateOfCompletion,
                     isOverdue,
-                    tenderType: tender.tenderType,
+                    tenderType: tender.tenderType ?? undefined,
                     purchaseStatus: (tender as any).purchaseStatus || 'Ongoing',
                 };
             });
@@ -533,7 +533,7 @@ const TenderDetailRow = ({ label, value, isCurrency = false, isReceiptFormat = f
     }
 
     return (
-        <div className="grid grid-cols-2 gap-2 py-1.5 border-b border-muted/50 last:border-b-0">
+        <div className="grid grid-cols-2 gap-2 py-1 border-b border-muted/50 last:border-b-0">
             <p className="font-medium text-sm text-muted-foreground">{label}:</p>
             <p className="text-sm text-foreground break-words">{displayValue}</p>
         </div>
@@ -577,14 +577,14 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl">
-                <DialogHeader className="p-6 pb-4">
+                <DialogHeader className="p-4 pb-2">
                     <DialogTitle>Tender Summary: {tenderRefNo}</DialogTitle>
                     <DialogDescription>
                         A quick overview of the key details for this tender.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4 px-6">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="py-2 px-6">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                         <TenderDetailRow label="File No." value={tender.fileNo} />
                         <TenderDetailRow label="eTender No." value={tender.eTenderNo} />
                         <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
