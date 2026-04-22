@@ -547,6 +547,17 @@ export default function ETenderListPage() {
 
     const canEdit = user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist';
 
+    useEffect(() => {
+        const savedSearch = localStorage.getItem('eTenderSearchTerm');
+        if (savedSearch) {
+          setSearchTerm(savedSearch);
+        }
+    }, []);
+    
+    useEffect(() => {
+        localStorage.setItem('eTenderSearchTerm', searchTerm);
+    }, [searchTerm]);
+
     React.useEffect(() => {
         setHeader('e-Tenders', 'Manage all electronic tenders for the department.');
     }, [setHeader]);
@@ -705,7 +716,7 @@ export default function ETenderListPage() {
             filtered.sort((a, b) => {
                 const dateA = toDateOrNull(a.tenderDate)?.getTime() ?? 0;
                 const dateB = toDateOrNull(b.tenderDate)?.getTime() ?? 0;
-                if (dateA !== dateB) return dateB - a.tenderDate;
+                if (dateA !== dateB) return dateB - dateA;
                 
                 const getTenderNumber = (tenderNo: string | undefined | null): number => {
                     if (!tenderNo) return 0;
