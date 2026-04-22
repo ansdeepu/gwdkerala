@@ -524,13 +524,20 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
 
 const TenderDetailRow = ({ label, value }: { label: string; value: any }) => {
   if (value === null || value === undefined || value === '') return null;
-  const displayValue = label.toLowerCase().includes('date')
-    ? formatDateSafe(value)
-    : (typeof value === 'number' ? value.toLocaleString('en-IN') : String(value));
+  
+  let displayValue: string;
+  if (label.toLowerCase().includes('date')) {
+    displayValue = formatDateSafe(value, true);
+  } else if (typeof value === 'number') {
+    displayValue = value.toLocaleString('en-IN');
+  } else {
+    displayValue = String(value);
+  }
+
   return (
-    <div className="py-1">
-      <p className="font-medium text-sm text-muted-foreground">{label}:</p>
-      <p className="text-sm text-foreground break-words font-semibold">{displayValue}</p>
+    <div className="py-2">
+      <p className="text-sm font-medium text-muted-foreground">{label}:</p>
+      <p className="text-base font-semibold text-foreground break-words">{displayValue}</p>
     </div>
   );
 };
@@ -572,7 +579,7 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-4xl p-0">
+            <DialogContent className="sm:max-w-2xl p-0">
                  <DialogHeader className="p-6 pb-2 border-b">
                     <DialogTitle className="text-xl">{tenderRefNo}</DialogTitle>
                 </DialogHeader>
@@ -1062,9 +1069,9 @@ export default function ETenderListPage() {
                                     <TableRow>
                                         <TableHead className="w-[4%] px-2 py-3 text-sm">Sl. No.</TableHead>
                                         <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>
-                                        <TableHead className="w-[42%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
-                                        <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
-                                        <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
+                                        <TableHead className="w-[38%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
+                                        <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
+                                        <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
                                         <TableHead className="w-[8%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('presentStatus')}>Status {getSortIcon('presentStatus')}</Button></TableHead>
                                         <TableHead className="text-center w-[8%] px-2 py-3">Actions</TableHead>
                                     </TableRow>
