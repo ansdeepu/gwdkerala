@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useE_tenders, type E_tender } from '@/hooks/useE_tenders';
 import { usePageHeader } from '@/hooks/usePageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -249,9 +249,9 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
             }
         });
 
-        const activeList = mappedData.filter(row => row.tenderType === 'Work' && !completedTenderNos.has(row.eTenderNo.trim().toUpperCase()));
+        const ongoingWorksList = mappedData.filter(row => row.tenderType === 'Work' && !completedTenderNos.has(row.eTenderNo.trim().toUpperCase()));
         const purchaseList = mappedData.filter(row => row.tenderType === 'Purchase');
-        const completedList = mappedData.filter(row => row.tenderType === 'Work' && completedTenderNos.has(row.eTenderNo.trim().toUpperCase()));
+        const completedWorksList = mappedData.filter(row => row.tenderType === 'Work' && completedTenderNos.has(row.eTenderNo.trim().toUpperCase()));
 
         const sortList = (list: WorkOrderRow[]) => {
             if (!sortConfig) return list;
@@ -277,17 +277,17 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
         };
 
         return { 
-            active: sortList(activeList).map((row, i) => ({ ...row, slNo: i + 1 })), 
+            ongoingWorks: sortList(ongoingWorksList).map((row, i) => ({ ...row, slNo: i + 1 })), 
             purchase: sortList(purchaseList).map((row, i) => ({ ...row, slNo: i + 1 })),
-            completed: sortList(completedList).map((row, i) => ({ ...row, slNo: i + 1 })) 
+            completedWorks: sortList(completedWorksList).map((row, i) => ({ ...row, slNo: i + 1 })) 
         };
     }, [tenders, allStaffMembers, sortConfig, allFileEntries, allArsEntries]);
     
     const handleExportExcel = useCallback(async () => {
         let dataToExport: WorkOrderRow[] = [];
-        if (activeTab === 'active') dataToExport = workOrderData.active;
+        if (activeTab === 'ongoingWorks') dataToExport = workOrderData.ongoingWorks;
         else if (activeTab === 'purchase') dataToExport = workOrderData.purchase;
-        else if (activeTab === 'completed') dataToExport = workOrderData.completed;
+        else if (activeTab === 'completedWorks') dataToExport = workOrderData.completedWorks;
 
         if (dataToExport.length === 0) {
             toast({ title: "No Data", description: "There is no data to export from this tab.", variant: "default" });
@@ -324,9 +324,8 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
 
             const newRow = worksheet.addRow(values);
             
-            // Check for styling (Overdue in active, Completed in purchase)
             const isPurchaseCompleted = activeTab === 'purchase' && row.purchaseStatus === 'Completed';
-            if ((row.isOverdue && activeTab === 'active') || isPurchaseCompleted) {
+            if ((row.isOverdue && activeTab === 'ongoingWorks') || isPurchaseCompleted) {
                 newRow.eachCell(cell => {
                     cell.font = { ...cell.font, color: { argb: 'FF0000' } };
                 });
@@ -388,7 +387,7 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                             const isPurchaseCompleted = isPurchaseTab && row.purchaseStatus === 'Completed';
                             return (
                                 <TableRow key={row.id} className={cn(
-                                    ((row.isOverdue && activeTab === 'active') || isPurchaseCompleted) && "text-destructive font-bold", 
+                                    ((row.isOverdue && activeTab === 'ongoingWorks') || isPurchaseCompleted) && "text-destructive font-bold", 
                                     "text-[11px]"
                                 )}>
                                     <TableCell className="text-center py-2">{row.slNo}</TableCell>
@@ -446,18 +445,18 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
                             <div className="px-6 border-b shrink-0 bg-background/50">
                                 <TabsList className="grid w-full grid-cols-3 max-w-[450px] h-8">
-                                    <TabsTrigger value="active" className="text-xs h-7">Ongoing Works ({workOrderData.active.length})</TabsTrigger>
-                                    <TabsTrigger value="completed" className="text-xs h-7">Completed Works ({workOrderData.completed.length})</TabsTrigger>
+                                    <TabsTrigger value="ongoingWorks" className="text-xs h-7">Ongoing Works ({workOrderData.ongoingWorks.length})</TabsTrigger>
+                                    <TabsTrigger value="completedWorks" className="text-xs h-7">Completed Works ({workOrderData.completedWorks.length})</TabsTrigger>
                                     <TabsTrigger value="purchase" className="text-xs h-7">Purchase ({workOrderData.purchase.length})</TabsTrigger>
                                 </TabsList>
                             </div>
                             <div className="flex-1 min-h-0 overflow-hidden">
                                 <ScrollArea className="h-full">
-                                    <TabsContent value="active" className="m-0 border-0 p-0 outline-none">
-                                        {renderTable(workOrderData.active)}
+                                    <TabsContent value="ongoingWorks" className="m-0 border-0 p-0 outline-none">
+                                        {renderTable(workOrderData.ongoingWorks)}
                                     </TabsContent>
-                                    <TabsContent value="completed" className="m-0 border-0 p-0 outline-none">
-                                        {renderTable(workOrderData.completed)}
+                                    <TabsContent value="completedWorks" className="m-0 border-0 p-0 outline-none">
+                                        {renderTable(workOrderData.completedWorks)}
                                     </TabsContent>
                                     <TabsContent value="purchase" className="m-0 border-0 p-0 outline-none">
                                         {renderTable(workOrderData.purchase, true)}
@@ -515,6 +514,102 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     );
 }
 
+const TenderDetailRow = ({ label, value, isCurrency = false, isReceiptFormat = false, isOpeningFormat = false }: { label: string; value: any; isCurrency?: boolean; isReceiptFormat?: boolean, isOpeningFormat?: boolean }) => {
+    if (value === null || value === undefined || value === '' || (typeof value === 'number' && isNaN(value))) {
+        return null;
+    }
+    let displayValue = String(value);
+
+    if (isReceiptFormat || isOpeningFormat || label.toLowerCase().includes('date')) {
+        const formatted = formatDateSafe(value, true, isReceiptFormat, isOpeningFormat);
+        displayValue = formatted !== 'N/A' ? formatted : String(value);
+    } else if (typeof value === 'number') {
+        if (isCurrency) {
+            displayValue = `Rs. ${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        } else {
+            displayValue = value.toLocaleString('en-IN');
+        }
+    }
+
+    return (
+        <div className="grid grid-cols-2 gap-2 py-1.5 border-b border-muted/50 last:border-b-0">
+            <p className="font-medium text-sm text-muted-foreground">{label}:</p>
+            <p className="text-sm text-foreground break-words">{displayValue}</p>
+        </div>
+    );
+};
+
+function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tender | null, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
+    const { allStaffMembers, officeAddress } = useDataStore();
+
+    const l1Bidder = useMemo(() => {
+        if (!tender || !tender.bidders || tender.bidders.length === 0) return null;
+        const validBidders = tender.bidders.filter(b => b.status === 'Accepted' && typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
+        if (validBidders.length === 0) return null;
+        return validBidders.reduce((lowest, current) => 
+            (current.quotedAmount! < lowest.quotedAmount!) ? current : lowest
+        );
+    }, [tender]);
+
+    const hasRejectedBids = useMemo(() => tender?.bidders?.some(b => b.status === 'Rejected'), [tender?.bidders]);
+    const l1Amount = (hasRejectedBids && tender?.agreedAmount) ? tender?.agreedAmount : l1Bidder?.quotedAmount;
+
+    const supervisors = useMemo(() => {
+        if (!tender) return 'N/A';
+        const staffNames = [
+            tender.nameOfAssistantEngineer,
+            tender.supervisor1Name,
+            tender.supervisor2Name,
+            tender.supervisor3Name,
+        ].filter(Boolean);
+
+        return staffNames.map(name => {
+            const staff = allStaffMembers.find(s => s.name === name);
+            return staff ? `${staff.name} (${staff.designation})` : name;
+        }).join(', ') || 'N/A';
+    }, [tender, allStaffMembers]);
+
+    if (!tender) return null;
+    
+    const tenderRefNo = `${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}/${tender.eTenderNo}`;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Tender Summary: {tenderRefNo}</DialogTitle>
+                    <DialogDescription>
+                        A quick overview of the key details for this tender.
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh] pr-6">
+                    <div className="space-y-2 py-4">
+                        <TenderDetailRow label="File No." value={tender.fileNo} />
+                        <TenderDetailRow label="eTender No." value={tender.eTenderNo} />
+                        <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
+                        <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
+                        <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} isCurrency />
+                        <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} isCurrency />
+                        <TenderDetailRow label="EMD (Rs.)" value={tender.emd} isCurrency />
+                        <TenderDetailRow label="Last Date & Time of Receipt" value={tender.dateTimeOfReceipt} isReceiptFormat />
+                        <TenderDetailRow label="Date & Time of Opening" value={tender.dateTimeOfOpening} isOpeningFormat />
+                        <TenderDetailRow label="L1 Amount" value={l1Amount} isCurrency />
+                        <TenderDetailRow label="Selection Notice Date" value={tender.selectionNoticeDate} />
+                        <TenderDetailRow label="Performance Guarantee Amount" value={tender.performanceGuaranteeAmount} isCurrency />
+                        <TenderDetailRow label="Additional Performance Guarantee Amount" value={tender.additionalPerformanceGuaranteeAmount} isCurrency />
+                        <TenderDetailRow label="Stamp Paper required" value={tender.stampPaperAmount} isCurrency />
+                        <TenderDetailRow label="Date - Work / Supply Order" value={tender.dateWorkOrder} />
+                        <TenderDetailRow label="Supervisors" value={supervisors} />
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <DialogClose asChild><Button>Close</Button></DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 type SortKey = keyof E_tender;
 
 
@@ -539,6 +634,7 @@ export default function ETenderListPage() {
     const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
     const [isWorkOrderDialogOpen, setIsWorkOrderDialogOpen] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(null);
+    const [tenderForDialog, setTenderForDialog] = useState<E_tender | null>(null);
 
 
     // State for L1 Leaderboard date filters
@@ -554,9 +650,15 @@ export default function ETenderListPage() {
         }
     }, []);
     
+    const searchParams = useSearchParams();
+
     useEffect(() => {
-        localStorage.setItem('eTenderSearchTerm', searchTerm);
-    }, [searchTerm]);
+        if (searchParams.get('id')) {
+            // Don't clear search term if we are on a detail view
+        } else {
+            localStorage.setItem('eTenderSearchTerm', searchTerm);
+        }
+    }, [searchTerm, searchParams]);
 
     React.useEffect(() => {
         setHeader('e-Tenders', 'Manage all electronic tenders for the department.');
@@ -986,7 +1088,9 @@ export default function ETenderListPage() {
                                                     <TableCell className="align-top py-2 px-3">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</TableCell>
                                                     <TableCell className="font-bold align-top py-2 px-3">
                                                         <div className="flex flex-col">
-                                                            <span className="whitespace-normal break-words">{`${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}/${tender.eTenderNo}`}</span>
+                                                            <button className="text-left hover:underline" onClick={() => setTenderForDialog(tender)}>
+                                                                <span className="whitespace-normal break-words">{`${officeAddress?.officeCode || 'GKT'}/${tender.fileNo}/${tender.eTenderNo}`}</span>
+                                                            </button>
                                                             <span className="text-xs font-normal">Dated: {formatDateSafe(tender.tenderDate)}</span>
                                                             {hasRetenders && <Badge variant="secondary" className="mt-1 w-fit bg-yellow-200 text-yellow-800">Re-tender</Badge>}
                                                         </div>
@@ -1158,6 +1262,12 @@ export default function ETenderListPage() {
                 isOpen={isWorkOrderDialogOpen} 
                 onOpenChange={setIsWorkOrderDialogOpen} 
                 tenders={allE_tenders} 
+            />
+
+            <TenderSummaryDialog 
+                tender={tenderForDialog} 
+                isOpen={!!tenderForDialog} 
+                onOpenChange={() => setTenderForDialog(null)}
             />
         </div>
     );
