@@ -531,7 +531,6 @@ const TenderDetailRow = ({ label, value, subValue, isCurrency = false, align = '
     if (label.toLowerCase().includes('date') || isReceiptFormat || isOpeningFormat) {
         const isTimeIncluded = label.toLowerCase().includes('time') || isReceiptFormat || isOpeningFormat;
         
-        // This combines all logic into one call
         const formatted = formatDateSafe(value, isTimeIncluded, isReceiptFormat, isOpeningFormat);
 
         if (formatted === 'N/A' && value) {
@@ -553,9 +552,9 @@ const TenderDetailRow = ({ label, value, subValue, isCurrency = false, align = '
   
     return (
       <div className={cn(align === 'center' && 'text-center', className)}>
-          <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
+          <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
           <dd className={cn(
-              "text-sm font-semibold",
+              "text-xs font-semibold",
               label.toLowerCase().includes('malayalam') && "text-xs",
           )}>
               {isLink ? (
@@ -612,13 +611,13 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl p-0">
-                 <DialogHeader className="p-4 pt-6 border-b">
-                    <DialogTitle className="text-xl">{tenderRefNo}</DialogTitle>
+                <DialogHeader className="p-4 border-b">
+                    <DialogTitle className="text-lg">{tenderRefNo}</DialogTitle>
                 </DialogHeader>
-                <div className="p-4 space-y-3">
+                <div className="p-4 space-y-2">
                     <div>
-                        <h4 className="text-sm font-semibold mb-2 text-primary">Tender Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+                        <h4 className="text-xs font-semibold mb-1 text-primary uppercase tracking-wider">Tender Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1">
                             <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
                             <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} isCurrency />
                             <TenderDetailRow label="EMD (Rs.)" value={tender.emd} isCurrency/>
@@ -629,15 +628,15 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
                     </div>
                      <Separator />
                      <div>
-                        <h4 className="text-sm font-semibold mb-2 text-primary">Work Details</h4>
+                        <h4 className="text-xs font-semibold mb-1 text-primary uppercase tracking-wider">Work Details</h4>
                          <div className="space-y-1">
                             <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
                         </div>
                     </div>
                     <Separator />
                     <div>
-                        <h4 className="text-sm font-semibold mb-2 text-primary">Financial & Order Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+                        <h4 className="text-xs font-semibold mb-1 text-primary uppercase tracking-wider">Financial & Order Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1">
                             <TenderDetailRow label="L1 Bidder" value={l1Bidder?.name} className="lg:col-span-1"/>
                             <TenderDetailRow label="L1 Address" value={l1Bidder?.address} className="lg:col-span-2" />
                             <TenderDetailRow label="L1 Amount" value={l1Amount} isCurrency />
@@ -650,8 +649,8 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
                     </div>
                      <Separator />
                      <div>
-                        <h4 className="text-sm font-semibold mb-2 text-primary">Assigned Staff</h4>
-                        <div className="grid grid-cols-1 gap-x-6 gap-y-2">
+                        <h4 className="text-xs font-semibold mb-1 text-primary uppercase tracking-wider">Assigned Staff</h4>
+                        <div className="grid grid-cols-1 gap-x-4 gap-y-1">
                             <TenderDetailRow label="Supervisors" value={supervisors} />
                         </div>
                     </div>
