@@ -522,30 +522,19 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
     );
 }
 
-const TenderDetailRow = ({ label, value, isCurrency = false, isReceiptFormat = false, isOpeningFormat = false }: { label: string; value: any; isCurrency?: boolean; isReceiptFormat?: boolean, isOpeningFormat?: boolean }) => {
-    if (value === null || value === undefined || value === '' || (typeof value === 'number' && isNaN(value))) {
-        return null;
-    }
-    let displayValue = String(value);
-
-    if (isReceiptFormat || isOpeningFormat || label.toLowerCase().includes('date')) {
-        const formatted = formatDateSafe(value, true, isReceiptFormat, isOpeningFormat);
-        displayValue = formatted !== 'N/A' ? formatted : String(value);
-    } else if (typeof value === 'number') {
-        if (isCurrency) {
-            displayValue = `Rs. ${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        } else {
-            displayValue = value.toLocaleString('en-IN');
-        }
-    }
-
-    return (
-        <div className="grid grid-cols-2 gap-2 py-1 border-b border-muted/50 last:border-b-0">
-            <p className="font-medium text-sm text-muted-foreground">{label}:</p>
-            <p className="text-sm text-foreground break-words">{displayValue}</p>
-        </div>
-    );
+const TenderDetailRow = ({ label, value }: { label: string; value: any }) => {
+  if (value === null || value === undefined || value === '') return null;
+  const displayValue = label.toLowerCase().includes('date')
+    ? formatDateSafe(value)
+    : (typeof value === 'number' ? value.toLocaleString('en-IN') : String(value));
+  return (
+    <div className="py-1">
+      <p className="font-medium text-sm text-muted-foreground">{label}:</p>
+      <p className="text-sm text-foreground break-words font-semibold">{displayValue}</p>
+    </div>
+  );
 };
+
 
 function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tender | null, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
     const { allStaffMembers, officeAddress } = useDataStore();
@@ -584,28 +573,28 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl p-0">
-                <DialogHeader className="p-6 pb-2">
-                    <DialogTitle>{tenderRefNo}</DialogTitle>
+                 <DialogHeader className="p-6 pb-2 border-b">
+                    <DialogTitle className="text-xl">{tenderRefNo}</DialogTitle>
                 </DialogHeader>
-                <div className="py-2 px-6">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1">
+                <div className="py-2 px-6 max-h-[70vh] overflow-y-auto">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                         <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
-                        <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} isCurrency />
-                        <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} isCurrency />
-                        <TenderDetailRow label="EMD (Rs.)" value={tender.emd} isCurrency />
-                        <TenderDetailRow label="Last Date & Time of Receipt" value={tender.dateTimeOfReceipt} isReceiptFormat />
-                        <TenderDetailRow label="Date & Time of Opening" value={tender.dateTimeOfOpening} isOpeningFormat />
+                        <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} />
+                        <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} />
+                        <TenderDetailRow label="EMD (Rs.)" value={tender.emd} />
+                        <TenderDetailRow label="Last Date & Time of Receipt" value={formatDateSafe(tender.dateTimeOfReceipt, true)} />
+                        <TenderDetailRow label="Date & Time of Opening" value={formatDateSafe(tender.dateTimeOfOpening, true)} />
                         <div className="md:col-span-2">
                             <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
                         </div>
                         <div className="md:col-span-2">
-                            <Separator />
+                            <Separator className="my-2"/>
                         </div>
-                        <TenderDetailRow label="L1 Amount" value={l1Amount} isCurrency />
+                        <TenderDetailRow label="L1 Amount" value={l1Amount} />
                         <TenderDetailRow label="Selection Notice Date" value={tender.selectionNoticeDate} />
-                        <TenderDetailRow label="Performance Guarantee Amount" value={tender.performanceGuaranteeAmount} isCurrency />
-                        <TenderDetailRow label="Additional Performance Guarantee Amount" value={tender.additionalPerformanceGuaranteeAmount} isCurrency />
-                        <TenderDetailRow label="Stamp Paper required" value={tender.stampPaperAmount} isCurrency />
+                        <TenderDetailRow label="Performance Guarantee Amount" value={tender.performanceGuaranteeAmount} />
+                        <TenderDetailRow label="Additional Performance Guarantee Amount" value={tender.additionalPerformanceGuaranteeAmount} />
+                        <TenderDetailRow label="Stamp Paper required" value={tender.stampPaperAmount} />
                         <TenderDetailRow label="Date - Work / Supply Order" value={tender.dateWorkOrder} />
                         <div className="md:col-span-2">
                             <TenderDetailRow label="Supervisors" value={supervisors} />
@@ -1102,8 +1091,8 @@ export default function ETenderListPage() {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="whitespace-normal break-words align-top py-2 px-3">{tender.nameOfWork}</TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3">{formatDateSafe(lastDateOfReceipt, true)}</TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3">{formatDateSafe(dateOfOpening, true)}</TableCell>
+                                                    <TableCell className="whitespace-nowrap align-top py-2 px-3">{formatDateSafe(lastDateOfReceipt, true)}</TableCell>
+                                                    <TableCell className="whitespace-nowrap align-top py-2 px-3">{formatDateSafe(dateOfOpening, true)}</TableCell>
                                                     <TableCell className="align-top py-2 px-3">
                                                         {tender.presentStatus && <Badge className={cn(getStatusBadgeClass(tender.presentStatus))}>{tender.presentStatus}</Badge>}
                                                     </TableCell>
@@ -1278,3 +1267,5 @@ export default function ETenderListPage() {
         </div>
     );
 }
+      
+    
