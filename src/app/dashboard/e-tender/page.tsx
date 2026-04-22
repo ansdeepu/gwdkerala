@@ -89,7 +89,7 @@ type WorkOrderRow = {
     expectedDateOfCompletion: string;
     expectedDateOfCompletionRaw: Date | null;
     isOverdue: boolean;
-    tenderType?: 'Work' | 'Purchase';
+    tenderType?: 'Work' | 'Purchase' | null;
     purchaseStatus: 'Ongoing' | 'Completed';
 };
 
@@ -451,6 +451,13 @@ function WorkOrderDataDialog({ isOpen, onOpenChange, tenders }: { isOpen: boolea
                                     <TabsTrigger value="purchase" className="text-xs h-7">Purchase ({workOrderData.purchase.length})</TabsTrigger>
                                 </TabsList>
                             </div>
+                            <div className="px-6 py-2 text-xs text-muted-foreground flex items-center gap-4 border-b">
+                                <span className="font-semibold">Row Color Legend:</span>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-3 h-3 rounded-full bg-destructive/80"></div>
+                                    <span className="font-medium">Overdue (Ongoing Works) / Completed (Purchase)</span>
+                                </div>
+                            </div>
                             <div className="flex-1 min-h-0 overflow-hidden">
                                 <ScrollArea className="h-full">
                                     <TabsContent value="ongoingWorks" className="m-0 border-0 p-0 outline-none">
@@ -578,16 +585,11 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl">
                 <DialogHeader className="p-4 pb-2">
-                    <DialogTitle>Tender Summary: {tenderRefNo}</DialogTitle>
-                    <DialogDescription>
-                        A quick overview of the key details for this tender.
-                    </DialogDescription>
+                    <DialogTitle>{tenderRefNo}</DialogTitle>
                 </DialogHeader>
                 <div className="py-2 px-6">
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                        <TenderDetailRow label="File No." value={tender.fileNo} />
-                        <TenderDetailRow label="eTender No." value={tender.eTenderNo} />
-                        <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
+                        <DetailRow label="Tender Date" value={tender.tenderDate} />
                         <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} isCurrency />
                         <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} isCurrency />
                         <TenderDetailRow label="EMD (Rs.)" value={tender.emd} isCurrency />
