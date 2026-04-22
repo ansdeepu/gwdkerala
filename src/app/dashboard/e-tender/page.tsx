@@ -535,9 +535,9 @@ const TenderDetailRow = ({ label, value }: { label: string; value: any }) => {
   }
 
   return (
-    <div className="py-2">
-      <p className="text-sm font-medium text-muted-foreground">{label}:</p>
-      <p className="text-base font-semibold text-foreground break-words">{displayValue}</p>
+    <div className="grid grid-cols-2 gap-2 py-1.5 border-b border-muted/50 last:border-b-0">
+      <p className="font-medium text-sm text-muted-foreground">{label}:</p>
+      <p className="text-sm text-foreground break-words">{displayValue}</p>
     </div>
   );
 };
@@ -1068,11 +1068,11 @@ export default function ETenderListPage() {
                                 <TableHeader className="sticky top-0 bg-secondary z-10">
                                     <TableRow>
                                         <TableHead className="w-[4%] px-2 py-3 text-sm">Sl. No.</TableHead>
-                                        <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>
-                                        <TableHead className="w-[30%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
-                                        <TableHead className="w-[16%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
-                                        <TableHead className="w-[16%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
-                                        <TableHead className="w-[8%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('presentStatus')}>Status {getSortIcon('presentStatus')}</Button></TableHead>
+                                        <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>
+                                        <TableHead className="w-[38%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
+                                        <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
+                                        <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
+                                        <TableHead className="w-[10%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('presentStatus')}>Status {getSortIcon('presentStatus')}</Button></TableHead>
                                         <TableHead className="text-center w-[8%] px-2 py-3">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -1097,8 +1097,8 @@ export default function ETenderListPage() {
                                                             {hasRetenders && <Badge variant="secondary" className="mt-1 w-fit bg-yellow-200 text-yellow-800">Re-tender</Badge>}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3 w-[30%]">{tender.nameOfWork}</TableCell>
-                                                    <TableCell className="align-top py-2 px-3 w-[16%]">
+                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3 w-[38%]">{tender.nameOfWork}</TableCell>
+                                                    <TableCell className="align-top py-2 px-3 w-[12%]">
                                                         {lastDateOfReceipt ? (
                                                             <div className="flex flex-col text-xs">
                                                                 <span>{format(toDateOrNull(lastDateOfReceipt)!, 'dd/MM/yyyy')}</span>
@@ -1106,7 +1106,7 @@ export default function ETenderListPage() {
                                                             </div>
                                                         ) : 'N/A'}
                                                     </TableCell>
-                                                    <TableCell className="align-top py-2 px-3 w-[16%]">
+                                                    <TableCell className="align-top py-2 px-3 w-[12%]">
                                                         {dateOfOpening ? (
                                                             <div className="flex flex-col text-xs">
                                                                 <span>{format(toDateOrNull(dateOfOpening)!, 'dd/MM/yyyy')}</span>
@@ -1121,7 +1121,7 @@ export default function ETenderListPage() {
                                                         <div className="flex flex-col items-center justify-center space-y-1">
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewAndEdit(tender.id)}><Eye className="h-4 w-4" /></Button></TooltipTrigger>
-                                                                <TooltipContent><p>View / Edit Tender</p></TooltipContent>
+                                                                <TooltipContent><p>{canEdit ? "View / Edit" : "View Details"}</p></TooltipContent>
                                                             </Tooltip>
                                                             {canEdit && (
                                                                 <>
