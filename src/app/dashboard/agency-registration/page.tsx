@@ -873,7 +873,7 @@ export default function AgencyRegistrationPage() {
     openDialog('addRig', {});
   };
 
-    const { filteredApplications, lastCreatedDate } = useMemo(() => {
+    const { filteredApplications, lastUpdatedDate } = useMemo(() => {
         let sortedApps = [...allAgencyApplications];
         
         const lowercasedFilter = searchTerm.toLowerCase();
@@ -947,15 +947,15 @@ export default function AgencyRegistrationPage() {
         });
 
 
-        const lastCreated = sortedApps.reduce((latest, entry) => {
+        const lastUpdated = sortedApps.reduce((latest, entry) => {
+            const updatedAt = (entry as any).updatedAt ? toDateOrNull((entry as any).updatedAt) : null;
+            if (updatedAt && (!latest || updatedAt > latest)) return updatedAt;
             const createdAt = (entry as any).createdAt ? toDateOrNull((entry as any).createdAt) : null;
-            if (createdAt && (!latest || createdAt > latest)) {
-                return createdAt;
-            }
+            if (createdAt && (!latest || createdAt > latest)) return createdAt;
             return latest;
         }, null as Date | null);
 
-        return { filteredApplications: filtered, lastCreatedDate: lastCreated };
+        return { filteredApplications: filtered, lastUpdatedDate: lastUpdated };
     }, [allAgencyApplications, searchTerm, officeAddress]);
 
   const completedApplications = useMemo(() => {
@@ -1755,10 +1755,10 @@ export default function AgencyRegistrationPage() {
                     />
                 </div>
                 <div className="flex items-center gap-4 w-full sm:w-auto">
-                    {lastCreatedDate && (
+                    {lastUpdatedDate && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                             <Clock className="h-3.5 w-3.5"/>
-                            Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                            Last updated: <span className="font-semibold text-primary/90 font-mono">{format(lastUpdatedDate, 'dd/MM/yy, hh:mm a')}</span>
                         </div>
                     )}
                     {canEdit && (

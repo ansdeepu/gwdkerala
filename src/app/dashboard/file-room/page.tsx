@@ -87,7 +87,7 @@ export default function FileManagerPage() {
 
   const canCreate = user?.role === 'admin' || user?.role === 'engineer' || user?.role === 'scientist';
   
-  // Helper to find the latest available date (Remittance or Re-appropriation Credit)
+  // Helper to find the latest available date (Remittance or Inward Re-appropriation Credit)
   const getDisplayDate = (entry: DataEntryFormData): Date | null => {
     let latestDate: Date | null = null;
 
@@ -116,7 +116,7 @@ export default function FileManagerPage() {
     return latestDate;
   };
 
-  const { depositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
+  const { depositWorkEntries, totalSites, lastUpdatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => {
         const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes((entry as any).category);
         const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
@@ -166,13 +166,15 @@ export default function FileManagerPage() {
         totalSiteCount = entries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
     }
 
-    const lastCreated = entries.reduce((latest, entry) => {
+    const lastUpdated = entries.reduce((latest, entry) => {
+        const updatedAt = (entry as any).updatedAt ? safeParseDate((entry as any).updatedAt) : null;
+        if (updatedAt && (!latest || updatedAt > latest)) return updatedAt;
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
         if (createdAt && (!latest || createdAt > latest)) return createdAt;
         return latest;
     }, null as Date | null);
     
-    return { depositWorkEntries: entries, totalSites: totalSiteCount, lastCreatedDate: lastCreated };
+    return { depositWorkEntries: entries, totalSites: totalSiteCount, lastUpdatedDate: lastUpdated };
   }, [fileEntries, user, allFileEntries]);
   
   const filteredEntries = useMemo(() => {
@@ -219,10 +221,10 @@ export default function FileManagerPage() {
                <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-end w-full sm:w-auto">
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Files: <span className="font-bold text-primary">{filteredEntries.length}</span></div>
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Sites: <span className="font-bold text-primary">{totalSites}</span></div>
-                {lastCreatedDate && (
+                {lastUpdatedDate && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                         <Clock className="h-3.5 w-3.5"/>
-                        Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                        Last updated: <span className="font-semibold text-primary/90 font-mono">{format(lastUpdatedDate, 'dd/MM/yy, hh:mm a')}</span>
                     </div>
                 )}
                 {canCreate && (

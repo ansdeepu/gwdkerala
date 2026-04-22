@@ -74,7 +74,7 @@ export default function PrivateDepositWorksPage() {
     }
   }, [searchParams]);
 
-  // Helper to find the latest date (Remittance or Re-appropriation Credit)
+  // Helper to find the latest available date (Remittance or Inward Re-appropriation Credit)
   const getDisplayDate = (entry: DataEntryFormData): Date | null => {
     let latestDate: Date | null = null;
 
@@ -101,7 +101,7 @@ export default function PrivateDepositWorksPage() {
     return latestDate;
   };
 
-  const { privateDepositWorkEntries, totalSites, lastCreatedDate } = useMemo(() => {
+  const { privateDepositWorkEntries, totalSites, lastUpdatedDate } = useMemo(() => {
     const entries = fileEntries.filter(entry => 
         !!entry.applicationType && (PRIVATE_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as string)
     );
@@ -137,13 +137,15 @@ export default function PrivateDepositWorksPage() {
         totalSiteCount = entries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
     }
 
-    const lastCreated = entries.reduce((latest, entry) => {
+    const lastUpdated = entries.reduce((latest, entry) => {
+        const updatedAt = (entry as any).updatedAt ? safeParseDate((entry as any).updatedAt) : null;
+        if (updatedAt && (!latest || updatedAt > latest)) return updatedAt;
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
         if (createdAt && (!latest || createdAt > latest)) return createdAt;
         return latest;
     }, null as Date | null);
     
-    return { privateDepositWorkEntries: entries, totalSites: totalSiteCount, lastCreatedDate: lastCreated };
+    return { privateDepositWorkEntries: entries, totalSites: totalSiteCount, lastUpdatedDate: lastUpdated };
   }, [fileEntries, user, allFileEntries]);
   
   const filteredEntries = useMemo(() => {
@@ -196,10 +198,10 @@ export default function PrivateDepositWorksPage() {
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Total Files: <span className="font-bold text-primary">{filteredEntries.length}</span></div>
                <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Total Sites: <span className="font-bold text-primary">{totalSites}</span></div>
-               {lastCreatedDate && (
+               {lastUpdatedDate && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                         <Clock className="h-4 w-4" />
-                        Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                        Last updated: <span className="font-semibold text-primary/90 font-mono">{format(lastUpdatedDate, 'dd/MM/yy, hh:mm a')}</span>
                     </div>
                 )}
               {canCreate && (

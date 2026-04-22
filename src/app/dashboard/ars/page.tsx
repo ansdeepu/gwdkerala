@@ -174,7 +174,7 @@ export default function ArsPage() {
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
-  const { filteredSites, lastCreatedDate } = useMemo(() => {
+  const { filteredSites, lastUpdatedDate } = useMemo(() => {
     let sites: ArsEntry[] = [...arsEntries];
     
     if (schemeTypeFilter !== 'all') {
@@ -266,15 +266,15 @@ export default function ArsPage() {
         });
     }
 
-    const lastCreated = sites.reduce((latest, entry) => {
+    const lastUpdated = sites.reduce((latest, entry) => {
+        const updatedAt = (entry as any).updatedAt ? safeParseDate((entry as any).updatedAt) : null;
+        if (updatedAt && (!latest || updatedAt > latest)) return updatedAt;
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
-        if (createdAt && (!latest || createdAt > latest)) {
-            return createdAt;
-        }
+        if (createdAt && (!latest || createdAt > latest)) return createdAt;
         return latest;
     }, null as Date | null);
 
-    return { filteredSites: sites, lastCreatedDate: lastCreated };
+    return { filteredSites: sites, lastUpdatedDate: lastUpdated };
   }, [arsEntries, searchTerm, startDate, endDate, schemeTypeFilter, constituencyFilter, sortConfig]);
 
   useEffect(() => {
@@ -653,10 +653,10 @@ export default function ArsPage() {
                         <div className="text-sm font-medium text-muted-foreground">
                             Total Sites: <span className="font-bold text-primary">{filteredSites.length}</span>
                         </div>
-                        {lastCreatedDate && (
+                        {lastUpdatedDate && (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Clock className="h-3.5 w-3.5"/>
-                                Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                                Last updated: <span className="font-semibold text-primary/90 font-mono">{format(lastUpdatedDate, 'dd/MM/yy, hh:mm a')}</span>
                             </div>
                         )}
                     </div>

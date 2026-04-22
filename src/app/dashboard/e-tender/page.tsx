@@ -534,9 +534,9 @@ const TenderDetailRow = ({ label, value, subValue, isLink }: { label: string; va
     }
   
     return (
-      <div>
-          <dt className="text-sm font-medium text-muted-foreground">{label}</dt>
-          <dd className="text-base font-semibold mt-0.5">
+      <div className="space-y-1">
+          <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+          <dd className="text-sm font-semibold">
               {isLink ? (
                   <a href={displayValue} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
                       <LinkIcon className="h-4 w-4"/>
@@ -591,38 +591,46 @@ function TenderSummaryDialog({ tender, isOpen, onOpenChange }: { tender: E_tende
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-4xl p-0">
-                <DialogHeader className="p-6 pb-4 border-b">
+                 <DialogHeader className="p-6 pb-4 border-b">
                     <DialogTitle className="text-xl">{tenderRefNo}</DialogTitle>
                 </DialogHeader>
                 <div className="p-6 space-y-6">
-                    {/* Section 1: Basic Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
-                        <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
-                        <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} />
-                        <TenderDetailRow label="EMD (Rs.)" value={tender.emd} />
-                        <TenderDetailRow label="Last Date & Time of Receipt" value={formatDateSafe(tender.dateTimeOfReceipt, true)} />
-                        <TenderDetailRow label="Date & Time of Opening" value={formatDateSafe(tender.dateTimeOfOpening, true)} />
-                        <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} />
+                    <div className="py-2">
+                        <h4 className="font-semibold mb-3">Tender Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                            <TenderDetailRow label="Tender Date" value={tender.tenderDate} />
+                            <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
+                            <TenderDetailRow label="Tender Amount (Rs.)" value={tender.estimateAmount} />
+                            <TenderDetailRow label="Tender Fee (Rs.)" value={tender.tenderFormFee} />
+                            <TenderDetailRow label="EMD (Rs.)" value={tender.emd} />
+                        </div>
                     </div>
-
-                    {/* Section 2: Work Details */}
-                    <div className="pt-4 border-t">
-                        <TenderDetailRow label="Name of Work" value={tender.nameOfWork} />
+                     <Separator />
+                     <div className="py-2">
+                        <h4 className="font-semibold mb-3">Key Dates</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                            <TenderDetailRow label="Last Date & Time of Receipt" value={formatDateSafe(tender.dateTimeOfReceipt, true)} />
+                            <TenderDetailRow label="Date & Time of Opening" value={formatDateSafe(tender.dateTimeOfOpening, true)} />
+                        </div>
                     </div>
-
-                    {/* Section 3: Financial & Order Details */}
-                    <div className="pt-4 border-t grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                        <TenderDetailRow label="L1 Amount" value={l1Amount} />
-                        <TenderDetailRow label="Selection Notice Date" value={tender.selectionNoticeDate} />
-                        <TenderDetailRow label="Performance Guarantee Amount" value={tender.performanceGuaranteeAmount} />
-                        <TenderDetailRow label="Additional Performance Guarantee Amount" value={tender.additionalPerformanceGuaranteeAmount} />
-                        <TenderDetailRow label="Stamp Paper required" value={tender.stampPaperAmount} />
-                        <TenderDetailRow label="Date - Work / Supply Order" value={tender.dateWorkOrder} />
+                    <Separator />
+                    <div className="py-2">
+                        <h4 className="font-semibold mb-3">Financial & Order Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
+                             <TenderDetailRow label="L1 Amount" value={l1Amount} />
+                            <TenderDetailRow label="Selection Notice Date" value={tender.selectionNoticeDate} />
+                            <TenderDetailRow label="Performance Guarantee Amount" value={tender.performanceGuaranteeAmount} />
+                            <TenderDetailRow label="Additional Performance Guarantee Amount" value={tender.additionalPerformanceGuaranteeAmount} />
+                            <TenderDetailRow label="Stamp Paper required" value={tender.stampPaperAmount} />
+                            <TenderDetailRow label="Date - Work / Supply Order" value={tender.dateWorkOrder} />
+                        </div>
                     </div>
-                    
-                    {/* Section 4: Supervisors */}
-                    <div className="pt-4 border-t">
-                        <TenderDetailRow label="Supervisors" value={supervisors} />
+                     <Separator />
+                     <div className="py-2">
+                        <h4 className="font-semibold mb-3">Assigned Staff</h4>
+                        <div className="grid grid-cols-1 gap-x-6 gap-y-4">
+                            <TenderDetailRow label="Supervisors" value={supervisors} />
+                        </div>
                     </div>
                 </div>
                 <DialogFooter className="p-4 border-t">
@@ -775,7 +783,7 @@ export default function ETenderListPage() {
     }, [allE_tenders]);
 
 
-    const { filteredTenders, lastCreatedDate } = useMemo(() => {
+    const { filteredTenders, lastUpdatedDate } = useMemo(() => {
       const list = allE_tenders || [];
       const processedTenders = list.map(tender => {
         const bidderNames = (tender.bidders || []).map(b => b.name).filter(Boolean).join(' ').toLowerCase();
@@ -792,13 +800,13 @@ export default function ETenderListPage() {
         };
       });
 
-        let lastCreated: Date | null = null;
+        let lastUpdated: Date | null = null;
         if (processedTenders.length > 0) {
-            lastCreated = processedTenders.reduce((latest, current) => {
-                const currentCreatedAt = toDateOrNull(current.createdAt);
-                if (currentCreatedAt && (!latest || currentCreatedAt > latest)) {
-                    return currentCreatedAt;
-                }
+            lastUpdated = processedTenders.reduce((latest, current) => {
+                const updatedAt = toDateOrNull((current as any).updatedAt);
+                if (updatedAt && (!latest || updatedAt > latest)) return updatedAt;
+                const createdAt = toDateOrNull((current as any).createdAt);
+                if (createdAt && (!latest || createdAt > latest)) return createdAt;
                 return latest;
             }, null as Date | null);
         }
@@ -851,7 +859,7 @@ export default function ETenderListPage() {
         }
 
 
-        return { filteredTenders: filtered, lastCreatedDate: lastCreated };
+        return { filteredTenders: filtered, lastUpdatedDate: lastUpdated };
     }, [allE_tenders, searchTerm, statusFilter, officeAddress, sortConfig]);
 
     const l1ContractorsData = useMemo(() => {
@@ -1067,10 +1075,10 @@ export default function ETenderListPage() {
                             <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div><span>Retender</span></div>
                             <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><span>Cancelled</span></div>
                         </div>
-                        {lastCreatedDate && (
+                        {lastUpdatedDate && (
                             <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
                                 <Clock className="h-3.5 w-3.5"/>
-                                Last created: <span className="font-mono font-bold">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                                Last updated: <span className="font-mono font-bold">{format(lastUpdatedDate, 'dd/MM/yy, hh:mm a')}</span>
                             </div>
                         )}
                     </div>

@@ -29,8 +29,8 @@ const safeParseDate = (dateValue: any): Date | null => {
     const parsed = parseISO(dateValue);
     if (isValid(parsed)) return parsed;
   }
-  if (typeof dateValue === 'object' && dateValue.toDate) {
-    const parsed = dateValue.toDate();
+  if (typeof dateValue === 'object' && (dateValue as any).toDate) {
+    const parsed = (dateValue as any).toDate();
     if (isValid(parsed)) return parsed;
   }
   return null;
@@ -83,7 +83,7 @@ export default function PlanFundWorksPage() {
     }
   }, [searchParams]);
 
-  // Helper to find the latest date (Remittance or Re-appropriation Credit)
+  // Helper to find the latest available date (Remittance or Inward Re-appropriation Credit)
   const getDisplayDate = (entry: DataEntryFormData): Date | null => {
     let latestDate: Date | null = null;
 
@@ -110,7 +110,7 @@ export default function PlanFundWorksPage() {
     return latestDate;
   };
 
-  const { filteredEntries, totalSites, lastCreatedDate } = useMemo(() => {
+  const { filteredEntries, totalSites, lastUpdatedDate } = useMemo(() => {
     let entries = fileEntries.filter(entry => 
         !!entry.applicationType && PLAN_FUND_APPLICATION_TYPES.includes(entry.applicationType as any)
     );
@@ -148,13 +148,15 @@ export default function PlanFundWorksPage() {
 
     const totalSiteCount = entries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
 
-    const lastCreated = entries.reduce((latest, entry) => {
+    const lastUpdated = entries.reduce((latest, entry) => {
+        const updatedAt = (entry as any).updatedAt ? safeParseDate((entry as any).updatedAt) : null;
+        if (updatedAt && (!latest || updatedAt > latest)) return updatedAt;
         const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
         if (createdAt && (!latest || createdAt > latest)) return createdAt;
         return latest;
     }, null as Date | null);
     
-    return { filteredEntries: entries, totalSites: totalSiteCount, lastCreatedDate: lastCreated };
+    return { filteredEntries: entries, totalSites: totalSiteCount, lastUpdatedDate: lastUpdated };
   }, [fileEntries, user, codeFilter, allFileEntries]);
   
   const searchFilteredEntries = useMemo(() => {
@@ -207,10 +209,10 @@ export default function PlanFundWorksPage() {
                <div className="flex items-center gap-4 w-full sm:w-auto">
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Total Files: <span className="font-bold text-primary">{searchFilteredEntries.length}</span></div>
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Total Sites: <span className="font-bold text-primary">{totalSites}</span></div>
-                {lastCreatedDate && (
+                {lastUpdatedDate && (
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
                         <Clock className="h-3.5 w-3.5" />
-                        Last created: <span className="font-semibold text-primary/90 font-mono">{format(lastCreatedDate, 'dd/MM/yy, hh:mm a')}</span>
+                        Last updated: <span className="font-semibold text-primary/90 font-mono">{format(lastUpdatedDate, 'dd/MM/yy, hh:mm a')}</span>
                     </div>
                 )}
                 {canCreate && (
