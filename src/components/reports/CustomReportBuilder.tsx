@@ -34,7 +34,7 @@ type ReportSource = 'deposit' | 'private' | 'ars' | 'gwInvestigation' | 'logging
 type ReportRow = Record<string, string | number | undefined | null>;
 
 const reportableFields = [
-    // File-level fields
+    // File-level fields (from DataEntryFormData)
     { id: 'fileNo', label: 'File No', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.fileNo },
     { id: 'applicantName', label: 'Applicant Name', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.applicantName },
     { id: 'applicationType', label: 'Application Type', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.applicationType ? applicationTypeDisplayMap[entry.applicationType as ApplicationType] : 'N/A' },
@@ -44,29 +44,87 @@ const reportableFields = [
     { id: 'overallBalance', label: 'Overall Balance (₹)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.overallBalance },
     { id: 'remittanceDate', label: 'First Remittance Date', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.remittanceDetails?.[0]?.dateOfRemittance },
 
-    // Site-level fields (common)
+    // Site-level fields (common across many sources)
     { id: 'siteName', label: 'Site Name', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.nameOfSite },
     { id: 'localSelfGovt', label: 'Local Self Govt.', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.localSelfGovt },
     { id: 'constituency', label: 'Constituency', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.constituency },
     { id: 'latitude', label: 'Latitude', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.latitude },
     { id: 'longitude', label: 'Longitude', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.longitude },
-    { id: 'purpose', label: 'Site Purpose', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.purpose },
-    { id: 'workStatus', label: 'Site Work Status', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.workStatus },
     { id: 'dateOfCompletion', label: 'Site Completion Date', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.dateOfCompletion },
     { id: 'totalExpenditure', label: 'Site Total Expenditure (₹)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.totalExpenditure },
-    
-    // ARS specific fields
-    { id: 'arsTypeOfScheme', label: 'ARS Scheme Type', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsTypeOfScheme },
-    { id: 'arsStatus', label: 'ARS Status', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsStatus },
-    { id: 'arsStorageCapacity', label: 'ARS Storage Capacity (m³)', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsStorageCapacity },
+    { id: 'supervisorName', label: 'Supervisor Name', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.supervisorName },
+    { id: 'workRemarks', label: 'Work Remarks', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest', 'ars'], accessor: (entry: any) => entry.workRemarks },
 
-    // Investigation specific fields
+    // Site-level fields for Deposit Works, etc. (non-ARS)
+    { id: 'purpose', label: 'Site Purpose', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.purpose },
+    { id: 'workStatus', label: 'Site Work Status', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.workStatus },
+    { id: 'estimateAmount', label: 'Site Estimate (₹)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.estimateAmount },
+    { id: 'remittedAmount', label: 'Site Remitted (₹)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.remittedAmount },
+    { id: 'siteConditions', label: 'Site Conditions', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.siteConditions },
+    { id: 'accessibleRig', label: 'Accessible Rig', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.accessibleRig },
+    { id: 'tsAmount', label: 'TS Amount (₹)', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.tsAmount },
+    { id: 'tenderNo', label: 'Tender No', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.tenderNo },
+    { id: 'diameter', label: 'Diameter (mm)', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.diameter },
+    { id: 'pilotDrillingDepth', label: 'Pilot Drilling Depth (m)', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.pilotDrillingDepth },
+    { id: 'totalDepth', label: 'Total Depth (m)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.totalDepth },
+    { id: 'casingPipeUsed', label: 'Casing Pipe Used (m)', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.casingPipeUsed },
+    { id: 'outerCasingPipe', label: 'Outer Casing (m)', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.outerCasingPipe },
+    { id: 'innerCasingPipe', label: 'Inner Casing (m)', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.innerCasingPipe },
+    { id: 'yieldDischarge', label: 'Yield/Discharge (LPH)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.yieldDischarge },
+    { id: 'zoneDetails', label: 'Zone Details', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.zoneDetails },
+    { id: 'waterLevel', label: 'Static Water Level (m)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.waterLevel },
+    { id: 'drillingRemarks', label: 'Drilling Remarks', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.drillingRemarks },
+    { id: 'developingRemarks', label: 'Developing Remarks', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.developingRemarks },
+    { id: 'schemeRemarks', label: 'Scheme Remarks', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.schemeRemarks },
+    { id: 'descriptionOfWork', label: 'Description of Work', sources: ['loggingPumpingTest'], accessor: (entry: any) => entry.descriptionOfWork },
+    { id: 'pumpDetails', label: 'Pump Details', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.pumpDetails },
+    { id: 'pumpingLineLength', label: 'Pumping Line Length (m)', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.pumpingLineLength },
+    { id: 'deliveryLineLength', label: 'Delivery Line Length (m)', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.deliveryLineLength },
+    { id: 'waterTankCapacity', label: 'Water Tank Capacity (L)', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.waterTankCapacity },
+    { id: 'noOfTapConnections', label: '# Tap Connections', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.noOfTapConnections },
+    { id: 'noOfBeneficiary', label: '# Beneficiaries', sources: ['deposit', 'private', 'collector', 'planFund', 'ars'], accessor: (entry: any) => entry.noOfBeneficiary },
+    { id: 'typeOfRig', label: 'Type of Rig', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.typeOfRig },
+    { id: 'contractorName', label: 'Contractor', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.contractorName },
+    { id: 'supervisorDesignation', label: 'Supervisor Designation', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.supervisorDesignation },
+    { id: 'implementationRemarks', label: 'Implementation Remarks', sources: ['deposit', 'private', 'collector', 'planFund'], accessor: (entry: any) => entry.implementationRemarks },
+    { id: 'surveyLocation', label: 'Survey: Location', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation'], accessor: (entry: any) => entry.surveyLocation },
+    { id: 'surveyRemarks', label: 'Survey: Remarks', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation'], accessor: (entry: any) => entry.surveyRemarks },
+    { id: 'surveyRecommendedDiameter', label: 'Survey: Diameter (mm)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation'], accessor: (entry: any) => entry.surveyRecommendedDiameter },
+    { id: 'surveyRecommendedTD', label: 'Survey: TD (m)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation'], accessor: (entry: any) => entry.surveyRecommendedTD },
+    { id: 'surveyRecommendedOB', label: 'Survey: OB (m)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation'], accessor: (entry: any) => entry.surveyRecommendedOB },
+    { id: 'surveyRecommendedCasingPipe', label: 'Survey: Casing Pipe (m)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation'], accessor: (entry: any) => entry.surveyRecommendedCasingPipe },
+    { id: 'surveyRecommendedPlainPipe', label: 'Survey: Plain Pipe (m)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation'], accessor: (entry: any) => entry.surveyRecommendedPlainPipe },
+    { id: 'surveyRecommendedSlottedPipe', label: 'Survey: Slotted Pipe (m)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation'], accessor: (entry: any) => entry.surveyRecommendedSlottedPipe },
+    { id: 'surveyRecommendedMsCasingPipe', label: 'Survey: MS Casing Pipe (m)', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation'], accessor: (entry: any) => entry.surveyRecommendedMsCasingPipe },
+    { id: 'pondDimensions', label: 'Pond Dimensions', sources: ['deposit', 'private', 'collector', 'planFund', 'gwInvestigation'], accessor: (entry: any) => entry.pondDimensions },
+    
+    // Investigation & Logging/Pumping specific fields
     { id: 'typeOfWell', label: 'Type of Well', sources: ['gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.typeOfWell },
+    { id: 'nameOfInvestigator', label: 'Investigator', sources: ['gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.nameOfInvestigator },
+    { id: 'dateOfInvestigation', label: 'Investigation Date', sources: ['gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.dateOfInvestigation },
     { id: 'feasibility', label: 'Feasibility', sources: ['gwInvestigation'], accessor: (entry: any) => entry.feasibility },
     { id: 'vesRequired', label: 'VES Required', sources: ['gwInvestigation'], accessor: (entry: any) => entry.vesRequired },
-    { id: 'nameOfInvestigator', label: 'Investigator', sources: ['gwInvestigation', 'loggingPumpingTest'], accessor: (entry: any) => entry.nameOfInvestigator },
-];
+    { id: 'vesInvestigator', label: 'VES Investigator', sources: ['gwInvestigation'], accessor: (entry: any) => entry.vesInvestigator },
+    { id: 'vesDate', label: 'VES Date', sources: ['gwInvestigation'], accessor: (entry: any) => entry.vesDate },
+    { id: 'hydrogeologicalRemarks', label: 'Hydrogeological Remarks', sources: ['gwInvestigation'], accessor: (entry: any) => entry.hydrogeologicalRemarks },
+    { id: 'geophysicalRemarks', label: 'Geophysical Remarks', sources: ['gwInvestigation'], accessor: (entry: any) => entry.geophysicalRemarks },
 
+    // ARS specific fields
+    { id: 'arsBlock', label: 'ARS Block', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsBlock },
+    { id: 'arsTypeOfScheme', label: 'ARS Scheme Type', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsTypeOfScheme },
+    { id: 'arsNumberOfStructures', label: 'ARS No. of Structures', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsNumberOfStructures },
+    { id: 'arsStorageCapacity', label: 'ARS Storage Capacity (m³)', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsStorageCapacity },
+    { id: 'arsNumberOfFillings', label: 'ARS No. of Fillings', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsNumberOfFillings },
+    { id: 'arsAsTsDetails', label: 'ARS AS/TS Details', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsAsTsDetails },
+    { id: 'arsSanctionedDate', label: 'ARS Sanctioned Date', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsSanctionedDate },
+    { id: 'arsEstimateAmount', label: 'ARS Estimate (₹)', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.estimateAmount },
+    { id: 'arsTsAmount', label: 'ARS TS Amount (₹)', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.tsAmount },
+    { id: 'arsTenderNo', label: 'ARS Tender No', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsTenderNo },
+    { id: 'arsTenderedAmount', label: 'ARS Tendered Amount (₹)', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsTenderedAmount },
+    { id: 'arsAwardedAmount', label: 'ARS Awarded Amount (₹)', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsAwardedAmount },
+    { id: 'arsContractorName', label: 'ARS Contractor', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsContractorName },
+    { id: 'arsStatus', label: 'ARS Status', sources: ['ars'], accessor: (entry: ArsEntryFormData) => entry.arsStatus },
+];
 
 const safeParseDate = (dateValue: any): Date | null => {
   if (!dateValue) return null;
@@ -149,9 +207,17 @@ export default function CustomReportBuilder() {
         if (selectedPage === 'ars') {
             siteLevelData.push(entry);
         } else {
-            entry.siteDetails?.forEach((site: any) => {
-                siteLevelData.push({ ...entry, ...site, siteDetails: undefined });
-            });
+            if (entry.siteDetails && entry.siteDetails.length > 0) {
+                entry.siteDetails?.forEach((site: any) => {
+                    siteLevelData.push({ ...entry, ...site, siteDetails: undefined });
+                });
+            } else {
+                // Include file-level data even if there are no sites, if no site-specific filters are active
+                const siteFiltersActive = selectedPurpose !== 'all';
+                if (!siteFiltersActive) {
+                    siteLevelData.push({ ...entry, siteDetails: undefined });
+                }
+            }
         }
     });
 
