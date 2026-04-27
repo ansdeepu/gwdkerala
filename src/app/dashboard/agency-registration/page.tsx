@@ -873,7 +873,7 @@ export default function AgencyRegistrationPage() {
     openDialog('addRig', {});
   };
 
-    const { filteredApplications, lastUpdatedDate } = useMemo(() => {
+    const { filteredApplications } = useMemo(() => {
         let sortedApps = [...allAgencyApplications];
         
         const lowercasedFilter = searchTerm.toLowerCase();
@@ -946,16 +946,7 @@ export default function AgencyRegistrationPage() {
             return (a.fileNo || '').localeCompare(b.fileNo || '');
         });
 
-
-        const lastUpdated = sortedApps.reduce((latest, entry) => {
-            const updatedAt = (entry as any).updatedAt ? toDateOrNull((entry as any).updatedAt) : null;
-            if (updatedAt && (!latest || updatedAt > latest)) return updatedAt;
-            const createdAt = (entry as any).createdAt ? toDateOrNull((entry as any).createdAt) : null;
-            if (createdAt && (!latest || createdAt > latest)) return createdAt;
-            return latest;
-        }, null as Date | null);
-
-        return { filteredApplications: filtered, lastUpdatedDate: lastUpdated };
+        return { filteredApplications: filtered };
     }, [allAgencyApplications, searchTerm, officeAddress]);
 
   const completedApplications = useMemo(() => {
@@ -1349,7 +1340,7 @@ export default function AgencyRegistrationPage() {
                 className="space-y-6"
                 >
                 <Card>
-                    <CardHeader className="flex flex-row items-start justify-between">
+                    <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle>1. Application Details</CardTitle>
                             <CardDescription>Primary agency information and owner/partner details.</CardDescription>
@@ -1755,12 +1746,6 @@ export default function AgencyRegistrationPage() {
                     />
                 </div>
                 <div className="flex items-center gap-4 w-full sm:w-auto">
-                    {lastUpdatedDate && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                            <Clock className="h-3.5 w-3.5"/>
-                            Last updated: <span className="font-semibold text-primary/90 font-mono">{format(lastUpdatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                        </div>
-                    )}
                     {canEdit && (
                     <Button onClick={handleAddNew} className="shrink-0">
                         <FilePlus className="mr-2 h-4 w-4" /> Add New Registration

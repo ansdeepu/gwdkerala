@@ -1,4 +1,3 @@
-
 // src/app/dashboard/file-room/page.tsx
 "use client";
 
@@ -116,7 +115,7 @@ export default function FileManagerPage() {
     return latestDate;
   };
 
-  const { depositWorkEntries, totalSites, lastUpdatedDate } = useMemo(() => {
+  const { depositWorkEntries, totalSites } = useMemo(() => {
     let entries = fileEntries.filter(entry => {
         const isInvestigationCategory = ['Govt', 'Private', 'Complaints'].includes((entry as any).category);
         const hasInvestigationPurpose = entry.siteDetails?.some(site => site.purpose === 'GW Investigation');
@@ -165,16 +164,8 @@ export default function FileManagerPage() {
     } else {
         totalSiteCount = entries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
     }
-
-    const lastUpdated = entries.reduce((latest, entry) => {
-        const updatedAt = (entry as any).updatedAt ? safeParseDate((entry as any).updatedAt) : null;
-        if (updatedAt && (!latest || updatedAt > latest)) return updatedAt;
-        const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
-        if (createdAt && (!latest || createdAt > latest)) return createdAt;
-        return latest;
-    }, null as Date | null);
     
-    return { depositWorkEntries: entries, totalSites: totalSiteCount, lastUpdatedDate: lastUpdated };
+    return { depositWorkEntries: entries, totalSites: totalSiteCount };
   }, [fileEntries, user, allFileEntries]);
   
   const filteredEntries = useMemo(() => {
@@ -221,12 +212,6 @@ export default function FileManagerPage() {
                <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-end w-full sm:w-auto">
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Files: <span className="font-bold text-primary">{filteredEntries.length}</span></div>
                  <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Sites: <span className="font-bold text-primary">{totalSites}</span></div>
-                {lastUpdatedDate && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                        <Clock className="h-3.5 w-3.5"/>
-                        Last updated: <span className="font-semibold text-primary/90 font-mono">{format(lastUpdatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                    </div>
-                )}
                 {canCreate && (
                     <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=public'); }} size="sm" className="shrink-0"><FilePlus2 className="mr-2 h-4 w-4" /> New File</Button>
                 )}

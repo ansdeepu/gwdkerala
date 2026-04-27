@@ -1,4 +1,3 @@
-
 // src/app/dashboard/private-deposit-works/page.tsx
 "use client";
 
@@ -101,7 +100,7 @@ export default function PrivateDepositWorksPage() {
     return latestDate;
   };
 
-  const { privateDepositWorkEntries, totalSites, lastUpdatedDate } = useMemo(() => {
+  const { privateDepositWorkEntries, totalSites } = useMemo(() => {
     const entries = fileEntries.filter(entry => 
         !!entry.applicationType && (PRIVATE_APPLICATION_TYPES as readonly string[]).includes(entry.applicationType as string)
     );
@@ -136,16 +135,8 @@ export default function PrivateDepositWorksPage() {
     } else {
         totalSiteCount = entries.reduce((acc, entry) => acc + (entry.siteDetails?.length || 0), 0);
     }
-
-    const lastUpdated = entries.reduce((latest, entry) => {
-        const updatedAt = (entry as any).updatedAt ? safeParseDate((entry as any).updatedAt) : null;
-        if (updatedAt && (!latest || updatedAt > latest)) return updatedAt;
-        const createdAt = (entry as any).createdAt ? safeParseDate((entry as any).createdAt) : null;
-        if (createdAt && (!latest || createdAt > latest)) return createdAt;
-        return latest;
-    }, null as Date | null);
     
-    return { privateDepositWorkEntries: entries, totalSites: totalSiteCount, lastUpdatedDate: lastUpdated };
+    return { privateDepositWorkEntries: entries, totalSites: totalSiteCount };
   }, [fileEntries, user, allFileEntries]);
   
   const filteredEntries = useMemo(() => {
@@ -198,12 +189,6 @@ export default function PrivateDepositWorksPage() {
             <div className="flex items-center gap-4 w-full sm:w-auto">
               <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Total Files: <span className="font-bold text-primary">{filteredEntries.length}</span></div>
                <div className="text-sm font-medium text-muted-foreground whitespace-nowrap">Total Sites: <span className="font-bold text-primary">{totalSites}</span></div>
-               {lastUpdatedDate && (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
-                        <Clock className="h-4 w-4" />
-                        Last updated: <span className="font-semibold text-primary/90 font-mono">{format(lastUpdatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                    </div>
-                )}
               {canCreate && (
                 <Button onClick={() => { setIsNavigating(true); router.push('/dashboard/data-entry?workType=private'); }} size="sm" className="w-full sm:w-auto shrink-0">
                   <PlusCircle className="mr-2 h-5 w-5" /> New File

@@ -552,9 +552,9 @@ const TenderDetailRow = ({ label, value, subValue, isCurrency = false, align = '
   
     return (
       <div className={cn(align === 'center' && 'text-center', className)}>
-          <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+          <dt className="text-xs font-semibold text-muted-foreground">{label}</dt>
           <dd className={cn(
-              "text-xs font-semibold",
+              "text-sm font-semibold",
               label.toLowerCase().includes('malayalam') && "text-xs",
           )}>
               {isLink ? (
@@ -805,7 +805,7 @@ export default function ETenderListPage() {
     }, [allE_tenders]);
 
 
-    const { filteredTenders, lastUpdatedDate } = useMemo(() => {
+    const { filteredTenders } = useMemo(() => {
       const list = allE_tenders || [];
       const processedTenders = list.map(tender => {
         const bidderNames = (tender.bidders || []).map(b => b.name).filter(Boolean).join(' ').toLowerCase();
@@ -821,17 +821,6 @@ export default function ETenderListPage() {
           _searchableContent: searchableContent,
         };
       });
-
-        let lastUpdated: Date | null = null;
-        if (processedTenders.length > 0) {
-            lastUpdated = processedTenders.reduce((latest, current) => {
-                const updatedAt = toDateOrNull((current as any).updatedAt);
-                if (updatedAt && (!latest || updatedAt > latest)) return updatedAt;
-                const createdAt = toDateOrNull((current as any).createdAt);
-                if (createdAt && (!latest || createdAt > latest)) return createdAt;
-                return latest;
-            }, null as Date | null);
-        }
 
         let filtered = processedTenders;
         
@@ -881,7 +870,7 @@ export default function ETenderListPage() {
         }
 
 
-        return { filteredTenders: filtered, lastUpdatedDate: lastUpdated };
+        return { filteredTenders: filtered };
     }, [allE_tenders, searchTerm, statusFilter, officeAddress, sortConfig]);
 
     const l1ContractorsData = useMemo(() => {
@@ -1097,12 +1086,6 @@ export default function ETenderListPage() {
                             <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400"></div><span>Retender</span></div>
                             <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-400"></div><span>Cancelled</span></div>
                         </div>
-                        {lastUpdatedDate && (
-                            <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
-                                <Clock className="h-3.5 w-3.5"/>
-                                Last updated: <span className="font-mono font-bold">{format(lastUpdatedDate, 'dd/MM/yy, hh:mm a')}</span>
-                            </div>
-                        )}
                     </div>
                 </CardContent>
             </Card>
