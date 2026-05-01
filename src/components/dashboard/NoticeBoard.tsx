@@ -133,36 +133,51 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       let page = pdfDoc.addPage();
       const { width, height } = page.getSize();
-      let y = height - 50;
+      
+      const MARGIN = 50;
+      let y = height - MARGIN;
 
       const monthName = MONTHS[selectedViewMonth];
       const year = new Date().getFullYear();
-      page.drawText(`Staff Birthdays - ${monthName} ${year}`, { x: 50, y, size: 18, font: boldFont });
-      y -= 40;
+
+      // Title
+      page.drawText(`Staff Birthdays - ${monthName} ${year}`, { 
+        x: MARGIN, 
+        y, 
+        size: 20, 
+        font: boldFont 
+      });
+      y -= 45;
 
       // Table Headers
-      page.drawText('Date', { x: 50, y, size: 11, font: boldFont });
-      page.drawText('Name', { x: 100, y, size: 11, font: boldFont });
-      page.drawText('Designation', { x: 300, y, size: 11, font: boldFont });
-      y -= 20;
+      page.drawText('Date', { x: MARGIN, y, size: 12, font: boldFont });
+      page.drawText('Name', { x: MARGIN + 45, y, size: 12, font: boldFont });
+      page.drawText('Designation', { x: MARGIN + 230, y, size: 12, font: boldFont });
+      
+      y -= 8;
 
       // Draw a line under header
       page.drawLine({
-        start: { x: 50, y: y + 15 },
-        end: { x: width - 50, y: y + 15 },
+        start: { x: MARGIN, y },
+        end: { x: width - MARGIN, y },
         thickness: 1,
         color: rgb(0.8, 0.8, 0.8)
       });
+      
+      y -= 20;
 
       monthData.forEach((staff) => {
-        if (y < 50) {
+        if (y < MARGIN) {
           page = pdfDoc.addPage();
-          y = page.getHeight() - 50;
+          y = page.getHeight() - MARGIN - 40;
         }
-        page.drawText(format(staff.dateOfBirth, 'dd'), { x: 50, y, size: 10, font });
-        page.drawText(staff.name, { x: 100, y, size: 10, font });
-        page.drawText(staff.designation || 'N/A', { x: 300, y, size: 10, font });
-        y -= 15;
+        
+        const day = format(staff.dateOfBirth, 'dd');
+        page.drawText(day, { x: MARGIN, y, size: 10, font });
+        page.drawText(staff.name, { x: MARGIN + 45, y, size: 10, font });
+        page.drawText(staff.designation || 'N/A', { x: MARGIN + 230, y, size: 10, font });
+        
+        y -= 20;
       });
 
       const pdfBytes = await pdfDoc.save();
