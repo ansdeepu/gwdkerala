@@ -138,11 +138,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
         monthData.map(async (staff) => {
           if (!staff.photoUrl) return null;
           try {
-            // Use no-cache to ensure fresh data and attempt to bypass some restrictions
-            const res = await fetch(staff.photoUrl, { mode: 'no-cors' });
-            // Note: 'no-cors' will return an opaque response which we can't read.
-            // In a production app, images would need to be on a domain that permits CORS.
-            // For now, we try a normal fetch first.
+            // Attempt normal fetch. Browser must allow CORS for this to work.
             const normalRes = await fetch(staff.photoUrl).catch(() => null);
             if (!normalRes || !normalRes.ok) return null;
             
@@ -215,27 +211,29 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
         const embeddedImage = images[index];
 
         if (embeddedImage) {
-            // Draw square image 
+            // Draw square image - Circles removed as per request
             page.drawImage(embeddedImage, {
                 x: avatarX,
                 y: avatarY,
                 width: avatarSize,
                 height: avatarSize,
             });
-            // Draw circular border on top to mimic UI
-            page.drawCircle({
-                x: avatarX + avatarSize / 2,
-                y: avatarY + avatarSize / 2,
-                size: avatarSize / 2,
-                borderColor: rgb(0.8, 0.85, 0.95),
-                borderWidth: 2,
+            // Draw a subtle square border instead of a circle
+            page.drawRectangle({
+              x: avatarX,
+              y: avatarY,
+              width: avatarSize,
+              height: avatarSize,
+              borderColor: rgb(0.8, 0.85, 0.95),
+              borderWidth: 1,
             });
         } else {
-            // Fallback: Draw Avatar Circle with Initials
-            page.drawCircle({
-                x: avatarX + avatarSize / 2,
-                y: avatarY + avatarSize / 2,
-                size: avatarSize / 2,
+            // Fallback: Draw Avatar Square with Initials
+            page.drawRectangle({
+                x: avatarX,
+                y: avatarY,
+                width: avatarSize,
+                height: avatarSize,
                 color: rgb(0.8, 0.85, 1),
                 borderColor: rgb(0.7, 0.75, 0.9),
                 borderWidth: 1,
@@ -294,9 +292,9 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
           color: rgb(0.2, 0.4, 0.8), // primary blue
         });
 
-        const monthWidth = helveticaBold.widthOfTextAtSize(monthShort, 8);
+        const monthShortWidth = helveticaBold.widthOfTextAtSize(monthShort, 8);
         page.drawText(monthShort, {
-          x: dividerX + (45 - monthWidth) / 2,
+          x: dividerX + (45 - monthShortWidth) / 2,
           y: y + 18,
           size: 8,
           font: helveticaBold,
