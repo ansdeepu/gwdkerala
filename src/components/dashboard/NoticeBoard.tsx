@@ -8,12 +8,13 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { StaffMember, Designation } from '@/lib/schemas';
-import { isValid, format } from 'date-fns';
-import { Megaphone, Cake, Gift, PartyPopper, ChevronRight, FileDown, Loader2 } from 'lucide-react';
+import { isValid, format, startOfMonth, endOfMonth } from 'date-fns';
+import { Megaphone, Cake, Gift, PartyPopper, ChevronRight, FileDown, Loader2, CalendarDays } from 'lucide-react';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import download from 'downloadjs';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const hashCode = (str: string): number => {
     let hash = 0;
@@ -50,6 +51,11 @@ const getInitials = (name?: string) => {
     .toUpperCase();
 };
 
+const MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+];
+
 interface NoticeBoardProps {
   staffMembers: StaffMember[];
 }
@@ -57,13 +63,17 @@ interface NoticeBoardProps {
 export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
   const { toast } = useToast();
   const [selectedBirthday, setSelectedBirthday] = useState<{ name: string, designation?: Designation, photoUrl?: string | null } | null>(null);
-  const [isMonthListOpen, setIsMonthListOpen] = useState(false);
+  const [isYearListOpen, setIsYearListOpen] = useState(false);
+  const [selectedViewMonth, setSelectedViewMonth] = useState<number>(new Date().getMonth());
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   
   const noticeData = useMemo(() => {
     const todaysBirthdays: { name: string, designation?: Designation, photoUrl?: string | null }[] = [];
     const upcomingBirthdaysInMonth: { name: string; designation?: Designation; photoUrl?: string | null; dateOfBirth: Date }[] = [];
-    const monthlyBirthdays: { name: string; designation?: Designation; photoUrl?: string | null; dateOfBirth: Date }[] = [];
+    
+    // Group all year birthdays by month
+    const allYearBirthdays: Record<number, { name: string; designation?: Designation; photoUrl?: string | null; dateOfBirth: Date }[]> = {};
+    for (let i = 0; i < 12; i++) allYearBirthdays[i] = [];
 
     const today = new Date();
     const todayMonth = today.getMonth();
@@ -77,25 +87,30 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
       if (isValid(dob)) {
         const dobMonth = dob.getMonth();
         const dobDate = dob.getDate();
+        
+        const birthdayInfo = { name: staff.name, designation: staff.designation as Designation, photoUrl: staff.photoUrl, dateOfBirth: dob };
+        allYearBirthdays[dobMonth].push(birthdayInfo);
+        
         if (dobMonth === todayMonth) {
-            monthlyBirthdays.push({ name: staff.name, designation: staff.designation as Designation, photoUrl: staff.photoUrl, dateOfBirth: dob });
-            
             if (dobDate === todayDate) {
                 todaysBirthdays.push({ name: staff.name, designation: staff.designation as Designation, photoUrl: staff.photoUrl });
             } else if (dobDate > todayDate) {
-                upcomingBirthdaysInMonth.push({ name: staff.name, designation: staff.designation as Designation, photoUrl: staff.photoUrl, dateOfBirth: dob });
+                upcomingBirthdaysInMonth.push(birthdayInfo);
             }
         }
       }
     }
 
+    // Sort within months
+    for (let i = 0; i < 12; i++) {
+        allYearBirthdays[i].sort((a, b) => a.dateOfBirth.getDate() - b.dateOfBirth.getDate());
+    }
     upcomingBirthdaysInMonth.sort((a, b) => a.dateOfBirth.getDate() - b.dateOfBirth.getDate());
-    monthlyBirthdays.sort((a, b) => a.dateOfBirth.getDate() - b.dateOfBirth.getDate());
 
     return {
       todaysBirthdays,
       upcomingBirthdays: upcomingBirthdaysInMonth,
-      monthlyBirthdays,
+      allYearBirthdays,
     };
   }, [staffMembers]);
   
@@ -105,8 +120,9 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
   const upcomingBirthdayList = enableUpcomingScrolling ? [...noticeData.upcomingBirthdays, ...noticeData.upcomingBirthdays] : noticeData.upcomingBirthdays;
 
   const handleDownloadPdf = async () => {
-    if (noticeData.monthlyBirthdays.length === 0) {
-      toast({ title: "No data to export" });
+    const monthData = noticeData.allYearBirthdays[selectedViewMonth];
+    if (monthData.length === 0) {
+      toast({ title: `No birthdays in ${MONTHS[selectedViewMonth]} to export` });
       return;
     }
 
@@ -119,8 +135,9 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
       const { width, height } = page.getSize();
       let y = height - 50;
 
-      const monthYear = format(new Date(), 'MMMM yyyy');
-      page.drawText(`Staff Birthdays - ${monthYear}`, { x: 50, y, size: 18, font: boldFont });
+      const monthName = MONTHS[selectedViewMonth];
+      const year = new Date().getFullYear();
+      page.drawText(`Staff Birthdays - ${monthName} ${year}`, { x: 50, y, size: 18, font: boldFont });
       y -= 40;
 
       // Table Headers
@@ -137,7 +154,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
         color: rgb(0.8, 0.8, 0.8)
       });
 
-      noticeData.monthlyBirthdays.forEach((staff) => {
+      monthData.forEach((staff) => {
         if (y < 50) {
           page = pdfDoc.addPage();
           y = page.getHeight() - 50;
@@ -149,7 +166,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
       });
 
       const pdfBytes = await pdfDoc.save();
-      download(pdfBytes, `Staff_Birthdays_${monthYear.replace(' ', '_')}.pdf`, 'application/pdf');
+      download(pdfBytes, `Staff_Birthdays_${monthName}_${year}.pdf`, 'application/pdf');
       toast({ title: "PDF Generated" });
     } catch (error: any) {
       console.error("PDF generation error:", error);
@@ -158,6 +175,8 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
       setIsGeneratingPdf(false);
     }
   };
+
+  const currentlyViewedBirthdays = noticeData.allYearBirthdays[selectedViewMonth];
 
   return (
     <Card className="shadow-lg flex flex-col h-[450px]">
@@ -212,20 +231,20 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
           </DialogContent>
         </Dialog>
         
-        {/* Upcoming Birthdays Section with Monthly List Dialog */}
-        <Dialog open={isMonthListOpen} onOpenChange={setIsMonthListOpen}>
+        {/* Upcoming Birthdays Section with Annual Calendar Dialog */}
+        <Dialog open={isYearListOpen} onOpenChange={setIsYearListOpen}>
           <div className={cn("border rounded-lg p-3 bg-background flex flex-col flex-1 min-h-0")}>
             <DialogTrigger asChild>
               <button 
                 className="text-sm font-semibold mb-2 flex items-center justify-between group hover:text-primary transition-colors w-full text-left"
-                onClick={() => setIsMonthListOpen(true)}
+                onClick={() => setIsYearListOpen(true)}
               >
                 <span className="flex items-center gap-2">
                   <Gift className="h-4 w-4 text-indigo-500" />
                   Upcoming Birthdays ({noticeData.upcomingBirthdays.length})
                 </span>
                 <span className="text-[10px] font-normal text-muted-foreground group-hover:underline flex items-center gap-0.5">
-                  View All <ChevronRight className="h-3 w-3" />
+                  View Year <ChevronRight className="h-3 w-3" />
                 </span>
               </button>
             </DialogTrigger>
@@ -259,23 +278,31 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
             </ScrollArea>
           </div>
 
-          <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden">
-            <DialogHeader className="p-6 pb-4 border-b flex flex-row items-center justify-between shrink-0">
-              <div className="space-y-1">
-                <DialogTitle className="flex items-center gap-2 text-xl">
-                  <Cake className="h-6 w-6 text-primary" />
-                  Birthdays in {format(new Date(), 'MMMM yyyy')}
+          <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0 overflow-hidden">
+            <DialogHeader className="p-6 pb-4 border-b flex flex-col sm:flex-row items-center justify-between gap-4 shrink-0">
+              <div className="space-y-1 text-center sm:text-left">
+                <DialogTitle className="flex items-center justify-center sm:justify-start gap-2 text-xl">
+                  <CalendarDays className="h-6 w-6 text-primary" />
+                  Staff Birthday Calendar {new Date().getFullYear()}
                 </DialogTitle>
                 <DialogDescription>
-                  Full list of staff members celebrating birthdays this month.
+                  View birthdays for any month and download reports.
                 </DialogDescription>
               </div>
-              <div className="flex items-center gap-2 pr-8">
+              <div className="flex items-center gap-2">
+                <Select value={String(selectedViewMonth)} onValueChange={(v) => setSelectedViewMonth(parseInt(v))}>
+                    <SelectTrigger className="w-[150px] h-8">
+                        <SelectValue placeholder="Select Month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {MONTHS.map((m, idx) => <SelectItem key={idx} value={String(idx)}>{m}</SelectItem>)}
+                    </SelectContent>
+                </Select>
                 <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={handleDownloadPdf} 
-                    disabled={isGeneratingPdf || noticeData.monthlyBirthdays.length === 0}
+                    disabled={isGeneratingPdf || currentlyViewedBirthdays.length === 0}
                     className="h-8"
                 >
                     {isGeneratingPdf ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
@@ -283,11 +310,12 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
                 </Button>
               </div>
             </DialogHeader>
+            
             <div className="flex-1 overflow-y-auto min-h-0 bg-background">
                 <div className="p-6">
-                  {noticeData.monthlyBirthdays.length > 0 ? (
+                  {currentlyViewedBirthdays.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-                      {noticeData.monthlyBirthdays.map((staff, index) => {
+                      {currentlyViewedBirthdays.map((staff, index) => {
                         const avatarColorClass = getColorClass(staff.name);
                         return (
                           <div key={index} className="flex items-center gap-4 p-3 rounded-lg border bg-secondary/10 hover:bg-secondary/20 transition-colors">
@@ -308,8 +336,9 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
                       })}
                     </div>
                   ) : (
-                    <div className="text-center py-20">
-                      <p className="text-muted-foreground italic">No birthdays recorded for this month.</p>
+                    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                      <CalendarDays className="h-12 w-12 opacity-20 mb-4" />
+                      <p className="italic">No birthdays recorded for {MONTHS[selectedViewMonth]}.</p>
                     </div>
                   )}
                 </div>
