@@ -259,7 +259,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
             </ScrollArea>
           </div>
 
-          <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col p-0 overflow-hidden">
+          <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 overflow-hidden">
             <DialogHeader className="p-6 pb-4 border-b flex flex-row items-center justify-between shrink-0">
               <div className="space-y-1">
                 <DialogTitle className="flex items-center gap-2 text-xl">
@@ -283,8 +283,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
                 </Button>
               </div>
             </DialogHeader>
-            <div className="flex-1 min-h-0">
-              <ScrollArea className="h-full">
+            <div className="flex-1 overflow-y-auto min-h-0 bg-background">
                 <div className="p-6">
                   {noticeData.monthlyBirthdays.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
@@ -314,7 +313,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
                     </div>
                   )}
                 </div>
-              </ScrollArea>
             </div>
             <DialogFooter className="p-4 border-t shrink-0">
                 <DialogClose asChild>
