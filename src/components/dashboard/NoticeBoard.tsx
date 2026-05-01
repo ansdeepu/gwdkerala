@@ -133,6 +133,32 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
       const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
+      // Pre-fetch images
+      const images: (any | null)[] = await Promise.all(
+        monthData.map(async (staff) => {
+          if (!staff.photoUrl) return null;
+          try {
+            // Use no-cache to ensure fresh data and attempt to bypass some restrictions
+            const res = await fetch(staff.photoUrl, { mode: 'no-cors' });
+            // Note: 'no-cors' will return an opaque response which we can't read.
+            // In a production app, images would need to be on a domain that permits CORS.
+            // For now, we try a normal fetch first.
+            const normalRes = await fetch(staff.photoUrl).catch(() => null);
+            if (!normalRes || !normalRes.ok) return null;
+            
+            const arrayBuffer = await normalRes.arrayBuffer();
+            const contentType = normalRes.headers.get('content-type');
+            if (contentType?.includes('png')) {
+              return await pdfDoc.embedPng(arrayBuffer);
+            } else {
+              return await pdfDoc.embedJpg(arrayBuffer);
+            }
+          } catch (e) {
+            return null;
+          }
+        })
+      );
+
       const PAGE_WIDTH = 595.28; // A4
       const PAGE_HEIGHT = 841.89;
       const MARGIN = 40;
@@ -156,7 +182,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
 
       monthData.forEach((staff, index) => {
         const col = index % 2;
-        const row = Math.floor(index / 2);
         
         // Calculate Y position for the row of cards
         if (col === 0 && index > 0) {
@@ -177,39 +202,58 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
           y,
           width: CARD_WIDTH,
           height: CARD_HEIGHT,
-          color: rgb(0.97, 0.98, 1), // bg-secondary/10 approx
+          color: rgb(0.97, 0.98, 1), 
           borderColor: rgb(0.85, 0.88, 0.92),
           borderWidth: 1,
         });
 
-        // Draw Avatar Circle (simplified placeholder)
+        // Draw Avatar Section
         const avatarSize = 34;
         const avatarX = x + 10;
         const avatarY = y + (CARD_HEIGHT - avatarSize) / 2;
         
-        page.drawCircle({
-          x: avatarX + avatarSize / 2,
-          y: avatarY + avatarSize / 2,
-          size: avatarSize / 2,
-          color: rgb(0.8, 0.85, 1),
-          borderColor: rgb(0.7, 0.75, 0.9),
-          borderWidth: 1,
-        });
+        const embeddedImage = images[index];
 
-        // Draw Initials inside Avatar
-        const initials = getInitials(staff.name);
-        const initialsWidth = helveticaBold.widthOfTextAtSize(initials, 10);
-        page.drawText(initials, {
-          x: avatarX + (avatarSize - initialsWidth) / 2,
-          y: avatarY + (avatarSize / 2) - 3.5,
-          size: 10,
-          font: helveticaBold,
-          color: rgb(0.2, 0.3, 0.6),
-        });
+        if (embeddedImage) {
+            // Draw square image 
+            page.drawImage(embeddedImage, {
+                x: avatarX,
+                y: avatarY,
+                width: avatarSize,
+                height: avatarSize,
+            });
+            // Draw circular border on top to mimic UI
+            page.drawCircle({
+                x: avatarX + avatarSize / 2,
+                y: avatarY + avatarSize / 2,
+                size: avatarSize / 2,
+                borderColor: rgb(0.8, 0.85, 0.95),
+                borderWidth: 2,
+            });
+        } else {
+            // Fallback: Draw Avatar Circle with Initials
+            page.drawCircle({
+                x: avatarX + avatarSize / 2,
+                y: avatarY + avatarSize / 2,
+                size: avatarSize / 2,
+                color: rgb(0.8, 0.85, 1),
+                borderColor: rgb(0.7, 0.75, 0.9),
+                borderWidth: 1,
+            });
+
+            const initials = getInitials(staff.name);
+            const initialsWidth = helveticaBold.widthOfTextAtSize(initials, 10);
+            page.drawText(initials, {
+                x: avatarX + (avatarSize - initialsWidth) / 2,
+                y: avatarY + (avatarSize / 2) - 3.5,
+                size: 10,
+                font: helveticaBold,
+                color: rgb(0.2, 0.3, 0.6),
+            });
+        }
 
         // Draw Name & Designation
         const textX = avatarX + avatarSize + 10;
-        const maxTextWidth = CARD_WIDTH - avatarSize - 65; // Leave room for date section
         
         page.drawText(staff.name.length > 25 ? staff.name.substring(0, 22) + '...' : staff.name, {
           x: textX,
