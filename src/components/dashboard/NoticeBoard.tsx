@@ -44,7 +44,8 @@ const getInitials = (name?: string) => {
   if (!name || name.trim() === '') return 'U';
   return name
     .trim()
-    .split(/\s+/)
+    .split(/[\s-]+/)
+    .filter(Boolean)
     .map(n => n[0])
     .slice(0, 2)
     .join('')
@@ -71,7 +72,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
     const todaysBirthdays: { name: string, designation?: Designation, photoUrl?: string | null }[] = [];
     const upcomingBirthdaysInMonth: { name: string; designation?: Designation; photoUrl?: string | null; dateOfBirth: Date }[] = [];
     
-    // Group all year birthdays by month
     const allYearBirthdays: Record<number, { name: string; designation?: Designation; photoUrl?: string | null; dateOfBirth: Date }[]> = {};
     for (let i = 0; i < 12; i++) allYearBirthdays[i] = [];
 
@@ -101,7 +101,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
       }
     }
 
-    // Sort within months
     for (let i = 0; i < 12; i++) {
         allYearBirthdays[i].sort((a, b) => a.dateOfBirth.getDate() - b.dateOfBirth.getDate());
     }
@@ -129,59 +128,140 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
     setIsGeneratingPdf(true);
     try {
       const pdfDoc = await PDFDocument.create();
-      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-      let page = pdfDoc.addPage();
-      const { width, height } = page.getSize();
+      const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+      const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+      const helvetica = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+      const PAGE_WIDTH = 595.28; // A4
+      const PAGE_HEIGHT = 841.89;
+      const MARGIN = 40;
+      const CARD_WIDTH = (PAGE_WIDTH - (MARGIN * 2) - 15) / 2;
+      const CARD_HEIGHT = 65;
+      const COL_GAP = 15;
+      const ROW_GAP = 10;
       
-      const MARGIN = 50;
-      let y = height - MARGIN;
+      let page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      let y = PAGE_HEIGHT - MARGIN - 40;
 
-      const monthName = MONTHS[selectedViewMonth];
-      const year = new Date().getFullYear();
-
-      // Title
-      page.drawText(`Staff Birthdays - ${monthName} ${year}`, { 
+      // Header
+      page.drawText('GROUND WATER DEPARTMENT', { x: MARGIN, y: PAGE_HEIGHT - MARGIN, size: 14, font: timesRomanBold, color: rgb(0, 0, 0) });
+      page.drawText(`Staff Birthday Calendar - ${MONTHS[selectedViewMonth]} ${new Date().getFullYear()}`, { 
         x: MARGIN, 
-        y, 
-        size: 20, 
-        font: boldFont 
+        y: PAGE_HEIGHT - MARGIN - 18, 
+        size: 11, 
+        font: timesRoman, 
+        color: rgb(0.4, 0.4, 0.4) 
       });
-      y -= 45;
 
-      // Table Headers
-      page.drawText('Date', { x: MARGIN, y, size: 12, font: boldFont });
-      page.drawText('Name', { x: MARGIN + 45, y, size: 12, font: boldFont });
-      page.drawText('Designation', { x: MARGIN + 230, y, size: 12, font: boldFont });
-      
-      y -= 8;
-
-      // Draw a line under header
-      page.drawLine({
-        start: { x: MARGIN, y },
-        end: { x: width - MARGIN, y },
-        thickness: 1,
-        color: rgb(0.8, 0.8, 0.8)
-      });
-      
-      y -= 20;
-
-      monthData.forEach((staff) => {
-        if (y < MARGIN) {
-          page = pdfDoc.addPage();
-          y = page.getHeight() - MARGIN - 40;
+      monthData.forEach((staff, index) => {
+        const col = index % 2;
+        const row = Math.floor(index / 2);
+        
+        // Calculate Y position for the row of cards
+        if (col === 0 && index > 0) {
+          y -= (CARD_HEIGHT + ROW_GAP);
         }
+
+        // Check if we need a new page
+        if (y < MARGIN + CARD_HEIGHT) {
+          page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+          y = PAGE_HEIGHT - MARGIN - 40;
+        }
+
+        const x = MARGIN + (col * (CARD_WIDTH + COL_GAP));
+
+        // Draw Card Background
+        page.drawRectangle({
+          x,
+          y,
+          width: CARD_WIDTH,
+          height: CARD_HEIGHT,
+          color: rgb(0.97, 0.98, 1), // bg-secondary/10 approx
+          borderColor: rgb(0.85, 0.88, 0.92),
+          borderWidth: 1,
+        });
+
+        // Draw Avatar Circle (simplified placeholder)
+        const avatarSize = 34;
+        const avatarX = x + 10;
+        const avatarY = y + (CARD_HEIGHT - avatarSize) / 2;
         
+        page.drawCircle({
+          x: avatarX + avatarSize / 2,
+          y: avatarY + avatarSize / 2,
+          size: avatarSize / 2,
+          color: rgb(0.8, 0.85, 1),
+          borderColor: rgb(0.7, 0.75, 0.9),
+          borderWidth: 1,
+        });
+
+        // Draw Initials inside Avatar
+        const initials = getInitials(staff.name);
+        const initialsWidth = helveticaBold.widthOfTextAtSize(initials, 10);
+        page.drawText(initials, {
+          x: avatarX + (avatarSize - initialsWidth) / 2,
+          y: avatarY + (avatarSize / 2) - 3.5,
+          size: 10,
+          font: helveticaBold,
+          color: rgb(0.2, 0.3, 0.6),
+        });
+
+        // Draw Name & Designation
+        const textX = avatarX + avatarSize + 10;
+        const maxTextWidth = CARD_WIDTH - avatarSize - 65; // Leave room for date section
+        
+        page.drawText(staff.name.length > 25 ? staff.name.substring(0, 22) + '...' : staff.name, {
+          x: textX,
+          y: y + 36,
+          size: 9.5,
+          font: helveticaBold,
+          color: rgb(0.1, 0.1, 0.1),
+        });
+
+        const designation = staff.designation || 'Staff Member';
+        page.drawText(designation.length > 30 ? designation.substring(0, 27) + '...' : designation, {
+          x: textX,
+          y: y + 22,
+          size: 8,
+          font: helvetica,
+          color: rgb(0.4, 0.4, 0.4),
+        });
+
+        // Draw Vertical Divider for Date
+        const dividerX = x + CARD_WIDTH - 45;
+        page.drawLine({
+          start: { x: dividerX, y: y + 8 },
+          end: { x: dividerX, y: y + CARD_HEIGHT - 8 },
+          thickness: 1,
+          color: rgb(0.9, 0.92, 0.95),
+        });
+
+        // Draw Date Info
         const day = format(staff.dateOfBirth, 'dd');
-        page.drawText(day, { x: MARGIN, y, size: 10, font });
-        page.drawText(staff.name, { x: MARGIN + 45, y, size: 10, font });
-        page.drawText(staff.designation || 'N/A', { x: MARGIN + 230, y, size: 10, font });
+        const monthShort = format(staff.dateOfBirth, 'MMM').toUpperCase();
         
-        y -= 20;
+        const dayWidth = helveticaBold.widthOfTextAtSize(day, 16);
+        page.drawText(day, {
+          x: dividerX + (45 - dayWidth) / 2,
+          y: y + 30,
+          size: 16,
+          font: helveticaBold,
+          color: rgb(0.2, 0.4, 0.8), // primary blue
+        });
+
+        const monthWidth = helveticaBold.widthOfTextAtSize(monthShort, 8);
+        page.drawText(monthShort, {
+          x: dividerX + (45 - monthWidth) / 2,
+          y: y + 18,
+          size: 8,
+          font: helveticaBold,
+          color: rgb(0.5, 0.5, 0.5),
+        });
       });
 
       const pdfBytes = await pdfDoc.save();
-      download(pdfBytes, `Staff_Birthdays_${monthName}_${year}.pdf`, 'application/pdf');
+      download(pdfBytes, `Staff_Birthdays_${MONTHS[selectedViewMonth]}_${new Date().getFullYear()}.pdf`, 'application/pdf');
       toast({ title: "PDF Generated" });
     } catch (error: any) {
       console.error("PDF generation error:", error);
@@ -199,7 +279,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
         <CardTitle className="flex items-center gap-2"><Megaphone className="h-5 w-5 text-primary" />Birthday Updates</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 pt-0 min-h-0">
-        {/* Today's Birthdays Section */}
         <Dialog open={!!selectedBirthday} onOpenChange={(isOpen) => !isOpen && setSelectedBirthday(null)}>
           <div className={cn("border rounded-lg p-3 bg-background flex flex-col")}>
             <h3 className="text-sm font-semibold mb-2 flex items-center gap-2"><Cake className="h-4 w-4 text-pink-500" />Today's Birthdays ({noticeData.todaysBirthdays.length})</h3>
@@ -246,7 +325,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
           </DialogContent>
         </Dialog>
         
-        {/* Upcoming Birthdays Section with Annual Calendar Dialog */}
         <Dialog open={isYearListOpen} onOpenChange={setIsYearListOpen}>
           <div className={cn("border rounded-lg p-3 bg-background flex flex-col flex-1 min-h-0")}>
             <DialogTrigger asChild>
