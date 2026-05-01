@@ -4,13 +4,16 @@
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { StaffMember, Designation } from '@/lib/schemas';
 import { isValid, format } from 'date-fns';
-import { Megaphone, Cake, Gift, PartyPopper, ChevronRight } from 'lucide-react';
-
+import { Megaphone, Cake, Gift, PartyPopper, ChevronRight, FileDown, Loader2 } from 'lucide-react';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import download from 'downloadjs';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const hashCode = (str: string): number => {
     let hash = 0;
@@ -52,8 +55,10 @@ interface NoticeBoardProps {
 }
 
 export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
+  const { toast } = useToast();
   const [selectedBirthday, setSelectedBirthday] = useState<{ name: string, designation?: Designation, photoUrl?: string | null } | null>(null);
   const [isMonthListOpen, setIsMonthListOpen] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   
   const noticeData = useMemo(() => {
     const todaysBirthdays: { name: string, designation?: Designation, photoUrl?: string | null }[] = [];
@@ -99,6 +104,60 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
   const todayBirthdayList = enableTodayScrolling ? [...noticeData.todaysBirthdays, ...noticeData.todaysBirthdays] : noticeData.todaysBirthdays;
   const upcomingBirthdayList = enableUpcomingScrolling ? [...noticeData.upcomingBirthdays, ...noticeData.upcomingBirthdays] : noticeData.upcomingBirthdays;
 
+  const handleDownloadPdf = async () => {
+    if (noticeData.monthlyBirthdays.length === 0) {
+      toast({ title: "No data to export" });
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+    try {
+      const pdfDoc = await PDFDocument.create();
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+      let page = pdfDoc.addPage();
+      const { width, height } = page.getSize();
+      let y = height - 50;
+
+      const monthYear = format(new Date(), 'MMMM yyyy');
+      page.drawText(`Staff Birthdays - ${monthYear}`, { x: 50, y, size: 18, font: boldFont });
+      y -= 40;
+
+      // Table Headers
+      page.drawText('Date', { x: 50, y, size: 11, font: boldFont });
+      page.drawText('Name', { x: 100, y, size: 11, font: boldFont });
+      page.drawText('Designation', { x: 300, y, size: 11, font: boldFont });
+      y -= 20;
+
+      // Draw a line under header
+      page.drawLine({
+        start: { x: 50, y: y + 15 },
+        end: { x: width - 50, y: y + 15 },
+        thickness: 1,
+        color: rgb(0.8, 0.8, 0.8)
+      });
+
+      noticeData.monthlyBirthdays.forEach((staff) => {
+        if (y < 50) {
+          page = pdfDoc.addPage();
+          y = page.getHeight() - 50;
+        }
+        page.drawText(format(staff.dateOfBirth, 'dd'), { x: 50, y, size: 10, font });
+        page.drawText(staff.name, { x: 100, y, size: 10, font });
+        page.drawText(staff.designation || 'N/A', { x: 300, y, size: 10, font });
+        y -= 15;
+      });
+
+      const pdfBytes = await pdfDoc.save();
+      download(pdfBytes, `Staff_Birthdays_${monthYear.replace(' ', '_')}.pdf`, 'application/pdf');
+      toast({ title: "PDF Generated" });
+    } catch (error: any) {
+      console.error("PDF generation error:", error);
+      toast({ title: "Failed to generate PDF", variant: "destructive" });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   return (
     <Card className="shadow-lg flex flex-col h-[450px]">
@@ -200,17 +259,31 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
             </ScrollArea>
           </div>
 
-          <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0">
-            <DialogHeader className="p-6 pb-4 border-b">
-              <DialogTitle className="flex items-center gap-2 text-xl">
-                <Cake className="h-6 w-6 text-primary" />
-                Birthdays in {format(new Date(), 'MMMM yyyy')}
-              </DialogTitle>
-              <DialogDescription>
-                Full list of staff members celebrating birthdays this month.
-              </DialogDescription>
+          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+            <DialogHeader className="p-6 pb-4 border-b flex flex-row items-center justify-between">
+              <div className="space-y-1">
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <Cake className="h-6 w-6 text-primary" />
+                  Birthdays in {format(new Date(), 'MMMM yyyy')}
+                </DialogTitle>
+                <DialogDescription>
+                  Full list of staff members celebrating birthdays this month.
+                </DialogDescription>
+              </div>
+              <div className="flex items-center gap-2 pr-8">
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleDownloadPdf} 
+                    disabled={isGeneratingPdf || noticeData.monthlyBirthdays.length === 0}
+                    className="h-8"
+                >
+                    {isGeneratingPdf ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
+                    Download PDF
+                </Button>
+              </div>
             </DialogHeader>
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 min-h-0">
               <ScrollArea className="h-full">
                 <div className="p-6">
                   {noticeData.monthlyBirthdays.length > 0 ? (
@@ -243,6 +316,11 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
                 </div>
               </ScrollArea>
             </div>
+            <DialogFooter className="p-4 border-t shrink-0">
+                <DialogClose asChild>
+                    <Button variant="secondary">Close</Button>
+                </DialogClose>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </CardContent>
