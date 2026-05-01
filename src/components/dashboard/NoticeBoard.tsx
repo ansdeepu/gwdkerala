@@ -259,8 +259,8 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
             </ScrollArea>
           </div>
 
-          <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
-            <DialogHeader className="p-6 pb-4 border-b flex flex-row items-center justify-between">
+          <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col p-0 overflow-hidden">
+            <DialogHeader className="p-6 pb-4 border-b flex flex-row items-center justify-between shrink-0">
               <div className="space-y-1">
                 <DialogTitle className="flex items-center gap-2 text-xl">
                   <Cake className="h-6 w-6 text-primary" />
@@ -287,7 +287,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
               <ScrollArea className="h-full">
                 <div className="p-6">
                   {noticeData.monthlyBirthdays.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
                       {noticeData.monthlyBirthdays.map((staff, index) => {
                         const avatarColorClass = getColorClass(staff.name);
                         return (
