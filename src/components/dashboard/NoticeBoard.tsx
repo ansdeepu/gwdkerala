@@ -79,11 +79,10 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
     const todayMonth = today.getMonth();
     const todayDate = today.getDate();
     
-    const activeStaff = staffMembers.filter(s => s.status === 'Active');
+    const activeStaffWithDob = staffMembers.filter(s => s.status === 'Active' && s.dateOfBirth);
 
-    for (const staff of activeStaff) {
-      if (!staff.dateOfBirth) continue;
-      const dob = new Date(staff.dateOfBirth);
+    for (const staff of activeStaffWithDob) {
+      const dob = new Date(staff.dateOfBirth!);
       if (isValid(dob)) {
         const dobMonth = dob.getMonth();
         const dobDate = dob.getDate();
@@ -110,6 +109,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
       todaysBirthdays,
       upcomingBirthdays: upcomingBirthdaysInMonth,
       allYearBirthdays,
+      totalBirthdaysCount: activeStaffWithDob.length
     };
   }, [staffMembers]);
   
@@ -138,7 +138,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
         monthData.map(async (staff) => {
           if (!staff.photoUrl) return null;
           try {
-            // Attempt normal fetch. Browser must allow CORS for this to work.
             const normalRes = await fetch(staff.photoUrl).catch(() => null);
             if (!normalRes || !normalRes.ok) return null;
             
@@ -179,12 +178,10 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
       monthData.forEach((staff, index) => {
         const col = index % 2;
         
-        // Calculate Y position for the row of cards
         if (col === 0 && index > 0) {
           y -= (CARD_HEIGHT + ROW_GAP);
         }
 
-        // Check if we need a new page
         if (y < MARGIN + CARD_HEIGHT) {
           page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
           y = PAGE_HEIGHT - MARGIN - 40;
@@ -192,7 +189,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
 
         const x = MARGIN + (col * (CARD_WIDTH + COL_GAP));
 
-        // Draw Card Background
         page.drawRectangle({
           x,
           y,
@@ -203,7 +199,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
           borderWidth: 1,
         });
 
-        // Draw Avatar Section
         const avatarSize = 34;
         const avatarX = x + 10;
         const avatarY = y + (CARD_HEIGHT - avatarSize) / 2;
@@ -211,14 +206,12 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
         const embeddedImage = images[index];
 
         if (embeddedImage) {
-            // Draw square image - Circles removed as per request
             page.drawImage(embeddedImage, {
                 x: avatarX,
                 y: avatarY,
                 width: avatarSize,
                 height: avatarSize,
             });
-            // Draw a subtle square border instead of a circle
             page.drawRectangle({
               x: avatarX,
               y: avatarY,
@@ -228,7 +221,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
               borderWidth: 1,
             });
         } else {
-            // Fallback: Draw Avatar Square with Initials
             page.drawRectangle({
                 x: avatarX,
                 y: avatarY,
@@ -250,7 +242,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
             });
         }
 
-        // Draw Name & Designation
         const textX = avatarX + avatarSize + 10;
         
         page.drawText(staff.name.length > 25 ? staff.name.substring(0, 22) + '...' : staff.name, {
@@ -270,7 +261,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
           color: rgb(0.4, 0.4, 0.4),
         });
 
-        // Draw Vertical Divider for Date
         const dividerX = x + CARD_WIDTH - 45;
         page.drawLine({
           start: { x: dividerX, y: y + 8 },
@@ -279,7 +269,6 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
           color: rgb(0.9, 0.92, 0.95),
         });
 
-        // Draw Date Info
         const day = format(staff.dateOfBirth, 'dd');
         const monthShort = format(staff.dateOfBirth, 'MMM').toUpperCase();
         
@@ -289,7 +278,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
           y: y + 30,
           size: 16,
           font: helveticaBold,
-          color: rgb(0.2, 0.4, 0.8), // primary blue
+          color: rgb(0.2, 0.4, 0.8), 
         });
 
         const monthShortWidth = helveticaBold.widthOfTextAtSize(monthShort, 8);
@@ -376,7 +365,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
               >
                 <span className="flex items-center gap-2">
                   <Gift className="h-4 w-4 text-indigo-500" />
-                  Upcoming Birthdays ({noticeData.upcomingBirthdays.length})
+                  Staff Birthday Calendar ({noticeData.totalBirthdaysCount})
                 </span>
                 <span className="text-[10px] font-normal text-muted-foreground group-hover:underline flex items-center gap-0.5">
                   View Year <ChevronRight className="h-3 w-3" />
@@ -446,7 +435,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
               </div>
             </DialogHeader>
             
-            <div className="flex-1 overflow-y-auto min-h-0 bg-background">
+            <div className="flex-1 overflow-y-auto min-0 bg-background">
                 <div className="p-6">
                   {currentlyViewedBirthdays.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
