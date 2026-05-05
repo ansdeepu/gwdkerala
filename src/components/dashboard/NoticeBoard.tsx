@@ -109,7 +109,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
       todaysBirthdays,
       upcomingBirthdays: upcomingBirthdaysInMonth,
       allYearBirthdays,
-      totalBirthdaysCount: activeStaffWithDob.length
+      currentMonthCount: allYearBirthdays[todayMonth].length
     };
   }, [staffMembers]);
   
@@ -365,7 +365,7 @@ export default function NoticeBoard({ staffMembers }: NoticeBoardProps) {
               >
                 <span className="flex items-center gap-2">
                   <Gift className="h-4 w-4 text-indigo-500" />
-                  Staff Birthday Calendar ({noticeData.totalBirthdaysCount})
+                  Staff Birthday Calendar ({noticeData.currentMonthCount})
                 </span>
                 <span className="text-[10px] font-normal text-muted-foreground group-hover:underline flex items-center gap-0.5">
                   View Year <ChevronRight className="h-3 w-3" />
