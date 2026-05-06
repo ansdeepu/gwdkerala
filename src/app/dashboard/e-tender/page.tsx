@@ -815,7 +815,7 @@ export default function ETenderListPage() {
           tender.fileNo, tender.nameOfWork, tender.nameOfWorkMalayalam, tender.location, tender.tenderType,
           tender.presentStatus, tender.periodOfCompletion, tender.estimateAmount?.toString(),
           formatDateSafe(tender.tenderDate), formatDateSafe(tender.dateTimeOfOpening, true),
-          formatDateSafe(tender.dateTimeOfReceipt, true), bidderNames
+          formatDateSafe(tender.dateTimeOfOpening, true), bidderNames
         ].filter(Boolean).map(String).join(' ').toLowerCase();
         return {
           ...tender,
@@ -1100,9 +1100,9 @@ export default function ETenderListPage() {
                                     <TableRow>
                                         <TableHead className="w-[4%] px-2 py-3 text-sm">Sl. No.</TableHead>
                                         <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>
-                                        <TableHead className="w-[28%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
-                                        <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
-                                        <TableHead className="w-[14%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
+                                        <TableHead className="w-[44%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
+                                        <TableHead className="w-[11%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
+                                        <TableHead className="w-[11%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
                                         <TableHead className="w-[10%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('presentStatus')}>Status {getSortIcon('presentStatus')}</Button></TableHead>
                                         <TableHead className="text-center w-[8%] px-2 py-3">Actions</TableHead>
                                     </TableRow>
@@ -1139,8 +1139,8 @@ export default function ETenderListPage() {
                                                             {hasRetenders && <Badge variant="secondary" className="mt-1 w-fit bg-yellow-200 text-yellow-800">Re-tender</Badge>}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3 w-[28%]">{tender.nameOfWork}</TableCell>
-                                                    <TableCell className="align-top py-2 px-3 w-[14%] whitespace-nowrap">
+                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3 w-[44%]">{tender.nameOfWork}</TableCell>
+                                                    <TableCell className="align-top py-2 px-3 w-[11%] whitespace-nowrap">
                                                         <div className="flex flex-col text-xs">
                                                             {showOriginalReceipt && (
                                                                 <div className="text-muted-foreground line-through opacity-60 mb-1">
@@ -1156,7 +1156,7 @@ export default function ETenderListPage() {
                                                             ) : 'N/A'}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="align-top py-2 px-3 w-[14%] whitespace-nowrap">
+                                                    <TableCell className="align-top py-2 px-3 w-[11%] whitespace-nowrap">
                                                         <div className="flex flex-col text-xs">
                                                             {showOriginalOpening && (
                                                                 <div className="text-muted-foreground line-through opacity-60 mb-1">
