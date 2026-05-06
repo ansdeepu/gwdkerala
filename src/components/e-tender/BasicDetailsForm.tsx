@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useCallback } from 'react';
-import { useForm, FormProvider, useWatch, useFormContext } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -11,13 +11,14 @@ import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/co
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Save, X } from 'lucide-react';
 import type { E_tenderFormData, BasicDetailsFormData } from '@/lib/schemas/eTenderSchema';
-import { formatDateForInput } from './utils';
+import { formatDateForInput, toDateOrNull } from './utils';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 import { useDataStore } from '@/hooks/use-data-store';
 import { useTenderData } from './TenderDataContext';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { BasicDetailsSchema } from '@/lib/schemas/eTenderSchema';
 import { formatCase } from '@/lib/utils';
+import { format, isValid } from 'date-fns';
 
 interface BasicDetailsFormProps {
   onSubmit: (data: Partial<E_tenderFormData>) => void;
@@ -25,17 +26,111 @@ interface BasicDetailsFormProps {
   isSubmitting: boolean;
 }
 
+const DateTimePicker12h = ({ 
+    label, 
+    value, 
+    onChange,
+    disabled
+}: { 
+    label: string, 
+    value: any, 
+    onChange: (date: Date | null) => void,
+    disabled?: boolean
+}) => {
+    const d = toDateOrNull(value);
+    const datePart = d ? format(d, 'yyyy-MM-dd') : '';
+    
+    // UI parts
+    const h = d ? (d.getHours() % 12 || 12) : 10;
+    const m = d ? d.getMinutes() : 0;
+    const ampm = d ? (d.getHours() >= 12 ? 'PM' : 'AM') : 'AM';
+
+    const handleDateChange = (newDate: string) => {
+        if (!newDate) {
+            onChange(null);
+            return;
+        }
+        const hour24 = ampm === 'PM' ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h);
+        const date = new Date(newDate);
+        date.setHours(hour24, m, 0, 0);
+        onChange(date);
+    };
+
+    const handleTimeChange = (newH: number, newM: number, newAmpm: string) => {
+        if (!datePart) return;
+        const hour24 = newAmpm === 'PM' ? (newH === 12 ? 12 : newH + 12) : (newH === 12 ? 0 : newH);
+        const date = new Date(datePart);
+        date.setHours(hour24, newM, 0, 0);
+        onChange(date);
+    };
+
+    return (
+        <FormItem className="space-y-1">
+            <FormLabel>{label}</FormLabel>
+            <div className="flex flex-wrap items-center gap-2">
+                <FormControl>
+                    <Input 
+                        type="date" 
+                        className="w-[150px]" 
+                        value={datePart} 
+                        onChange={(e) => handleDateChange(e.target.value)}
+                        disabled={disabled}
+                    />
+                </FormControl>
+                <div className="flex items-center gap-1">
+                    <Select 
+                        value={String(h)} 
+                        onValueChange={(val) => handleTimeChange(parseInt(val), m, ampm)}
+                        disabled={disabled || !datePart}
+                    >
+                        <SelectTrigger className="w-[65px] h-10"><SelectValue /></SelectTrigger>
+                        <SelectContent className="max-h-60">
+                            {Array.from({ length: 12 }, (_, i) => String(i + 1)).map(hour => (
+                                <SelectItem key={hour} value={hour}>{hour}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <span className="font-bold">:</span>
+                    <Select 
+                        value={String(m).padStart(2, '0')} 
+                        onValueChange={(val) => handleTimeChange(h, parseInt(val), ampm)}
+                        disabled={disabled || !datePart}
+                    >
+                        <SelectTrigger className="w-[65px] h-10"><SelectValue /></SelectTrigger>
+                        <SelectContent className="max-h-60">
+                            {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(min => (
+                                <SelectItem key={min} value={min}>{min}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select 
+                        value={ampm} 
+                        onValueChange={(val) => handleTimeChange(h, m, val)}
+                        disabled={disabled || !datePart}
+                    >
+                        <SelectTrigger className="w-[75px] h-10"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="AM">AM</SelectItem>
+                            <SelectItem value="PM">PM</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+            <FormMessage />
+        </FormItem>
+    );
+};
+
 export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: BasicDetailsFormProps) {
     const { tender } = useTenderData();
-    const { allRateDescriptions } = useDataStore();
 
     const form = useForm<BasicDetailsFormData>({
         resolver: zodResolver(BasicDetailsSchema),
         defaultValues: {
             ...tender,
             tenderDate: formatDateForInput(tender.tenderDate),
-            dateTimeOfReceipt: formatDateForInput(tender.dateTimeOfReceipt, true),
-            dateTimeOfOpening: formatDateForInput(tender.dateTimeOfOpening, true),
+            // dateTimeOfReceipt and dateTimeOfOpening are kept as Date/String objects in the form state
+            // but the DateTimePicker12h handles the conversion for the UI.
         }
     });
     
@@ -156,8 +251,28 @@ export default function BasicDetailsForm({ onSubmit, onCancel, isSubmitting }: B
                                 )}/>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField name="dateTimeOfReceipt" control={control} render={({ field }) => ( <FormItem><FormLabel>Last Date & Time of Receipt</FormLabel><FormControl><Input type="datetime-local" {...field} value={formatDateForInput(field.value, true)} onChange={(e) => field.onChange(e.target.value || null)}/></FormControl><FormMessage /></FormItem> )}/>
-                                <FormField name="dateTimeOfOpening" control={control} render={({ field }) => ( <FormItem><FormLabel>Date & Time of Opening</FormLabel><FormControl><Input type="datetime-local" {...field} value={formatDateForInput(field.value, true)} onChange={(e) => field.onChange(e.target.value || null)}/></FormControl><FormMessage /></FormItem> )}/>
+                                <FormField 
+                                    name="dateTimeOfReceipt" 
+                                    control={control} 
+                                    render={({ field }) => (
+                                        <DateTimePicker12h 
+                                            label="Last Date & Time of Receipt" 
+                                            value={field.value} 
+                                            onChange={field.onChange} 
+                                        />
+                                    )}
+                                />
+                                <FormField 
+                                    name="dateTimeOfOpening" 
+                                    control={control} 
+                                    render={({ field }) => (
+                                        <DateTimePicker12h 
+                                            label="Date & Time of Opening" 
+                                            value={field.value} 
+                                            onChange={field.onChange} 
+                                        />
+                                    )}
+                                />
                             </div>
                             <FormField name="detailedEstimateUrl" control={control} render={({ field }) => (
                                 <FormItem>

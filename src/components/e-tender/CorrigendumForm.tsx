@@ -14,7 +14,8 @@ import { Loader2, Save, X } from 'lucide-react';
 import { CorrigendumSchema, type Corrigendum, corrigendumTypeOptions } from '@/lib/schemas/eTenderSchema';
 import { v4 as uuidv4 } from 'uuid';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { formatDateForInput } from './utils';
+import { formatDateForInput, toDateOrNull } from './utils';
+import { format, isValid } from 'date-fns';
 
 interface CorrigendumFormProps {
     onSubmit: (data: Corrigendum) => void;
@@ -32,6 +33,100 @@ const createDefaultCorrigendum = (): Corrigendum => ({
     corrigendumType: undefined,
 });
 
+const DateTimePicker12h = ({ 
+    label, 
+    value, 
+    onChange,
+    disabled
+}: { 
+    label: string, 
+    value: any, 
+    onChange: (date: Date | null) => void,
+    disabled?: boolean
+}) => {
+    const d = toDateOrNull(value);
+    const datePart = d ? format(d, 'yyyy-MM-dd') : '';
+    
+    const h = d ? (d.getHours() % 12 || 12) : 10;
+    const m = d ? d.getMinutes() : 0;
+    const ampm = d ? (d.getHours() >= 12 ? 'PM' : 'AM') : 'AM';
+
+    const handleDateChange = (newDate: string) => {
+        if (!newDate) {
+            onChange(null);
+            return;
+        }
+        const hour24 = ampm === 'PM' ? (h === 12 ? 12 : h + 12) : (h === 12 ? 0 : h);
+        const date = new Date(newDate);
+        date.setHours(hour24, m, 0, 0);
+        onChange(date);
+    };
+
+    const handleTimeChange = (newH: number, newM: number, newAmpm: string) => {
+        if (!datePart) return;
+        const hour24 = newAmpm === 'PM' ? (newH === 12 ? 12 : newH + 12) : (newH === 12 ? 0 : newH);
+        const date = new Date(datePart);
+        date.setHours(hour24, newM, 0, 0);
+        onChange(date);
+    };
+
+    return (
+        <FormItem className="space-y-1">
+            <FormLabel>{label}</FormLabel>
+            <div className="flex flex-wrap items-center gap-2">
+                <FormControl>
+                    <Input 
+                        type="date" 
+                        className="w-[150px]" 
+                        value={datePart} 
+                        onChange={(e) => handleDateChange(e.target.value)}
+                        disabled={disabled}
+                    />
+                </FormControl>
+                <div className="flex items-center gap-1">
+                    <Select 
+                        value={String(h)} 
+                        onValueChange={(val) => handleTimeChange(parseInt(val), m, ampm)}
+                        disabled={disabled || !datePart}
+                    >
+                        <SelectTrigger className="w-[65px] h-10"><SelectValue /></SelectTrigger>
+                        <SelectContent className="max-h-60">
+                            {Array.from({ length: 12 }, (_, i) => String(i + 1)).map(hour => (
+                                <SelectItem key={hour} value={hour}>{hour}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <span className="font-bold">:</span>
+                    <Select 
+                        value={String(m).padStart(2, '0')} 
+                        onValueChange={(val) => handleTimeChange(h, parseInt(val), ampm)}
+                        disabled={disabled || !datePart}
+                    >
+                        <SelectTrigger className="w-[65px] h-10"><SelectValue /></SelectTrigger>
+                        <SelectContent className="max-h-60">
+                            {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(min => (
+                                <SelectItem key={min} value={min}>{min}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select 
+                        value={ampm} 
+                        onValueChange={(val) => handleTimeChange(h, m, val)}
+                        disabled={disabled || !datePart}
+                    >
+                        <SelectTrigger className="w-[75px] h-10"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="AM">AM</SelectItem>
+                            <SelectItem value="PM">PM</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+            </div>
+            <FormMessage />
+        </FormItem>
+    );
+};
+
 export default function CorrigendumForm({ onSubmit, onCancel, isSubmitting, initialData }: CorrigendumFormProps) {
     const form = useForm<Corrigendum>({
         resolver: zodResolver(CorrigendumSchema),
@@ -46,8 +141,6 @@ export default function CorrigendumForm({ onSubmit, onCancel, isSubmitting, init
             ...defaultValues,
             ...(initialData || {}),
             corrigendumDate: formatDateForInput(initialData?.corrigendumDate),
-            lastDateOfReceipt: formatDateForInput(initialData?.lastDateOfReceipt, true),
-            dateOfOpeningTender: formatDateForInput(initialData?.dateOfOpeningTender, true),
         };
         form.reset(valuesToSet);
     }, [initialData, form]);
@@ -55,7 +148,7 @@ export default function CorrigendumForm({ onSubmit, onCancel, isSubmitting, init
     return (
         <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-                <DialogHeader className="p-6 pb-4 shrink-0">
+                <DialogHeader className="p-6 pb-4 shrink-0 border-b">
                     <DialogTitle>{initialData?.id ? 'Edit Corrigendum' : 'Add New Corrigendum'}</DialogTitle>
                     <DialogDescription>Enter the details for the corrigendum.</DialogDescription>
                 </DialogHeader>
@@ -74,17 +167,33 @@ export default function CorrigendumForm({ onSubmit, onCancel, isSubmitting, init
                                     </FormItem>
                                 )}/>
                                 <FormField name="corrigendumDate" control={form.control} render={({ field }) => (
-                                    <FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} value={formatDateForInput(field.value) ?? ''} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} value={formatDateForInput(field.value) ?? ''} onChange={(e) => field.onChange(e.target.value || null)}/></FormControl><FormMessage /></FormItem>
                                 )}/>
                             </div>
                             {watchedType === 'Date Extension' && (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField name="lastDateOfReceipt" control={form.control} render={({ field }) => (
-                                        <FormItem><FormLabel>New Last Date & Time</FormLabel><FormControl><Input type="datetime-local" {...field} value={formatDateForInput(field.value, true) ?? ''} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
-                                    <FormField name="dateOfOpeningTender" control={form.control} render={({ field }) => (
-                                        <FormItem><FormLabel>New Opening Date & Time</FormLabel><FormControl><Input type="datetime-local" {...field} value={formatDateForInput(field.value, true) ?? ''} /></FormControl><FormMessage /></FormItem>
-                                    )}/>
+                                    <FormField 
+                                        name="lastDateOfReceipt" 
+                                        control={form.control} 
+                                        render={({ field }) => (
+                                            <DateTimePicker12h 
+                                                label="New Last Date & Time" 
+                                                value={field.value} 
+                                                onChange={field.onChange} 
+                                            />
+                                        )}
+                                    />
+                                    <FormField 
+                                        name="dateOfOpeningTender" 
+                                        control={form.control} 
+                                        render={({ field }) => (
+                                            <DateTimePicker12h 
+                                                label="New Opening Date & Time" 
+                                                value={field.value} 
+                                                onChange={field.onChange} 
+                                            />
+                                        )}
+                                    />
                                 </div>
                             )}
                             <FormField name="reason" control={form.control} render={({ field }) => (
@@ -93,7 +202,7 @@ export default function CorrigendumForm({ onSubmit, onCancel, isSubmitting, init
                         </div>
                     </ScrollArea>
                 </div>
-                <DialogFooter className="p-6 pt-4 shrink-0 mt-auto">
+                <DialogFooter className="p-6 pt-4 shrink-0 mt-auto border-t">
                     <Button variant="outline" type="button" onClick={onCancel} disabled={isSubmitting}>
                         <X className="mr-2 h-4 w-4" /> Cancel
                     </Button>
