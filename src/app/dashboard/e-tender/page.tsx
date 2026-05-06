@@ -1,3 +1,4 @@
+
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
@@ -1112,8 +1113,19 @@ export default function ETenderListPage() {
                                             const hasRetenders = tender.retenders && tender.retenders.length > 0;
                                             const latestRetender = hasRetenders ? tender.retenders![tender.retenders!.length - 1] : null;
 
-                                            const lastDateOfReceipt = latestRetender ? latestRetender.lastDateOfReceipt : tender.dateTimeOfReceipt;
-                                            const dateOfOpening = latestRetender ? latestRetender.dateOfOpeningTender : tender.dateTimeOfOpening;
+                                            const dateCorrigendums = tender.corrigendums?.filter(c => c.corrigendumType === 'Date Extension') || [];
+                                            const latestDateCorr = dateCorrigendums.length > 0 
+                                                ? [...dateCorrigendums].sort((a, b) => (toDateOrNull(b.corrigendumDate)?.getTime() ?? 0) - (toDateOrNull(a.corrigendumDate)?.getTime() ?? 0))[0]
+                                                : null;
+
+                                            const originalReceipt = tender.dateTimeOfReceipt;
+                                            const originalOpening = tender.dateTimeOfOpening;
+
+                                            const activeReceipt = latestRetender?.lastDateOfReceipt || latestDateCorr?.lastDateOfReceipt || originalReceipt;
+                                            const activeOpening = latestRetender?.dateOfOpeningTender || latestDateCorr?.dateOfOpeningTender || originalOpening;
+
+                                            const showOriginalReceipt = activeReceipt && originalReceipt && (toDateOrNull(activeReceipt)?.getTime() !== toDateOrNull(originalReceipt)?.getTime());
+                                            const showOriginalOpening = activeOpening && originalOpening && (toDateOrNull(activeOpening)?.getTime() !== toDateOrNull(originalOpening)?.getTime());
 
                                             return (
                                                 <TableRow key={tender.id} className={getStatusRowClass(tender.presentStatus)}>
@@ -1129,20 +1141,36 @@ export default function ETenderListPage() {
                                                     </TableCell>
                                                     <TableCell className="whitespace-normal break-words align-top py-2 px-3 w-[28%]">{tender.nameOfWork}</TableCell>
                                                     <TableCell className="align-top py-2 px-3 w-[14%] whitespace-nowrap">
-                                                        {lastDateOfReceipt ? (
-                                                            <div className="flex flex-col text-xs">
-                                                                <span>{format(toDateOrNull(lastDateOfReceipt)!, 'dd/MM/yyyy')}</span>
-                                                                <span>{format(toDateOrNull(lastDateOfReceipt)!, 'hh:mm a')}</span>
-                                                            </div>
-                                                        ) : 'N/A'}
+                                                        <div className="flex flex-col text-xs">
+                                                            {showOriginalReceipt && (
+                                                                <div className="text-muted-foreground line-through opacity-60 mb-1">
+                                                                    <span>{format(toDateOrNull(originalReceipt)!, 'dd/MM/yyyy')}</span>
+                                                                    <span className="ml-1">{format(toDateOrNull(originalReceipt)!, 'hh:mm a')}</span>
+                                                                </div>
+                                                            )}
+                                                            {activeReceipt ? (
+                                                                <div className="font-semibold">
+                                                                    <span>{format(toDateOrNull(activeReceipt)!, 'dd/MM/yyyy')}</span>
+                                                                    <span className="ml-1">{format(toDateOrNull(activeReceipt)!, 'hh:mm a')}</span>
+                                                                </div>
+                                                            ) : 'N/A'}
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className="align-top py-2 px-3 w-[14%] whitespace-nowrap">
-                                                        {dateOfOpening ? (
-                                                            <div className="flex flex-col text-xs">
-                                                                <span>{format(toDateOrNull(dateOfOpening)!, 'dd/MM/yyyy')}</span>
-                                                                <span>{format(toDateOrNull(dateOfOpening)!, 'hh:mm a')}</span>
-                                                            </div>
-                                                        ) : 'N/A'}
+                                                        <div className="flex flex-col text-xs">
+                                                            {showOriginalOpening && (
+                                                                <div className="text-muted-foreground line-through opacity-60 mb-1">
+                                                                    <span>{format(toDateOrNull(originalOpening)!, 'dd/MM/yyyy')}</span>
+                                                                    <span className="ml-1">{format(toDateOrNull(originalOpening)!, 'hh:mm a')}</span>
+                                                                </div>
+                                                            )}
+                                                            {activeOpening ? (
+                                                                <div className="font-semibold">
+                                                                    <span>{format(toDateOrNull(activeOpening)!, 'dd/MM/yyyy')}</span>
+                                                                    <span className="ml-1">{format(toDateOrNull(activeOpening)!, 'hh:mm a')}</span>
+                                                                </div>
+                                                            ) : 'N/A'}
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className="align-top py-2 px-3 w-[10%]">
                                                         {tender.presentStatus && <Badge className={cn(getStatusBadgeClass(tender.presentStatus))}>{tender.presentStatus}</Badge>}
