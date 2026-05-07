@@ -48,6 +48,8 @@ export interface FlattenedReportRow {
   siteName: string; 
   siteWorkStatus: string; 
   siteTotalExpenditure: string; 
+  totalRemittance: string;
+  balance: string;
 }
 
 const ITEMS_PER_PAGE = 50;
@@ -101,7 +103,7 @@ const safeParseDate = (dateValue: any): Date | null => {
 
 export default function ReportsPage() {
   const { setHeader } = usePageHeader();
-  const { allRigCompressors, officeAddress } = useDataStore();
+  const { allRigCompressors, officeAddress, allFileEntries: globalFiles } = useDataStore();
   useEffect(() => {
     setHeader('Reports', 'Generate custom reports by applying a combination of filters.');
   }, [setHeader]);
@@ -125,6 +127,7 @@ export default function ReportsPage() {
   const [applicationTypeFilter, setApplicationTypeFilter] = useState("all");
   const [typeOfRigFilter, setTypeOfRigFilter] = useState("all");
   const [constituencyFilter, setConstituencyFilter] = useState("all");
+  const [applicantNameFilter, setApplicantNameFilter] = useState("all");
 
   const [currentDate, setCurrentDate] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState<string | null>(null);
@@ -134,6 +137,10 @@ export default function ReportsPage() {
 
   const uniqueApplicationTypeOptions = useMemo(() => [...new Set(applicationTypeOptions)], []);
 
+  const applicantOptions = useMemo(() => {
+      const names = fileEntries.map(e => e.applicantName).filter(Boolean);
+      return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+  }, [fileEntries]);
 
   useEffect(() => {
     const now = new Date();
@@ -212,6 +219,9 @@ export default function ReportsPage() {
     if (statusFilter !== "all") {
       currentEntries = currentEntries.filter(entry => entry.fileStatus === statusFilter);
     }
+    if (applicantNameFilter !== "all") {
+        currentEntries = currentEntries.filter(entry => entry.applicantName === applicantNameFilter);
+    }
     if (applicationTypeFilter !== "all") {
       currentEntries = currentEntries.filter(entry => entry.applicationType === applicationTypeFilter);
     }
@@ -267,6 +277,9 @@ export default function ReportsPage() {
       const fileFirstRemittanceDateStr = entry.remittanceDetails?.[0]?.dateOfRemittance;
       const parsedRemittanceDate = safeParseDate(fileFirstRemittanceDateStr);
       const fileFirstRemittanceDate = parsedRemittanceDate ? format(parsedRemittanceDate, "dd/MM/yyyy") : "-";
+      
+      const totalRemittance = (Number(entry.totalRemittance) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const balance = (Number(entry.overallBalance) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
       if (isSiteLevelFilterActive) {
         entry.siteDetails?.forEach(site => {
@@ -281,6 +294,8 @@ export default function ReportsPage() {
               fileNo: entry.fileNo || "-", applicantName: entry.applicantName || "-", fileFirstRemittanceDate, fileStatus: entry.fileStatus || "-",
               siteName: site.nameOfSite || "-", sitePurpose: (site.purpose as string) || "-", siteWorkStatus: site.workStatus || "-",
               siteTotalExpenditure: site.totalExpenditure?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "0.00",
+              totalRemittance,
+              balance
             });
           }
         });
@@ -295,12 +310,16 @@ export default function ReportsPage() {
                 fileNo: entry.fileNo || "-", applicantName: entry.applicantName || "-", fileFirstRemittanceDate, fileStatus: entry.fileStatus || "-",
                 siteName: site.nameOfSite || "-", sitePurpose: (site.purpose as string) || "-", siteWorkStatus: site.workStatus || "-",
                 siteTotalExpenditure: site.totalExpenditure?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "0.00",
+                totalRemittance,
+                balance
               });
             });
           } else {
             flattenedRows.push({
               fileNo: entry.fileNo || "-", applicantName: entry.applicantName || "-", fileFirstRemittanceDate, fileStatus: entry.fileStatus || "-",
               siteName: "-", sitePurpose: "-", siteWorkStatus: "-", siteTotalExpenditure: "0.00",
+              totalRemittance,
+              balance
             });
           }
         } else {
@@ -310,6 +329,8 @@ export default function ReportsPage() {
                 fileNo: entry.fileNo || "-", applicantName: entry.applicantName || "-", fileFirstRemittanceDate, fileStatus: entry.fileStatus || "-",
                 siteName: site.nameOfSite || "-", sitePurpose: (site.purpose as string) || "-", siteWorkStatus: site.workStatus || "-",
                 siteTotalExpenditure: site.totalExpenditure?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? "0.00",
+                totalRemittance,
+                balance
               });
             }
           });
@@ -326,7 +347,9 @@ export default function ReportsPage() {
           siteName: siteNames, 
           sitePurpose: sitePurposes,
           siteWorkStatus: siteWorkStatuses, 
-          siteTotalExpenditure: siteTotalExpenditure.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          siteTotalExpenditure: siteTotalExpenditure.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+          totalRemittance,
+          balance
         });
       }
     });
@@ -335,7 +358,7 @@ export default function ReportsPage() {
   }, [
     fileEntries, searchTerm, statusFilter, serviceTypeFilter, workCategoryFilter, 
     startDate, endDate, dateFilterType,
-    applicationTypeFilter, typeOfRigFilter, constituencyFilter, searchParams, officeAddress
+    applicationTypeFilter, typeOfRigFilter, constituencyFilter, applicantNameFilter, searchParams, officeAddress
   ]);
 
   useEffect(() => {
@@ -358,7 +381,7 @@ export default function ReportsPage() {
     fileEntries, 
     searchTerm, statusFilter, serviceTypeFilter, workCategoryFilter, 
     startDate, endDate, dateFilterType,
-    applicationTypeFilter, typeOfRigFilter, constituencyFilter, 
+    applicationTypeFilter, typeOfRigFilter, constituencyFilter, applicantNameFilter,
     entriesLoading, authIsLoading,
     applyFilters 
   ]);
@@ -392,6 +415,7 @@ export default function ReportsPage() {
     setApplicationTypeFilter("all");
     setTypeOfRigFilter("all");
     setConstituencyFilter("all");
+    setApplicantNameFilter("all");
     
     const currentParams = new URLSearchParams(searchParams?.toString());
     currentParams.delete("reportType");
@@ -419,10 +443,21 @@ export default function ReportsPage() {
     worksheet.addRow([`Report generated on: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`]).commit();
     worksheet.addRow([]).commit(); // Spacer
 
-    const header = [ "File No", "Applicant Name", "Date of Remittance", "Site Purpose", "File Status", "Site Name", "Site Work Status", "Site Total Expenditure (₹)" ];
+    const header = [ 
+        "File No", 
+        "Applicant Name", 
+        "Date of Remittance", 
+        "Site Purpose", 
+        "File Status", 
+        "Site Name", 
+        "Site Work Status", 
+        "Total Remittance (₹)", 
+        "Balance (₹)",
+        "Site Total Expenditure (₹)" 
+    ];
     
-    worksheet.mergeCells('A1:H1');
-    worksheet.mergeCells('A2:H2');
+    worksheet.mergeCells('A1:J1');
+    worksheet.mergeCells('A2:J2');
     worksheet.getCell('A1').alignment = { horizontal: 'center' };
     worksheet.getCell('A2').alignment = { horizontal: 'center' };
     
@@ -438,8 +473,16 @@ export default function ReportsPage() {
 
     filteredReportRows.forEach(row => {
       const rowData = [
-        row.fileNo, row.applicantName, row.fileFirstRemittanceDate, row.sitePurpose, row.fileStatus,
-        row.siteName, row.siteWorkStatus, row.siteTotalExpenditure
+        row.fileNo, 
+        row.applicantName, 
+        row.fileFirstRemittanceDate, 
+        row.sitePurpose, 
+        row.fileStatus,
+        row.siteName, 
+        row.siteWorkStatus, 
+        row.totalRemittance,
+        row.balance,
+        row.siteTotalExpenditure
       ];
       const newRow = worksheet.addRow(rowData);
       newRow.eachCell(cell => {
@@ -496,6 +539,13 @@ export default function ReportsPage() {
       <Card className="shadow-lg no-print">
         <CardContent className="p-4 space-y-4">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <Select value={applicantNameFilter} onValueChange={setApplicantNameFilter} name="applicantNameFilter">
+                    <SelectTrigger id="report-applicant-trigger"><SelectValue placeholder="Filter by Name of Applicant" /></SelectTrigger>
+                    <SelectContent className="max-h-80">
+                        <SelectItem value="all">All Applicants</SelectItem>
+                        {applicantOptions.map((name) => (<SelectItem key={name} value={name}>{name}</SelectItem>))}
+                    </SelectContent>
+                </Select>
                 <Select value={applicationTypeFilter} onValueChange={setApplicationTypeFilter} name="appTypeFilter">
                     <SelectTrigger id="report-app-type-trigger"><SelectValue placeholder="Filter by Application Type" /></SelectTrigger>
                     <SelectContent>
@@ -745,7 +795,7 @@ export default function ReportsPage() {
                         {renderDetail("Date of Payment", pd.dateOfPayment)}
                         {renderDetail("Payment Account", pd.paymentAccount)}
                         {renderDetail("Revenue Head (₹)", pd.revenueHead)}
-                        {renderDetail("Contractor's Payment (₹)", pd.contractorsPayment)}
+                        {renderDetail("Contractors Payment (₹)", pd.contractorsPayment)}
                         {renderDetail("GST (₹)", pd.gst)}
                         {renderDetail("Income Tax (₹)", pd.incomeTax)}
                         {renderDetail("KBCWB (₹)", pd.kbcwb)}
