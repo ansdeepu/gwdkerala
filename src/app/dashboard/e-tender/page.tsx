@@ -1141,9 +1141,9 @@ export default function ETenderListPage() {
                                     <TableRow>
                                         <TableHead className="w-[4%] px-2 py-3 text-sm">Sl. No.</TableHead>
                                         <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>
-                                        <TableHead className="w-[44%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
-                                        <TableHead className="w-[11%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
-                                        <TableHead className="w-[11%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
+                                        <TableHead className="w-[50%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
+                                        <TableHead className="w-[8%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
+                                        <TableHead className="w-[8%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
                                         <TableHead className="w-[10%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('presentStatus')}>Status {getSortIcon('presentStatus')}</Button></TableHead>
                                         <TableHead className="text-center w-[8%] px-2 py-3">Actions</TableHead>
                                     </TableRow>
@@ -1180,35 +1180,35 @@ export default function ETenderListPage() {
                                                             {hasRetenders && <Badge variant="secondary" className="mt-1 w-fit bg-yellow-200 text-yellow-800">Re-tender</Badge>}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3 w-[44%]">{tender.nameOfWork}</TableCell>
-                                                    <TableCell className="align-top py-2 px-3 w-[11%] whitespace-nowrap">
-                                                        <div className="flex flex-col text-xs">
+                                                    <TableCell className="whitespace-normal break-words align-top py-2 px-3 w-[50%]">{tender.nameOfWork}</TableCell>
+                                                    <TableCell className="align-top py-2 px-3 w-[8%]">
+                                                        <div className="flex flex-col text-[10px]">
                                                             {showOriginalReceipt && (
                                                                 <div className="text-muted-foreground line-through opacity-60 mb-1">
-                                                                    <span>{format(toDateOrNull(originalReceipt)!, 'dd/MM/yyyy')}</span>
-                                                                    <span className="ml-1">{format(toDateOrNull(originalReceipt)!, 'hh:mm a')}</span>
+                                                                    <div className="block">{format(toDateOrNull(originalReceipt)!, 'dd/MM/yyyy')}</div>
+                                                                    <div className="block">{format(toDateOrNull(originalReceipt)!, 'hh:mm a')}</div>
                                                                 </div>
                                                             )}
                                                             {activeReceipt ? (
                                                                 <div className="font-semibold">
-                                                                    <span>{format(toDateOrNull(activeReceipt)!, 'dd/MM/yyyy')}</span>
-                                                                    <span className="ml-1">{format(toDateOrNull(activeReceipt)!, 'hh:mm a')}</span>
+                                                                    <div className="block">{format(toDateOrNull(activeReceipt)!, 'dd/MM/yyyy')}</div>
+                                                                    <div className="block">{format(toDateOrNull(activeReceipt)!, 'hh:mm a')}</div>
                                                                 </div>
                                                             ) : 'N/A'}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="align-top py-2 px-3 w-[11%] whitespace-nowrap">
-                                                        <div className="flex flex-col text-xs">
+                                                    <TableCell className="align-top py-2 px-3 w-[8%]">
+                                                        <div className="flex flex-col text-[10px]">
                                                             {showOriginalOpening && (
                                                                 <div className="text-muted-foreground line-through opacity-60 mb-1">
-                                                                    <span>{format(toDateOrNull(originalOpening)!, 'dd/MM/yyyy')}</span>
-                                                                    <span className="ml-1">{format(toDateOrNull(originalOpening)!, 'hh:mm a')}</span>
+                                                                    <div className="block">{format(toDateOrNull(originalOpening)!, 'dd/MM/yyyy')}</div>
+                                                                    <div className="block">{format(toDateOrNull(originalOpening)!, 'hh:mm a')}</div>
                                                                 </div>
                                                             )}
                                                             {activeOpening ? (
                                                                 <div className="font-semibold">
-                                                                    <span>{format(toDateOrNull(activeOpening)!, 'dd/MM/yyyy')}</span>
-                                                                    <span className="ml-1">{format(toDateOrNull(activeOpening)!, 'hh:mm a')}</span>
+                                                                    <div className="block">{format(toDateOrNull(activeOpening)!, 'dd/MM/yyyy')}</div>
+                                                                    <div className="block">{format(toDateOrNull(activeOpening)!, 'hh:mm a')}</div>
                                                                 </div>
                                                             ) : 'N/A'}
                                                         </div>
