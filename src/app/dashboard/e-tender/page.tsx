@@ -1,3 +1,4 @@
+
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
@@ -58,22 +59,27 @@ const getStatusRowClass = (status?: E_tenderStatus | null): string => {
     }
 };
 
-const StatCard = ({ title, count, onClick, colorClass, icon: Icon }: { title: string, count: number, onClick: () => void, colorClass: string, icon?: React.ElementType }) => (
-    <button
-        onClick={onClick}
-        disabled={count === 0}
-        className={cn(
-            "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between shadow-sm",
-            colorClass,
-            "hover:bg-opacity-20"
-        )}
-    >
-        <div className="flex items-center gap-2">
-          {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
-          <p className="text-xs font-semibold text-muted-foreground whitespace-normal leading-tight">{title}</p>
-        </div>
-        <p className="text-2xl font-bold">{count}</p>
-    </button>
+const StatCard = ({ title, count, onClick, colorClass, icon: Icon, tooltip }: { title: string, count: number, onClick: () => void, colorClass: string, icon?: React.ElementType, tooltip?: string }) => (
+    <Tooltip>
+        <TooltipTrigger asChild>
+            <button
+                onClick={onClick}
+                disabled={count === 0}
+                className={cn(
+                    "p-3 border rounded-lg text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between shadow-sm",
+                    colorClass,
+                    "hover:bg-opacity-20"
+                )}
+            >
+                <div className="flex items-center gap-2">
+                {Icon && <Icon className="h-4 w-4 text-muted-foreground shrink-0" />}
+                <p className="text-xs font-semibold text-muted-foreground whitespace-normal leading-tight">{title}</p>
+                </div>
+                <p className="text-2xl font-bold">{count}</p>
+            </button>
+        </TooltipTrigger>
+        {tooltip && <TooltipContent><p className="max-w-xs">{tooltip}</p></TooltipContent>}
+    </Tooltip>
 );
 
 type WorkOrderRow = {
@@ -1044,11 +1050,11 @@ export default function ETenderListPage() {
     }
     
     const dashboardStats = [
-      { type: 'tenderProcess', label: 'Tender Process', data: categorizedTenders.tenderProcess, colorClass: 'border-blue-500/50 bg-blue-500/5', icon: Clock },
-      { type: 'bidsSubmitted', label: 'Bids Submitted', data: categorizedTenders.bidsSubmitted, colorClass: 'border-amber-500/50 bg-amber-500/5', icon: Users },
-      { type: 'toBeOpened', label: 'To Be Opened', data: categorizedTenders.toBeOpened, colorClass: 'border-sky-500/50 bg-sky-500/5', icon: FolderOpen },
-      { type: 'pendingSelection', label: 'Pending Selection Notice', data: categorizedTenders.pendingSelection, colorClass: 'border-indigo-500/50 bg-indigo-500/5', icon: Bell },
-      { type: 'pendingWorkOrder', label: 'Pending Work Order', data: categorizedTenders.pendingWorkOrder, colorClass: 'border-emerald-500/50 bg-emerald-500/5', icon: Hammer },
+      { type: 'tenderProcess', label: 'Tender Process', data: categorizedTenders.tenderProcess, colorClass: 'border-blue-500/50 bg-blue-500/5', icon: Clock, tooltip: "Tenders currently open for bidding (Receipt date is in the future)." },
+      { type: 'bidsSubmitted', label: 'Bids Submitted', data: categorizedTenders.bidsSubmitted, colorClass: 'border-amber-500/50 bg-amber-500/5', icon: Users, tooltip: "Bidding period closed; waiting for official opening time (Between receipt and opening dates)." },
+      { type: 'toBeOpened', label: 'To Be Opened', data: categorizedTenders.toBeOpened, colorClass: 'border-sky-500/50 bg-sky-500/5', icon: FolderOpen, tooltip: "Opening time has passed, but committee/opening details are not yet recorded." },
+      { type: 'pendingSelection', label: 'Pending Selection Notice', data: categorizedTenders.pendingSelection, colorClass: 'border-indigo-500/50 bg-indigo-500/5', icon: Bell, tooltip: "Opening details are recorded, but no selection notice issued yet." },
+      { type: 'pendingWorkOrder', label: 'Pending Work Order', data: categorizedTenders.pendingWorkOrder, colorClass: 'border-emerald-500/50 bg-emerald-500/5', icon: Hammer, tooltip: "Selection notice issued, but final work/supply order is pending." },
     ];
 
 
@@ -1106,6 +1112,7 @@ export default function ETenderListPage() {
                                     onClick={() => setDialogContent({ title: stat.label, tenders: stat.data })}
                                     colorClass={stat.colorClass}
                                     icon={stat.icon}
+                                    tooltip={stat.tooltip}
                                 />
                             ))}
                             <StatCard
@@ -1114,6 +1121,7 @@ export default function ETenderListPage() {
                                 onClick={() => setIsLeaderboardOpen(true)}
                                 colorClass="border-gray-500/50 bg-gray-500/5"
                                 icon={TrendingUp}
+                                tooltip="Summary of L1 contractors based on successful bids within the selected period."
                             />
                         </div>
                     </div>
