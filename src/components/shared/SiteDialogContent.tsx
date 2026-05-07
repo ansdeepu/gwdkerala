@@ -228,19 +228,22 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     }, [allStaffMembers]);
 
     const rigOptions = useMemo(() => {
-        const activeUnits = (allRigCompressors || []).filter(r => r.status !== 'Garaged');
+        const allUnits = allRigCompressors || [];
         
         // 1. Internal Rigs
-        const internalLabels = activeUnits
+        const internalLabels = allUnits
             .filter(r => !r.isExternal)
-            .map(r => r.typeOfRigUnit)
-            .filter((val): val is string => !!val);
+            .map(r => r.status === 'Garaged' ? `${r.typeOfRigUnit} (Garaged)` : (r.typeOfRigUnit || ''))
+            .filter(Boolean);
             
         // 2. External Rigs (Other Office Rigs Engaged)
-        const externalLabels = activeUnits
+        const externalLabels = allUnits
             .filter(r => r.isExternal)
-            .map(r => `${r.typeOfRigUnit} - ${r.externalOffice || 'Unknown'}`)
-            .filter((val): val is string => !!val && !val.startsWith('undefined'));
+            .map(r => {
+                const base = `${r.typeOfRigUnit} - ${r.externalOffice || 'Unknown'}`;
+                return r.status === 'Garaged' ? `${base} (Garaged)` : base;
+            })
+            .filter(val => val && !val.startsWith('undefined'));
 
         // 3. Fixed Private Options
         const privateOptions = ["Private Rig - DTH", "Private Rig - Rotary", "Private Rig - Calyx"];
@@ -722,3 +725,4 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         </div>
     );
 }
+

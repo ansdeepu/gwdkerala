@@ -1,3 +1,4 @@
+
 // src/app/dashboard/reports/page.tsx
 "use client";
 
@@ -153,14 +154,18 @@ export default function ReportsPage() {
     const externalRigs: string[] = [];
 
     (allRigCompressors || []).forEach(r => {
-      if (r.status === 'Garaged') return;
+      const baseLabel = r.isExternal 
+        ? `${r.typeOfRigUnit} - ${r.externalOffice || 'Unknown'}`
+        : (r.typeOfRigUnit || '');
       
+      if (!baseLabel || baseLabel.startsWith('undefined')) return;
+      
+      const finalLabel = r.status === 'Garaged' ? `${baseLabel} (Garaged)` : baseLabel;
+
       if (r.isExternal) {
-        if (r.typeOfRigUnit && r.externalOffice) {
-          externalRigs.push(`${r.typeOfRigUnit} - ${r.externalOffice}`);
-        }
-      } else if (r.typeOfRigUnit) {
-        internalRigs.push(r.typeOfRigUnit);
+        externalRigs.push(finalLabel);
+      } else {
+        internalRigs.push(finalLabel);
       }
     });
 
