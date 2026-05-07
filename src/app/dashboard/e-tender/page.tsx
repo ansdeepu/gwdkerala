@@ -1,4 +1,3 @@
-
 // src/app/dashboard/e-tender/page.tsx
 "use client";
 
@@ -1142,8 +1141,16 @@ export default function ETenderListPage() {
                                         <TableHead className="w-[4%] px-2 py-3 text-sm">Sl. No.</TableHead>
                                         <TableHead className="w-[12%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('eTenderNo')}>eTender Ref. No. {getSortIcon('eTenderNo')}</Button></TableHead>
                                         <TableHead className="w-[50%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('nameOfWork')}>Name of Work {getSortIcon('nameOfWork')}</Button></TableHead>
-                                        <TableHead className="w-[8%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfReceipt')}>Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}</Button></TableHead>
-                                        <TableHead className="w-[8%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('dateTimeOfOpening')}>Date of Opening {getSortIcon('dateTimeOfOpening')}</Button></TableHead>
+                                        <TableHead className="w-[8%] px-2 py-3">
+                                            <Button variant="ghost" className="p-0 hover:bg-transparent whitespace-normal leading-tight text-left" onClick={() => requestSort('dateTimeOfReceipt')}>
+                                                Last Date of Receipt {getSortIcon('dateTimeOfReceipt')}
+                                            </Button>
+                                        </TableHead>
+                                        <TableHead className="w-[8%] px-2 py-3">
+                                            <Button variant="ghost" className="p-0 hover:bg-transparent whitespace-normal leading-tight text-left" onClick={() => requestSort('dateTimeOfOpening')}>
+                                                Date of Opening {getSortIcon('dateTimeOfOpening')}
+                                            </Button>
+                                        </TableHead>
                                         <TableHead className="w-[10%] px-2 py-3"><Button variant="ghost" className="p-0 hover:bg-transparent" onClick={() => requestSort('presentStatus')}>Status {getSortIcon('presentStatus')}</Button></TableHead>
                                         <TableHead className="text-center w-[8%] px-2 py-3">Actions</TableHead>
                                     </TableRow>
