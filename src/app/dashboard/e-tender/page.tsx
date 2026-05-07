@@ -1272,7 +1272,7 @@ export default function ETenderListPage() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Tender No</TableHead>
+                            <TableHead className="whitespace-nowrap">Tender No</TableHead>
                             <TableHead>Name of Work</TableHead>
                             <TableHead>Work Order date</TableHead>
                           </TableRow>
@@ -1280,9 +1280,9 @@ export default function ETenderListPage() {
                         <TableBody>
                           {dialogContent?.tenders.map(t => (
                             <TableRow key={t.id}>
-                              <TableCell>{t.eTenderNo}</TableCell>
-                              <TableCell>{t.nameOfWork}</TableCell>
-                              <TableCell>{formatDateSafe(t.dateWorkOrder)}</TableCell>
+                              <TableCell className="whitespace-nowrap font-mono text-xs">{t.eTenderNo}</TableCell>
+                              <TableCell className="text-xs leading-tight">{t.nameOfWork}</TableCell>
+                              <TableCell className="text-xs">{formatDateSafe(t.dateWorkOrder)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
