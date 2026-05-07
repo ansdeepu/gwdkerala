@@ -452,8 +452,8 @@ export default function ReportsPage() {
         "Site Name", 
         "Site Work Status", 
         "Total Remittance (₹)", 
-        "Balance (₹)",
-        "Site Total Expenditure (₹)" 
+        "Site Total Expenditure (₹)",
+        "Balance (₹)" 
     ];
     
     worksheet.mergeCells('A1:J1');
@@ -481,8 +481,8 @@ export default function ReportsPage() {
         row.siteName, 
         row.siteWorkStatus, 
         row.totalRemittance,
-        row.balance,
-        row.siteTotalExpenditure
+        row.siteTotalExpenditure,
+        row.balance
       ];
       const newRow = worksheet.addRow(rowData);
       newRow.eachCell(cell => {
