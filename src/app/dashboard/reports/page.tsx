@@ -150,31 +150,40 @@ export default function ReportsPage() {
   }, []);
 
   const rigOptions = useMemo(() => {
-    const internalRigs: string[] = [];
-    const externalRigs: string[] = [];
+    const allUnits = (allRigCompressors || []);
+    
+    // 1. Active Internal Rigs
+    const activeInternal = allUnits
+      .filter(r => !r.isExternal && r.status !== 'Garaged')
+      .map(r => r.typeOfRigUnit || '')
+      .filter(Boolean);
+        
+    // 2. Active External Rigs
+    const activeExternal = allUnits
+      .filter(r => r.isExternal && r.status !== 'Garaged')
+      .map(r => `${r.typeOfRigUnit} - ${r.externalOffice || 'Unknown'}`)
+      .filter(val => val && !val.startsWith('undefined'));
 
-    (allRigCompressors || []).forEach(r => {
-      const baseLabel = r.isExternal 
-        ? `${r.typeOfRigUnit} - ${r.externalOffice || 'Unknown'}`
-        : (r.typeOfRigUnit || '');
-      
-      if (!baseLabel || baseLabel.startsWith('undefined')) return;
-      
-      const finalLabel = r.status === 'Garaged' ? `${baseLabel} (Garaged)` : baseLabel;
+    // 3. Fixed Private Options
+    const privateOptions = ["Private Rig - DTH", "Private Rig - Rotary", "Private Rig - Calyx"];
 
-      if (r.isExternal) {
-        externalRigs.push(finalLabel);
-      } else {
-        internalRigs.push(finalLabel);
-      }
-    });
+    // 4. Garaged Rigs (To be placed at the bottom)
+    const garaged = allUnits
+      .filter(r => r.status === 'Garaged')
+      .map(r => {
+          const base = r.isExternal 
+            ? `${r.typeOfRigUnit} - ${r.externalOffice || 'Unknown'}`
+            : (r.typeOfRigUnit || '');
+          return `${base} (Garaged)`;
+      })
+      .filter(val => val && !val.startsWith('undefined') && val !== ' (Garaged)');
 
-    internalRigs.sort((a, b) => a.localeCompare(b));
-    externalRigs.sort((a, b) => a.localeCompare(b));
-
-    const privateRigs = ["Private Rig - DTH", "Private Rig - Rotary", "Private Rig - Calyx"];
-
-    return Array.from(new Set([...internalRigs, ...externalRigs, ...privateRigs]));
+    return [
+      ...Array.from(new Set(activeInternal)).sort(),
+      ...Array.from(new Set(activeExternal)).sort(),
+      ...privateOptions,
+      ...Array.from(new Set(garaged)).sort()
+    ];
   }, [allRigCompressors]);
 
   const applyFilters = useCallback(() => {

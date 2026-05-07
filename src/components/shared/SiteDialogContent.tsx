@@ -230,28 +230,37 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
     const rigOptions = useMemo(() => {
         const allUnits = allRigCompressors || [];
         
-        // 1. Internal Rigs
-        const internalLabels = allUnits
-            .filter(r => !r.isExternal)
-            .map(r => r.status === 'Garaged' ? `${r.typeOfRigUnit} (Garaged)` : (r.typeOfRigUnit || ''))
+        // 1. Active Internal Rigs
+        const activeInternal = allUnits
+            .filter(r => !r.isExternal && r.status !== 'Garaged')
+            .map(r => r.typeOfRigUnit || '')
             .filter(Boolean);
             
-        // 2. External Rigs (Other Office Rigs Engaged)
-        const externalLabels = allUnits
-            .filter(r => r.isExternal)
-            .map(r => {
-                const base = `${r.typeOfRigUnit} - ${r.externalOffice || 'Unknown'}`;
-                return r.status === 'Garaged' ? `${base} (Garaged)` : base;
-            })
+        // 2. Active External Rigs
+        const activeExternal = allUnits
+            .filter(r => r.isExternal && r.status !== 'Garaged')
+            .map(r => `${r.typeOfRigUnit} - ${r.externalOffice || 'Unknown'}`)
             .filter(val => val && !val.startsWith('undefined'));
 
         // 3. Fixed Private Options
         const privateOptions = ["Private Rig - DTH", "Private Rig - Rotary", "Private Rig - Calyx"];
 
+        // 4. Garaged Rigs (To be placed at the bottom)
+        const garaged = allUnits
+            .filter(r => r.status === 'Garaged')
+            .map(r => {
+                const base = r.isExternal 
+                    ? `${r.typeOfRigUnit} - ${r.externalOffice || 'Unknown'}`
+                    : (r.typeOfRigUnit || '');
+                return `${base} (Garaged)`;
+            })
+            .filter(val => val && !val.startsWith('undefined') && val !== ' (Garaged)');
+
         return [
-            ...Array.from(new Set(internalLabels)).sort(),
-            ...Array.from(new Set(externalLabels)).sort(),
-            ...privateOptions
+            ...Array.from(new Set(activeInternal)).sort(),
+            ...Array.from(new Set(activeExternal)).sort(),
+            ...privateOptions,
+            ...Array.from(new Set(garaged)).sort()
         ];
     }, [allRigCompressors]);
 
@@ -725,4 +734,3 @@ export default function SiteDialogContent({ initialData, onConfirm, onCancel, is
         </div>
     );
 }
-
