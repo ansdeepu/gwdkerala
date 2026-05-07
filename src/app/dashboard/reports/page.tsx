@@ -543,7 +543,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <Card className="shadow-lg no-print">
         <CardContent className="p-4 space-y-4">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Select value={applicantNameFilter} onValueChange={setApplicantNameFilter} name="applicantNameFilter">
                     <SelectTrigger id="report-applicant-trigger"><SelectValue placeholder="Filter by Name of Applicant" /></SelectTrigger>
                     <SelectContent className="max-h-80">
@@ -567,10 +567,9 @@ export default function ReportsPage() {
                         <SelectItem value="payment">Date of Payment</SelectItem>
                     </SelectContent>
                 </Select>
+                
                 <Input type="date" id="report-start-date" name="reportStartDate" placeholder="From Date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                 <Input type="date" id="report-end-date" name="reportEndDate" placeholder="To Date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-            </div>
-             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <Select value={serviceTypeFilter} onValueChange={setServiceTypeFilter} name="serviceTypeFilter">
                     <SelectTrigger id="report-service-type-trigger"><SelectValue placeholder="Filter by Site Service Type" /></SelectTrigger>
                     <SelectContent>
@@ -578,6 +577,7 @@ export default function ReportsPage() {
                         {sitePurposeOptions.map((purpose) => (<SelectItem key={purpose} value={purpose}>{purpose}</SelectItem>))}
                     </SelectContent>
                 </Select>
+
                 <Select value={statusFilter} onValueChange={setStatusFilter} name="fileStatusFilter">
                     <SelectTrigger id="report-file-status-trigger"><SelectValue placeholder="Filter by File Status" /></SelectTrigger>
                     <SelectContent>
@@ -600,6 +600,7 @@ export default function ReportsPage() {
                     </SelectContent>
                 </Select>
             </div>
+
              <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 border-t mt-4">
                 <Select value={constituencyFilter} onValueChange={setConstituencyFilter} name="constituencyFilter">
                   <SelectTrigger id="report-constituency-trigger" className="w-full sm:w-[250px]">
