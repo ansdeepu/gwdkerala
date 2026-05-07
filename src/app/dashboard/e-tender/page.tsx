@@ -673,7 +673,7 @@ export default function ETenderListPage() {
     const { tenders: allE_tenders, isLoading, deleteTender, addTender } = useE_tenders();
     const { toast } = useToast();
     const { user } = useAuth();
-    const { officeAddress } = useDataStore();
+    const { officeAddress, allFileEntries, allArsEntries } = useDataStore();
     
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<E_tenderStatus | 'all'>('all');
@@ -804,6 +804,47 @@ export default function ETenderListPage() {
 
         return { tenderProcess, bidsSubmitted, toBeOpened, pendingSelection, pendingWorkOrder };
     }, [allE_tenders]);
+
+    const completedTenderNos = useMemo(() => {
+        const completedOrFinalStatuses: (SiteWorkStatus | ArsStatus)[] = ["Work Completed", "Work Failed", "Work Cancelled", "Bill Prepared", "Payment Completed", "Utilization Certificate Issued", "Completed"];
+        const tenderSitesMap = new Map<string, { status: (SiteWorkStatus | ArsStatus), isFinal: boolean }[]>();
+
+        allFileEntries.forEach(file => {
+            file.siteDetails?.forEach(site => {
+                if (site.tenderNo && site.workStatus) {
+                    const normalizedTenderNo = site.tenderNo.trim().toUpperCase();
+                    if (!tenderSitesMap.has(normalizedTenderNo)) {
+                        tenderSitesMap.set(normalizedTenderNo, []);
+                    }
+                    tenderSitesMap.get(normalizedTenderNo)!.push({
+                        status: site.workStatus,
+                        isFinal: completedOrFinalStatuses.includes(site.workStatus as any)
+                    });
+                }
+            });
+        });
+
+        allArsEntries.forEach(ars => {
+            if (ars.arsTenderNo && ars.arsStatus) {
+                const normalizedTenderNo = ars.arsTenderNo.trim().toUpperCase();
+                if (!tenderSitesMap.has(normalizedTenderNo)) {
+                    tenderSitesMap.set(normalizedTenderNo, []);
+                }
+                tenderSitesMap.get(normalizedTenderNo)!.push({
+                    status: ars.arsStatus,
+                    isFinal: completedOrFinalStatuses.includes(ars.arsStatus as any)
+                });
+            }
+        });
+        
+        const set = new Set<string>();
+        tenderSitesMap.forEach((sites, tenderNo) => {
+            if (sites.length > 0 && sites.every(site => site.isFinal)) {
+                set.add(tenderNo);
+            }
+        });
+        return set;
+    }, [allFileEntries, allArsEntries]);
 
 
     const { filteredTenders } = useMemo(() => {
@@ -1259,11 +1300,15 @@ export default function ETenderListPage() {
             </AlertDialog>
             
              <Dialog open={!!dialogContent} onOpenChange={() => setDialogContent(null)}>
-              <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
+              <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-2xl h-[80vh] flex flex-col p-0">
                 <DialogHeader className="p-6 pb-4 border-b">
                   <DialogTitle>{dialogContent?.title}</DialogTitle>
-                  <DialogDescription>
-                    Showing {dialogContent?.tenders.length} tender(s).
+                  <DialogDescription className="flex items-center justify-between">
+                    <span>Showing {dialogContent?.tenders.length} tender(s).</span>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <div className="w-2.5 h-2.5 rounded-full bg-destructive"></div>
+                        <span>Completed Works</span>
+                    </div>
                   </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 min-h-0">
@@ -1278,13 +1323,16 @@ export default function ETenderListPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {dialogContent?.tenders.map(t => (
-                            <TableRow key={t.id}>
-                              <TableCell className="whitespace-nowrap font-mono text-xs">{t.eTenderNo}</TableCell>
-                              <TableCell className="text-xs leading-tight">{t.nameOfWork}</TableCell>
-                              <TableCell className="text-xs">{formatDateSafe(t.dateWorkOrder)}</TableCell>
-                            </TableRow>
-                          ))}
+                          {dialogContent?.tenders.map(t => {
+                            const isCompleted = t.eTenderNo && completedTenderNos.has(t.eTenderNo.trim().toUpperCase());
+                            return (
+                                <TableRow key={t.id} className={cn(isCompleted && "text-destructive font-bold")}>
+                                  <TableCell className="whitespace-nowrap font-mono text-xs">{t.eTenderNo}</TableCell>
+                                  <TableCell className="text-xs leading-tight">{t.nameOfWork}</TableCell>
+                                  <TableCell className="text-xs">{formatDateSafe(t.dateWorkOrder)}</TableCell>
+                                </TableRow>
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     </div>
