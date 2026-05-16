@@ -3,14 +3,48 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { useTenderData } from '@/components/e-tender/TenderDataContext';
-import { formatDateSafe, formatTenderNoForFilename } from '@/components/e-tender/utils';
-import { useDataStore } from '@/hooks/use-data-store';
+import { formatDateSafe, formatTenderNoForFilename, toDateOrNull } from '@/components/e-tender/utils';
+import { useDataStore, defaultRateDescriptions } from '@/hooks/use-data-store';
 import { Button } from '@/components/ui/button';
 import { usePageHeader } from '@/hooks/usePageHeader';
+import { isValid } from 'date-fns';
+
+const parseStampPaperLogic = (description: string) => {
+    const rateBasisMatch = description.match(/([\d,]+)\s*(?:for every|per)\s*[₹Rs\.]?\s*([\d,]+)/i);
+    const minMatch = description.match(/(?:minimum|min)(?:\s*of)?\s*[₹Rs\.]?\s*([\d,]+)/i);
+    const maxMatch = description.match(/(?:maximum|max)(?:\s*of)?\s*[₹Rs\.]?\s*([\d,]+)/i);
+    
+    const parseNumber = (str: string | undefined) => str ? parseInt(str.replace(/,/g, ''), 10) : undefined;
+
+    const result = {
+        rate: rateBasisMatch ? parseNumber(rateBasisMatch[1]) : 100,
+        basis: rateBasisMatch ? parseNumber(rateBasisMatch[2]) : 100000,
+        min: minMatch ? parseNumber(minMatch[1]) : 200,
+        max: maxMatch ? parseNumber(maxMatch[1]) : 100000,
+    };
+
+    if (result.rate === 1 && result.basis === 100000) {
+        result.rate = 100;
+    }
+
+    return result;
+};
+
+const parseAdditionalPerformanceGuaranteeLogic = (description: string) => {
+    const moreThanMatch = description.match(/more than ([\d.]+)%/);
+    const apgRequiredThresholdMatch = description.match(/between\s+([\d.]+)%\s+and\s*([\d.]+)%/);
+    const noApgThresholdMatch = description.match(/up to ([\d.]+)%/);
+
+    if (moreThanMatch) return { threshold: parseFloat(moreThanMatch[1]) / 100 };
+    if (apgRequiredThresholdMatch) return { threshold: parseFloat(apgRequiredThresholdMatch[1]) / 100 };
+    if (noApgThresholdMatch) return { threshold: parseFloat(noApgThresholdMatch[1]) / 100 };
+    
+    return { threshold: 0.15 }; 
+};
 
 export default function SelectionNoticePrintPage() {
     const { tender } = useTenderData();
-    const { officeAddress } = useDataStore();
+    const { officeAddress, allRateDescriptions } = useDataStore();
     const { setHeader } = usePageHeader();
 
     useEffect(() => {
@@ -33,43 +67,71 @@ export default function SelectionNoticePrintPage() {
     const hasRejectedBids = useMemo(() => tender.bidders?.some(b => b.status === 'Rejected'), [tender.bidders]);
     const contractAmount = (hasRejectedBids && tender.agreedAmount) ? tender.agreedAmount : l1Bidder?.quotedAmount;
 
+    // --- Dynamic Calculation Logic ---
+    
+    const stampPaperDescription = useMemo(() => {
+        return tender?.stampPaperDescription || allRateDescriptions.stampPaper || defaultRateDescriptions.stampPaper;
+    }, [tender?.stampPaperDescription, allRateDescriptions.stampPaper]);
+
+    const performanceGuaranteeDescription = useMemo(() => {
+        return tender?.performanceGuaranteeDescription || allRateDescriptions.performanceGuarantee || defaultRateDescriptions.performanceGuarantee;
+    }, [tender?.performanceGuaranteeDescription, allRateDescriptions.performanceGuarantee]);
+
+    const additionalPerformanceGuaranteeDescription = useMemo(() => {
+        return tender?.additionalPerformanceGuaranteeDescription || allRateDescriptions.additionalPerformanceGuarantee || defaultRateDescriptions.additionalPerformanceGuarantee;
+    }, [tender?.additionalPerformanceGuaranteeDescription, allRateDescriptions.additionalPerformanceGuarantee]);
+
+    const calculatedStampPaperValue = useMemo(() => {
+        const logic = parseStampPaperLogic(stampPaperDescription);
+        const { rate, basis, min, max } = logic;
+        if (!contractAmount || contractAmount <= 0) return min ?? 0;
+        
+        const duty = Math.ceil(contractAmount / (basis || 100000)) * (rate || 100); 
+        const roundedDuty = Math.ceil(duty / 100) * 100;
+        return Math.max(min ?? 0, Math.min(roundedDuty, max ?? Infinity));
+    }, [stampPaperDescription, contractAmount]);
+
     const apgThreshold = useMemo(() => {
-        const description = tender.additionalPerformanceGuaranteeDescription || '';
-        const moreThanMatch = description.match(/more than ([\d.]+)%/);
-        if (moreThanMatch) {
-            return parseFloat(moreThanMatch[1]) / 100;
-        }
-        const betweenMatch = description.match(/between\s*([\d.]+)%\s+and\s*([\d.]+)%/);
-        if (betweenMatch) {
-            return parseFloat(betweenMatch[1]) / 100;
-        }
-        // Fallback if no pattern matches, using the common 15% rule
-        return 0.15;
-    }, [tender.additionalPerformanceGuaranteeDescription]);
+        const logic = parseAdditionalPerformanceGuaranteeLogic(additionalPerformanceGuaranteeDescription);
+        return logic.threshold;
+    }, [additionalPerformanceGuaranteeDescription]);
     
     const isApgRequired = useMemo(() => {
         if (!tender.estimateAmount || !contractAmount) return false;
-        if (contractAmount >= tender.estimateAmount) return false; // Not below estimate
+        if (contractAmount >= tender.estimateAmount) return false;
         const percentageDifference = (tender.estimateAmount - contractAmount) / tender.estimateAmount;
         return percentageDifference > apgThreshold;
     }, [tender.estimateAmount, contractAmount, apgThreshold]);
 
-    const performanceGuarantee = tender.performanceGuaranteeAmount ?? 0;
-    const additionalPerformanceGuarantee = tender.additionalPerformanceGuaranteeAmount ?? 0;
-    const stampPaperValue = tender.stampPaperAmount ?? 200;
+    const performanceGuarantee = useMemo(() => {
+        if (!contractAmount) return tender.performanceGuaranteeAmount ?? 0;
+        return Math.ceil((contractAmount * 0.05) / 100) * 100;
+    }, [contractAmount, tender.performanceGuaranteeAmount]);
+
+    const additionalPerformanceGuarantee = useMemo(() => {
+        if (!isApgRequired || !tender.estimateAmount || !contractAmount) return tender.additionalPerformanceGuaranteeAmount ?? 0;
+        const excessPercentage = ((tender.estimateAmount - contractAmount) / tender.estimateAmount) - apgThreshold;
+        const apg = excessPercentage * tender.estimateAmount;
+        return Math.ceil(apg / 100) * 100;
+    }, [isApgRequired, tender.estimateAmount, contractAmount, apgThreshold, tender.additionalPerformanceGuaranteeAmount]);
+
+    const stampPaperValue = useMemo(() => {
+        // Prefer calculated value to ensure correctness even if stale in DB
+        return calculatedStampPaperValue;
+    }, [calculatedStampPaperValue]);
     
     const excessPercentageText = useMemo(() => {
         if (!isApgRequired || !tender.estimateAmount || !contractAmount) return '0';
         const percentageDifference = (tender.estimateAmount - contractAmount) / tender.estimateAmount;
-        const excessPercentage = percentageDifference - apgThreshold;
-        return (excessPercentage * 100).toFixed(2);
+        const excessPercentage = (percentageDifference - apgThreshold) * 100;
+        return excessPercentage.toFixed(2);
     }, [isApgRequired, tender.estimateAmount, contractAmount, apgThreshold]);
 
 
     const MainContent = () => {
         const workName = tender.nameOfWorkMalayalam || tender.nameOfWork;
         
-        if (!l1Bidder) {
+        if (!l1Bidder && !tender.agreedAmount) {
             return <p className="leading-relaxed text-justify indent-8">ടെണ്ടർ അംഗീകരിച്ചു. ദയവായി മറ്റ് വിവരങ്ങൾ ചേർക്കുക.</p>
         }
 
