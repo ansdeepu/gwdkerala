@@ -25,19 +25,30 @@ interface SelectionNoticeFormProps {
 }
 
 const parseStampPaperLogic = (description: string) => {
-    // Improved regex to handle various formatting (commas, spaces, different currency symbols)
-    const rateMatch = description.match(/[₹Rs\.]\s*([\d,]+)\s*for\s*every\s*[₹Rs\.]\s*([\d,]+)/i);
-    const minMatch = description.match(/minimum\s*of\s*[₹Rs\.]\s*([\d,]+)/i);
-    const maxMatch = description.match(/maximum\s*of\s*[₹Rs\.]\s*([\d,]+)/i);
+    // Robust regex to find numbers associated with logic keywords
+    // Matches "100 for every 1,00,000" or "100 per 1,00,000" etc.
+    const rateBasisMatch = description.match(/([\d,]+)\s*(?:for every|per)\s*[₹Rs\.]?\s*([\d,]+)/i);
+    // Matches "minimum of 200" or "min 200" etc.
+    const minMatch = description.match(/(?:minimum|min)(?:\s*of)?\s*[₹Rs\.]?\s*([\d,]+)/i);
+    // Matches "maximum of 100000" or "max 100000" etc.
+    const maxMatch = description.match(/(?:maximum|max)(?:\s*of)?\s*[₹Rs\.]?\s*([\d,]+)/i);
     
     const parseNumber = (str: string | undefined) => str ? parseInt(str.replace(/,/g, ''), 10) : undefined;
 
-    return {
-        rate: rateMatch ? parseNumber(rateMatch[1]) : 100,
-        basis: rateMatch ? parseNumber(rateMatch[2]) : 100000,
+    const result = {
+        rate: rateBasisMatch ? parseNumber(rateBasisMatch[1]) : 100,
+        basis: rateBasisMatch ? parseNumber(rateBasisMatch[2]) : 100000,
         min: minMatch ? parseNumber(minMatch[1]) : 200,
         max: maxMatch ? parseNumber(maxMatch[1]) : 100000,
     };
+
+    // HEALING LOGIC: If rate was mistakenly stored as 1 for a 1,00,000 basis (common typo), 
+    // it was intended to be 100 (0.1%).
+    if (result.rate === 1 && result.basis === 100000) {
+        result.rate = 100;
+    }
+
+    return result;
 };
 
 const parseAdditionalPerformanceGuaranteeLogic = (description: string) => {
@@ -55,7 +66,7 @@ const parseAdditionalPerformanceGuaranteeLogic = (description: string) => {
         return { threshold: parseFloat(noApgThresholdMatch[1]) / 100 };
     }
     
-    return { threshold: 0.15 }; // Default to 15% to match the default text.
+    return { threshold: 0.15 }; // Default to 15% to match the standard GWD rule.
 };
 
 
@@ -82,9 +93,10 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
         if (amount === undefined || amount === null || amount <= 0) return min ?? 0;
         
         // Duty calculation: rate for every basis amount (or part thereof)
+        // e.g. 10.34 lakhs = 11 basis units. 11 * 100 = 1100.
         const duty = Math.ceil(amount / (basis || 100000)) * (rate || 100); 
         
-        // Round to nearest 100 as per common practice, but ensure constraints are applied
+        // Ensure rounding and constraints are applied
         const roundedDuty = Math.ceil(duty / 100) * 100;
         return Math.max(min ?? 0, Math.min(roundedDuty, max ?? Infinity));
     }, [stampPaperDescription]);
@@ -119,11 +131,11 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
     const { handleSubmit, setValue, getValues } = form;
 
     useEffect(() => {
-        // IMPORTANT: All calculations are strictly based on the accepted L1 amount.
+        // Calculations are strictly based on the accepted L1 amount.
         let contractAmount: number | undefined = l1Amount ?? undefined;
 
         if (hasRejectedBids) {
-            // Ensure local agreed fields are synchronized if they were used for specific edge cases
+            // Ensure agreed fields are cleared if previously set manually
             setValue('agreedPercentage', undefined); 
             setValue('agreedAmount', undefined);
         }
