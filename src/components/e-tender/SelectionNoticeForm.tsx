@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from '@/components/ui/input';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Save, X } from 'lucide-react';
+import { Loader2, Save, X, Info } from 'lucide-react';
 import { SelectionNoticeDetailsSchema, type E_tenderFormData, type SelectionNoticeDetailsFormData } from '@/lib/schemas/eTenderSchema';
 import { formatDateForInput } from './utils';
 import { useDataStore, defaultRateDescriptions } from '@/hooks/use-data-store';
@@ -119,14 +119,12 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
     const { handleSubmit, setValue, getValues } = form;
 
     useEffect(() => {
-        // IMPORTANT: The selection notice should always target the accepted L1 amount.
-        // l1Amount prop comes from the parent's filtered accepted bidders list.
+        // IMPORTANT: All calculations are strictly based on the accepted L1 amount.
         let contractAmount: number | undefined = l1Amount ?? undefined;
 
         if (hasRejectedBids) {
-            // Even if there are rejected bids, l1Amount passed as a prop is the L1 of *accepted* bidders.
-            // We use this amount for all official calculations.
-            setValue('agreedPercentage', undefined); // Clear local agreed fields if they were used for rejected bids
+            // Ensure local agreed fields are synchronized if they were used for specific edge cases
+            setValue('agreedPercentage', undefined); 
             setValue('agreedAmount', undefined);
         }
 
@@ -186,24 +184,24 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
                                 <FormField name="performanceGuaranteeAmount" control={form.control} render={({ field }) => ( 
                                     <FormItem>
                                         <FormLabel>Performance Guarantee Amount</FormLabel>
-                                        <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber)} readOnly className="bg-muted/50" /></FormControl>
+                                        <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} readOnly className="bg-muted/50 font-bold" /></FormControl>
                                         <FormDescription className="text-xs">Based on 5% of the contract value (rounded up).</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
                                 <FormField name="additionalPerformanceGuaranteeAmount" control={form.control} render={({ field }) => ( 
                                     <FormItem>
-                                        <FormLabel>Additional Performance Guarantee Amount</FormLabel>
-                                        <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber)} readOnly className="bg-muted/50" /></FormControl>
-                                        <FormDescription className="text-xs">Required for abnormally low bids; calculated based on the threshold in GWD Rates settings.</FormDescription>
+                                        <FormLabel>Additional PG Amount</FormLabel>
+                                        <FormControl><Input type="number" {...field} value={field.value ?? ""} onChange={e => field.onChange(e.target.value === '' ? null : Number(e.target.value))} readOnly className="bg-muted/50 font-bold" /></FormControl>
+                                        <FormDescription className="text-xs">Required for low bids; based on GWD Rates threshold.</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
                                 <FormField name="stampPaperAmount" control={form.control} render={({ field }) => ( 
                                     <FormItem>
                                         <FormLabel>Stamp Paper required</FormLabel>
-                                        <FormControl><Input type="number" {...field} value={field.value ?? ''} readOnly className="bg-muted/50"/></FormControl>
-                                        <FormDescription className="text-xs">Based on the contract amount and GWD Rates settings.</FormDescription>
+                                        <FormControl><Input type="number" {...field} value={field.value ?? ""} readOnly className="bg-muted/50 font-bold"/></FormControl>
+                                        <FormDescription className="text-xs">Calculated at ₹100 per lakh (min ₹200).</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
