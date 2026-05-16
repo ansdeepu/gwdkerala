@@ -52,7 +52,7 @@ export const defaultRateDescriptions: Record<RateDescriptionId, string> = {
     emd: "For Works:\n- Up to Rs. 2 Crore: 2.5% of the project cost, subject to a maximum of Rs. 50,000\n- Above Rs. 2 Crore up to Rs. 5 Crore: Rs. 1 Lakh\n- Above Rs. 5 Crore up to Rs. 10 Crore: Rs. 2 Lakh\n- Above Rs. 10 Crore: Rs. 5 Lakh\n\nFor Purchase:\n- Up to 2 Crore: 1.00% of the project cost\n- Above 2 Crore: No EMD",
     performanceGuarantee: "Performance Guarantee, the amount collected at the time of executing contract agreement will be 5% of the contract value (agreed PAC) and the deposit will be retained till the expiry of Defect Liability Period.",
     additionalPerformanceGuarantee: "Additional Performance Security for abnormally low quoted tenders will be collected at the time of executing contract agreement from the successful tenderer if the tender is below the estimate cost by more than 15%.",
-    stampPaper: "For agreements or memorandums, stamp duty shall be ₹1 for every ₹1,00,000 (or part) of the contract amount, subject to a minimum of ₹200.",
+    stampPaper: "For agreements or memorandums, stamp duty shall be ₹100 for every ₹1,00,000 (or part) of the contract amount, subject to a minimum of ₹200.",
 };
 
 const COLLECTIONS = {

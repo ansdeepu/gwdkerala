@@ -25,15 +25,16 @@ interface SelectionNoticeFormProps {
 }
 
 const parseStampPaperLogic = (description: string) => {
-    const rateMatch = description.match(/₹\s*([\d,]+)\s*for\s*every\s*₹\s*([\d,]+)/);
-    const minMatch = description.match(/minimum\s*of\s*₹\s*([\d,]+)/);
-    const maxMatch = description.match(/maximum\s*of\s*₹\s*([\d,]+)/);
+    // Improved regex to handle various formatting (commas, spaces, different currency symbols)
+    const rateMatch = description.match(/[₹Rs\.]\s*([\d,]+)\s*for\s*every\s*[₹Rs\.]\s*([\d,]+)/i);
+    const minMatch = description.match(/minimum\s*of\s*[₹Rs\.]\s*([\d,]+)/i);
+    const maxMatch = description.match(/maximum\s*of\s*[₹Rs\.]\s*([\d,]+)/i);
     
     const parseNumber = (str: string | undefined) => str ? parseInt(str.replace(/,/g, ''), 10) : undefined;
 
     return {
-        rate: rateMatch ? parseNumber(rateMatch[1]) : 1,
-        basis: rateMatch ? parseNumber(rateMatch[2]) : 1000,
+        rate: rateMatch ? parseNumber(rateMatch[1]) : 100,
+        basis: rateMatch ? parseNumber(rateMatch[2]) : 100000,
         min: minMatch ? parseNumber(minMatch[1]) : 200,
         max: maxMatch ? parseNumber(maxMatch[1]) : 100000,
     };
@@ -75,20 +76,15 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
         return tender?.additionalPerformanceGuaranteeDescription || allRateDescriptions.additionalPerformanceGuarantee || defaultRateDescriptions.additionalPerformanceGuarantee;
     }, [tender?.additionalPerformanceGuaranteeDescription, allRateDescriptions.additionalPerformanceGuarantee]);
 
-    const lowestBidderOfAll = useMemo(() => {
-        if (!tender.bidders || tender.bidders.length === 0) return null;
-        const validBidders = tender.bidders.filter(b => typeof b.quotedAmount === 'number' && b.quotedAmount > 0);
-        if (validBidders.length === 0) return null;
-        return validBidders.reduce((lowest, current) => 
-            (current.quotedAmount! < lowest.quotedAmount!) ? current : lowest
-        );
-    }, [tender.bidders]);
-
     const calculateStampPaperValue = useCallback((amount?: number): number => {
         const logic = parseStampPaperLogic(stampPaperDescription);
         const { rate, basis, min, max } = logic;
         if (amount === undefined || amount === null || amount <= 0) return min ?? 0;
-        const duty = Math.ceil(amount / (basis ?? 1000)) * (rate ?? 1); 
+        
+        // Duty calculation: rate for every basis amount (or part thereof)
+        const duty = Math.ceil(amount / (basis || 100000)) * (rate || 100); 
+        
+        // Round to nearest 100 as per common practice, but ensure constraints are applied
         const roundedDuty = Math.ceil(duty / 100) * 100;
         return Math.max(min ?? 0, Math.min(roundedDuty, max ?? Infinity));
     }, [stampPaperDescription]);
@@ -120,18 +116,18 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
         }
     });
     
-    const { handleSubmit, setValue, watch, getValues } = form;
+    const { handleSubmit, setValue, getValues } = form;
 
     useEffect(() => {
+        // IMPORTANT: The selection notice should always target the accepted L1 amount.
+        // l1Amount prop comes from the parent's filtered accepted bidders list.
         let contractAmount: number | undefined = l1Amount ?? undefined;
 
-        if (hasRejectedBids && lowestBidderOfAll) {
-            setValue('agreedPercentage', lowestBidderOfAll.quotedPercentage);
-            setValue('agreedAmount', lowestBidderOfAll.quotedAmount);
-            contractAmount = lowestBidderOfAll.quotedAmount ?? undefined;
-        } else {
-             setValue('agreedPercentage', undefined);
-             setValue('agreedAmount', undefined);
+        if (hasRejectedBids) {
+            // Even if there are rejected bids, l1Amount passed as a prop is the L1 of *accepted* bidders.
+            // We use this amount for all official calculations.
+            setValue('agreedPercentage', undefined); // Clear local agreed fields if they were used for rejected bids
+            setValue('agreedAmount', undefined);
         }
 
         const pg = contractAmount ? Math.ceil((contractAmount * 0.05) / 100) * 100 : 0;
@@ -146,7 +142,7 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
         setValue('additionalPerformanceGuaranteeAmount', additionalPg, { shouldValidate: true, shouldDirty: true });
         setValue('stampPaperAmount', stamp, { shouldValidate: true, shouldDirty: true });
 
-    }, [tender, l1Amount, hasRejectedBids, lowestBidderOfAll, calculateStampPaperValue, calculateAdditionalPG, setValue, getValues]);
+    }, [tender.estimateAmount, tender.selectionNoticeDate, l1Amount, hasRejectedBids, calculateStampPaperValue, calculateAdditionalPG, setValue, getValues]);
 
 
     const handleFormSubmit = (data: SelectionNoticeDetailsFormData) => {
@@ -178,22 +174,10 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
                                 <FormField name="selectionNoticeDate" control={form.control} render={({ field }) => ( <FormItem><FormLabel>Selection Notice Date</FormLabel><FormControl><Input type="date" {...field} value={formatDateForInput(field.value)} /></FormControl><FormMessage /></FormItem> )}/>
                                 {hasRejectedBids && (
                                     <>
-                                        <FormField name="agreedPercentage" control={form.control} render={({ field }) => ( 
-                                            <FormItem>
-                                                <FormLabel>Agreed Percentage</FormLabel>
-                                                <FormControl><Input type="number" {...field} value={field.value ?? ''} readOnly className="bg-muted/50 font-semibold" /></FormControl>
-                                                <FormDescription className="text-xs">Lowest of all bids.</FormDescription>
-                                                <FormMessage />
-                                            </FormItem> 
-                                        )}/>
-                                        <FormField name="agreedAmount" control={form.control} render={({ field }) => ( 
-                                            <FormItem>
-                                                <FormLabel>Agreed Amount</FormLabel>
-                                                <FormControl><Input type="number" {...field} value={field.value ?? ''} readOnly className="bg-muted/50 font-semibold" /></FormControl>
-                                                <FormDescription className="text-xs">Lowest of all bids.</FormDescription>
-                                                <FormMessage />
-                                            </FormItem> 
-                                        )}/>
+                                        <div className="md:col-span-2 p-3 bg-muted/30 border rounded-md flex items-center gap-3">
+                                            <Info className="h-5 w-5 text-primary shrink-0" />
+                                            <p className="text-xs text-muted-foreground">Calculations below are based on the lowest <strong>Accepted</strong> bid amount (L1).</p>
+                                        </div>
                                     </>
                                 )}
                             </div>
@@ -211,7 +195,7 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
                                     <FormItem>
                                         <FormLabel>Additional Performance Guarantee Amount</FormLabel>
                                         <FormControl><Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber)} readOnly className="bg-muted/50" /></FormControl>
-                                        <FormDescription className="text-xs">Required for bids over 10% below estimate; calculated on the excess percentage of the estimate amount.</FormDescription>
+                                        <FormDescription className="text-xs">Required for abnormally low bids; calculated based on the threshold in GWD Rates settings.</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
@@ -219,7 +203,7 @@ export default function SelectionNoticeForm({ onSubmit, onCancel, isSubmitting, 
                                     <FormItem>
                                         <FormLabel>Stamp Paper required</FormLabel>
                                         <FormControl><Input type="number" {...field} value={field.value ?? ''} readOnly className="bg-muted/50"/></FormControl>
-                                        <FormDescription className="text-xs">Based on the contract amount.</FormDescription>
+                                        <FormDescription className="text-xs">Based on the contract amount and GWD Rates settings.</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
